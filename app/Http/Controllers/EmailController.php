@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Exceptions\EmailSendException;
 use App\Models\Customer;
 use App\Models\Notification;
@@ -485,14 +484,12 @@ class EmailController extends Controller
     // PUBLIC ENDPOINTS
     // =========================================================================
 
-    /** Kotak surat perusahaan: hanya Administrator, Delivery Support dan grup Helpdesk (sama dengan reprocessAttachments). Mengembalikan respons 403 bila tidak berhak. */
+    /** Kotak surat perusahaan: hanya pemegang izin `email.mailbox` (sama dengan reprocessAttachments). Mengembalikan respons 403 bila tidak berhak. */
     private function denyUnlessMailStaff()
     {
-        $sessionUser = session('user');
-        $roleId = $sessionUser['role']['id'] ?? null;
-        $allowed = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::HELPDESK_GROUP);
+        $allowed = \App\Models\Employee::find(session('user.id'))?->hasPermission('email.mailbox') ?? false;
 
-        return $roleId !== null && in_array($roleId, $allowed, true) ? null : response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        return $allowed ? null : response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
     }
 
     /**
@@ -1655,7 +1652,7 @@ class EmailController extends Controller
     public function reprocessAttachments(Request $request, int $messageId)
     {
         $sessionUser = session('user');
-        if (!$sessionUser || !in_array($sessionUser['role']['id'], array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::HELPDESK_GROUP), true)) {
+        if (!$sessionUser || $this->denyUnlessMailStaff()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 

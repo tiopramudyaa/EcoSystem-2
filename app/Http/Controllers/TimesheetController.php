@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Exports\TimesheetApprovalExport;
 use App\Exports\TimesheetSupportExport;
 use App\Exports\TimesheetProjectExport;
@@ -29,6 +28,17 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class TimesheetController extends Controller
 {
+    // What a person may do with timesheets comes from the `timesheet.*` function slugs ticked for their role(s) in Management →
+    // Roles → Menu Access; no role ID is compared in this controller.
+    private ?Employee $permEmployee = null;
+
+    private function canTs(string $slug): bool
+    {
+        $this->permEmployee ??= Employee::find(session('user.id'));
+
+        return $this->permEmployee?->hasPermission($slug) ?? false;
+    }
+
     /**
      * Get submitted timesheets for approval (for Head of Project/Head of Support)
      */
@@ -37,9 +47,7 @@ class TimesheetController extends Controller
         try {
             $user = SessionUser::fromSession(session('user'));
 
-            // Admin, Head of Project, Head of Support, and RPMO can access this
-            $approvalRoles = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
-            if (!$user->hasAnyRole($approvalRoles)) {
+            if (!$this->canTs('timesheet.approve')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access'
@@ -167,9 +175,7 @@ class TimesheetController extends Controller
     public function exportToExcel(Request $request)
     {
         $sessionUser = SessionUser::fromSession(session('user'));
-        // Checked against ALL assigned roles, not just whichever role is "primary"
-        $allowed = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
-        if (!$sessionUser || !$sessionUser->hasAnyRole($allowed)) {
+        if (!$sessionUser || !$this->canTs('timesheet.approve')) {
             abort(403);
         }
 
@@ -345,15 +351,13 @@ class TimesheetController extends Controller
     {
         $sessionUser = session('user');
         $employeeId  = $sessionUser['id'] ?? null;
-        $roleId      = isset($sessionUser['role']['id']) ? (int) $sessionUser['role']['id'] : null;
-
         if (!$employeeId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
         /** @var PeriodService $svc */
         $svc    = app(PeriodService::class);
-        $domain = $svc->getDomainForRole($roleId ?? 0);
+        $domain = $svc->getDomainForEmployee((int) $employeeId);
 
         // Roles without a domain (Admin, RPMO, etc.) — return just the current active period
         if ($domain === null) {
@@ -427,28 +431,32 @@ class TimesheetController extends Controller
         try {
             $sessionUser       = SessionUser::fromSession(session('user'));
             $currentEmployeeId = $sessionUser->id;
-            $roleIds           = $sessionUser->role_ids;
 
             // Load employee, activity, and ticket (with customer) relationships
             $query = Timesheet::with(['employee.basicData', 'activity', 'ticket.customer.basicData']);
 
             // ── Visibility filter ─────────────────────────────────────────────
-            // Admin sees everything. Others see own timesheets + additional scope per role:
-            //   Head of Support  → also sees all support timesheets (ticket_id IS NOT NULL)
-            //   Head of Project  → also sees all project timesheets (delivery_projects_id IS NOT NULL)
-            //   RPMO             → also sees all office timesheets (both NULL)
+            // Everyone sees their own timesheets. On top of that:
+            //   timesheet.view-all      → every entry
+            //   timesheet.view-support  → all support entries (ticket_id IS NOT NULL)
+            //   timesheet.view-project  → all project entries (delivery_projects_id IS NOT NULL)
+            //   timesheet.view-office   → all office entries (both NULL)
             // Multi-role: scopes are additive (union of all roles' access).
-            if (!$sessionUser->hasRole(RoleId::EC_ADMINISTRATOR->value)) {
-                $query->where(function ($q) use ($currentEmployeeId, $roleIds) {
+            if (!$this->canTs('timesheet.view-all')) {
+                $seesSupport = $this->canTs('timesheet.view-support');
+                $seesProject = $this->canTs('timesheet.view-project');
+                $seesOffice  = $this->canTs('timesheet.view-office');
+
+                $query->where(function ($q) use ($currentEmployeeId, $seesSupport, $seesProject, $seesOffice) {
                     $q->where('employee_id', $currentEmployeeId);
 
-                    if (in_array(RoleId::DELIVERY_SUPPORT_HEAD->value, $roleIds, true)) {
+                    if ($seesSupport) {
                         $q->orWhereNotNull('ticket_id');
                     }
-                    if (in_array(RoleId::DELIVERY_PROJECT_HEAD->value, $roleIds, true)) {
+                    if ($seesProject) {
                         $q->orWhereNotNull('delivery_projects_id');
                     }
-                    if (in_array(RoleId::DELIVERY_RPMO_HEAD->value, $roleIds, true)) {
+                    if ($seesOffice) {
                         $q->orWhere(function ($inner) {
                             $inner->whereNull('ticket_id')->whereNull('delivery_projects_id');
                         });
@@ -563,17 +571,10 @@ class TimesheetController extends Controller
         try {
             $timesheet   = Timesheet::with(['employee', 'activity'])->findOrFail($id);
             $sessionUser = session('user');
-            $roleId      = $sessionUser['role']['id'] ?? 0;
             $sessionEmpId = $sessionUser['id'] ?? null;
 
-            // Admins, Head of Support, Head of Project, and Helpdesk can view any timesheet.
-            // All other roles may only view their own.
-            $privileged = in_array($roleId, [
-                RoleId::EC_ADMINISTRATOR->value,
-                RoleId::DELIVERY_SUPPORT_HEAD->value,
-                RoleId::DELIVERY_PROJECT_HEAD->value,
-                RoleId::DELIVERY_HELPDESK->value,
-            ], true);
+            // Holders of `timesheet.view-record` can open any timesheet; everyone else only their own.
+            $privileged = $this->canTs('timesheet.view-record');
 
             if (!$privileged && (int) $timesheet->employee_id !== (int) $sessionEmpId) {
                 return response()->json([
@@ -684,9 +685,8 @@ class TimesheetController extends Controller
             // ─────────────────────────────────────────────────────────────────
 
             // ── Period access gate ────────────────────────────────────────────
-            // Bypass for Admin and RPMO (they can always submit)
-            $sessionRoleId = (int) (session('user')['role']['id'] ?? 0);
-            $bypass = in_array($sessionRoleId, [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value]);
+            // Holders of `timesheet.bypass-period` can always submit
+            $bypass = $this->canTs('timesheet.bypass-period');
 
             if (!$bypass) {
                 /** @var PeriodService $periodSvc */
@@ -750,9 +750,8 @@ class TimesheetController extends Controller
             // Ownership check: only the owner can update (heads/admin can approve/reject via dedicated endpoints)
             $sessionUser       = SessionUser::fromSession(session('user'));
             $currentEmployeeId = $sessionUser->id;
-            $privilegedRoles   = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
 
-            if (!$sessionUser->hasAnyRole($privilegedRoles) && (int) $timesheet->employee_id !== (int) $currentEmployeeId) {
+            if (!$this->canTs('timesheet.manage-others') && (int) $timesheet->employee_id !== (int) $currentEmployeeId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden: you can only edit your own timesheets'
@@ -872,9 +871,8 @@ class TimesheetController extends Controller
             // Ownership check: only the owner can delete
             $sessionUser       = SessionUser::fromSession(session('user'));
             $currentEmployeeId = $sessionUser->id;
-            $privilegedRoles   = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
 
-            if (!$sessionUser->hasAnyRole($privilegedRoles) && (int) $timesheet->employee_id !== (int) $currentEmployeeId) {
+            if (!$this->canTs('timesheet.manage-others') && (int) $timesheet->employee_id !== (int) $currentEmployeeId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden: you can only delete your own timesheets'
@@ -915,9 +913,8 @@ class TimesheetController extends Controller
             // Ownership check: only the owner can submit their own timesheet
             $sessionUser       = SessionUser::fromSession(session('user'));
             $currentEmployeeId = $sessionUser->id;
-            $privilegedRoles   = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
 
-            if (!$sessionUser->hasAnyRole($privilegedRoles) && (int) $timesheet->employee_id !== (int) $currentEmployeeId) {
+            if (!$this->canTs('timesheet.manage-others') && (int) $timesheet->employee_id !== (int) $currentEmployeeId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden: you can only submit your own timesheets'
@@ -1015,9 +1012,7 @@ class TimesheetController extends Controller
 
     /**
      * Send bell notifications to relevant Head when a timesheet is submitted.
-     * - Support timesheet  → notify all Head of Support (role 5)
-     * - Project timesheet  → notify all Head of Project (role 4)
-     * - Office timesheet   → notify all RPMO (role 7)
+     * - Support / project / office timesheet → notify everyone holding the matching `timesheet.view-*` slug
      */
     private function notifyHeadsOnSubmit(Timesheet $timesheet): void
     {
@@ -1025,13 +1020,8 @@ class TimesheetController extends Controller
             $isSupport = !$timesheet->delivery_projects_id && $timesheet->ticket_id;
             $isProject = (bool) $timesheet->delivery_projects_id;
 
-            if ($isSupport) {
-                $targetRole = RoleId::DELIVERY_SUPPORT_HEAD->value;
-            } elseif ($isProject) {
-                $targetRole = RoleId::DELIVERY_PROJECT_HEAD->value;
-            } else {
-                $targetRole = RoleId::DELIVERY_RPMO_HEAD->value;
-            }
+            // Whoever sees that type of timesheet (timesheet.view-support / -project / -office) is told when one is submitted.
+            $targetSlug = $isSupport ? 'timesheet.view-support' : ($isProject ? 'timesheet.view-project' : 'timesheet.view-office');
 
             // Submitter name — use session if available, else query
             $submitter = Employee::where('employee_id', $timesheet->employee_id)->first();
@@ -1053,8 +1043,8 @@ class TimesheetController extends Controller
                 $preview = "{$fromName} submitted an office timesheet for approval";
             }
 
-            // Create notification for every active Head with the target role
-            $heads = Employee::withRole($targetRole)->where('is_active', true)->get();
+            // Create notification for every active holder
+            $heads = Employee::withMenuPermission($targetSlug)->where('is_active', true)->get();
 
             foreach ($heads as $head) {
                 Notification::create([
@@ -1081,10 +1071,7 @@ class TimesheetController extends Controller
             $user = session('user');
             $sessionUser = SessionUser::fromSession($user);
 
-            // Admin, Head of Project, Head of Support, and RPMO can approve (checked
-            // against ALL assigned roles, not just whichever role is "primary")
-            $approvalRoles = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
-            if (!$sessionUser || !$sessionUser->hasAnyRole($approvalRoles)) {
+            if (!$sessionUser || !$this->canTs('timesheet.approve')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized: Only managers can approve timesheets'
@@ -1130,10 +1117,7 @@ class TimesheetController extends Controller
             $user = session('user');
             $sessionUser = SessionUser::fromSession($user);
 
-            // Admin, Head of Project, Head of Support, and RPMO can reject (checked
-            // against ALL assigned roles, not just whichever role is "primary")
-            $approvalRoles = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
-            if (!$sessionUser || !$sessionUser->hasAnyRole($approvalRoles)) {
+            if (!$sessionUser || !$this->canTs('timesheet.approve')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized: Only managers can reject timesheets'

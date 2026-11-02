@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
+use App\Http\Controllers\Concerns\ResolvesDashboardVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    use ResolvesDashboardVariant;
 
     public function index(Request $request)
     {
@@ -50,8 +51,11 @@ class DashboardController extends Controller
                 'recent_activities' => [],
             ];
 
-            // ── EC Administrator dashboard data ───────────────────────────────
-            if (($user['type'] ?? '') === 'employee' && ($user['role']['id'] ?? 0) === RoleId::EC_ADMINISTRATOR->value) {
+            // Which dashboard (and which extra cards) comes from the `dashboard.*` slugs ticked for the person's role(s).
+            $variant = $this->dashboardVariant($user);
+
+            // ── Organisation-wide ticket dashboard (`dashboard.tickets.full`) ──
+            if ($variant === 'full') {
                 $base = DB::table('ticket')->whereNull('deleted_at')->whereNull('is_hidden');
 
                 $dashboardData['ticket_stats'] = [
@@ -118,10 +122,19 @@ class DashboardController extends Controller
                     ->limit(6)
                     ->get();
 
-                // Staging tickets pending validation
-                $dashboardData['staging_pending'] = DB::table('staging_tickets')
-                    ->where('status', 'unvalidated')
-                    ->count();
+                if ($this->dashboardCan($user, 'dashboard.staging-pending')) {
+                    $dashboardData['staging_pending'] = DB::table('staging_tickets')
+                        ->where('status', 'unvalidated')
+                        ->count();
+                }
+
+                if ($this->dashboardCan($user, 'dashboard.timesheet-pending')) {
+                    try {
+                        $dashboardData['timesheet_pending'] = DB::table('timesheet')->where('status', 'submitted')->count();
+                    } catch (\Throwable) {
+                        $dashboardData['timesheet_pending'] = 0;
+                    }
+                }
 
                 // SLA compliance summary (if table exists)
                 try {
@@ -141,176 +154,8 @@ class DashboardController extends Controller
                 }
             }
 
-            // ── EC User dashboard data (all tickets — same scope as ticket list) ─
-            if (($user['type'] ?? '') === 'employee' && ($user['role']['id'] ?? 0) === RoleId::EC_USER->value) {
-                $base = DB::table('ticket')->whereNull('deleted_at')->whereNull('is_hidden');
-
-                $dashboardData['ticket_stats'] = [
-                    'total'                   => (clone $base)->count(),
-                    'open'                    => (clone $base)->where('status', 'open')->count(),
-                    'inprocess'               => (clone $base)->where('status', 'inprocess')->count(),
-                    'waiting_on_customer'     => (clone $base)->where('status', 'waiting_on_customer')->count(),
-                    'waiting_on_3rd_party'    => (clone $base)->where('status', 'waiting_on_3rd_party')->count(),
-                    'waiting_to_confirmation' => (clone $base)->where('status', 'waiting_to_confirmation')->count(),
-                    'hold'                    => (clone $base)->where('status', 'hold')->count(),
-                    'cancelled'               => (clone $base)->where('status', 'cancelled')->count(),
-                    'closed'                  => (clone $base)->where('status', 'closed')->count(),
-                ];
-
-                $start30 = now()->subDays(29)->format('Y-m-d');
-                $byDay   = DB::table('ticket')->whereNull('deleted_at')->whereNull('is_hidden')
-                    ->where('created_at', '>=', $start30)
-                    ->select(DB::raw('DATE(created_at) as day'), DB::raw('COUNT(*) as cnt'))
-                    ->groupBy('day')->pluck('cnt', 'day')->toArray();
-
-                $chartLabels = []; $chartData = [];
-                for ($i = 29; $i >= 0; $i--) {
-                    $d = now()->subDays($i)->format('Y-m-d');
-                    $chartLabels[] = now()->subDays($i)->format('d M');
-                    $chartData[]   = $byDay[$d] ?? 0;
-                }
-                $dashboardData['ticket_chart'] = ['labels' => $chartLabels, 'data' => $chartData];
-
-                $dashboardData['recent_tickets'] = DB::table('ticket as t')
-                    ->whereNull('t.deleted_at')->whereNull('t.is_hidden')
-                    ->leftJoin('customer as c', 't.customer_id', '=', 'c.customer_id')
-                    ->leftJoin('customer_basic_data as cbd', 'c.customer_id', '=', 'cbd.customer_id')
-                    ->leftJoin('employee as e', 't.ticket_lead_id', '=', 'e.employee_id')
-                    ->leftJoin('employee_basic_data as ebd', 'e.employee_id', '=', 'ebd.employee_id')
-                    ->select(
-                        't.ticket_id', 't.ticket_number', 't.description',
-                        't.status', 't.ticket_priority', 't.created_at',
-                        'cbd.name_1 as customer_name',
-                        DB::raw("COALESCE(TRIM(CONCAT(COALESCE(ebd.first_name,''),' ',COALESCE(ebd.last_name,''))), 'Unassigned') as pic_name")
-                    )
-                    ->orderByDesc('t.created_at')
-                    ->limit(8)
-                    ->get();
-
-                $dashboardData['team_load'] = DB::table('ticket as t')
-                    ->whereNull('t.deleted_at')->whereNull('t.is_hidden')
-                    ->whereNotIn('t.status', ['closed', 'cancelled'])
-                    ->join('employee as e', 't.ticket_lead_id', '=', 'e.employee_id')
-                    ->leftJoin('employee_basic_data as ebd', 'e.employee_id', '=', 'ebd.employee_id')
-                    ->select(
-                        'e.employee_id',
-                        DB::raw("TRIM(CONCAT(COALESCE(ebd.first_name,''),' ',COALESCE(ebd.last_name,''))) as name"),
-                        DB::raw('COUNT(*) as open_count')
-                    )
-                    ->groupBy('e.employee_id', 'ebd.first_name', 'ebd.last_name')
-                    ->orderByDesc('open_count')
-                    ->limit(6)
-                    ->get();
-
-                $dashboardData['staging_pending'] = DB::table('staging_tickets')
-                    ->where('status', 'unvalidated')->count();
-
-                try {
-                    $slaMet      = $this->visibleSla(DB::table('ticket_sla'))->where('resolution_status', 'met')->count();
-                    $slaBreached = $this->visibleSla(DB::table('ticket_sla'))->where('resolution_status', 'breached')->count();
-                    $dashboardData['sla_summary'] = [
-                        'met'             => $slaMet,
-                        'breached'        => $slaBreached,
-                        'compliance_rate' => ($slaMet + $slaBreached) > 0
-                            ? round($slaMet / ($slaMet + $slaBreached) * 100, 1)
-                            : null,
-                    ];
-                } catch (\Throwable) {
-                    $dashboardData['sla_summary'] = null;
-                }
-            }
-
-            // Extra data for Delivery Support Head dashboard
-            if (($user['type'] ?? '') === 'employee' && ($user['role']['id'] ?? 0) === RoleId::DELIVERY_SUPPORT_HEAD->value) {
-                $base = DB::table('ticket')->whereNull('deleted_at')->whereNull('is_hidden');
-
-                $dashboardData['ticket_stats'] = [
-                    'total'                   => (clone $base)->count(),
-                    'open'                    => (clone $base)->where('status', 'open')->count(),
-                    'inprocess'               => (clone $base)->where('status', 'inprocess')->count(),
-                    'waiting_on_customer'     => (clone $base)->where('status', 'waiting_on_customer')->count(),
-                    'waiting_on_3rd_party'    => (clone $base)->where('status', 'waiting_on_3rd_party')->count(),
-                    'waiting_to_confirmation' => (clone $base)->where('status', 'waiting_to_confirmation')->count(),
-                    'hold'                    => (clone $base)->where('status', 'hold')->count(),
-                    'cancelled'               => (clone $base)->where('status', 'cancelled')->count(),
-                    'closed'                  => (clone $base)->where('status', 'closed')->count(),
-                ];
-
-                // Chart: all tickets by created_at (actual submission date) in last 30 days
-                $start30 = now()->subDays(29)->format('Y-m-d');
-                $byDay = DB::table('ticket')
-                    ->whereNull('deleted_at')->whereNull('is_hidden')
-                    ->where('created_at', '>=', $start30)
-                    ->select(DB::raw('DATE(created_at) as day'), DB::raw('COUNT(*) as cnt'))
-                    ->groupBy('day')
-                    ->pluck('cnt', 'day')
-                    ->toArray();
-
-                $chartLabels = [];
-                $chartData   = [];
-                for ($i = 29; $i >= 0; $i--) {
-                    $d = now()->subDays($i)->format('Y-m-d');
-                    $chartLabels[] = now()->subDays($i)->format('d M');
-                    $chartData[]   = $byDay[$d] ?? 0;
-                }
-                $dashboardData['ticket_chart'] = ['labels' => $chartLabels, 'data' => $chartData];
-
-                // Recent 8 tickets (all) — includes priority for dashboard display
-                $dashboardData['recent_tickets'] = DB::table('ticket as t')
-                    ->whereNull('t.deleted_at')->whereNull('t.is_hidden')
-                    ->leftJoin('customer as c', 't.customer_id', '=', 'c.customer_id')
-                    ->leftJoin('customer_basic_data as cbd', 'c.customer_id', '=', 'cbd.customer_id')
-                    ->leftJoin('employee as e', 't.ticket_lead_id', '=', 'e.employee_id')
-                    ->leftJoin('employee_basic_data as ebd', 'e.employee_id', '=', 'ebd.employee_id')
-                    ->select(
-                        't.ticket_id', 't.ticket_number', 't.description',
-                        't.status', 't.ticket_priority', 't.created_at',
-                        'cbd.name_1 as customer_name',
-                        DB::raw("COALESCE(TRIM(CONCAT(COALESCE(ebd.first_name,''),' ',COALESCE(ebd.last_name,''))), 'Unassigned') as pic_name")
-                    )
-                    ->orderByDesc('t.created_at')
-                    ->limit(8)
-                    ->get();
-
-                // Team load: top 6 employees by active ticket count
-                $dashboardData['team_load'] = DB::table('ticket as t')
-                    ->whereNull('t.deleted_at')->whereNull('t.is_hidden')
-                    ->whereNotIn('t.status', ['closed', 'cancelled'])
-                    ->join('employee as e', 't.ticket_lead_id', '=', 'e.employee_id')
-                    ->leftJoin('employee_basic_data as ebd', 'e.employee_id', '=', 'ebd.employee_id')
-                    ->select('e.employee_id', DB::raw("TRIM(CONCAT(COALESCE(ebd.first_name,''),' ',COALESCE(ebd.last_name,''))) as name"), DB::raw('COUNT(*) as open_count'))
-                    ->groupBy('e.employee_id', 'ebd.first_name', 'ebd.last_name')
-                    ->orderByDesc('open_count')
-                    ->limit(6)
-                    ->get();
-
-                // Timesheets pending approval (submitted by team)
-                try {
-                    $dashboardData['timesheet_pending'] = DB::table('timesheet')
-                        ->where('status', 'submitted')
-                        ->count();
-                } catch (\Throwable) {
-                    $dashboardData['timesheet_pending'] = 0;
-                }
-
-                // SLA compliance summary
-                try {
-                    $slaMet      = $this->visibleSla(DB::table('ticket_sla'))->where('resolution_status', 'met')->count();
-                    $slaBreached = $this->visibleSla(DB::table('ticket_sla'))->where('resolution_status', 'breached')->count();
-                    $dashboardData['sla_summary'] = [
-                        'met'             => $slaMet,
-                        'breached'        => $slaBreached,
-                        'compliance_rate' => ($slaMet + $slaBreached) > 0
-                            ? round($slaMet / ($slaMet + $slaBreached) * 100, 1)
-                            : null,
-                    ];
-                } catch (\Throwable) {
-                    $dashboardData['sla_summary'] = null;
-                }
-            }
-
             // ── Helpdesk dashboard data ───────────────────────────────────────
-            if (($user['type'] ?? '') === 'employee' && ($user['role']['id'] ?? 0) === RoleId::DELIVERY_HELPDESK->value) {
+            if ($variant === 'helpdesk') {
                 $base = DB::table('ticket')->whereNull('deleted_at')->whereNull('is_hidden');
 
                 $dashboardData['ticket_stats'] = [
@@ -443,7 +288,7 @@ class DashboardController extends Controller
             // ── Delivery Support Manager dashboard data ───────────────────────
             // Scope: tiket dari delivery yang dia kelola + tiket belum di-assign
             // (konsisten dengan TicketController::index untuk role ini)
-            if (($user['type'] ?? '') === 'employee' && ($user['role']['id'] ?? 0) === RoleId::DELIVERY_SUPPORT_MANAGER->value) {
+            if ($variant === 'manager') {
                 $employeeId = $user['id'];
 
                 $managedDeliveryIds = DB::table('delivery_support_managers')
@@ -609,7 +454,7 @@ class DashboardController extends Controller
             }
 
             // ── Delivery Support User dashboard data ──────────────────────────
-            if (($user['type'] ?? '') === 'employee' && ($user['role']['id'] ?? 0) === RoleId::DELIVERY_SUPPORT_USER->value) {
+            if ($variant === 'mine') {
                 $employeeId = $user['id'];
 
                 $picIds    = DB::table('ticket')->whereNull('deleted_at')->whereNull('is_hidden')->where('ticket_lead_id', $employeeId)->pluck('ticket_id');

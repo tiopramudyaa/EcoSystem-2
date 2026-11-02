@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Models\Employee;
 use App\Models\Notification;
 use App\Models\Ticket;

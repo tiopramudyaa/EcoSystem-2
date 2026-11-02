@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\StagingAttachment;
@@ -30,6 +29,12 @@ use Illuminate\Support\Facades\Storage;
  */
 class StagingTicketController extends Controller
 {
+    // Access to staging follows the `tickets.staging` menu ticked per role in Management → Roles → Menu Access; no role ID is compared.
+    private function canStaging(): bool
+    {
+        return \App\Models\Employee::find(session('user.id'))?->hasPermission('tickets.staging') ?? false;
+    }
+
     public function __construct(private StagingTicketService $service) {}
 
     // ─── Web view (admin) ─────────────────────────────────────────────────────
@@ -41,9 +46,7 @@ class StagingTicketController extends Controller
     {
         $user = SessionUser::fromSession(session('user'));
 
-        // Admin, Helpdesk, dan Head of Support yang boleh akses
-        $allowed = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP);
-        if (!$user || !$user->hasAnyRole($allowed)) {
+        if (!$user || !$this->canStaging()) {
             abort(403, 'Unauthorized');
         }
 
@@ -72,8 +75,7 @@ class StagingTicketController extends Controller
     {
         $user = SessionUser::fromSession(session('user'));
 
-        $allowed = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP);
-        if (!$user || !$user->hasAnyRole($allowed)) {
+        if (!$user || !$this->canStaging()) {
             abort(403, 'Unauthorized');
         }
 
@@ -107,7 +109,7 @@ class StagingTicketController extends Controller
             'ip'          => $request->ip(),
         ]);
 
-        if (in_array($roleId, array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value, RoleId::EC_USER->value], RoleId::STAGING_GROUP), true)) {
+        if ($this->canStaging()) {
             $query = StagingTicket::query();
         } else {
             Log::warning('StagingTicketController@index: forbidden — role not allowed', [
@@ -322,7 +324,7 @@ class StagingTicketController extends Controller
         }
 
         $roleId = $sessionUser['role']['id'];
-        if (!in_array($roleId, array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP), true)) {
+        if (!$this->canStaging()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -483,7 +485,7 @@ class StagingTicketController extends Controller
         }
 
         $roleId = $sessionUser['role']['id'];
-        if (!in_array($roleId, array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP), true)) {
+        if (!$this->canStaging()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -626,7 +628,7 @@ class StagingTicketController extends Controller
         }
 
         $roleId = $sessionUser['role']['id'];
-        if (!in_array($roleId, array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP), true)) {
+        if (!$this->canStaging()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -915,7 +917,7 @@ class StagingTicketController extends Controller
     public function statistics()
     {
         $sessionUser = session('user');
-        if (!$sessionUser || !in_array($sessionUser['role']['id'], array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP), true)) {
+        if (!$sessionUser || !$this->canStaging()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 

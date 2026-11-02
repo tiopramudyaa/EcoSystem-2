@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Exports\MdRecapExport;
 use App\Exports\ResolutionDaysExport;
 use App\Exports\TicketByModuleExport;
@@ -22,6 +21,12 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ReportingController extends Controller
 {
+    // Who may open each report comes from the function / page slugs ticked per role in Management → Roles → Menu Access.
+    private function canReport(string $slug): bool
+    {
+        return \App\Models\Employee::find(session('user.id'))?->hasPermission($slug) ?? false;
+    }
+
     // ── Web: Reporting page ───────────────────────────────────────────────
 
     public function index()
@@ -86,11 +91,11 @@ class ReportingController extends Controller
             $sessionUser = SessionUser::fromSession(session('user'));
             $employeeId  = $sessionUser->id;
 
-            // Only RPMO can close globally via the new system
-            if (!$sessionUser->hasRole(RoleId::DELIVERY_RPMO_HEAD->value)) {
+            // Closing a period is global period control (Period Management)
+            if (!$this->canReport('rpmo.periods.manage-global')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Period closing is now managed from the Period Management page (RPMO only).',
+                    'message' => 'Period closing is now managed from the Period Management page (needs global period control).',
                 ], 403);
             }
 
@@ -101,7 +106,7 @@ class ReportingController extends Controller
 
             /** @var PeriodService $svc */
             $svc = app(PeriodService::class);
-            $svc->closeGlobal($period, $employeeId, RoleId::DELIVERY_RPMO_HEAD->value);
+            $svc->closeGlobal($period, $employeeId, (int) (session('user')['role']['id'] ?? 0));
 
             return response()->json([
                 'success' => true,
@@ -145,8 +150,7 @@ class ReportingController extends Controller
                     DB::raw('COALESCE(timesheets.md_consumed, 0) as md_consumed')
                 );
 
-            $allowed = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-            if (!$sessionUser->hasAnyRole($allowed)) {
+            if (!$this->canReport('reporting.timesheet-support.view-all')) {
                 $query->where('timesheets.employee_id', $currentEmployeeId);
             }
 
@@ -250,10 +254,8 @@ class ReportingController extends Controller
     {
         try {
             $sessionUser = SessionUser::fromSession(session('user'));
-            $allowed     = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-
-            if (!$sessionUser->hasAnyRole($allowed)) {
-                abort(403, 'Access denied. Only Admins and Head of Support can export reports.');
+            if (!$this->canReport('reporting.timesheet-support.view-all')) {
+                abort(403, 'Access denied. You are not allowed to export this report.');
             }
 
             // Column filters passed from the browser view
@@ -391,10 +393,8 @@ class ReportingController extends Controller
         $sessionUser = session('user');
         if (!$sessionUser) return redirect()->route('login');
 
-        $roleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-        $allowed = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-        if (empty(array_intersect($roleIds, $allowed))) {
-            abort(403, 'Access denied. Only Admins and Head of Support can view the MD recap.');
+        if (!$this->canReport('reporting.md-recap')) {
+            abort(403, 'Access denied. You are not allowed to view the MD recap.');
         }
 
         return view('reporting.md-recap', ['user' => $sessionUser]);
@@ -406,10 +406,7 @@ class ReportingController extends Controller
     {
         try {
             $sessionUser   = session('user');
-            $currentRoleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-            $allowed        = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-
-            if (empty(array_intersect($currentRoleIds, $allowed))) {
+            if (!$this->canReport('reporting.md-recap')) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
 
@@ -467,11 +464,8 @@ class ReportingController extends Controller
     {
         try {
             $sessionUser   = session('user');
-            $currentRoleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-            $allowed        = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-
-            if (empty(array_intersect($currentRoleIds, $allowed))) {
-                abort(403, 'Access denied. Only Admins and Head of Support can export the MD recap.');
+            if (!$this->canReport('reporting.md-recap')) {
+                abort(403, 'Access denied. You are not allowed to export the MD recap.');
             }
 
             $filterName  = trim($request->input('name', ''));
@@ -548,9 +542,7 @@ class ReportingController extends Controller
     {
         try {
             $sessionUser   = session('user');
-            $currentRoleId = isset($sessionUser['role']['id']) ? (int) $sessionUser['role']['id'] : null;
-
-            if (!in_array($currentRoleId, [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value])) {
+            if (!$this->canReport('reporting.resolution-days')) {
                 abort(403, 'Access denied.');
             }
 
@@ -646,10 +638,8 @@ class ReportingController extends Controller
         $sessionUser = session('user');
         if (!$sessionUser) return redirect()->route('login');
 
-        $roleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-        $allowed = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-        if (empty(array_intersect($roleIds, $allowed))) {
-            abort(403, 'Access denied. Only Admins and Head of Support can view Resolution Days.');
+        if (!$this->canReport('reporting.resolution-days')) {
+            abort(403, 'Access denied. You are not allowed to view Resolution Days.');
         }
 
         return view('reporting.resolution-days', ['user' => $sessionUser]);
@@ -664,10 +654,7 @@ class ReportingController extends Controller
     {
         try {
             $sessionUser = session('user');
-            $roleIds     = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-            $allowed     = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-
-            if (empty(array_intersect($roleIds, $allowed))) {
+            if (!$this->canReport('reporting.resolution-days')) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
 

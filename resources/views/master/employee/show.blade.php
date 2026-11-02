@@ -223,6 +223,10 @@
         if ($isExternalEmp) {
             $visibleSections = array_diff_key($visibleSections, array_flip(['family', 'contract', 'payment', 'compensation']));
         }
+        // History (audit trail) belongs to HR's Master > Employee page only: My Profile has no menu slug for it.
+        if (!($isOwnProfile ?? false)) {
+            $visibleSections['history'] = ['history', 'History', 'history'];
+        }
         // 16 Okt 2026 — Compensation DIGABUNG ke tab Contract (tampilan saja): Riwayat Kontrak, Salary Components, dan Tax & BPJS
         // tampil dalam satu tab. Datanya tetap tiga sumber dan izinnya tetap tiga (employee.section.contract / salary / compensation):
         // kartu hanya muncul bagi yang berizin, dan My Profile TIDAK pernah menampilkan kartu Tax & BPJS.

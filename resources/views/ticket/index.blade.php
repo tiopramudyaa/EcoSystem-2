@@ -13,57 +13,30 @@
 {{-- ── Header Controls ──────────────────────────────────────────────────────── --}}
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4 mb-5">
     <div class="flex items-center gap-2.5 flex-wrap">
-        {{-- View toggles --}}
-        @if($user->role->role_id === \App\Enums\RoleId::DELIVERY_SUPPORT_USER->value && !($isExternalEmployee ?? false))
+        {{-- View toggles: every tab comes from the permission slugs ticked for the person's role(s) in Role & Menu Access --}}
+        @php
+            $tgMy  = $can('ticket.my-tickets.ds-user') || $can('ticket.my-tickets.ds-manager');
+            $tgAll = $can('ticket.all-tickets');
+            $tgUn  = $can('ticket.unassigned');
+            $restrictedExternal = ($isExternalEmployee ?? false) && !$can('ticket.external-unrestricted');
+        @endphp
+        @if(!$restrictedExternal && ($tgMy || $tgUn))
         <div class="inline-flex bg-gray-100 rounded-xl p-1">
-            @if($can('ticket.my-tickets.ds-user'))
+            @if($tgMy)
             <button onclick="toggleView('my')" id="btnViewMy" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
                 <i class="fas fa-user text-[10px] mr-1"></i>My Tickets
             </button>
             @endif
-            @if($can('ticket.all-tickets'))
+            @if($tgAll)
             <button onclick="toggleView('all')" id="btnViewAll" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
                 <i class="fas fa-list text-[10px] mr-1"></i>All Tickets
             </button>
             @endif
-            @if($can('ticket.unassigned'))
+            @if($tgUn)
             <button onclick="toggleView('unassigned-tab')" id="btnViewUnassignedTab" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
                 <i class="fas fa-user-clock text-[10px] mr-1"></i>Unassigned Ticket
             </button>
             @endif
-        </div>
-        @elseif($user->hasRole(\App\Enums\RoleId::DELIVERY_HELPDESK->value))
-        <div class="inline-flex bg-gray-100 rounded-xl p-1">
-            @if($can('ticket.all-tickets'))
-            <button onclick="toggleView('all')" id="btnViewAllHd" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
-                <i class="fas fa-list text-[10px] mr-1"></i>All Tickets
-            </button>
-            @endif
-            @if($can('ticket.unassigned'))
-            <button onclick="toggleView('unassigned')" id="btnViewUnassigned" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
-                <i class="fas fa-user-clock text-[10px] mr-1"></i>Unassigned
-            </button>
-            @endif
-        </div>
-        @elseif($user->hasRole(\App\Enums\RoleId::DELIVERY_SUPPORT_MANAGER->value))
-        <div class="inline-flex bg-gray-100 rounded-xl p-1">
-            @if($can('ticket.my-tickets.ds-manager'))
-            <button onclick="toggleView('my')" id="btnViewMy" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">My Tickets</button>
-            @endif
-            @if($can('ticket.all-tickets'))
-            <button onclick="toggleView('all')" id="btnViewAll" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">All Tickets</button>
-            @endif
-            @if($can('ticket.unassigned'))
-            <button onclick="toggleView('unassigned-tab')" id="btnViewUnassignedTab" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
-                <i class="fas fa-user-clock text-[10px] mr-1"></i>Unassigned Ticket
-            </button>
-            @endif
-        </div>
-        @elseif($can('ticket.unassigned'))
-        <div class="inline-flex bg-gray-100 rounded-xl p-1">
-            <button onclick="toggleView('unassigned-tab')" id="btnViewUnassignedTab" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
-                <i class="fas fa-user-clock text-[10px] mr-1"></i>Unassigned Ticket
-            </button>
         </div>
         @endif
 
@@ -85,7 +58,7 @@
         </button>
         @endif
 
-        @if($user->hasAnyRole([\App\Enums\RoleId::EC_ADMINISTRATOR->value, \App\Enums\RoleId::DELIVERY_SUPPORT_HEAD->value, \App\Enums\RoleId::DELIVERY_HELPDESK->value]))
+        @if($can('ticket.export'))
         <button onclick="exportWithFilters()"
             class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all">
             <i class="fas fa-file-excel text-green-600 text-xs"></i>Export
@@ -942,8 +915,6 @@
     let currentPage = 1;
     let totalItems = 0;
     let totalPages = 0;
-    let userRoleIds                   = {!! json_encode($user->role_ids) !!};
-    let userRole                      = userRoleIds[0] ?? 0;
     let currentEmployeeId             = {{ $currentEmployeeId ?? 'null' }};
     const CAN_VIEW_SLA_REPORT         = {{ $can('sla.report') ? 'true' : 'false' }};
     const CAN_HIDE_TICKET             = {{ $can('ticket.hide') ? 'true' : 'false' }};
@@ -952,36 +923,19 @@
     const CAN_VIEW_MY_TICKET_DS_USER    = {{ $can('ticket.my-tickets.ds-user') ? 'true' : 'false' }};
     const CAN_VIEW_MY_TICKET_DS_MANAGER = {{ $can('ticket.my-tickets.ds-manager') ? 'true' : 'false' }};
     const IS_EXTERNAL_EMPLOYEE        = {{ ($isExternalEmployee ?? false) ? 'true' : 'false' }};
-    const EC_ADMINISTRATOR_ROLE       = {{ \App\Enums\RoleId::EC_ADMINISTRATOR->value }};
-    const DELIVERY_SUPPORT_USER_ROLE  = {{ \App\Enums\RoleId::DELIVERY_SUPPORT_USER->value }};
-    const EC_USER_ROLE                = {{ \App\Enums\RoleId::EC_USER->value }};
-    const HELPDESK_ROLE               = {{ \App\Enums\RoleId::DELIVERY_HELPDESK->value }};
-    const SUPPORT_MANAGER_ROLE        = {{ \App\Enums\RoleId::DELIVERY_SUPPORT_MANAGER->value }};
-    const HEAD_ROLES                  = [{{ \App\Enums\RoleId::DELIVERY_SUPPORT_HEAD->value }}, {{ \App\Enums\RoleId::DELIVERY_PROJECT_HEAD->value }}];
-    // Roles that use the All/Unassigned toggle (Helpdesk only)
-    const STAFF_TOGGLE_ROLES          = [HELPDESK_ROLE];
+    // External employees see only the tickets they lead or belong to, unless granted ticket.external-unrestricted.
+    const IS_RESTRICTED_EXTERNAL      = {{ (($isExternalEmployee ?? false) && !$can('ticket.external-unrestricted')) ? 'true' : 'false' }};
+    // Holders of ticket.create-direct create tickets directly; everyone else goes through staging.
+    const CAN_CREATE_DIRECT           = {{ $can('ticket.create-direct') ? 'true' : 'false' }};
     // Pilih tab default berdasarkan tombol yang benar-benar tampil (permission-aware),
     // supaya gak ada mismatch antara tombol yang di-highlight vs data yang di-fetch.
     function computeDefaultView() {
-        if (IS_EXTERNAL_EMPLOYEE && userRole !== SUPPORT_MANAGER_ROLE && !HEAD_ROLES.includes(userRole)) return 'my';
-
-        if (userRole === DELIVERY_SUPPORT_USER_ROLE) {
-            if (CAN_VIEW_MY_TICKET_DS_USER) return 'my';
-            if (CAN_VIEW_ALL_TICKETS) return 'all';
-            if (CAN_VIEW_UNASSIGNED_TICKET) return 'unassigned-tab';
-            return 'my';
-        }
-        if (userRole === SUPPORT_MANAGER_ROLE) {
-            if (CAN_VIEW_ALL_TICKETS) return 'all';
-            if (CAN_VIEW_MY_TICKET_DS_MANAGER) return 'my';
-            if (CAN_VIEW_UNASSIGNED_TICKET) return 'unassigned-tab';
-            return 'all';
-        }
-        if (STAFF_TOGGLE_ROLES.includes(userRole)) {
-            return 'all';
-        }
-        if (userRole !== EC_ADMINISTRATOR_ROLE && CAN_VIEW_UNASSIGNED_TICKET) return 'unassigned-tab';
-        return 'all';
+        if (IS_RESTRICTED_EXTERNAL) return 'my';
+        if (CAN_VIEW_MY_TICKET_DS_USER) return 'my';
+        if (CAN_VIEW_ALL_TICKETS) return 'all';
+        if (CAN_VIEW_MY_TICKET_DS_MANAGER) return 'my';
+        if (CAN_VIEW_UNASSIGNED_TICKET) return 'unassigned-tab';
+        return 'my';
     }
     let currentView = computeDefaultView();
     let sortField = null; // 'last_update' | 'ticket_number' | 'date'
@@ -1077,7 +1031,7 @@
         await loadFilterOptions();
         restoreTicketFilterState();
         loadTickets();
-        if (userRole === EC_ADMINISTRATOR_ROLE || userRole === DELIVERY_SUPPORT_USER_ROLE || STAFF_TOGGLE_ROLES.includes(userRole) || userRole === SUPPORT_MANAGER_ROLE || CAN_VIEW_UNASSIGNED_TICKET) updateViewToggle();
+        updateViewToggle();
         startEmailPolling();
     });
 
@@ -1171,33 +1125,20 @@
     function toggleView(view) {
         currentView = view;
         updateViewToggle();
-        // Helpdesk toggling All/Unassigned used to filter an already-fully-loaded client
-        // array instead of re-fetching; now that the list is paginated there's no full
-        // array to filter, so every role re-fetches from the server (loadTickets() passes
-        // ?unassigned=1 for this case — see its endpoint-selection logic).
-        if (STAFF_TOGGLE_ROLES.includes(userRole)) {
-            currentFilter = 'all';
-        }
+        // The list is paginated server-side, so switching tab re-fetches and starts from the "all" status card.
+        currentFilter = 'all';
         currentPage = 1;
         loadTickets();
         persistTicketFilterState();
     }
 
     function updateViewToggle() {
-        if (userRole === EC_ADMINISTRATOR_ROLE || userRole === DELIVERY_SUPPORT_USER_ROLE || userRole === SUPPORT_MANAGER_ROLE) {
-            const btnAll = document.getElementById('btnViewAll');
-            const btnMy  = document.getElementById('btnViewMy');
-            if (btnAll) btnAll.classList.toggle('active', currentView === 'all');
-            if (btnMy)  btnMy.classList.toggle('active',  currentView === 'my');
-        }
-        if (STAFF_TOGGLE_ROLES.includes(userRole)) {
-            const btnA = document.getElementById('btnViewAllHd');
-            const btnU = document.getElementById('btnViewUnassigned');
-            if (btnA) btnA.classList.toggle('active', currentView === 'all');
-            if (btnU) btnU.classList.toggle('active', currentView === 'unassigned');
-        }
+        const btnAll = document.getElementById('btnViewAll');
+        const btnMy  = document.getElementById('btnViewMy');
+        if (btnAll) btnAll.classList.toggle('active', currentView === 'all');
+        if (btnMy)  btnMy.classList.toggle('active',  currentView === 'my');
         // Unassigned Ticket tab — visibility driven by 'ticket.unassigned' menu permission
-        // (Role & Menu Access), independent of the hardcoded role toggles above.
+        // (Role & Menu Access).
         const btnUt = document.getElementById('btnViewUnassignedTab');
         if (btnUt) {
             btnUt.classList.toggle('active', currentView === 'unassigned-tab');
@@ -1226,12 +1167,9 @@
 
             let endpoint = '/api/tickets';
             const params = new URLSearchParams();
-            if (userRole === EC_USER_ROLE) endpoint = '/api/tickets/my';
-            else if (IS_EXTERNAL_EMPLOYEE && userRole !== SUPPORT_MANAGER_ROLE && !HEAD_ROLES.includes(userRole)) endpoint = '/api/tickets/my';
+            if (IS_RESTRICTED_EXTERNAL) endpoint = '/api/tickets/my';
             else if (currentView === 'unassigned-tab') endpoint = '/api/tickets/unassigned';
-            else if ((userRole === EC_ADMINISTRATOR_ROLE || userRole === DELIVERY_SUPPORT_USER_ROLE) && currentView === 'my') endpoint = '/api/tickets/my';
-            else if (userRole === SUPPORT_MANAGER_ROLE && currentView === 'my') endpoint = '/api/tickets/my';
-            else if (STAFF_TOGGLE_ROLES.includes(userRole) && currentView === 'unassigned') params.set('unassigned', '1');
+            else if (currentView === 'my') endpoint = '/api/tickets/my';
             if (currentView === 'module-lead') params.set('module_team', '1');
 
             params.set('page', currentPage);
@@ -2444,8 +2382,7 @@
         form.append('body', bodyHtml || '');
         const files = document.getElementById('newAttachments').files;
         for (let i = 0; i < files.length; i++) form.append('attachments[]', files[i]);
-        const isAdmin = userRole === EC_ADMINISTRATOR_ROLE;
-        const endpoint = isAdmin ? '/api/tickets' : '/api/tickets/helpdesk-create';
+        const endpoint = CAN_CREATE_DIRECT ? '/api/tickets' : '/api/tickets/helpdesk-create';
         try {
             const response = await fetch(endpoint, {
                 method: 'POST',

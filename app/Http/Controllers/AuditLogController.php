@@ -2,20 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 
 class AuditLogController extends Controller
 {
     /**
-     * Admin-only: render the audit log page.
+     * Needs the control-center.audit-log permission: render the audit log page.
      */
     public function index(Request $request)
     {
         $user = session('user');
 
-        if (($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
+        if (!(\App\Models\Employee::find(session('user.id'))?->hasPermission('control-center.audit-log') ?? false)) {
             abort(403, 'Access denied.');
         }
 
@@ -25,14 +24,14 @@ class AuditLogController extends Controller
     }
 
     /**
-     * Admin-only: return paginated audit log data as JSON.
+     * Needs the control-center.audit-log permission: return paginated audit log data as JSON.
      * GET /api/admin/audit-logs?page=1&per_page=25&search=&module=&event=&date_from=&date_to=
      */
     public function getData(Request $request)
     {
         $user = session('user');
 
-        if (($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
+        if (!(\App\Models\Employee::find(session('user.id'))?->hasPermission('control-center.audit-log') ?? false)) {
             return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
         }
 
@@ -115,14 +114,14 @@ class AuditLogController extends Controller
     }
 
     /**
-     * Admin-only: distinct module values for the filter dropdown.
+     * Needs the control-center.audit-log permission: distinct module values for the filter dropdown.
      * GET /api/admin/audit-logs/modules
      */
     public function modules(Request $request)
     {
         $user = session('user');
 
-        if (($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
+        if (!(\App\Models\Employee::find(session('user.id'))?->hasPermission('control-center.audit-log') ?? false)) {
             return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
         }
 

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +11,7 @@ class AdminJobController extends Controller
 {
     private function assertAdmin(): bool
     {
-        return (int) session('user.role.id') === RoleId::EC_ADMINISTRATOR->value;
+        return \App\Models\Employee::find(session('user.id'))?->hasPermission('control-center.failed-jobs') ?? false;
     }
 
     public function index(Request $request)

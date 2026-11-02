@@ -87,7 +87,7 @@ class DataTransferController extends Controller
         if ($result['errors'] !== []) {
             return back()
                 ->with('error', 'Nothing was imported. Fix the ' . count($result['errors']) . ' problem(s) below and upload again.')
-                ->with('import_errors', array_slice($result['errors'], 0, 50));
+                ->with('import_errors', array_slice($result['errors'], 0, 500));
         }
 
         Log::info('Data imported.', [

@@ -13,6 +13,12 @@
         </button>
     </div>
 
+    @include('partials.page-hint', [
+        'key'   => 'roles',
+        'title' => 'How roles work',
+        'text'  => 'A role decides which menus an employee sees and what they may do there (view, create, edit, delete). Create the role first, then open its Menu Access to tick the boxes; members get the change at their next page load.',
+    ])
+
     <!-- Filter -->
     <div class="mb-4">
         <input type="text" id="roleSearch" placeholder="Search role name or description..."
@@ -28,8 +34,8 @@
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Members</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Menu access</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" title="How many employees currently hold this role">Members <i class="fas fa-info-circle text-gray-400 normal-case" aria-hidden="true"></i></th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" title="How many menus this role can open. Use the Menu Access button to change them">Menu access <i class="fas fa-info-circle text-gray-400 normal-case" aria-hidden="true"></i></th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
@@ -62,6 +68,15 @@
                 <textarea id="roleDescription" maxlength="255" rows="3"
                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent resize-none"
                     placeholder="Optional description..."></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5" for="rolePeriodDomain">Timesheet period domain</label>
+                <select id="rolePeriodDomain" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800">
+                    <option value="">None — not restricted by periods</option>
+                    <option value="project">Project domain</option>
+                    <option value="support">Support domain</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Members can submit timesheets only while their domain's period is open (or with an approved late-access request). Who can open and close periods is set in Menu Access (Period Management).</p>
             </div>
             <div class="flex gap-3 justify-end pt-2">
                 <button type="button" onclick="closeModal('roleModal')" class="px-4 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all">Cancel</button>
@@ -142,7 +157,7 @@ function renderRoles() {
         : rolesData;
 
     if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">${query ? 'No roles match your search.' : 'No roles found.'}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">${query ? 'No roles match your search.' : 'No roles yet — use “Add Role” above to create the first one.'}</td></tr>`;
         return;
     }
     tbody.innerHTML = filtered.map(role => `
@@ -188,6 +203,7 @@ function openCreateRoleModal() {
     document.getElementById('roleId').value = '';
     document.getElementById('roleName').value = '';
     document.getElementById('roleDescription').value = '';
+    document.getElementById('rolePeriodDomain').value = '';
     openModal('roleModal');
 }
 
@@ -198,6 +214,7 @@ function openEditRoleModal(id) {
     document.getElementById('roleId').value = role.id;
     document.getElementById('roleName').value = role.name;
     document.getElementById('roleDescription').value = role.description || '';
+    document.getElementById('rolePeriodDomain').value = role.period_domain || '';
     openModal('roleModal');
 }
 
@@ -207,6 +224,7 @@ async function submitRole(e) {
     const payload = {
         name:        document.getElementById('roleName').value.trim(),
         description: document.getElementById('roleDescription').value.trim(),
+        period_domain: document.getElementById('rolePeriodDomain').value || null,
     };
     const url    = id ? `/api/roles/${id}` : '/api/roles';
     const method = id ? 'PUT' : 'POST';

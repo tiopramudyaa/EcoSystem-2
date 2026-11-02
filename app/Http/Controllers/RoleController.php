@@ -29,8 +29,9 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:100|unique:employee_role,name',
-            'description' => 'nullable|string|max:255',
+            'name'          => 'required|string|max:100|unique:employee_role,name',
+            'description'   => 'nullable|string|max:255',
+            'period_domain' => 'nullable|in:project,support',
         ]);
 
         $role = EmployeeRole::create($data);
@@ -48,8 +49,9 @@ class RoleController extends Controller
         $role = EmployeeRole::findOrFail($id);
 
         $data = $request->validate([
-            'name'        => 'required|string|max:100|unique:employee_role,name,' . $id,
-            'description' => 'nullable|string|max:255',
+            'name'          => 'required|string|max:100|unique:employee_role,name,' . $id,
+            'description'   => 'nullable|string|max:255',
+            'period_domain' => 'nullable|in:project,support',
         ]);
 
         $role->update($data);

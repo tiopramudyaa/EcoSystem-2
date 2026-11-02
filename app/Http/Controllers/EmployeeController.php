@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
-use App\Enums\RoleId;
 use App\Exports\EmployeeExport;
 use App\Models\AuditLog;
 use App\Models\Employee;
@@ -815,16 +814,15 @@ class EmployeeController extends Controller
         DB::beginTransaction();
 
         try {
-            // Create employee — default primary role: EC User (3)
+            // Create employee — default roles come from config/roles.php (new_employee_roles)
             $employeeId = DB::table('employee')->insertGetId([
                 'eci'       => $request->eci,
                 'is_active' => 1,
             ]);
 
-            // Assign: User System Registered + EC User (keduanya wajib untuk bisa login)
-            $userSystemRegisteredId = DB::table('employee_role')->where('name', 'User System Registered')->value('id');
+            // Assign the default roles (wajib untuk bisa login) — config/roles.php → new_employee_roles
             $now = now();
-            foreach (array_filter([$userSystemRegisteredId, RoleId::EC_USER->value]) as $roleId) {
+            foreach (\App\Models\EmployeeRole::newEmployeeRoleIds() as $roleId) {
                 DB::table('employee_role_assignment')->insertOrIgnore([
                     'employee_id' => $employeeId,
                     'role_id'     => $roleId,
@@ -844,7 +842,7 @@ class EmployeeController extends Controller
             Log::info('Employee record created', [
                 'employee_id' => $employeeId,
                 'eci' => $request->eci,
-                'role_id' => RoleId::EC_USER->value
+                'role_ids' => \App\Models\EmployeeRole::newEmployeeRoleIds(),
             ]);
 
             // Create basic data

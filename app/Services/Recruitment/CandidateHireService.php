@@ -2,7 +2,6 @@
 
 namespace App\Services\Recruitment;
 
-use App\Enums\RoleId;
 use App\Models\Employee;
 use App\Models\EmployeeBasicData;
 use Illuminate\Support\Facades\DB;
@@ -38,9 +37,8 @@ class CandidateHireService
                 'updated_at' => now(),
             ]);
 
-            $userSystemRegisteredId = DB::table('employee_role')->where('name', 'User System Registered')->value('id');
             $now = now();
-            foreach (array_filter([$userSystemRegisteredId, RoleId::EC_USER->value]) as $roleId) {
+            foreach (\App\Models\EmployeeRole::newEmployeeRoleIds() as $roleId) {
                 DB::table('employee_role_assignment')->insertOrIgnore([
                     'employee_id' => $employeeId,
                     'role_id'     => $roleId,
