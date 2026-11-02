@@ -360,7 +360,8 @@ Route::middleware(['web'])->group(function () {
         Route::post('/{contactId}/delete', [CustomerContactController::class, 'destroy'])->middleware('customer.section:contact');
         // Jarvies login management per contact person
         Route::post('/{contactId}/create-login', [CustomerContactController::class, 'createLogin'])->middleware('customer.section:contact');
-        Route::delete('/{contactId}/revoke-login', [CustomerContactController::class, 'revokeLogin'])->middleware('customer.section:contact');
+        Route::post('/{contactId}/send-reset-link', [CustomerContactController::class, 'sendResetLink'])->middleware('customer.section:contact');
+        Route::delete('/{contactId}/revoke-login',[CustomerContactController::class, 'revokeLogin'])->middleware('customer.section:contact');
         Route::post('/{contactId}/revoke-login', [CustomerContactController::class, 'revokeLogin'])->middleware('customer.section:contact');
         Route::patch('/{contactId}/toggle-view-all', [CustomerContactController::class, 'toggleViewAllTickets'])->middleware('customer.section:contact');
     });
