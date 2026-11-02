@@ -57,6 +57,14 @@ A ticket belongs to **one** Delivery Support. If it was linked wrongly, remove t
 > [!WARNING]
 > `Hide Ticket` and `Delete Ticket` are only for some roles and affect everyone who sees the ticket. Use them only when you are sure you are allowed to.
 
+## Rules to know
+
+- A person who is inactive, blocked or flagged for deletion cannot be a ticket lead or a member. EcoSystem refuses even if the request is sent directly.
+- Once a ticket has a module (it can have more than one), the ticket lead and the members must be chosen from the people qualified in that module. Otherwise EcoSystem says the person must be a member of the ticket's module.
+- Only the administrator, Helpdesk or the assigned ticket lead can add or manage members. The ticket lead cannot also be added as a member, and a person cannot be added twice.
+- `Take This Ticket` makes you the ticket lead at once. It only ever assigns you, never someone else.
+- External employees cannot change tickets.
+
 ## What happens next
 
 The ticket appears in the `My Tickets` tab of its ticket lead and team members, and in `My Tasks`. Mandays proposals use the skills of the ticket lead and members, so keep the team accurate.

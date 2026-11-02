@@ -65,6 +65,18 @@ Administrators and the roles that review incoming requests, such as Helpdesk, De
 
 Select `View Rejected` (the badge shows how many). You can search by customer or description, read the `Rejection Reason`, and open `Detail`. Use `Back to Ticket Validation` to return.
 
+## Rules to know
+
+- `Type` and `Priority` are required to approve. The types are `Incident`, `Change Request`, `Service Request`, `EWA`, `RISE` and `Consult`. The priorities are `Very High`, `High`, `Medium` and `Low`. `Scale` is optional (`Simple`, `Medium` or `Complex`).
+- Approving needs a finished AI analysis. If it failed, use `Re-analyze`. If an analysis is already running, wait for it.
+- `Delivery Support` is required when the customer has any delivery support, and it must belong to that same customer.
+- The new ticket starts as `Open` and gets the next ticket number: the year and month (for example `2611`) followed by a running four-digit number.
+- The SLA clock of an `Incident`, `Change Request` or `Consult` request starts when the customer sent it, not when you approve it. Time spent waiting in `Ticket Validation` therefore counts against the response target, so work through pending requests quickly.
+- Rejecting needs a written reason of at most 1000 characters. The customer sees a portal notification that starts with the reason, and the rejection is synced to the customer portal.
+- Approving also notifies the customer, the team and the Teams chat of the ticket.
+- Once a request is approved or rejected it cannot be processed again, and its AI analysis and `Ask a question` are closed. A question can be at most 2000 characters.
+- If the AI analysis mentions the customer's stored credential notes, only roles with `Customer Credential` view access can read it. Others classify the request by hand.
+
 ## What happens next
 
 An approved request appears in `Ticket` with its lead and team, and the customer is told. A rejected request stays in the rejected list with your reason, and the customer receives a notice that includes it.

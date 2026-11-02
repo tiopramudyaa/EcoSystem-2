@@ -57,6 +57,14 @@ Sebuah ticket hanya milik **satu** Delivery Support. Jika salah kaitan, lepas du
 > [!WARNING]
 > `Hide Ticket` dan `Delete Ticket` hanya untuk role tertentu dan berdampak ke semua orang yang melihat ticket itu. Pakai hanya bila Anda yakin berwenang.
 
+## Aturan yang perlu diketahui
+
+- Orang yang nonaktif, diblokir, atau ditandai untuk dihapus tidak bisa menjadi ticket lead atau member. EcoSystem menolaknya meskipun permintaan dikirim langsung.
+- Setelah ticket punya module (boleh lebih dari satu), ticket lead dan member harus dipilih dari orang yang berkualifikasi di module itu. Bila tidak, EcoSystem menyatakan orang itu harus anggota module ticket.
+- Hanya administrator, Helpdesk, atau ticket lead yang ditugaskan yang dapat menambah atau mengelola member. Ticket lead tidak bisa sekaligus ditambahkan sebagai member, dan satu orang tidak bisa ditambahkan dua kali.
+- `Take This Ticket` langsung menjadikan Anda ticket lead. Tombol ini hanya menugaskan diri Anda, tidak pernah orang lain.
+- Karyawan external tidak dapat mengubah ticket.
+
 ## Apa yang terjadi selanjutnya
 
 Ticket muncul di tab `My Tickets` milik ticket lead dan anggota timnya, serta di `My Tasks`. Usulan mandays memakai keahlian ticket lead dan anggota, jadi jaga tim tetap akurat.

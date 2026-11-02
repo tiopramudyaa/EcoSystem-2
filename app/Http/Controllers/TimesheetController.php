@@ -922,6 +922,13 @@ class TimesheetController extends Controller
             // Auto-assign period if date changed or period not yet set
             $this->assignPeriod($validated);
 
+            // A rejected entry that the owner corrects goes back to draft so it can be
+            // submitted again (submit() only accepts drafts); the old reason is cleared.
+            if ($timesheet->status === 'rejected') {
+                $validated['status'] = 'draft';
+                $validated['rejection_reason'] = null;
+            }
+
             if ($isProject) {
                 $overlapError = null;
                 DB::transaction(function () use ($timesheet, $validated, &$overlapError) {
