@@ -26,8 +26,10 @@ class DeliveryProjectDataController extends Controller
         
         $data = [];
         
+        $groupsByPhase = $this->rootGroupsByPhase($project, $phases);
+
         foreach ($phases as $phase) {
-            $groups = $this->getPhaseGroupsHierarchical($project, $phase);
+            $groups = $this->getPhaseGroupsHierarchical($project, $phase, $groupsByPhase->get($phase->id, collect()));
             
             $phaseDates = $this->calculatePhaseDates($groups);
             $phaseActualDates = $this->calculatePhaseActualDates($groups);
@@ -235,7 +237,7 @@ class DeliveryProjectDataController extends Controller
         return [
             'children' => function($query) {
                 $query->where('is_group', true)
-                    ->with(['children', 'stages', 'directActivities'])
+                    ->with(['children', 'stages', 'directActivities.activity'])
                     ->orderBy('order_sequence');
             },
             'stages' => function($q) {
@@ -248,7 +250,7 @@ class DeliveryProjectDataController extends Controller
             },
             // Aktivitas tanpa stage — bentuk data Project Planning saat ini
             'directActivities' => function($q) {
-                $q->orderBy('order_sequence');
+                $q->with('activity')->orderBy('order_sequence');
             },
         ];
     }
@@ -258,7 +260,7 @@ class DeliveryProjectDataController extends Controller
         return [
             'children' => function($childQuery) {
                 $childQuery->where('is_group', true)
-                    ->with(['children', 'stages', 'directActivities'])
+                    ->with(['children', 'stages', 'directActivities.activity'])
                     ->orderBy('order_sequence');
             },
             'stages' => function($stageQuery) {
@@ -272,15 +274,19 @@ class DeliveryProjectDataController extends Controller
             // Aktivitas yang menempel langsung ke group (tanpa stage) —
             // ini bentuk data yang dipakai Project Planning saat ini.
             'directActivities' => function($actQuery) {
-                $actQuery->orderBy('order_sequence');
+                $actQuery->with('activity')->orderBy('order_sequence');
             },
         ];
     }
 
-    private function getPhaseGroupsHierarchical(DeliveryProject $project, DeliveryProjectPhase $phase)
+    /**
+     * Root group semua phase dalam satu rangkaian query (bukan satu rangkaian per phase),
+     * dikelompokkan per phase_id. Isi eager load sama dengan sebelumnya.
+     */
+    private function rootGroupsByPhase(DeliveryProject $project, $phases)
     {
         $groups = DeliveryProjectPlanning::where('delivery_projects_id', $project->id)
-            ->where('phase_id', $phase->id)
+            ->whereIn('phase_id', $phases->pluck('id'))
             ->where('is_group', true)
             ->whereNull('parent_id')
             ->with([
@@ -317,24 +323,17 @@ class DeliveryProjectDataController extends Controller
             ->orderBy('order_sequence')
             ->get();
 
-        // Load relationships manually
-        foreach ($groups as $group) {
-            if ($group->stages) {
-                foreach ($group->stages as $stage) {
-                    if ($stage->activities) {
-                        foreach ($stage->activities as $activity) {
-                            if (method_exists($activity, 'children') && !$activity->relationLoaded('children')) {
-                                $activity->load('children');
-                            }
+        // Isi activities semua stage (grup + sub-grup) dalam batch, bukan per stage/activity
+        \App\Models\ActivityStage::hydrateActivities(
+            $groups->flatMap(fn ($g) => $g->stages->concat($g->children->flatMap(fn ($c) => $c->stages)))
+        );
 
-                            if ($activity->activity_id && method_exists($activity, 'activity') && !$activity->relationLoaded('activity')) {
-                                $activity->load('activity');
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        return $groups->groupBy('phase_id');
+    }
+
+    private function getPhaseGroupsHierarchical(DeliveryProject $project, DeliveryProjectPhase $phase, $preloadedGroups = null)
+    {
+        $groups = $preloadedGroups ?? $this->rootGroupsByPhase($project, collect([$phase]))->get($phase->id, collect());
 
         $result = [];
         foreach ($groups as $group) {

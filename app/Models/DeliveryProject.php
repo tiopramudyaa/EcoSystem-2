@@ -538,6 +538,31 @@ class DeliveryProject extends Model
     }
 
     /**
+     * Preload massal semua relasi yang dibaca accessor progress (calculated_progress,
+     * planned_progress, calculated_weight) untuk banyak project sekaligus. Tanpa ini
+     * setiap group dan activity memicu query sendiri (N+1). Aman dipanggil berulang.
+     *
+     * @param iterable<self> $projects
+     */
+    public static function preloadProgressRelations(iterable $projects): void
+    {
+        $projects = new \Illuminate\Database\Eloquent\Collection(collect($projects)->all());
+        if ($projects->isEmpty()) {
+            return;
+        }
+
+        $projects->loadMissing('plannings');
+
+        $plannings = new \Illuminate\Database\Eloquent\Collection($projects->flatMap->plannings->all());
+        $plannings->loadMissing('children');
+
+        $groups = new \Illuminate\Database\Eloquent\Collection($plannings->where('is_group', true)->all());
+        $groups->loadMissing(['stages.projectActivities', 'directActivities.activity', 'directActivities.children']);
+
+        \App\Models\ActivityStage::hydrateActivities($groups->flatMap->stages);
+    }
+
+    /**
      * Bobot-tertimbang mentah (belum dibulatkan) untuk progres AKTUAL & RENCANA:
      * Σ(bobot phase × progres phase) ÷ Σbobot phase, dengan progres phase sendiri
      * = Σ(bobot group × progres group) ÷ Σbobot group.
@@ -554,11 +579,9 @@ class DeliveryProject extends Model
     {
         $empty = ['actual' => null, 'planned' => null];
 
-        $groups = $this->plannings->where('is_group', true);
+        self::preloadProgressRelations([$this]);
 
-        foreach ($groups as $group) {
-            $group->loadMissing('stages');
-        }
+        $groups = $this->plannings->where('is_group', true);
 
         $visiblePhases = $this->phases()
             ->where('is_visible', true)

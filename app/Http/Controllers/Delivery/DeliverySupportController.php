@@ -51,7 +51,7 @@ class DeliverySupportController extends Controller
      */
     public function index(Request $request)
     {
-        $query = DeliverySupport::with(['client', 'deliveryOwner', 'supportManagers.basicData']);
+        $query = DeliverySupport::with(['client.basicData', 'deliveryOwner', 'supportManagers.basicData']);
 
         // Search
         if ($request->filled('search')) {

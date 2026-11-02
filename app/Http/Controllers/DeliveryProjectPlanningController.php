@@ -18,10 +18,14 @@ class DeliveryProjectPlanningController extends Controller
         if (!$project) {
             Log::info('📋 Viewing all projects planning index');
 
-            $projects = DeliveryProject::with(['client', 'phases' => function($query) {
+            $projects = DeliveryProject::with(['client.basicData', 'phases' => function($query) {
                 $query->where('is_visible', true)
                     ->orderBy('order_sequence', 'asc');
             }])->get();
+
+            // View menghitung progress per project dari plannings; preload sekali supaya
+            // tidak ada query per project / group / activity.
+            DeliveryProject::preloadProgressRelations($projects);
 
             return view('delivery.project.project-planning.index', compact('projects'));
         }

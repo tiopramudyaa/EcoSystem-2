@@ -222,11 +222,15 @@ class DeliveryProjectPlanning extends Model
 
             if ($stages->isEmpty()) {
                 // ✅ FIX: check direct activities (Phase → Group → Activity, no stage)
-                $directActivities = self::where('parent_id', $this->id)
-                    ->where('is_group', false)
-                    ->whereNull('stage_id')
-                    ->with('activity')
-                    ->get();
+                // Pakai relasi directActivities bila sudah di-eager-load (filter sama),
+                // supaya tidak query per group.
+                $directActivities = $this->relationLoaded('directActivities')
+                    ? $this->directActivities
+                    : self::where('parent_id', $this->id)
+                        ->where('is_group', false)
+                        ->whereNull('stage_id')
+                        ->with('activity')
+                        ->get();
 
                 if ($directActivities->isNotEmpty()) {
                     $totalWeight     = 0;
@@ -377,11 +381,15 @@ class DeliveryProjectPlanning extends Model
 
             // ── Group with no stages → direct activities (Phase → Group → Activity)
             if ($stages->isEmpty()) {
-                $directActivities = self::where('parent_id', $this->id)
-                    ->where('is_group', false)
-                    ->whereNull('stage_id')
-                    ->with('activity')
-                    ->get();
+                // Pakai relasi directActivities bila sudah di-eager-load (filter sama),
+                // supaya tidak query per group.
+                $directActivities = $this->relationLoaded('directActivities')
+                    ? $this->directActivities
+                    : self::where('parent_id', $this->id)
+                        ->where('is_group', false)
+                        ->whereNull('stage_id')
+                        ->with('activity')
+                        ->get();
 
                 if ($directActivities->isNotEmpty()) {
                     $totalWeight = 0;

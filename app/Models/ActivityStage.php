@@ -95,8 +95,13 @@ class ActivityStage extends Model
      */
     public function activities(): HasMany
     {
-        // ✅ NEW: Prefer project_activities if available
-        if ($this->projectActivities()->exists()) {
+        // ✅ NEW: Prefer project_activities if available. Pakai relasi yang sudah
+        // di-eager-load bila ada supaya tidak menjalankan exists() per stage.
+        $hasProjectActivities = $this->relationLoaded('projectActivities')
+            ? $this->projectActivities->isNotEmpty()
+            : $this->projectActivities()->exists();
+
+        if ($hasProjectActivities) {
             return $this->projectActivities();
         }
         
@@ -104,6 +109,45 @@ class ActivityStage extends Model
         return $this->hasMany(DeliveryProjectPlanning::class, 'stage_id')
             ->where('is_group', false)
             ->orderBy('order_sequence');
+    }
+
+    /**
+     * Isi relasi `activities` untuk banyak stage sekaligus (maks. 2 query),
+     * menggantikan lazy-load per stage dan ->load('children'/'activity') per
+     * activity. Stage dengan project_activities memakai itu; sisanya memakai
+     * struktur lama (DeliveryProjectPlanning) seperti fallback activities().
+     *
+     * @param iterable<self> $stages
+     */
+    public static function hydrateActivities(iterable $stages): void
+    {
+        $stages = new \Illuminate\Database\Eloquent\Collection(collect($stages)->filter()->unique('id')->values()->all());
+        if ($stages->isEmpty()) {
+            return;
+        }
+
+        $stages->loadMissing('projectActivities');
+
+        $legacy = $stages->filter(fn ($s) => $s->projectActivities->isEmpty());
+
+        foreach ($stages->diff($legacy) as $stage) {
+            $stage->setRelation('activities', $stage->projectActivities);
+        }
+
+        if ($legacy->isEmpty()) {
+            return;
+        }
+
+        $rows = DeliveryProjectPlanning::whereIn('stage_id', $legacy->pluck('id'))
+            ->where('is_group', false)
+            ->with(['children', 'activity'])
+            ->orderBy('order_sequence')
+            ->get()
+            ->groupBy('stage_id');
+
+        foreach ($legacy as $stage) {
+            $stage->setRelation('activities', $rows->get($stage->id, new \Illuminate\Database\Eloquent\Collection()));
+        }
     }
 
     public function hasProjectActivities(): bool

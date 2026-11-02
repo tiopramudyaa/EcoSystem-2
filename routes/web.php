@@ -782,10 +782,6 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// ==================== DELIVERY PLANNING ROUTES ====================
-// Include delivery planning module routes
-require __DIR__ . '/delivery.php';
-
 // ==================== DELIVERY SUPPORT ROUTES ====================
 // Include delivery support module routes
 require __DIR__ . '/delivery-support.php';

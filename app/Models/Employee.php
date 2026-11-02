@@ -65,6 +65,9 @@ class Employee extends Model
      */
     private ?array $memoizedRoleIdsCache = null;
 
+    /** @var array<string,bool> cache hasMenuPermission per instance, kunci "slug|permission" */
+    private array $menuPermissionCache = [];
+
     private function memoizedRoleIds(): array
     {
         if ($this->memoizedRoleIdsCache === null) {
@@ -134,15 +137,7 @@ class Employee extends Model
     /** Cek apakah employee boleh akses menu berdasarkan slug */
     public function canAccessMenu(string $slug): bool
     {
-        $roleIds = $this->memoizedRoleIds();
-
-        return Menu::where('slug', $slug)
-            ->whereHas('roles', function ($q) use ($roleIds) {
-                $q->whereIn('employee_role.id', $roleIds)
-                  ->where('role_menu.can_view', true);
-            })
-            ->where('is_active', true)
-            ->exists();
+        return $this->hasMenuPermission($slug, 'can_view');
     }
 
     /**
@@ -151,15 +146,23 @@ class Employee extends Model
      */
     public function hasMenuPermission(string $slug, string $permission = 'can_view'): bool
     {
-        $roleIds = $this->memoizedRoleIds();
+        $key = $slug . '|' . $permission;
 
-        return Menu::where('slug', $slug)
-            ->whereHas('roles', function ($q) use ($roleIds, $permission) {
-                $q->whereIn('employee_role.id', $roleIds)
-                  ->where("role_menu.{$permission}", true);
-            })
-            ->where('is_active', true)
-            ->exists();
+        // Hasil di-cache per instance (sama seperti role ID) supaya gating banyak
+        // section di satu halaman tidak menjalankan 1 query per pengecekan.
+        if (!array_key_exists($key, $this->menuPermissionCache)) {
+            $roleIds = $this->memoizedRoleIds();
+
+            $this->menuPermissionCache[$key] = Menu::where('slug', $slug)
+                ->whereHas('roles', function ($q) use ($roleIds, $permission) {
+                    $q->whereIn('employee_role.id', $roleIds)
+                      ->where("role_menu.{$permission}", true);
+                })
+                ->where('is_active', true)
+                ->exists();
+        }
+
+        return $this->menuPermissionCache[$key];
     }
 
     /** Alias ringkas untuk can_view */

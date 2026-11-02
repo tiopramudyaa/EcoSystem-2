@@ -497,12 +497,12 @@ class DeliveryProjectController extends Controller
             'closedBy.basicData',
             'documents',
             'teamMembers.basicData',
-            'plannings.phase'
+            'plannings.phase',
+            'plannings.activity'
         ]);
 
-        $planning = $project->plannings()
-            ->whereNotNull('start_date')
-            ->get();
+        // Pakai plannings yang sudah di-eager-load di atas (bukan query ulang).
+        $planning = $project->plannings->filter(fn ($p) => $p->start_date !== null);
 
         $firstStartDate = null;
         $lastEndDate = null;
