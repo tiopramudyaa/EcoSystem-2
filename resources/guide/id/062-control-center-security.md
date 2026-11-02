@@ -1,6 +1,6 @@
 ---
 key: control-center-security
-chapter: administration
+chapter: control-center
 order: 62
 title: Control Center - Keamanan dan halaman platform
 summary: Pantau aktivitas mencurigakan, periksa tugas terjadwal, ikuti pemakaian AI, dan atur verifikasi 2 langkah serta tema musiman.

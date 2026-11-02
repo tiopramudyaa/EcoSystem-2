@@ -1,6 +1,6 @@
 ---
 key: delivery-types
-chapter: administration
+chapter: management
 order: 131
 title: Project Type, Support Type dan Document Type
 summary: Pelihara daftar yang dipakai di formulir Delivery Project, formulir Delivery Support, dan formulir dokumen tiket.

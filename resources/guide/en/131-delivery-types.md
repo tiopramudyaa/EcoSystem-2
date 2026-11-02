@@ -1,6 +1,6 @@
 ---
 key: delivery-types
-chapter: administration
+chapter: management
 order: 131
 title: Project Type, Support Type and Document Type
 summary: Maintain the lists used in the Delivery Project form, the Delivery Support form and the ticket document form.
