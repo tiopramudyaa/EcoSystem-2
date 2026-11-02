@@ -21,7 +21,6 @@
  */
 return [
 
-    'protected_role_id' => 1, // EC Administrator (App\Enums\RoleId::EC_ADMINISTRATOR)
 
     'protected' => ['management.roles', 'management.permissions'],
 

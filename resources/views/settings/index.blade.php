@@ -1,8 +1,8 @@
 @extends('dashboard')
 
-@section('title', 'Settings')
-@section('page-title', 'Settings')
-@section('page-subtitle', 'Manage your workspace preferences and account security')
+@section('title', __('ui.settings.title'))
+@section('page-title', __('ui.settings.title'))
+@section('page-subtitle', __('ui.settings.subtitle'))
 
 @section('content')
 
@@ -13,12 +13,12 @@
         <nav>
             @php
             $navItems = [
-                ['id'=>'appearance',    'icon'=>'fa-paint-brush', 'label'=>'Appearance'],
-                ['id'=>'preferences',   'icon'=>'fa-sliders-h',   'label'=>'Preferences'],
-                ['id'=>'notifications', 'icon'=>'fa-bell',        'label'=>'Notifications'],
-                ['id'=>'security',      'icon'=>'fa-shield-alt',  'label'=>'Security'],
-                ['id'=>'language',      'icon'=>'fa-globe',       'label'=>'Language & Region'],
-                ['id'=>'about',         'icon'=>'fa-info-circle', 'label'=>'About'],
+                ['id'=>'appearance',    'icon'=>'fa-paint-brush', 'label'=>__('ui.settings.nav.appearance')],
+                ['id'=>'preferences',   'icon'=>'fa-sliders-h',   'label'=>__('ui.settings.nav.preferences')],
+                ['id'=>'notifications', 'icon'=>'fa-bell',        'label'=>__('ui.settings.nav.notifications')],
+                ['id'=>'security',      'icon'=>'fa-shield-alt',  'label'=>__('ui.settings.nav.security')],
+                ['id'=>'language',      'icon'=>'fa-globe',       'label'=>__('ui.settings.nav.language')],
+                ['id'=>'about',         'icon'=>'fa-info-circle', 'label'=>__('ui.settings.nav.about')],
             ];
             @endphp
             <ul class="space-y-0.5 px-2">
@@ -50,17 +50,17 @@
             {{-- Top bar --}}
             <div class="flex items-center justify-between px-8 py-5 border-b border-gray-100">
                 <div>
-                    <h2 class="text-sm font-semibold text-gray-900">Appearance</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">Customize how ECoSystem looks for you</p>
+                    <h2 class="text-sm font-semibold text-gray-900">{{ __('ui.settings.appearance.title') }}</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ __('ui.settings.appearance.subtitle') }}</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <button onclick="resetSettings()"
                         class="px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-                        Reset
+                        {{ __('ui.settings.reset') }}
                     </button>
                     <button onclick="saveSettings()"
                         class="px-4 py-1.5 text-xs font-semibold text-white bg-red-700 hover:bg-red-800 rounded-lg transition">
-                        Save changes
+                        {{ __('ui.settings.save') }}
                     </button>
                 </div>
             </div>
@@ -71,13 +71,13 @@
                 <div class="px-8 py-6">
                     <div class="flex items-start justify-between gap-8">
                         <div class="w-48 flex-shrink-0">
-                            <p class="text-sm font-medium text-gray-800">Theme</p>
-                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">Choose how the interface looks to you</p>
+                            <p class="text-sm font-medium text-gray-800">{{ __('ui.settings.appearance.theme') }}</p>
+                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ __('ui.settings.appearance.theme_d') }}</p>
                         </div>
                         <div class="flex items-center gap-3">
-                            @foreach(['light'=>['Light','fa-sun','bg-white border border-gray-200','text-yellow-500'],
-                                      'dark' =>['Dark', 'fa-moon','bg-gray-900','text-blue-400'],
-                                      'auto' =>['Auto', 'fa-desktop','bg-gradient-to-r from-gray-900 to-white','text-gray-400']]
+                            @foreach(['light'=>[__('ui.settings.appearance.light'),'fa-sun','bg-white border border-gray-200','text-yellow-500'],
+                                      'dark' =>[__('ui.settings.appearance.dark'), 'fa-moon','bg-gray-900','text-blue-400'],
+                                      'auto' =>[__('ui.settings.appearance.auto'), 'fa-desktop','bg-gradient-to-r from-gray-900 to-white','text-gray-400']]
                                      as $tk=>[$tl,$ti,$tBg,$tiC])
                             <button type="button" onclick="selectTheme('{{ $tk }}')"
                                 class="theme-option flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all hover:border-red-400
@@ -96,8 +96,8 @@
                 <div class="px-8 py-6">
                     <div class="flex items-start justify-between gap-8">
                         <div class="w-48 flex-shrink-0">
-                            <p class="text-sm font-medium text-gray-800">Accent color</p>
-                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">Used for buttons and active states</p>
+                            <p class="text-sm font-medium text-gray-800">{{ __('ui.settings.appearance.accent') }}</p>
+                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ __('ui.settings.appearance.accent_d') }}</p>
                         </div>
                         <div class="flex flex-wrap gap-2.5">
                             @php
@@ -118,28 +118,28 @@
                             {{-- Warna bebas (color picker). Dibungkus <label> agar kotaknya membuka pemilih warna bawaan peramban;
                                  inputnya sr-only tapi tetap bisa difokus dengan papan ketik. Teks sidebar PUTIH, jadi warna yang
                                  terlalu terang otomatis digelapkan (lihat accentReadable di bawah dan SettingsController). --}}
-                            <label id="customColorSwatch" title="Custom color"
+                            <label id="customColorSwatch" title="{{ __('ui.settings.appearance.custom') }}"
                                 class="color-custom w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all hover:scale-110 shadow-sm focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-gray-400
                                        {{ $accentIsCustom ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : '' }}"
                                 style="background:{{ $accentIsCustom ? $preferences['primary_color'] : 'conic-gradient(#e53935,#fb8c00,#fdd835,#43a047,#1e88e5,#8e24aa,#e53935)' }}">
-                                <input type="color" id="customColorInput" class="sr-only" value="{{ $preferences['primary_color'] }}" aria-label="Custom accent color" oninput="pickCustomColor(this.value)">
+                                <input type="color" id="customColorInput" class="sr-only" value="{{ $preferences['primary_color'] }}" aria-label="{{ __('ui.settings.appearance.custom') }}" oninput="pickCustomColor(this.value)">
                                 <i id="customColorIcon" class="fas {{ $accentIsCustom ? 'fa-check' : 'fa-plus' }} text-white text-xs" style="text-shadow:0 0 3px rgba(0,0,0,.45)"></i>
                             </label>
                         </div>
                     </div>
-                    <p id="customColorNote" class="hidden mt-2 text-xs text-amber-600 text-right">Adjusted to a darker shade so white text stays readable.</p>
+                    <p id="customColorNote" class="hidden mt-2 text-xs text-amber-600 text-right">{{ __('ui.settings.appearance.darkened') }}</p>
                 </div>
 
                 {{-- Sidebar Style --}}
                 <div class="px-8 py-6">
                     <div class="flex items-start justify-between gap-8">
                         <div class="w-48 flex-shrink-0">
-                            <p class="text-sm font-medium text-gray-800">Sidebar style</p>
-                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">Background of the left navigation</p>
+                            <p class="text-sm font-medium text-gray-800">{{ __('ui.settings.appearance.sidebar') }}</p>
+                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ __('ui.settings.appearance.sidebar_d') }}</p>
                         </div>
                         <div class="flex items-center gap-3">
-                            @foreach(['gradient'=>['Gradient','bg-gradient-to-br from-red-800 to-red-950'],
-                                      'solid'   =>['Solid',   'bg-red-800']] as $sk=>[$sl,$sBg])
+                            @foreach(['gradient'=>[__('ui.settings.appearance.gradient'),'bg-gradient-to-br from-red-800 to-red-950'],
+                                      'solid'   =>[__('ui.settings.appearance.solid'),   'bg-red-800']] as $sk=>[$sl,$sBg])
                             <button type="button" onclick="selectSidebarStyle('{{ $sk }}')"
                                 class="flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all hover:border-red-400
                                        {{ $preferences['sidebar_style']===$sk ? 'border-red-600 bg-red-50/50' : 'border-gray-200' }}">
@@ -155,11 +155,11 @@
                 <div class="px-8 py-6">
                     <div class="flex items-start justify-between gap-8">
                         <div class="w-48 flex-shrink-0">
-                            <p class="text-sm font-medium text-gray-800">Font size</p>
-                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">Text size across the interface</p>
+                            <p class="text-sm font-medium text-gray-800">{{ __('ui.settings.appearance.font') }}</p>
+                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ __('ui.settings.appearance.font_d') }}</p>
                         </div>
                         <div class="flex items-center gap-3">
-                            @foreach(['small'=>['Small','text-sm'],'medium'=>['Medium','text-base'],'large'=>['Large','text-lg']] as $sk=>[$sl,$cls])
+                            @foreach(['small'=>[__('ui.settings.appearance.small'),'text-sm'],'medium'=>[__('ui.settings.appearance.medium'),'text-base'],'large'=>[__('ui.settings.appearance.large'),'text-lg']] as $sk=>[$sl,$cls])
                             <button type="button" onclick="selectFontSize('{{ $sk }}')"
                                 class="flex flex-col items-center gap-1.5 w-20 p-2.5 border-2 rounded-xl transition-all hover:border-red-400
                                        {{ $preferences['font_size']===$sk ? 'border-red-600 bg-red-50/50' : 'border-gray-200' }}">
@@ -173,8 +173,8 @@
 
                 {{-- Toggles --}}
                 @foreach([
-                    ['compactMode',    'Compact mode',    'Reduce spacing and padding throughout the UI',       $preferences['compact_mode']],
-                    ['showAnimations', 'Show animations', 'Enable smooth transitions and motion effects',        $preferences['show_animations']],
+                    ['compactMode',    __('ui.settings.appearance.compact'),    __('ui.settings.appearance.compact_d'),       $preferences['compact_mode']],
+                    ['showAnimations', __('ui.settings.appearance.anim'), __('ui.settings.appearance.anim_d'),        $preferences['show_animations']],
                 ] as [$id,$title,$desc,$checked])
                 <div class="px-8 py-5 flex items-center justify-between">
                     <div>
@@ -197,19 +197,19 @@
         <div id="tab-preferences" class="settings-content hidden">
             <div class="flex items-center justify-between px-8 py-5 border-b border-gray-100">
                 <div>
-                    <h2 class="text-sm font-semibold text-gray-900">Preferences</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">Control how the application behaves</p>
+                    <h2 class="text-sm font-semibold text-gray-900">{{ __('ui.settings.preferences.title') }}</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ __('ui.settings.preferences.subtitle') }}</p>
                 </div>
                 <button onclick="saveSettings()"
                     class="px-4 py-1.5 text-xs font-semibold text-white bg-red-700 hover:bg-red-800 rounded-lg transition">
-                    Save changes
+                    {{ __('ui.settings.save') }}
                 </button>
             </div>
             <div class="divide-y divide-gray-100">
                 @foreach([
-                    ['autoSave',         'fa-save',    'Auto-save',          'Automatically save your work in progress',        true],
-                    ['autoRefresh',      'fa-sync-alt','Auto-refresh',       'Refresh data automatically in the background',    false],
-                    ['keyboardShortcuts','fa-keyboard','Keyboard shortcuts',  'Enable global keyboard shortcut bindings',        true],
+                    ['autoSave',         'fa-save',    __('ui.settings.preferences.autosave'),          __('ui.settings.preferences.autosave_d'),        true],
+                    ['autoRefresh',      'fa-sync-alt',__('ui.settings.preferences.refresh'),       __('ui.settings.preferences.refresh_d'),    false],
+                    ['keyboardShortcuts','fa-keyboard',__('ui.settings.preferences.keys'),  __('ui.settings.preferences.keys_d'),        true],
                 ] as [$id,$icon,$title,$desc,$checked])
                 <div class="px-8 py-5 flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -234,12 +234,12 @@
         <div id="tab-notifications" class="settings-content hidden">
             <div class="flex items-center justify-between px-8 py-5 border-b border-gray-100">
                 <div>
-                    <h2 class="text-sm font-semibold text-gray-900">Notifications</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">Control how and when you receive alerts</p>
+                    <h2 class="text-sm font-semibold text-gray-900">{{ __('ui.settings.notifications.title') }}</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ __('ui.settings.notifications.subtitle') }}</p>
                 </div>
                 <button onclick="saveSettings()"
                     class="px-4 py-1.5 text-xs font-semibold text-white bg-red-700 hover:bg-red-800 rounded-lg transition">
-                    Save changes
+                    {{ __('ui.settings.save') }}
                 </button>
             </div>
             <div class="divide-y divide-gray-100">
@@ -247,8 +247,8 @@
                 {{-- Master toggle --}}
                 <div class="px-8 py-5 flex items-center justify-between bg-gray-50/60">
                     <div>
-                        <p class="text-sm font-semibold text-gray-800">Enable notifications</p>
-                        <p class="text-xs text-gray-400 mt-0.5">Master switch — controls all notification types</p>
+                        <p class="text-sm font-semibold text-gray-800">{{ __('ui.settings.notifications.enable') }}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">{{ __('ui.settings.notifications.enable_d') }}</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-8">
                         <input type="checkbox" id="notificationsEnabled" class="sr-only peer" {{ $preferences['notifications_enabled'] ? 'checked' : '' }}>
@@ -257,8 +257,8 @@
                 </div>
 
                 @foreach([
-                    ['emailNotifications','fa-envelope',   'Email notifications',  'Receive notifications via email',          $preferences['email_notifications']],
-                    ['pushNotifications', 'fa-mobile-alt', 'Push notifications',   'Browser and device push alerts',           $preferences['push_notifications']],
+                    ['emailNotifications','fa-envelope',   __('ui.settings.notifications.email'),  __('ui.settings.notifications.email_d'),          $preferences['email_notifications']],
+                    ['pushNotifications', 'fa-mobile-alt', __('ui.settings.notifications.push'),   __('ui.settings.notifications.push_d'),           $preferences['push_notifications']],
                 ] as [$id,$icon,$title,$desc,$checked])
                 <div class="px-8 py-5 flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -277,13 +277,13 @@
 
                 {{-- Sound divider --}}
                 <div class="px-8 pt-6 pb-2">
-                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notification sounds</p>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">{{ __('ui.settings.notifications.sounds') }}</p>
                 </div>
 
                 @foreach([
-                    ['soundWrapStaging','soundPanelStaging','soundLabelStaging','notif_sound_staging','Ticket Validation',  'Email baru masuk ke antrian Ticket Validation'],
-                    ['soundWrapTicket', 'soundPanelTicket', 'soundLabelTicket', 'notif_sound_ticket', 'Notification',       'Badge notifikasi umum (approval, timesheet, dll)'],
-                    ['soundWrapChat',   'soundPanelChat',   'soundLabelChat',   'notif_sound_chat',   'Ticket Reply',       'Balasan dan pesan masuk di tiket'],
+                    ['soundWrapStaging','soundPanelStaging','soundLabelStaging','notif_sound_staging',__('ui.settings.notifications.staging'),  __('ui.settings.notifications.staging_d')],
+                    ['soundWrapTicket', 'soundPanelTicket', 'soundLabelTicket', 'notif_sound_ticket', __('ui.settings.notifications.general'),       __('ui.settings.notifications.general_d')],
+                    ['soundWrapChat',   'soundPanelChat',   'soundLabelChat',   'notif_sound_chat',   __('ui.settings.notifications.reply'),       __('ui.settings.notifications.reply_d')],
                 ] as [$wrapId,$panelId,$labelId,$key,$title,$desc])
                 <div class="px-8 py-5 flex items-center justify-between gap-4">
                     <div class="min-w-0">
@@ -294,12 +294,12 @@
                         <div class="se-wrap w-44" id="{{ $wrapId }}">
                             <button type="button" class="se-btn w-full flex items-center justify-between px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white hover:border-gray-300 transition text-gray-700"
                                 onclick="_soundDDToggle('{{ $wrapId }}')">
-                                <span class="se-label is-placeholder truncate" id="{{ $labelId }}">Loading…</span>
+                                <span class="se-label is-placeholder truncate" id="{{ $labelId }}">{{ __('ui.settings.notifications.loading') }}</span>
                                 <i class="fas fa-chevron-down text-gray-400 text-[10px] se-arrow ml-2 flex-shrink-0"></i>
                             </button>
                             <div class="sound-dd-panel" id="{{ $panelId }}" role="listbox"></div>
                         </div>
-                        <button type="button" title="Preview"
+                        <button type="button" title="{{ __('ui.settings.notifications.preview') }}"
                             onclick="previewSound(document.getElementById('{{ $wrapId }}').dataset.value)"
                             class="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg text-gray-400 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition">
                             <i class="fas fa-play text-xs"></i>
@@ -311,7 +311,7 @@
                 <div class="px-8 py-4">
                     <p class="text-xs text-gray-400">
                         <i class="fas fa-info-circle mr-1"></i>
-                        Sound settings are stored in your browser. Use the 🔊 icon in the header to toggle sound on/off.
+                        {{ __('ui.settings.notifications.sound_note') }}
                     </p>
                 </div>
             </div>
@@ -322,8 +322,8 @@
         ══════════════════════════════════════════════════════ --}}
         <div id="tab-security" class="settings-content hidden">
             <div class="px-8 py-5 border-b border-gray-100">
-                <h2 class="text-sm font-semibold text-gray-900">Security</h2>
-                <p class="text-xs text-gray-400 mt-0.5">Manage your password and account access</p>
+                <h2 class="text-sm font-semibold text-gray-900">{{ __('ui.settings.security.title') }}</h2>
+                <p class="text-xs text-gray-400 mt-0.5">{{ __('ui.settings.security.subtitle') }}</p>
             </div>
             <div class="divide-y divide-gray-100">
 
@@ -331,14 +331,14 @@
                 <div class="px-8 py-6">
                     <div class="flex items-start gap-8">
                         <div class="w-48 flex-shrink-0">
-                            <p class="text-sm font-medium text-gray-800">Password</p>
-                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">Update your account password</p>
+                            <p class="text-sm font-medium text-gray-800">{{ __('ui.settings.security.password') }}</p>
+                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ __('ui.settings.security.password_d') }}</p>
                         </div>
                         <form id="changePasswordForm" onsubmit="changePassword(event)" class="flex-1 max-w-sm space-y-3">
                             <div class="relative">
                                 <input type="password" id="newPassword"
                                     class="w-full px-3 py-2.5 pr-9 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:bg-white transition"
-                                    placeholder="New password (min. 8 characters)">
+                                    placeholder="{{ __('ui.settings.security.new_password') }}">
                                 <button type="button" onclick="togglePassword('newPassword',this)"
                                     class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
                                     <i class="fas fa-eye text-xs eye-icon"></i>
@@ -347,7 +347,7 @@
                             <div class="relative">
                                 <input type="password" id="confirmPassword"
                                     class="w-full px-3 py-2.5 pr-9 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:bg-white transition"
-                                    placeholder="Confirm new password">
+                                    placeholder="{{ __('ui.settings.security.confirm') }}">
                                 <button type="button" onclick="togglePassword('confirmPassword',this)"
                                     class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
                                     <i class="fas fa-eye text-xs eye-icon"></i>
@@ -356,7 +356,7 @@
                             <p id="confirmPasswordError" class="text-xs text-red-500 hidden"></p>
                             <button type="submit" id="changePasswordBtn"
                                 class="px-4 py-2 text-xs font-semibold text-white bg-gray-800 hover:bg-gray-900 rounded-lg transition">
-                                Update password
+                                {{ __('ui.settings.security.update') }}
                             </button>
                         </form>
                     </div>
@@ -366,11 +366,11 @@
                 <div class="px-8 py-5 flex items-center justify-between">
                     <div class="flex items-start gap-8">
                         <div class="w-48 flex-shrink-0">
-                            <p class="text-sm font-medium text-gray-800">Two-factor authentication</p>
-                            <p class="text-xs text-gray-400 mt-0.5">Add an extra layer of security to your account</p>
+                            <p class="text-sm font-medium text-gray-800">{{ __('ui.settings.security.2fa') }}</p>
+                            <p class="text-xs text-gray-400 mt-0.5">{{ __('ui.settings.security.2fa_d') }}</p>
                         </div>
                         <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
-                            <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>Not configured
+                            <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>{{ __('ui.settings.security.not_configured') }}
                         </span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-8">
@@ -383,8 +383,8 @@
                 <div class="px-8 py-6">
                     <div class="flex items-start gap-8">
                         <div class="w-48 flex-shrink-0">
-                            <p class="text-sm font-medium text-gray-800">Active sessions</p>
-                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">Manage where you're logged in</p>
+                            <p class="text-sm font-medium text-gray-800">{{ __('ui.settings.security.sessions') }}</p>
+                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ __('ui.settings.security.sessions_d') }}</p>
                         </div>
                         <div class="flex-1 max-w-sm">
                             <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3">
@@ -393,18 +393,18 @@
                                         <i class="fas fa-desktop text-green-600 text-xs"></i>
                                     </div>
                                     <div>
-                                        <p class="text-xs font-semibold text-gray-700">Current session</p>
-                                        <p class="text-[10px] text-gray-400">{{ request()->ip() }} &middot; Active now</p>
+                                        <p class="text-xs font-semibold text-gray-700">{{ __('ui.settings.security.current') }}</p>
+                                        <p class="text-[10px] text-gray-400">{{ request()->ip() }} &middot; {{ __('ui.settings.security.active_now') }}</p>
                                     </div>
                                 </div>
                                 <span class="flex items-center gap-1 text-[10px] font-semibold text-green-700">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>Active
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>{{ __('ui.settings.security.active') }}
                                 </span>
                             </div>
-                            @if(session('user.role.id') === 1)
+                            @if($can('control-center.sessions'))
                             <a href="{{ route('admin.sessions') }}"
                                 class="text-xs font-medium text-gray-500 hover:text-gray-700 underline underline-offset-2 transition">
-                                Manage all sessions →
+                                {{ __('ui.settings.security.manage') }}
                             </a>
                             @endif
                         </div>
@@ -420,21 +420,21 @@
         <div id="tab-language" class="settings-content hidden">
             <div class="flex items-center justify-between px-8 py-5 border-b border-gray-100">
                 <div>
-                    <h2 class="text-sm font-semibold text-gray-900">Language &amp; Region</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">Set your language and regional preferences</p>
+                    <h2 class="text-sm font-semibold text-gray-900">{{ __('ui.settings.language.title') }}</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ __('ui.settings.language.subtitle') }}</p>
                 </div>
                 <button onclick="saveSettings()"
                     class="px-4 py-1.5 text-xs font-semibold text-white bg-red-700 hover:bg-red-800 rounded-lg transition">
-                    Save changes
+                    {{ __('ui.settings.save') }}
                 </button>
             </div>
             <div class="divide-y divide-gray-100">
                 @foreach([
-                    ['language',   'Language',    'The language used throughout the interface',
+                    ['language',   __('ui.settings.language.language'),    __('ui.settings.language.language_d'),
                      [['en','🇬🇧  English'],['id','🇮🇩  Bahasa Indonesia']],  $preferences['language']],
-                    ['timezone',   'Timezone',    'Your local timezone for displaying dates and times',
+                    ['timezone',   __('ui.settings.language.timezone'),    __('ui.settings.language.timezone_d'),
                      [['Asia/Jakarta','Asia/Jakarta (WIB, UTC+7)'],['Asia/Singapore','Asia/Singapore (SGT, UTC+8)'],['UTC','UTC']], $preferences['timezone']],
-                    ['dateFormat', 'Date format', 'How dates are displayed across the application',
+                    ['dateFormat', __('ui.settings.language.date'), __('ui.settings.language.date_d'),
                      [['DD/MM/YYYY','DD/MM/YYYY'],['MM/DD/YYYY','MM/DD/YYYY'],['YYYY-MM-DD','YYYY-MM-DD (ISO 8601)']], $preferences['date_format']],
                 ] as [$id,$title,$desc,$opts,$current])
                 <div class="px-8 py-5 flex items-center justify-between gap-8">
@@ -450,6 +450,9 @@
                     </select>
                 </div>
                 @endforeach
+                <div class="px-8 py-4">
+                    <p class="text-xs text-gray-400"><i class="fas fa-info-circle mr-1"></i>{{ __('ui.settings.language.note') }}</p>
+                </div>
             </div>
         </div>
 
@@ -465,11 +468,11 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold text-white">ECoSystem</h1>
-                    <p class="text-red-200 text-xs mt-0.5">Enterprise Management Platform</p>
+                    <p class="text-red-200 text-xs mt-0.5">{{ __('ui.settings.about.tagline') }}</p>
                     <div class="flex items-center gap-2 mt-2.5">
                         <span class="text-xs font-medium px-2.5 py-0.5 bg-white/15 border border-white/20 text-white rounded-full">v1.0.0</span>
                         <span class="text-xs font-medium px-2.5 py-0.5 bg-emerald-500/20 border border-emerald-400/25 text-emerald-300 rounded-full flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>Up to date
+                            <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>{{ __('ui.settings.about.up_to_date') }}
                         </span>
                     </div>
                 </div>
@@ -479,10 +482,10 @@
 
                 {{-- Meta --}}
                 @foreach([
-                    ['fa-calendar-alt','Release date',  'November 2025'],
-                    ['fa-sync-alt',    'Last updated',  now()->format('d M Y')],
-                    ['fa-certificate', 'License',       'Enterprise'],
-                    ['fa-code-branch', 'Build',         'Production'],
+                    ['fa-calendar-alt', __('ui.settings.about.release'),  'November 2025'],
+                    ['fa-sync-alt', __('ui.settings.about.updated'),  now()->format('d M Y')],
+                    ['fa-certificate', __('ui.settings.about.license'),       'Enterprise'],
+                    ['fa-code-branch', __('ui.settings.about.build'),         'Production'],
                 ] as [$icon,$label,$value])
                 <div class="px-8 py-4 flex items-center justify-between">
                     <div class="flex items-center gap-2.5">
@@ -495,7 +498,7 @@
 
                 {{-- Modules --}}
                 <div class="px-8 py-6">
-                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Platform modules</p>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">{{ __('ui.settings.about.modules') }}</p>
                     <div class="grid grid-cols-2 gap-2">
                         @foreach([
                             ['fa-ticket-alt',     'Ticket Management'],
@@ -518,7 +521,7 @@
                 {{-- Footer --}}
                 <div class="px-8 py-5 flex items-center justify-between bg-gray-50/50">
                     <div class="flex items-center gap-2 text-xs text-gray-400">
-                        <span>Built by</span>
+                        <span>{{ __('ui.settings.about.built_by') }}</span>
                         @foreach([['P','Putra'],['N','Natanael']] as [$i,$n])
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-gray-200 text-gray-600 font-medium rounded-full">
                             <span class="w-4 h-4 bg-red-700 text-white rounded-full flex items-center justify-center text-[9px] font-bold">{{ $i }}</span>
@@ -713,18 +716,18 @@ async function saveSettings() {
             body:JSON.stringify(S)
         });
         const d = await r.json();
-        d.success ? (showNotification('Settings saved!','success'), setTimeout(()=>location.reload(),800))
-                  : showNotification('Failed to save.','error');
-    } catch { showNotification('Network error.','error'); }
+        d.success ? (showNotification({!! json_encode(__('ui.settings.saved')) !!},'success'), setTimeout(()=>location.reload(),800))
+                  : showNotification({!! json_encode(__('ui.settings.save_failed')) !!},'error');
+    } catch { showNotification({!! json_encode(__('ui.settings.network')) !!},'error'); }
 }
 async function resetSettings() {
-    if (!confirm('Reset all settings to default values?')) return;
+    if (!confirm({!! json_encode(__('ui.settings.reset_confirm')) !!})) return;
     try {
         const r = await fetch('/settings/reset',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':_csrf()}});
         const d = await r.json();
-        d.success ? (showNotification('Reset to default.','success'), setTimeout(()=>location.reload(),800))
-                  : showNotification('Failed to reset.','error');
-    } catch { showNotification('Network error.','error'); }
+        d.success ? (showNotification({!! json_encode(__('ui.settings.reset_done')) !!},'success'), setTimeout(()=>location.reload(),800))
+                  : showNotification({!! json_encode(__('ui.settings.reset_failed')) !!},'error');
+    } catch { showNotification({!! json_encode(__('ui.settings.network')) !!},'error'); }
 }
 
 // ── Password ──────────────────────────────────────────────────────────────────
@@ -734,13 +737,13 @@ async function changePassword(e) {
     const cf = document.getElementById('confirmPassword').value.trim();
     const errEl = document.getElementById('confirmPasswordError');
     errEl.classList.add('hidden');
-    if (!nw||!cf)      { showNotification('Please fill in all fields.','warning'); return; }
-    if (nw.length < 8) { showNotification('Password must be at least 8 characters.','warning'); return; }
-    if (nw !== cf)     { errEl.textContent = 'Passwords do not match.'; errEl.classList.remove('hidden'); return; }
+    if (!nw||!cf)      { showNotification({!! json_encode(__('ui.settings.security.fill_all')) !!},'warning'); return; }
+    if (nw.length < 8) { showNotification({!! json_encode(__('ui.settings.security.min_length')) !!},'warning'); return; }
+    if (nw !== cf)     { errEl.textContent = {!! json_encode(__('ui.settings.security.mismatch')) !!}; errEl.classList.remove('hidden'); return; }
     const btn = document.getElementById('changePasswordBtn');
     const orig = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs mr-1"></i>Updating…';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs mr-1"></i>' + {!! json_encode(__('ui.settings.security.updating')) !!};
     try {
         const r = await fetch('/my-profile/change-password',{
             method:'POST',
@@ -748,9 +751,9 @@ async function changePassword(e) {
             body:JSON.stringify({password:nw,password_confirmation:cf})
         });
         const d = await r.json();
-        d.success ? (showNotification('Password updated!','success'), document.getElementById('changePasswordForm').reset())
-                  : showNotification(d.message||'Failed.','error');
-    } catch { showNotification('Network error.','error'); }
+        d.success ? (showNotification({!! json_encode(__('ui.settings.security.updated')) !!},'success'), document.getElementById('changePasswordForm').reset())
+                  : showNotification(d.message||{!! json_encode(__('ui.settings.security.failed')) !!},'error');
+    } catch { showNotification({!! json_encode(__('ui.settings.network')) !!},'error'); }
     finally { btn.disabled=false; btn.innerHTML=orig; }
 }
 function togglePassword(id, btn) {

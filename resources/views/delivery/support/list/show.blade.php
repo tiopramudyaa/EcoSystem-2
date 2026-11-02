@@ -885,8 +885,7 @@
                             </div>
                         </div>
                     </div>
-                    @php $roleId = session('user.role.id'); @endphp
-                    @if(in_array($roleId, \App\Enums\RoleId::TICKET_MANAGER_GROUP, true))
+                    @if($can('ticket.manage'))
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
                         <select name="type" id="edit-type"

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Lite;
 
-use App\Enums\RoleId;
+use App\Http\Controllers\Concerns\ResolvesDashboardVariant;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 
 class LiteDashboardController extends Controller
 {
+    use ResolvesDashboardVariant;
+
     /**
      * Kembalikan data dashboard sesuai role user yang sedang login.
      * Adaptasi dari DashboardController::index() — mengembalikan JSON, bukan view.
@@ -38,27 +40,24 @@ class LiteDashboardController extends Controller
                 'total_tickets'   => DB::table('ticket')->whereNull('deleted_at')->whereNull('is_hidden')->count(),
             ];
 
-            $roleId = (int) ($user['role']['id'] ?? 0);
+            // Which dashboard (and which extra cards) comes from the `dashboard.*` slugs ticked for the person's role(s).
+            $variant = $this->dashboardVariant($user);
 
-            // ── EC Administrator & EC User & Delivery Support Head ───────────
-            if (in_array($roleId, [
-                RoleId::EC_ADMINISTRATOR->value,
-                RoleId::EC_USER->value,
-                RoleId::DELIVERY_SUPPORT_HEAD->value,
-            ], true)) {
+            // ── Organisation-wide ticket dashboard (`dashboard.tickets.full`) ──
+            if ($variant === 'full') {
                 $this->appendFullTicketStats($dashboardData);
                 $this->appendTicketChart($dashboardData);
                 $this->appendRecentTickets($dashboardData);
                 $this->appendTeamLoad($dashboardData);
                 $this->appendSlaComplianceSummary($dashboardData);
 
-                if ($roleId === RoleId::EC_ADMINISTRATOR->value) {
+                if ($this->dashboardCan($user, 'dashboard.staging-pending')) {
                     $dashboardData['staging_pending'] = DB::table('staging_tickets')
                         ->where('status', 'unvalidated')
                         ->count();
                 }
 
-                if ($roleId === RoleId::DELIVERY_SUPPORT_HEAD->value) {
+                if ($this->dashboardCan($user, 'dashboard.timesheet-pending')) {
                     try {
                         $dashboardData['timesheet_pending'] = DB::table('timesheet')
                             ->where('status', 'submitted')
@@ -70,7 +69,7 @@ class LiteDashboardController extends Controller
             }
 
             // ── Delivery Helpdesk ────────────────────────────────────────────
-            if ($roleId === RoleId::DELIVERY_HELPDESK->value) {
+            if ($variant === 'helpdesk') {
                 $base = DB::table('ticket')->whereNull('deleted_at')->whereNull('is_hidden');
 
                 $this->appendFullTicketStats($dashboardData);
@@ -126,7 +125,7 @@ class LiteDashboardController extends Controller
             }
 
             // ── Delivery Support Manager ─────────────────────────────────────
-            if ($roleId === RoleId::DELIVERY_SUPPORT_MANAGER->value) {
+            if ($variant === 'manager') {
                 $employeeId = $user['id'];
 
                 $managedDeliveryIds = DB::table('delivery_support_managers')
@@ -206,7 +205,7 @@ class LiteDashboardController extends Controller
             }
 
             // ── Delivery Support User ────────────────────────────────────────
-            if ($roleId === RoleId::DELIVERY_SUPPORT_USER->value) {
+            if ($variant === 'mine') {
                 $employeeId = $user['id'];
 
                 $picIds    = DB::table('ticket')->whereNull('deleted_at')->whereNull('is_hidden')

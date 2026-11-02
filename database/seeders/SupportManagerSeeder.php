@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\RoleId;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -52,7 +51,7 @@ class SupportManagerSeeder extends Seeder
             DB::beginTransaction();
             try {
                 $employeeId = DB::table('employee')->insertGetId([
-                    'role_id'             => RoleId::DELIVERY_SUPPORT_MANAGER->value,
+                    'role_id'             => $this->supportManagerRoleId(),
                     'eci'                 => $sm['eci'],
                     'modules'             => null,
                     'monthly_capacity_md' => 20.00,
@@ -133,6 +132,12 @@ class SupportManagerSeeder extends Seeder
      * Pastikan employee_role_assignment punya 2 baris: role utama (Support Manager)
      * dan 'User System Registered' (id=61). Idempotent — skip yang sudah ada.
      */
+    /** The Support Manager role, found by name (IDs differ between databases). */
+    private function supportManagerRoleId(): int
+    {
+        return (int) DB::table('employee_role')->where('name', 'Delivery Support Manager')->value('id');
+    }
+
     private function ensureRoleAssignments(int $employeeId): void
     {
         $now = Carbon::now();
@@ -141,7 +146,7 @@ class SupportManagerSeeder extends Seeder
             ->value('id');
 
         $required = array_filter([
-            RoleId::DELIVERY_SUPPORT_MANAGER->value,
+            $this->supportManagerRoleId(),
             $userSystemRoleId ?: null,
         ]);
 

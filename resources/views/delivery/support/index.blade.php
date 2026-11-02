@@ -11,38 +11,29 @@
         </div>
         
         <!-- View Toggle -->
+        {{-- Tabs follow the permission slugs ticked for the person's role(s) in Role & Menu Access --}}
         @php
-            $viewRoleIds = array_map('intval', session('user')['role_ids'] ?? [session('user')['role']['id'] ?? 0]);
-            $isAdminOrHead   = array_intersect($viewRoleIds, [\App\Enums\RoleId::EC_ADMINISTRATOR->value, \App\Enums\RoleId::DELIVERY_SUPPORT_HEAD->value]);
-            $isManager       = in_array(\App\Enums\RoleId::DELIVERY_SUPPORT_MANAGER->value, $viewRoleIds, true);
-            $isSupportUser   = in_array(\App\Enums\RoleId::DELIVERY_SUPPORT_USER->value, $viewRoleIds, true);
+            $tgMy  = $can('ticket.my-tickets.ds-user') || $can('ticket.my-tickets.ds-manager');
+            $tgAll = $can('ticket.all-tickets');
+            $tgUn  = $can('ticket.unassigned');
         @endphp
-        @if($isAdminOrHead)
+        @if($tgMy || $tgUn)
         <div class="inline-flex bg-gray-100 rounded-xl p-1">
-            <button onclick="toggleView('all')" id="btnViewAll" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
-                <i class="fas fa-list text-[10px] mr-1"></i>All Tickets
-            </button>
-            <button onclick="toggleView('unassign')" id="btnViewUnassign" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
-                <i class="fas fa-user-clock text-[10px] mr-1"></i>Unassign
-            </button>
-        </div>
-        @elseif($isManager)
-        <div class="inline-flex bg-gray-100 rounded-xl p-1">
-            <button onclick="toggleView('all')" id="btnViewAll" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
-                <i class="fas fa-list text-[10px] mr-1"></i>All Tickets
-            </button>
+            @if($tgMy)
             <button onclick="toggleView('my')" id="btnViewMy" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
                 <i class="fas fa-user text-[10px] mr-1"></i>My Tickets
             </button>
-        </div>
-        @elseif($isSupportUser)
-        <div class="inline-flex bg-gray-100 rounded-xl p-1">
-            <button onclick="toggleView('my')" id="btnViewMy" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
-                <i class="fas fa-user text-[10px] mr-1"></i>My Tickets
+            @endif
+            @if($tgAll)
+            <button onclick="toggleView('all')" id="btnViewAll" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
+                <i class="fas fa-list text-[10px] mr-1"></i>All Tickets
             </button>
+            @endif
+            @if($tgUn)
             <button onclick="toggleView('unassign')" id="btnViewUnassign" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
                 <i class="fas fa-user-clock text-[10px] mr-1"></i>Unassign
             </button>
+            @endif
         </div>
         @endif
     </div>
@@ -526,25 +517,18 @@
     let currentPage = 1;
     let totalItems = 0;
     let totalPages = 0;
-    let userRoleIds = {!! json_encode(array_map('intval', session('user')['role_ids'] ?? [session('user')['role']['id'] ?? 0])) !!};
     let userId = {{ session('user')['id'] ?? 0 }};
-    const EC_ADMINISTRATOR_ROLE         = {{ \App\Enums\RoleId::EC_ADMINISTRATOR->value }};
-    const DELIVERY_SUPPORT_USER_ROLE    = {{ \App\Enums\RoleId::DELIVERY_SUPPORT_USER->value }};
-    const EC_USER_ROLE                  = {{ \App\Enums\RoleId::EC_USER->value }};
-    const DELIVERY_SUPPORT_HEAD_ROLE    = {{ \App\Enums\RoleId::DELIVERY_SUPPORT_HEAD->value }};
-    const DELIVERY_SUPPORT_MANAGER_ROLE = {{ \App\Enums\RoleId::DELIVERY_SUPPORT_MANAGER->value }};
-    const hasRole = (id) => userRoleIds.includes(id);
-    // Admin/Head defaults to 'all'; Support User or Manager (without head/admin) defaults to 'my'
-    let currentView = (hasRole(EC_ADMINISTRATOR_ROLE) || hasRole(DELIVERY_SUPPORT_HEAD_ROLE)) ? 'all'
-        : (hasRole(DELIVERY_SUPPORT_USER_ROLE) || hasRole(DELIVERY_SUPPORT_MANAGER_ROLE)) ? 'my' : 'all';
+    const CAN_VIEW_ALL        = {{ $can('ticket.all-tickets') ? 'true' : 'false' }};
+    const CAN_VIEW_MY_DS_USER = {{ $can('ticket.my-tickets.ds-user') ? 'true' : 'false' }};
+    const CAN_VIEW_MY         = CAN_VIEW_MY_DS_USER || {{ $can('ticket.my-tickets.ds-manager') ? 'true' : 'false' }};
+    const CAN_VIEW_UNASSIGNED = {{ $can('ticket.unassigned') ? 'true' : 'false' }};
+    // PICs start on their own tickets; everyone else on all tickets when they may see them.
+    let currentView = CAN_VIEW_MY_DS_USER ? 'my' : (CAN_VIEW_ALL ? 'all' : (CAN_VIEW_MY ? 'my' : 'all'));
 
     document.addEventListener('DOMContentLoaded', function() {
         initCustomDropdowns();
         loadTickets();
-
-        if (hasRole(DELIVERY_SUPPORT_USER_ROLE) || hasRole(EC_ADMINISTRATOR_ROLE) || hasRole(DELIVERY_SUPPORT_HEAD_ROLE) || hasRole(DELIVERY_SUPPORT_MANAGER_ROLE)) {
-            updateViewToggle();
-        }
+        updateViewToggle();
     });
 
     function toggleView(view) {
@@ -558,16 +542,9 @@
         const btnMy       = document.getElementById('btnViewMy');
         const btnUnassign = document.getElementById('btnViewUnassign');
 
-        if (hasRole(EC_ADMINISTRATOR_ROLE) || hasRole(DELIVERY_SUPPORT_HEAD_ROLE)) {
-            if (btnAll)      btnAll.classList.toggle('active',      currentView === 'all');
-            if (btnUnassign) btnUnassign.classList.toggle('active', currentView === 'unassign');
-        } else if (hasRole(DELIVERY_SUPPORT_MANAGER_ROLE)) {
-            if (btnMy)  btnMy.classList.toggle('active',  currentView === 'my');
-            if (btnAll) btnAll.classList.toggle('active', currentView === 'all');
-        } else if (hasRole(DELIVERY_SUPPORT_USER_ROLE)) {
-            if (btnMy)       btnMy.classList.toggle('active',       currentView === 'my');
-            if (btnUnassign) btnUnassign.classList.toggle('active', currentView === 'unassign');
-        }
+        if (btnAll)      btnAll.classList.toggle('active',      currentView === 'all');
+        if (btnMy)       btnMy.classList.toggle('active',       currentView === 'my');
+        if (btnUnassign) btnUnassign.classList.toggle('active', currentView === 'unassign');
     }
 
     async function loadTickets() {
@@ -576,24 +553,14 @@
             document.getElementById('ticketsContainer').classList.add('hidden');
             document.getElementById('emptyState').classList.add('hidden');
 
-            // Determine endpoint based on role and current view
+            // Endpoint follows the tab: own tickets, unassigned ones (the filtered list when the person may see all tickets), or everything
             let endpoint = '/api/tickets';
-
-            if (hasRole(EC_ADMINISTRATOR_ROLE) || hasRole(DELIVERY_SUPPORT_HEAD_ROLE)) {
-                // Admin / Support Head: all tickets or unassigned view
-                endpoint = (currentView === 'unassign') ? '/api/tickets?unassigned=1' : '/api/tickets';
-            } else if (hasRole(DELIVERY_SUPPORT_MANAGER_ROLE)) {
-                // Support Manager: "My Tickets" or "All Tickets"
-                endpoint = (currentView === 'my') ? '/api/tickets/my' : '/api/tickets';
-            } else if (hasRole(DELIVERY_SUPPORT_USER_ROLE)) {
-                // Support User: "My Tickets" or "Unassign"
-                endpoint = (currentView === 'my') ? '/api/tickets/my' : '/api/tickets';
-            } else if (hasRole(EC_USER_ROLE)) {
-                // EC User — only their own tickets
+            if (currentView === 'my') {
                 endpoint = '/api/tickets/my';
+            } else if (currentView === 'unassign') {
+                endpoint = CAN_VIEW_ALL ? '/api/tickets?unassigned=1' : '/api/tickets/unassigned';
             }
-            // Other views / roles use /api/tickets (all tickets)
-            
+
             const response = await fetch(endpoint, {
                 method: 'GET',
                 headers: {

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Models\Employee;
 use App\Models\Event;
 use Illuminate\Http\Request;
@@ -39,65 +38,31 @@ class CalendarController extends Controller
      */
     public function timesheets()
     {
-        $user       = session('user');
-        $roleId     = isset($user['role']['id']) ? (int) $user['role']['id'] : null;
-        $employeeId = $user['id'] ?? null;
+        $user     = session('user');
+        $employee = Employee::find($user['id'] ?? 0);
+        $can      = fn (string $slug) => $employee?->hasPermission($slug) ?? false;
 
-        // ── Collect ALL role IDs (primary + pivot assignments) ────────────────
-        // "Primary" role in session is just whichever pivot row the DB returns
-        // first (no ORDER BY at login) — an employee holding both Delivery
-        // Support Head and a lower-id role can end up with the wrong role as
-        // "primary". So every check below must look at the full role set, not
-        // just $roleId.
-        $allRoleIds = collect([$roleId])->filter();
-        if ($employeeId) {
-            $pivotRoles = DB::table('employee_role_assignment')
-                ->where('employee_id', $employeeId)
-                ->pluck('role_id');
-            $allRoleIds = $allRoleIds->merge($pivotRoles)->unique()->map(fn($id) => (int) $id);
-        }
+        // What the page shows follows the `timesheet.*` function slugs ticked for the person's role(s) in Management → Roles.
+        $isHead  = $can('timesheet.approve');
+        $isAdmin = $can('timesheet.view-all');
+        $isHoS   = $can('timesheet.view-support');
 
-        $isHead  = $allRoleIds->intersect(RoleId::HEAD_GROUP)->isNotEmpty()
-                || $allRoleIds->contains(RoleId::DELIVERY_RPMO_HEAD->value)
-                || $allRoleIds->contains(RoleId::EC_ADMINISTRATOR->value);
-        $isAdmin = $allRoleIds->contains(RoleId::EC_ADMINISTRATOR->value);
-        $isHoS   = $allRoleIds->contains(RoleId::DELIVERY_SUPPORT_HEAD->value);
-
-        // ── Map each role to the timesheet type(s) it allows ─────────────────
-        // Heads and RPMO are locked to their approval domain regardless of extra roles.
-        $headLock = match(true) {
-            $allRoleIds->contains(RoleId::DELIVERY_SUPPORT_HEAD->value) => 'support',
-            $allRoleIds->contains(RoleId::DELIVERY_PROJECT_HEAD->value) => 'project',
-            $allRoleIds->contains(RoleId::DELIVERY_RPMO_HEAD->value)    => 'office',
-            default                                                    => null,
+        // Heads are locked to the type they review; everyone else may enter the types they hold (all three when none is ticked).
+        $headLock = match (true) {
+            $can('timesheet.view-support') => 'support',
+            $can('timesheet.view-project') => 'project',
+            $can('timesheet.view-office')  => 'office',
+            default                        => null,
         };
 
         if ($headLock !== null) {
-            // Approval roles: single-type lock, no multi-role expansion
             $lockedType   = $headLock;
             $allowedTypes = [$headLock];
         } else {
-            // Regular users: compute allowed types from ALL assigned roles
-            $typeMap = [
-                RoleId::DELIVERY_SUPPORT_USER->value         => 'support',
-                RoleId::EC_USER->value       => 'office',
-                RoleId::DELIVERY_PROJECT_USER->value => 'project',
-                // Admin and Helpdesk get all types
-                RoleId::EC_ADMINISTRATOR->value            => '*',
-                RoleId::DELIVERY_HELPDESK->value         => '*',
-            ];
-
-            $computed    = [];
-            $grantedAll  = false;
-            foreach ($allRoleIds as $rid) {
-                $mapped = $typeMap[$rid] ?? null;
-                if ($mapped === '*') { $grantedAll = true; break; }
-                if ($mapped)          $computed[] = $mapped;
+            $allowedTypes = array_values(array_filter(['project', 'support', 'office'], fn (string $t) => $can("timesheet.type.{$t}")));
+            if ($allowedTypes === []) {
+                $allowedTypes = ['project', 'support', 'office'];
             }
-
-            $allowedTypes = $grantedAll
-                ? ['project', 'support', 'office']
-                : (count(array_unique($computed)) > 0 ? array_values(array_unique($computed)) : ['project', 'support', 'office']);
 
             // Lock only when exactly one type is allowed
             $lockedType = count($allowedTypes) === 1 ? $allowedTypes[0] : null;
@@ -108,7 +73,6 @@ class CalendarController extends Controller
             'isHead'       => $isHead,
             'isAdmin'      => $isAdmin,
             'isHoS'        => $isHoS,
-            'roleId'       => $roleId,
             'lockedType'   => $lockedType,
             'allowedTypes' => $allowedTypes,
         ]);

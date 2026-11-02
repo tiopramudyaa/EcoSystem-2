@@ -21,11 +21,6 @@ class SlaController extends Controller
 {
     public function __construct(private SlaService $sla) {}
 
-    private function assertAdmin(): bool
-    {
-        return session('user.role.id') === 1;
-    }
-
     // Diatur lewat Role Management (menu slug: sla.report), bukan role hardcode,
     // supaya role apa pun bisa diberi/dicabut akses SLA Report dari UI Role Management.
     private function assertSlaAccess(): bool

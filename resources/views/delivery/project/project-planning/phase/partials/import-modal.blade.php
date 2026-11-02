@@ -186,12 +186,15 @@
                           + '<p class="font-medium text-amber-700 mb-1">' + errors.length + ' baris dilewati:</p>'
                           + '<ul class="list-disc pl-5 space-y-0.5 text-xs text-amber-800">'
                           + errors.map(function (e) { return '<li>' + String(e).replace(/</g, '&lt;') + '</li>'; }).join('')
-                          + '</ul></div>';
+                          + '</ul>'
+                          + '<button type="button" id="planningImportErrorsCsv" class="mt-2 text-xs font-semibold text-amber-800 underline">Download error list (CSV)</button></div>';
                 }
                 resultBox.className = 'rounded-md px-4 py-3 text-sm border '
                     + (changed ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200');
                 resultBox.innerHTML = html;
                 resultBox.classList.remove('hidden');
+                var errCsv = document.getElementById('planningImportErrorsCsv');
+                if (errCsv) errCsv.addEventListener('click', function () { downloadImportErrors(errors, 'planning-import-errors'); });
 
                 if (changed > 0) {
                     // Data was added/updated → mark dirty so Close/Done refresh; offer "Done".

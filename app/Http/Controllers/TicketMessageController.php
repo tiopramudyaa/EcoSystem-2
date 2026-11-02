@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Exceptions\EmailSendException;
 use App\Http\Controllers\EmailController;
 use App\Models\Customer;
@@ -1564,13 +1563,7 @@ class TicketMessageController extends Controller
             ->where('is_internal_note', true)
             ->firstOrFail();
 
-        $sessionRoleIds = !empty($sessionUser['role_ids'])
-            ? array_map('intval', $sessionUser['role_ids'])
-            : DB::table('employee_role_assignment')
-                ->where('employee_id', (int) ($sessionUser['id'] ?? 0))
-                ->pluck('role_id')->map(fn($id) => (int) $id)->toArray();
-
-        $isAdmin   = in_array(RoleId::EC_ADMINISTRATOR->value, $sessionRoleIds, true);
+        $isAdmin   = \App\Models\Employee::find((int) ($sessionUser['id'] ?? 0))?->hasPermission('ticket.delete-any-note') ?? false;
         $isSender  = $message->sender_id !== null
                      && (int) $message->sender_id === (int) ($sessionUser['id'] ?? 0);
 

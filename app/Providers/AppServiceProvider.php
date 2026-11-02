@@ -8,7 +8,6 @@ use App\Enums\EmployeeSubgroup;
 use App\Enums\HomeBase;
 use App\Enums\PersonnelArea;
 use App\Enums\PersonnelSubarea;
-use App\Enums\RoleId;
 use App\Models\Department;
 use App\Models\Grade;
 use App\Models\Position;
@@ -94,7 +93,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Gate::define('viewApiDocs', function ($user = null) {
-            return (int) session('user.role.id') === RoleId::EC_ADMINISTRATOR->value;
+            return \App\Models\Employee::find(session('user.id'))?->hasPermission('control-center.api-docs') ?? false;
         });
 
         // Suntik opsi Home Base, Position, Department & 4 enum organisasi ke form

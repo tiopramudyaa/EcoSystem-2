@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Exports\TicketExport;
 use App\Http\Controllers\EmailController;
 use App\Models\AuditLog;
@@ -30,17 +29,38 @@ class TicketController extends Controller
 {
     public function __construct(private readonly TicketNumberService $ticketNumbers) {}
 
+    // ── Permissions ──────────────────────────────────────────────────────────
+    // No role ID or name is compared anywhere in this controller: what a person may do comes from the function slugs ticked
+    // for their role(s) in Management → Roles (Menu Access → Tickets). Migration 2026_10_30_000002 lists the slugs.
+
+    private ?\App\Models\Employee $permEmployee = null;
+
+    private function canTicket(string $slug): bool
+    {
+        $this->permEmployee ??= \App\Models\Employee::find(session('user.id'));
+
+        return $this->permEmployee?->hasPermission($slug) ?? false;
+    }
+
+    /** The ticket's PIC (lead) acts for the team on it, whatever role they hold. */
+    private function isTicketPic(Ticket $ticket, array $sessionUser): bool
+    {
+        return $ticket->ticket_lead_id !== null && (int) $ticket->ticket_lead_id === (int) ($sessionUser['id'] ?? 0);
+    }
+
+    /** External employees see and handle only tickets they lead or belong to, unless granted `ticket.external-unrestricted`. */
+    private function isRestrictedExternal(array $sessionUser): bool
+    {
+        return strtolower($sessionUser['employee_type'] ?? 'internal') === 'external'
+            && !$this->canTicket('ticket.external-unrestricted');
+    }
+
     /**
      * Get user info for history
      */
     private function getUserInfo($sessionUser)
     {
-        $roleName = match($sessionUser['role']['id']) {
-            RoleId::EC_ADMINISTRATOR->value    => 'Admin',
-            RoleId::DELIVERY_SUPPORT_USER->value => 'Employee',
-            RoleId::EC_USER->value => 'Customer',
-            default                 => 'Unknown'
-        };
+        $roleName = $sessionUser['role']['name'] ?? 'Unknown';
         
         $userName = $sessionUser['name'] ?? $sessionUser['email'] ?? 'Unknown User';
         
@@ -364,7 +384,7 @@ class TicketController extends Controller
 
             $filterUnassigned  = $request->boolean('unassigned');
             $isExternalEmployee = strtolower($sessionUser['employee_type'] ?? 'internal') === 'external';
-            $isRestrictedExternal = $isExternalEmployee && $sessionUser['role']['id'] !== RoleId::EC_ADMINISTRATOR->value;
+            $isRestrictedExternal = $isExternalEmployee && !$this->canTicket('ticket.external-unrestricted');
 
             // "All Tickets" tab is gated by the 'ticket.all-tickets' menu permission in Role & Menu
             // Access for every internal role (including Admin/Head/Helpdesk) — restricted external
@@ -391,59 +411,9 @@ class TicketController extends Controller
                           ->orWhereHas('members', fn ($i) => $i->where('ticket_member.employee_id', $employeeId));
                     });
 
-            // Admin: bisa lihat semua ticket, atau filter unassigned jika ?unassigned=1
-            } elseif ($sessionUser['role']['id'] === RoleId::EC_ADMINISTRATOR->value) {
-                Log::debug('Admin viewing tickets', ['unassigned' => $filterUnassigned]);
-
-                $query = Ticket::with(['customer.basicData', 'endCustomer.basicData', 'ticketLead.basicData', 'members.basicData', 'sla.policy', 'moduleMaster'])
-                    ->whereNull('ticket.is_hidden');
-                if ($filterUnassigned) {
-                    $query->whereNull('ticket.ticket_lead_id');
-                }
-
-            // Employee (DS User): "All Tickets" = semua tiket organisasi (sama seperti role lain),
-            // atau filter unassigned jika ?unassigned=1. Tab "Unassigned Ticket" terpisah (permission
-            // 'ticket.unassigned') menangani kasus khusus lihat tiket belum ada PIC.
-            } elseif ($sessionUser['role']['id'] === RoleId::DELIVERY_SUPPORT_USER->value) {
-                Log::debug('Employee viewing all tickets', ['unassigned' => $filterUnassigned]);
-
-                $query = Ticket::with(['customer.basicData', 'endCustomer.basicData', 'ticketLead.basicData', 'members.basicData', 'sla.policy'])
-                    ->whereNull('ticket.is_hidden');
-                if ($filterUnassigned) {
-                    $query->whereNull('ticket.ticket_lead_id');
-                }
-
-            // Helpdesk, RPMO, Head of Project, Head of Support:
-            // lihat semua ticket organisasi, atau filter unassigned jika ?unassigned=1
-            } elseif (in_array(
-                $sessionUser['role']['id'],
-                array_merge(RoleId::HEAD_GROUP, RoleId::HELPDESK_GROUP),
-                true
-            )) {
-                Log::debug('Staff viewing tickets', ['role_id' => $sessionUser['role']['id'], 'unassigned' => $filterUnassigned]);
-
-                $query = Ticket::with(['customer.basicData', 'endCustomer.basicData', 'ticketLead.basicData', 'members.basicData', 'sla.policy', 'moduleMaster'])
-                    ->whereNull('ticket.is_hidden');
-                if ($filterUnassigned) {
-                    $query->whereNull('ticket.ticket_lead_id');
-                }
-
-            // Support Manager: "All Tickets" = semua tiket organisasi (sama seperti Head)
-            // "My Tickets" = hanya tiket dari delivery yang dia kelola (/api/tickets/my)
-            } elseif ($sessionUser['role']['id'] === RoleId::DELIVERY_SUPPORT_MANAGER->value) {
-                Log::debug('Support Manager viewing all tickets', ['employee_id' => $sessionUser['id']]);
-
-                $query = Ticket::with(['customer.basicData', 'endCustomer.basicData', 'ticketLead.basicData', 'members.basicData', 'sla.policy', 'moduleMaster'])
-                    ->whereNull('ticket.is_hidden');
-
-                if ($filterUnassigned) {
-                    $query->whereNull('ticket.ticket_lead_id');
-                }
-
             } else {
-                // Fallback: cek apakah role punya izin `tickets.inbox` di tabel role_menu
-                // (di atas sudah dicek 'ticket.all-tickets'). Ini memungkinkan custom role yang
-                // diberi akses lewat UI bisa melihat semua tiket.
+                // Every internal role: whoever holds `ticket.all-tickets` (checked above) and `tickets.inbox` sees every ticket of the
+                // organisation, optionally only the unassigned ones. Both are ticked per role in Role & Menu Access.
                 if (!$employee || !$employee->hasPermission('tickets.inbox')) {
                     return response()->json([
                         'success' => false,
@@ -692,9 +662,7 @@ class TicketController extends Controller
             abort(401);
         }
 
-        $roleId = $sessionUser['role']['id'];
-        $allowed = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value, RoleId::DELIVERY_HELPDESK->value];
-        if (!in_array($roleId, $allowed, true)) {
+        if (!$this->canTicket('ticket.export')) {
             abort(403);
         }
 
@@ -840,11 +808,10 @@ class TicketController extends Controller
 
     public function store(Request $request)
     {
-        $user   = session('user');
-        $roleId = $user['role']['id'];
+        $user = session('user');
 
-        // ── Admin (role 1) → langsung buat ticket (bypass staging) ────────────
-        if ($roleId === RoleId::EC_ADMINISTRATOR->value) {
+        // ── Holders of `ticket.create-direct` → langsung buat ticket (bypass staging) ──
+        if ($this->canTicket('ticket.create-direct')) {
             $validated = $request->validate([
                 'description'     => 'required|string',
                 'ticket_priority' => 'required|in:Very High,High,Medium,Low',
@@ -1039,11 +1006,11 @@ class TicketController extends Controller
     public function storeFromHelpdesk(Request $request)
     {
         $user     = session('user');
-        $roleId   = $user['role']['id'];
         $employee = \App\Models\Employee::find($user['id'] ?? null);
         $canCreate = $employee && in_array('ui.ticket.btn-create', $employee->allPermissionSlugs());
 
-        if (!$canCreate || $roleId === RoleId::EC_ADMINISTRATOR->value) {
+        // Staging is the path for people who may not create directly.
+        if (!$canCreate || $this->canTicket('ticket.create-direct')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -1372,7 +1339,7 @@ class TicketController extends Controller
             $isExternalEmployee = strtolower($sessionUser['employee_type'] ?? 'internal') === 'external';
 
             // External employee (non-admin): hanya ticket yang mereka handle
-            if ($isExternalEmployee && $sessionUser['role']['id'] !== RoleId::EC_ADMINISTRATOR->value) {
+            if ($isExternalEmployee && !$this->canTicket('ticket.external-unrestricted')) {
                 $employeeId = $sessionUser['id'];
                 Log::debug('My Tickets - External employee', ['employee_id' => $employeeId]);
                 $query = Ticket::with(['customer.basicData', 'endCustomer.basicData', 'ticketLead.basicData', 'members.basicData', 'sla.policy', 'moduleMaster'])
@@ -1627,7 +1594,7 @@ class TicketController extends Controller
             $employeeId = $sessionUser['id'];
             $isExternalEmployee = strtolower($sessionUser['employee_type'] ?? 'internal') === 'external';
 
-            if ($isExternalEmployee && $sessionUser['role']['id'] !== RoleId::EC_ADMINISTRATOR->value) {
+            if ($isExternalEmployee && !$this->canTicket('ticket.external-unrestricted')) {
                 $scopedQuery = Ticket::whereNull('is_hidden')
                     ->where(function ($query) use ($employeeId) {
                         $query->where('ticket.ticket_lead_id', $employeeId)
@@ -1965,11 +1932,11 @@ class TicketController extends Controller
                 ], 401);
             }
             
-            // Pastikan user adalah employee
-            if ($sessionUser['role']['id'] !== RoleId::DELIVERY_SUPPORT_USER->value) {
+            // Taking a ticket is the `ticket.take` permission
+            if (!$this->canTicket('ticket.take')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Only employees can take tickets'
+                    'message' => 'You are not allowed to take tickets'
                 ], 403);
             }
 
@@ -2059,10 +2026,10 @@ class TicketController extends Controller
         try {
             $sessionUser = session('user');
             
-            if (!$sessionUser || $sessionUser['role']['id'] !== RoleId::EC_ADMINISTRATOR->value) {
+            if (!$sessionUser || !$this->canTicket('ticket.confirm-assignment')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Admin only'
+                    'message' => 'You are not allowed to do this'
                 ], 403);
             }
 
@@ -2126,10 +2093,10 @@ class TicketController extends Controller
     {
         $sessionUser = session('user');
         
-        if (!$sessionUser || $sessionUser['role']['id'] !== RoleId::EC_ADMINISTRATOR->value) {
+        if (!$sessionUser || !$this->canTicket('ticket.confirm-assignment')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Admin only'
+                'message' => 'You are not allowed to do this'
             ], 403);
         }
 
@@ -2373,12 +2340,8 @@ class TicketController extends Controller
         $ticket = Ticket::with('members')->findOrFail($id);
 
         $userId = $sessionUser['id'];
-        $roleId = $sessionUser['role']['id'] ?? 0;
 
-        $isTeamMember = in_array($roleId, array_merge(
-            RoleId::TICKET_MANAGER_GROUP,
-            [RoleId::DELIVERY_SUPPORT_HEAD->value]
-        ), true)
+        $isTeamMember = $this->canTicket('ticket.manage')
             || $ticket->ticket_lead_id == $userId
             || $ticket->members->contains('employee_id', $userId);
 
@@ -2399,10 +2362,10 @@ class TicketController extends Controller
         $sessionUser = session('user');
         
         // Only admin can update man days
-        if (!$sessionUser || $sessionUser['role']['id'] !== RoleId::EC_ADMINISTRATOR->value) {
+        if (!$sessionUser || !$this->canTicket('ticket.edit-man-days')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized. Only admin can update man days.'
+                'message' => 'Unauthorized. You are not allowed to update man days.'
             ], 403);
         }
 
@@ -2528,8 +2491,8 @@ class TicketController extends Controller
             $ticket = Ticket::with(['customer.basicData', 'endCustomer.basicData', 'ticketLead.basicData', 'members.basicData'])
                 ->findOrFail($id);
 
-            // Customer can only see their own tickets
-            if ($sessionUser['role']['id'] === RoleId::EC_USER->value) {
+            // A non-employee session (a customer) can only see their own tickets
+            if (($sessionUser['type'] ?? 'employee') !== 'employee') {
                 if ((int) $ticket->customer_id !== (int) $sessionUser['id']) {
                     return response()->json([
                         'success' => false,
@@ -2540,7 +2503,7 @@ class TicketController extends Controller
 
             // External employee: hanya bisa lihat ticket yang dia handle
             $isExternalEmployee = strtolower($sessionUser['employee_type'] ?? 'internal') === 'external';
-            if ($isExternalEmployee && $sessionUser['role']['id'] !== RoleId::EC_ADMINISTRATOR->value) {
+            if ($isExternalEmployee && !$this->canTicket('ticket.external-unrestricted')) {
                 $employeeId = $sessionUser['id'];
                 $isLead     = (int) $ticket->ticket_lead_id === $employeeId;
                 $isMember   = $ticket->members->contains('employee_id', $employeeId);
@@ -2552,8 +2515,8 @@ class TicketController extends Controller
                 }
             }
 
-            // Employee harus punya DSM qualification (kecuali Admin)
-            if ($sessionUser['role']['id'] === RoleId::DELIVERY_SUPPORT_USER->value && !$this->isEmployeeQualified($sessionUser['id'])) {
+            // Roles holding `ticket.qualification-required` need a DSM qualification
+            if ($this->canTicket('ticket.qualification-required') && !$this->isEmployeeQualified($sessionUser['id'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You are not qualified for this section. DSM qualification required.'
@@ -2633,14 +2596,11 @@ class TicketController extends Controller
     {
         $sessionUser = session('user');
 
-        $roleId     = $sessionUser['role']['id'] ?? 0;
-        $isAdmin    = $roleId === RoleId::EC_ADMINISTRATOR->value;
-        $isHelpdesk = in_array($roleId, RoleId::TICKET_MANAGER_GROUP, true);
-        $isEmployee = $roleId !== RoleId::EC_USER->value && $roleId > 0;
-
         if (!$sessionUser) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
+
+        $isHelpdesk = $this->canTicket('ticket.manage');
 
         // Permission terpisah & configurable untuk edit Additional Info (name/no_hp/module/client).
         // Diatur per-role via Manajemen → Roles/Permissions (slug ui.ticket.edit-additional-info).
@@ -2649,7 +2609,7 @@ class TicketController extends Controller
 
         // External employee tidak boleh mengambil unassigned ticket maupun update apapun
         $isExternalEmployee = strtolower($sessionUser['employee_type'] ?? 'internal') === 'external';
-        if ($isExternalEmployee && !$isAdmin) {
+        if ($isExternalEmployee && !$this->canTicket('ticket.external-unrestricted')) {
             return response()->json([
                 'success' => false,
                 'message' => 'External employees cannot update tickets'
@@ -2661,21 +2621,21 @@ class TicketController extends Controller
         // All other fields require admin or helpdesk.
         $ticketForCheck = Ticket::find($id);
         $requestKeys    = array_keys($request->except(['_token', '_method']));
-        $isSelfAssignOnly = !$isAdmin && !$isHelpdesk
+        $isSelfAssignOnly = !$isHelpdesk
             && $requestKeys === ['ticket_lead_id']
             && $ticketForCheck
             && $ticketForCheck->ticket_lead_id === null;
 
         $addInfoKeys   = ['name', 'no_hp', 'module', 'module_id', 'client'];
-        $isAddInfoOnly = !$isAdmin && !$isHelpdesk
+        $isAddInfoOnly = !$isHelpdesk
             && $canEditAddInfo
             && $requestKeys !== []
             && count(array_diff($requestKeys, $addInfoKeys)) === 0;
 
-        if (!$isAdmin && !$isHelpdesk && !$isSelfAssignOnly && !$isAddInfoOnly) {
+        if (!$isHelpdesk && !$isSelfAssignOnly && !$isAddInfoOnly) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only admin or helpdesk can update ticket'
+                'message' => 'You are not allowed to update this ticket'
             ], 403);
         }
 
@@ -2712,13 +2672,13 @@ class TicketController extends Controller
             // Build update data from validated fields
             $updateData = [];
 
-            if ($request->has('ticket_priority') && ($isAdmin || $isHelpdesk)) {
+            if ($request->has('ticket_priority') && ($isHelpdesk)) {
                 $updateData['ticket_priority'] = $request->ticket_priority;
             }
-            if ($request->has('ticket_type') && ($isAdmin || $isHelpdesk)) {
+            if ($request->has('ticket_type') && ($isHelpdesk)) {
                 $updateData['ticket_type'] = $request->ticket_type;
             }
-            if ($request->has('scale') && ($isAdmin || $isHelpdesk)) {
+            if ($request->has('scale') && ($isHelpdesk)) {
                 $updateData['scale'] = $request->scale;
             }
             if ($request->has('ticket_lead_id')) {
@@ -2728,23 +2688,23 @@ class TicketController extends Controller
                     $updateData['status'] = 'inprocess';
                 }
             }
-            if ($request->has('man_days') && $isAdmin) {
+            if ($request->has('man_days') && $this->canTicket('ticket.edit-man-days')) {
                 $updateData['man_days'] = $request->man_days;
             }
             // Additional Info fields: admin/helpdesk ATAU pemegang ui.ticket.edit-additional-info
-            if ($request->has('name') && ($isAdmin || $isHelpdesk || $canEditAddInfo)) {
+            if ($request->has('name') && ($isHelpdesk || $canEditAddInfo)) {
                 $updateData['name'] = $request->name ?: null;
             }
-            if ($request->has('no_hp') && ($isAdmin || $isHelpdesk || $canEditAddInfo)) {
+            if ($request->has('no_hp') && ($isHelpdesk || $canEditAddInfo)) {
                 $updateData['no_hp'] = $request->no_hp ?: null;
             }
-            if ($request->has('module') && ($isAdmin || $isHelpdesk || $canEditAddInfo)) {
+            if ($request->has('module') && ($isHelpdesk || $canEditAddInfo)) {
                 $updateData['module'] = $request->module ?: null;
             }
-            if ($request->has('module_id') && ($isAdmin || $isHelpdesk || $canEditAddInfo)) {
+            if ($request->has('module_id') && ($isHelpdesk || $canEditAddInfo)) {
                 $updateData['module_id'] = $request->module_id ?: null;
             }
-            if ($request->has('client') && ($isAdmin || $isHelpdesk || $canEditAddInfo)) {
+            if ($request->has('client') && ($isHelpdesk || $canEditAddInfo)) {
                 $updateData['client'] = $request->client ?: null;
             }
 
@@ -2793,8 +2753,8 @@ class TicketController extends Controller
                 ], 401);
             }
 
-            // Employee harus punya DSM qualification (kecuali Admin)
-            if ($sessionUser['role']['id'] === RoleId::DELIVERY_SUPPORT_USER->value && !$this->isEmployeeQualified($sessionUser['id'])) {
+            // Roles holding `ticket.qualification-required` need a DSM qualification
+            if ($this->canTicket('ticket.qualification-required') && !$this->isEmployeeQualified($sessionUser['id'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You are not qualified for this section. DSM qualification required.'
@@ -2840,8 +2800,8 @@ class TicketController extends Controller
                 ], 401);
             }
 
-            // Employee harus punya DSM qualification (kecuali Admin)
-            if ($sessionUser['role']['id'] === RoleId::DELIVERY_SUPPORT_USER->value && !$this->isEmployeeQualified($sessionUser['id'])) {
+            // Roles holding `ticket.qualification-required` need a DSM qualification
+            if ($this->canTicket('ticket.qualification-required') && !$this->isEmployeeQualified($sessionUser['id'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You are not qualified for this section. DSM qualification required.'
@@ -2930,11 +2890,10 @@ class TicketController extends Controller
     {
         $sessionUser = session('user');
 
-        $roleId = $sessionUser['role']['id'] ?? 0;
-        if (!$sessionUser || !in_array($roleId, RoleId::TICKET_MANAGER_GROUP, true)) {
+        if (!$sessionUser || !$this->canTicket('ticket.manage')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only admin or helpdesk can update ticket status'
+                'message' => 'You are not allowed to update ticket status'
             ], 403);
         }
 
@@ -3071,10 +3030,10 @@ class TicketController extends Controller
         try {
             $sessionUser = session('user');
             
-            if (!$sessionUser || $sessionUser['role']['id'] !== RoleId::EC_ADMINISTRATOR->value) {
+            if (!$sessionUser || !$this->canTicket('ticket.process-member-changes')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Admin only'
+                    'message' => 'You are not allowed to do this'
                 ], 403);
             }
 
@@ -3137,15 +3096,10 @@ class TicketController extends Controller
         }
 
         $ticket  = Ticket::with('members.basicData')->findOrFail($id);
-        $roleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id']]);
-        $isAdmin    = (bool) array_intersect($roleIds, [RoleId::EC_ADMINISTRATOR->value]);
-        $isHelpdesk = (bool) array_intersect($roleIds, RoleId::TICKET_MANAGER_GROUP);
-        $isPic      = in_array(RoleId::DELIVERY_SUPPORT_USER->value, $roleIds, true) && $ticket->ticket_lead_id == $sessionUser['id'];
-
-        if (!$isAdmin && !$isHelpdesk && !$isPic) {
+        if (!$this->canTicket('ticket.manage') && !$this->isTicketPic($ticket, $sessionUser)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only Admin, Helpdesk, or the assigned PIC can add members.',
+                'message' => 'Only ticket managers or the assigned PIC can add members.',
             ], 403);
         }
 
@@ -3323,15 +3277,10 @@ class TicketController extends Controller
         }
 
         $ticket  = Ticket::findOrFail($id);
-        $roleId     = $sessionUser['role']['id'];
-        $isAdmin    = $roleId === RoleId::EC_ADMINISTRATOR->value;
-        $isHelpdesk = in_array($roleId, RoleId::TICKET_MANAGER_GROUP, true);
-        $isPic      = $roleId === RoleId::DELIVERY_SUPPORT_USER->value && $ticket->ticket_lead_id == $sessionUser['id'];
-
-        if (!$isAdmin && !$isHelpdesk && !$isPic) {
+        if (!$this->canTicket('ticket.manage') && !$this->isTicketPic($ticket, $sessionUser)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only Admin, Helpdesk, or the assigned PIC can manage members.'
+                'message' => 'Only ticket managers or the assigned PIC can manage members.'
             ], 403);
         }
 
@@ -3391,8 +3340,7 @@ class TicketController extends Controller
     {
         $sessionUser = session('user');
         
-        $allowedRoles = [RoleId::DELIVERY_SUPPORT_USER->value, RoleId::DELIVERY_HELPDESK->value, RoleId::DELIVERY_RPMO_HEAD->value];
-        if (!$sessionUser || !in_array($sessionUser['role']['id'], $allowedRoles, true)) {
+        if (!$sessionUser || !$this->canTicket('ticket.request-member-change')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hanya PIC atau Helpdesk yang dapat mengajukan perubahan member'
@@ -3462,18 +3410,7 @@ class TicketController extends Controller
         }
 
         $ticket  = Ticket::with('members.basicData')->findOrFail($ticketId);
-        $roleIds = !empty($sessionUser['role_ids'])
-            ? array_map('intval', $sessionUser['role_ids'])
-            : DB::table('employee_role_assignment')
-                ->where('employee_id', (int) ($sessionUser['id'] ?? 0))
-                ->pluck('role_id')->map(fn($id) => (int) $id)->toArray();
-        $isAdmin    = in_array(RoleId::EC_ADMINISTRATOR->value, $roleIds, true);
-        $isHoS      = in_array(RoleId::DELIVERY_SUPPORT_HEAD->value, $roleIds, true);
-        $isManager  = in_array(RoleId::DELIVERY_SUPPORT_MANAGER->value, $roleIds, true);
-        $isHelpdesk = (bool) array_intersect($roleIds, RoleId::HELPDESK_GROUP);
-        $isPic      = in_array(RoleId::DELIVERY_SUPPORT_USER->value, $roleIds, true) && $ticket->ticket_lead_id == $sessionUser['id'];
-
-        if (!$isAdmin && !$isHoS && !$isManager && !$isHelpdesk && !$isPic) {
+        if (!$this->canTicket('ticket.remove-member') && !$this->isTicketPic($ticket, $sessionUser)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak memiliki akses untuk menghapus member.'
@@ -3539,10 +3476,10 @@ class TicketController extends Controller
     {
         $sessionUser = session('user');
         
-        if (!$sessionUser || $sessionUser['role']['id'] !== RoleId::DELIVERY_SUPPORT_USER->value) {
+        if (!$sessionUser || !$this->canTicket('ticket.request-member-change')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only employees can request member removal'
+                'message' => 'You are not allowed to request member removal'
             ], 403);
         }
 
@@ -3593,8 +3530,7 @@ class TicketController extends Controller
     {
         $sessionUser = session('user');
         
-        $allowedRoles = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-        if (!$sessionUser || !in_array($sessionUser['role']['id'], $allowedRoles, true)) {
+        if (!$sessionUser || !$this->canTicket('ticket.process-member-changes')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hanya Head of Support atau Admin yang dapat memproses permintaan ini'
@@ -3723,10 +3659,10 @@ class TicketController extends Controller
         try {
             $sessionUser = session('user');
             
-            if (!$sessionUser || $sessionUser['role']['id'] !== RoleId::EC_ADMINISTRATOR->value) {
+            if (!$sessionUser || !$this->canTicket('ticket.confirm-assignment')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Admin only'
+                    'message' => 'You are not allowed to do this'
                 ], 403);
             }
 
@@ -3804,10 +3740,10 @@ class TicketController extends Controller
             }
 
             // Admin, Helpdesk, and Head of Support can assign tickets to support
-            if (!in_array($sessionUser['role']['id'], [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_HELPDESK->value, RoleId::DELIVERY_SUPPORT_HEAD->value], true)) {
+            if (!$this->canTicket('ticket.assign-delivery-support')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Only Admin, Helpdesk, and Delivery Support Head can assign tickets to delivery support'
+                    'message' => 'You are not allowed to assign tickets to delivery support'
                 ], 403);
             }
 
@@ -3882,10 +3818,10 @@ class TicketController extends Controller
         }
 
         // Admin, Helpdesk, and Head of Support can assign tickets
-        if (!in_array($sessionUser['role']['id'], [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_HELPDESK->value, RoleId::DELIVERY_SUPPORT_HEAD->value], true)) {
+        if (!$this->canTicket('ticket.assign-delivery-support')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only Admin, Helpdesk, and Delivery Support Head can assign tickets to delivery support'
+                'message' => 'You are not allowed to assign tickets to delivery support'
             ], 403);
         }
 
@@ -4127,11 +4063,10 @@ class TicketController extends Controller
         }
 
         // Only Admin, Helpdesk, and RPMO can create delivery supports
-        $roleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id']]);
-        if (!array_intersect($roleIds, RoleId::TICKET_MANAGER_GROUP)) {
+        if (!$this->canTicket('ticket.assign-delivery-support')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only Admin, Helpdesk, and RPMO can create delivery supports'
+                'message' => 'You are not allowed to create delivery supports'
             ], 403);
         }
 

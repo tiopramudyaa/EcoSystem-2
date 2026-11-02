@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Delivery;
 
-use App\Enums\RoleId;
 use App\Http\Controllers\Controller;
 use App\Models\DeliverySupport;
 use App\Models\DeliverySupportPhase;
@@ -281,8 +280,7 @@ class DeliverySupportController extends Controller
     public function update(Request $request, DeliverySupport $support)
     {
         $sessionUser = session('user');
-        $roleIds     = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-        $canEditType = (bool) array_intersect($roleIds, RoleId::TICKET_MANAGER_GROUP);
+        $canEditType = \App\Models\Employee::find(session('user.id'))?->hasPermission('ticket.manage') ?? false;
 
         $rules = [
             'name'                 => 'required|string|max:255',
@@ -407,9 +405,8 @@ class DeliverySupportController extends Controller
             ->whereDoesntHave('children')
             ->sum('actual_amount');
 
-        $sessionUser = session('user') ?? [];
-        $roleIds     = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-        $isEcAdmin   = in_array(RoleId::EC_ADMINISTRATOR->value, $roleIds, true);
+        // Holders of `delivery-support.ticket-links` see every linked ticket; everyone else only the ones they take part in.
+        $isEcAdmin = \App\Models\Employee::find(session('user.id'))?->hasPermission('delivery-support.ticket-links') ?? false;
 
         $linkedTickets = $isEcAdmin
             ? DB::table('delivery_support_activities')
@@ -462,8 +459,7 @@ class DeliverySupportController extends Controller
             switch ($section) {
                 case 'support-info':
                     $sessionUser = session('user');
-                    $roleIds     = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-                    $canEditType = (bool) array_intersect($roleIds, RoleId::TICKET_MANAGER_GROUP);
+                    $canEditType = \App\Models\Employee::find(session('user.id'))?->hasPermission('ticket.manage') ?? false;
 
                     $rules = [
                         'name' => 'required|string|max:255',

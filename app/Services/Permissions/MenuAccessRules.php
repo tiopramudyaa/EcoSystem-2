@@ -69,7 +69,8 @@ final class MenuAccessRules
 
     public function isProtected(int $roleId, string $slug): bool
     {
-        return $roleId === (int) $this->config['protected_role_id'] && in_array($slug, $this->config['protected'], true);
+        // `protected_role_id` is injected by the caller (the system owner's role, found by name) so this class stays free of the database.
+        return $roleId === (int) ($this->config['protected_role_id'] ?? 0) && in_array($slug, $this->config['protected'], true);
     }
 
     /**

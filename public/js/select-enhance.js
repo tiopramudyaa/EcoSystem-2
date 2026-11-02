@@ -230,6 +230,10 @@
             if (opt.disabled) item.classList.add('is-disabled');
             if (idx === sel.selectedIndex) item.classList.add('is-active');
             item.dataset.index = String(idx);
+            item.setAttribute('role', 'option');
+            item.setAttribute('aria-selected', idx === sel.selectedIndex ? 'true' : 'false');
+            if (opt.disabled) item.setAttribute('aria-disabled', 'true');
+            item.tabIndex = -1; // reached with the arrow keys; Tab moves on to the next field instead of walking every option
             item.textContent = opt.textContent.trim() || ' ';
             item.title = opt.textContent.trim();
             panel.appendChild(item);
@@ -301,7 +305,7 @@
 
         // Keyboard: Escape tutup, Enter pilih satu-satunya hasil
         input.addEventListener('keydown', e => {
-            if (e.key === 'Escape') { e.preventDefault(); closeOpen(); return; }
+            // Escape / arrows are handled on the panel (enhance → kbdHandler), which also returns focus to the trigger.
             if (e.key === 'Enter') {
                 e.preventDefault();
                 const visible = Array.from(panel.querySelectorAll('.se-item')).filter(i => i.style.display !== 'none');
@@ -502,9 +506,47 @@
                 sel.dispatchEvent(new Event('input',  { bubbles: true }));
                 sel.dispatchEvent(new Event('change', { bubbles: true }));
             }
+            const keyboardPick = panel.contains(document.activeElement);
             closeOpen();
             renderItems(sel, panel, label);   // refresh active highlight
+            if (keyboardPick) btn.focus();
         });
+
+        // Keyboard: the trigger opens with Enter / Space / arrows; arrows, Home and End walk the options; Esc closes and
+        // returns focus to the trigger; Tab closes and moves on.
+        function kbdItems() {
+            return Array.from(panel.querySelectorAll('.se-item')).filter(i => i.style.display !== 'none' && !i.classList.contains('is-disabled'));
+        }
+        function kbdMove(dir, absolute) {
+            const items = kbdItems();
+            if (!items.length) return;
+            const at = items.indexOf(document.activeElement);
+            let next;
+            if (absolute === 'start') next = 0;
+            else if (absolute === 'end') next = items.length - 1;
+            else if (at < 0) next = dir > 0 ? Math.max(0, items.findIndex(i => i.classList.contains('is-active'))) : items.length - 1;
+            else next = (at + dir + items.length) % items.length;
+            items[next].focus();
+            items[next].scrollIntoView({ block: 'nearest' });
+        }
+        function kbdHandler(e) {
+            const isOpen = wrap.classList.contains('is-open');
+            if (e.key === 'Tab') { if (isOpen) closeOpen(); return; }
+            if (e.key === 'Escape') { if (isOpen) { e.preventDefault(); e.stopPropagation(); closeOpen(); btn.focus(); } return; }
+            const down = e.key === 'ArrowDown', up = e.key === 'ArrowUp';
+            if (!down && !up && e.key !== 'Home' && e.key !== 'End') return;
+            if (e.target === panel._seSearch && (e.key === 'Home' || e.key === 'End')) return; // caret movement in the search box
+            e.preventDefault();
+            if (!isOpen) {
+                if (sel.disabled || !(down || up)) return;
+                openWrapEl(wrap, sel);
+                if (!panel._seSearch) requestAnimationFrame(() => kbdMove(down ? 1 : -1));
+                return;
+            }
+            kbdMove(down ? 1 : -1, e.key === 'Home' ? 'start' : e.key === 'End' ? 'end' : null);
+        }
+        btn.addEventListener('keydown', kbdHandler);
+        panel.addEventListener('keydown', kbdHandler);
 
         // Sinkronisasi balik: kalau kode lain mengubah nilai/option select secara
         // programmatic, ikut update tampilan.

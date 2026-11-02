@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Models\AuditLog;
 use App\Models\ConsultantMandays;
 use App\Models\ConsultantMandaysDetail;
@@ -32,7 +31,7 @@ class ConsultantWorkloadController extends Controller
 
             $consultants = Employee::with(['basicData', 'roles'])
                 ->where('is_active', true)
-                ->withAnyRole([RoleId::DELIVERY_SUPPORT_USER->value])
+                ->withMenuPermission('ticket.eligible-ticket-member')
                 ->whereHas('basicData', fn ($q) => $q->byPosition('SAP CONSULTANT'))
                 ->get();
 

@@ -32,7 +32,8 @@ class RoleMenuAccessService
 
     public function __construct(?MenuAccessRules $rules = null)
     {
-        $this->rules = $rules ?? new MenuAccessRules((array) config('menu_access'));
+        // The protected role is the system owner, found by its configured name (config/roles.php → admin_role_name), never by a fixed ID.
+        $this->rules = $rules ?? new MenuAccessRules(array_merge((array) config('menu_access'), ['protected_role_id' => \App\Support\MenuRegistrar::adminRoleId()]));
     }
 
     public function rules(): MenuAccessRules
