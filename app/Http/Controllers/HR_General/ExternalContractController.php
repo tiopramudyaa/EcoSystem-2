@@ -83,6 +83,16 @@ class ExternalContractController extends Controller
         ]);
     }
 
+    /** Dashboard tab: the counts of the external contracts and the ones about to end. Changes nothing. */
+    public function dashboard()
+    {
+        return view('hr-general.external.contracts.dashboard', [
+            'summary' => $this->external->summary(),
+            'ending' => $this->external->endingSoon(),
+            'endingDays' => (int) \App\Services\Management\EmployeeMasterData::rule('contract', 'ending_soon_days'),
+        ]);
+    }
+
     /** Halaman kelola satu konsultan: ringkasan, riwayat kontrak, dan formulir kontrak baru / ubah. */
     public function manage(Request $request, int $employeeId)
     {
@@ -207,7 +217,7 @@ class ExternalContractController extends Controller
         $mask = !$this->canRate();
         $status = ContractRules::effectiveStatus($contract->lifecycle_status, (bool) $contract->is_active, $contract->end_date?->toDateString(), now()->toDateString());
 
-        return view('hr-general.contracts.document', [
+        return view('legal.contracts.document', [
             'external'    => true,
             'statusLabel' => ContractRules::STATUS_LABELS[$status] ?? $status,
             'statusTone'  => match ($status) {
@@ -233,7 +243,7 @@ class ExternalContractController extends Controller
         $contract = $this->externalContract($contractId);
         $doc = $this->contracts->document($contract, false);
 
-        $pdf = Pdf::loadView('hr-general.contracts.pdf', ['doc' => $doc])->setPaper(\App\Support\Contracts\PageSettings::paper($doc));
+        $pdf = Pdf::loadView('legal.contracts.pdf', ['doc' => $doc])->setPaper(\App\Support\Contracts\PageSettings::paper($doc));
         $file = str_replace(['/', '\\'], '-', $contract->contract_number) . '.pdf';
 
         return request()->boolean('download') ? $pdf->download($file) : $pdf->stream($file);

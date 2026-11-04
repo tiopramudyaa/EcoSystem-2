@@ -28,6 +28,7 @@ class DemoDataSeeder extends Seeder
         $this->call([
             DemoComparisonAccountsSeeder::class, // DEMO-INT01/02, DEMO-EXT01/02 — dasar untuk seeder di bawahnya
             EssTestAccountsSeeder::class,        // akun uji ESS (Siti Rahma, Budi, Dewi HR) + atasannya
+            ComplianceDemoSeeder::class,         // contoh isi Compliance + laporan milik Siti (ESS001) — butuh EssTestAccountsSeeder
             ContractDemoSeeder::class,           // kontrak PKWT / PKWTT / External dalam berbagai status
             ExternalDemoSeeder::class,           // konsultan eksternal, kontrak, surat
             OffboardingDemoSeeder::class,        // butuh akun DEMO-* dan kontrak di atas

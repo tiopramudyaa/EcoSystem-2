@@ -69,9 +69,9 @@
     @include('hr-general.external.contracts.components.tabs')
     @include('partials.accent-remap')
     <style>#extContractForm .grid > *, #extContractForm fieldset { min-width: 0; } #extContractForm .se-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }</style>
-    @include('hr-general.contracts.components.issues-panel', ['issuesCanOpen' => $canProfile])
+    @include('legal.contracts.components.issues-panel', ['issuesCanOpen' => $canProfile])
     @include('hr-general.recruitment.components.form-errors')
-    @include('hr-general.contracts.components.confirm-forms')
+    @include('legal.contracts.components.confirm-forms')
 
     {{-- Consultant --}}
     <header class="{{ $card }} px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -395,7 +395,7 @@
 
                 {{-- 6 · Generate the contract from the fields above, then read it and adjust it (Legal / HR / RPMO) before saving. --}}
                 <div class="grid grid-cols-1">
-                    @include('hr-general.contracts.components.document-composer', [
+                    @include('legal.contracts.components.document-composer', [
                         'dcForm' => 'extContractForm', 'dcUrl' => route('general.external.contracts.preview', $c->employee_id), 'dcExternal' => true, 'dcContract' => $editing ? $edit : null,
                     ])
                 </div>

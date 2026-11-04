@@ -4990,4 +4990,37 @@ return array (
     'seq' => 21,
     'active' => true,
   ),
+  453 => 
+  array (
+    'slug' => 'legal.compliance',
+    'name' => 'Compliance Management',
+    'type' => 'page',
+    'parent' => 'legal',
+    'route' => NULL,
+    'icon' => NULL,
+    'seq' => 10,
+    'active' => true,
+  ),
+  454 => 
+  array (
+    'slug' => 'control-center.web-reports',
+    'name' => 'Web Report Management',
+    'type' => 'page',
+    'parent' => 'control-center',
+    'route' => NULL,
+    'icon' => NULL,
+    'seq' => 9,
+    'active' => true,
+  ),
+  455 => 
+  array (
+    'slug' => 'ess.my_compliance',
+    'name' => 'My Compliance',
+    'type' => 'page',
+    'parent' => NULL,
+    'route' => NULL,
+    'icon' => NULL,
+    'seq' => 7,
+    'active' => true,
+  ),
 );

@@ -22,7 +22,7 @@ class LegalBasisController extends Controller
 
     public function __construct(private LegalBasisService $legal) {}
 
-    /** Legal → Legal Basis tab (the Dashboard tab is LegalDashboardController). */
+    /** Legal → Legal Basis → Register tab. */
     public function index(Request $request)
     {
         return view('legal.basis', ['basis' => $this->legal->registerPage((string) $request->query('module'))]);
