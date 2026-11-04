@@ -302,6 +302,18 @@
         .lp-btn:hover:not(:disabled) { background:#800000; }
         .lp-btn:active:not(:disabled) { transform:scale(.98); }
         .lp-btn:disabled { cursor:not-allowed; opacity:.85; }
+        /* Report (Web Report): open to everyone, so it sits on the login page. A tertiary button — a small text link set apart
+           from Sign In, so it is not hit by accident. */
+        .lp-report { display:flex; justify-content:center; margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid #F0EDEA; }
+        .lp-btn-tertiary {
+            display:inline-flex; align-items:center; gap:.4rem;
+            padding:.35rem .75rem; background:none; border:none; border-radius:6px;
+            color:#6B6864; text-decoration:none; cursor:pointer;
+            font-family:'Plus Jakarta Sans',sans-serif; font-size:.8125rem; font-weight:500;
+            transition:color .15s ease, background .15s ease;
+        }
+        .lp-btn-tertiary:hover { color:#A00000; background:rgba(160,0,0,.05); }
+        .lp-btn-tertiary:focus-visible { outline:2px solid #A00000; outline-offset:2px; }
 
         /* ── Toast ─────────────────────────────────────────────────── */
         #toast-container {
@@ -685,6 +697,17 @@
                         <span style="font-size:.875rem;font-weight:600;">Signing in...</span>
                     </div>
                 </button>
+
+            </form>
+
+            {{-- Report (Web Report): anyone can report an issue without an account. Outside the form and a quiet text button, so it is never
+                 mistaken for Sign In. --}}
+            <div class="lp-report">
+                <a href="{{ route('web-report.form') }}" class="lp-btn-tertiary" title="Report an issue — no account needed">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></svg>
+                    Report
+                </a>
+            </div>
         </div>
     </div>
 

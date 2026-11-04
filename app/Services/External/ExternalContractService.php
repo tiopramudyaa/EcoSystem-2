@@ -73,6 +73,17 @@ class ExternalContractService
         return ['total' => (int) $row->total, 'active' => (int) $row->active, 'draft' => (int) $row->draft, 'templated' => (int) $row->templated];
     }
 
+    /** Active external contracts that end within the "ending soon" window (nearest first) — for the Dashboard tab. */
+    public function endingSoon(int $limit = 8): array
+    {
+        $today = now()->toDateString();
+        $until = now()->addDays((int) \App\Services\Management\EmployeeMasterData::rule('contract', 'ending_soon_days'))->toDateString();
+
+        return $this->baseQuery(false)->whereNotIn(DB::raw("IFNULL(c.lifecycle_status,'')"), ['draft', 'terminated'])->where('c.is_active', 1)
+            ->whereBetween('c.end_date', [$today, $until])->orderBy('c.end_date')->limit($limit)->get()
+            ->map(fn ($row) => $this->decorate($row, $today))->all();
+    }
+
     private function baseQuery(bool $canRate, bool $columns = true)
     {
         return DB::table('employee_contract as c')

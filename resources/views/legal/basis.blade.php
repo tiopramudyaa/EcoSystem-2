@@ -1,6 +1,6 @@
 @extends('dashboard')
 @section('title', 'Legal Basis')
-@section('page-title', 'Legal')
+@section('page-title', 'Legal Basis')
 @section('page-subtitle', 'The laws and regulations behind payroll, BPJS, overtime, contract and offboarding rules — with the date each was last amended.')
 
 @section('content')

@@ -4,4 +4,4 @@
     ['label' => 'Settings', 'icon' => 'sliders', 'route' => 'general.offboarding.settings.index', 'is' => 'general/offboarding/settings*', 'gate' => 'general.offboarding.settings', 'strict' => true],
 ], 'hubHideSingle' => true])
 @include('partials.accent-remap')
-@include('hr-general.contracts.components.confirm-forms')
+@include('legal.contracts.components.confirm-forms')

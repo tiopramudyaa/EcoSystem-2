@@ -1613,41 +1613,54 @@
         <!-- Sidebar - Modern Design (Separated in partials/sidebar.blade.php) -->
         @include('partials.sidebar')
 
-        <main id="mainContent" class="sidebar-transition flex-1 ml-0 lg:ml-64 min-w-0">
+        <main id="mainContent" class="sidebar-transition flex-1 ml-0 lg:ml-64 min-w-0" style="overflow-x: clip;">
             <!-- Header - Modern Design -->
             <header class="sticky top-0 z-40 shadow-sm border-b border-gray-100"
                 style="background-color: var(--card-bg);">
-                <div class="px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center gap-3">
-                    <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div class="px-3 sm:px-6 py-2.5 sm:py-4 flex justify-between items-center gap-2 sm:gap-3">
+                    <div class="flex items-center gap-2 sm:gap-4 min-w-0">
                         <button onclick="toggleSidebar()"
-                            class="flex-shrink-0 w-10 h-10 flex items-center justify-center border-2 rounded-xl hover:bg-opacity-10 primary-hover primary-border transition-all"
+                            class="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center border-2 rounded-xl hover:bg-opacity-10 primary-hover primary-border transition-all"
                             style="border-color: var(--primary-color); color: var(--text-color);">
                             <i class="fas fa-bars"></i>
                         </button>
                         <div class="min-w-0">
                             <h1 class="text-base sm:text-xl font-bold mb-0.5 truncate"
                                 style="color: var(--text-color);">@yield('page-title', 'Dashboard')</h1>
-                            <p class="text-xs text-gray-500 truncate">@yield('page-subtitle', 'Welcome back')</p>
+                            <p class="hidden sm:block text-xs text-gray-500 truncate">@yield('page-subtitle', 'Welcome back')</p>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                    <div class="flex items-center gap-1.5 sm:gap-4 flex-shrink-0">
                         <!-- Search Bar -->
                         @yield('page-actions')
                         @stack('page-actions-extra')
                         <!-- Notification Bell -->
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1.5 sm:gap-2">
+                            {{-- Web Report shortcut: only for people who hold the Web Report Management slug. Red with the number of NEW reports; plain when there is none. --}}
+                            @if(!empty($can) && $can(config('web-report.slug')))
+                                @php $wrNew = \App\Models\WebReport::web()->where('status', 'new')->count(); @endphp
+                                <a href="{{ route('admin.web-reports.index', $wrNew ? ['status' => 'new'] : []) }}"
+                                    title="{{ $wrNew ? $wrNew . ' new web report' . ($wrNew > 1 ? 's' : '') . ' — open Web Report Management' : 'Web Report Management' }}"
+                                    aria-label="Web Report Management{{ $wrNew ? ', ' . $wrNew . ' new' : '' }}"
+                                    class="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center border-2 rounded-xl transition-all {{ $wrNew ? 'border-red-300 bg-red-50 text-red-700 hover:border-red-800' : 'border-gray-200 text-gray-600 hover:border-red-800 hover:bg-red-50 hover:text-red-800' }}">
+                                    <i class="fas fa-bullhorn text-sm" aria-hidden="true"></i>
+                                    @if($wrNew)
+                                        <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-600 rounded-full border-2 border-white text-white text-[10px] font-bold flex items-center justify-center leading-none">{{ $wrNew > 99 ? '99+' : $wrNew }}</span>
+                                    @endif
+                                </a>
+                            @endif
                             <button type="button" onclick="openGlobalSearch()" title="Quick search (Ctrl+K)" aria-label="Quick search (Ctrl+K)" aria-haspopup="dialog"
-                                class="w-10 h-10 flex items-center justify-center border-2 border-gray-200 rounded-xl hover:border-red-800 hover:bg-red-50 transition-all text-gray-600 hover:text-red-800">
+                                class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center border-2 border-gray-200 rounded-xl hover:border-red-800 hover:bg-red-50 transition-all text-gray-600 hover:text-red-800">
                                 <i class="fas fa-search text-sm" aria-hidden="true"></i>
                             </button>
                             <button id="soundToggleBtn" onclick="toggleNotifSound()" title="Disable notification sound"
-                                class="w-10 h-10 flex items-center justify-center border-2 border-gray-200 rounded-xl hover:border-red-800 hover:bg-red-50 transition-all text-red-700 hover:text-red-800">
+                                class="hidden sm:flex w-10 h-10 items-center justify-center border-2 border-gray-200 rounded-xl hover:border-red-800 hover:bg-red-50 transition-all text-red-700 hover:text-red-800">
                                 <i id="soundToggleIcon" class="fas fa-volume-up text-sm"></i>
                             </button>
                             <div class="relative" id="bellWrapper">
                                 <button id="bellBtn" onclick="toggleBellDropdown()"
-                                    class="relative w-10 h-10 flex items-center justify-center border-2 border-gray-200 rounded-xl hover:border-red-800 hover:bg-red-50 transition-all text-gray-600 hover:text-red-800">
+                                    class="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center border-2 border-gray-200 rounded-xl hover:border-red-800 hover:bg-red-50 transition-all text-gray-600 hover:text-red-800">
                                     <i class="fas fa-bell"></i>
                                     <span id="bellBadge"
                                         class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-600 rounded-full border-2 border-white text-white text-[10px] font-bold items-center justify-center leading-none"></span>
@@ -1655,7 +1668,7 @@
 
                                 <!-- Notification Dropdown -->
                                 <div id="bellDropdown"
-                                    class="hidden absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
+                                    class="hidden fixed left-3 right-3 top-[3.75rem] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
                                     <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                                         <span class="text-sm font-semibold text-gray-800">Notifications</span>
                                         <div class="flex gap-2">
@@ -1676,13 +1689,13 @@
                         <!-- User Menu -->
                         <div class="relative">
                             <button onclick="toggleUserDropdown()"
-                                class="flex items-center gap-3 px-4 py-2.5 border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-red-800 transition-all">
+                                class="flex items-center gap-2 sm:gap-3 px-1.5 py-1 sm:px-4 sm:py-2.5 border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-red-800 transition-all">
                                 @php
                                     $isCustomerUser = isset($user['type']) && $user['type'] === 'customer';
                                     $avatarV = $isCustomerUser ? null : \App\Support\Avatar::version((int) ($user['id'] ?? 0));
                                 @endphp
                                 <div data-topbar-avatar data-employee-id="{{ $isCustomerUser ? '' : ($user['id'] ?? '') }}"
-                                    class="w-10 h-10 rounded-xl primary-gradient text-white flex items-center justify-center font-bold text-sm shadow-md overflow-hidden">
+                                    class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl primary-gradient text-white flex items-center justify-center font-bold text-sm shadow-md overflow-hidden">
                                     @if(!$isCustomerUser)
                                         {{-- Foto profil sendiri bila ada (diganti dari My Profile → Basic Data → Profile photo); inisial bila tidak ada / gagal dimuat. --}}
                                         <img id="topbarAvatarImg" alt="" class="w-full h-full object-cover {{ $avatarV ? '' : 'hidden' }}"
@@ -1709,7 +1722,7 @@
                                         {{ $user['role']['name'] ?? 'User' }}
                                     </div>
                                 </div>
-                                <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                                <i class="fas fa-chevron-down text-gray-500 text-xs hidden sm:inline"></i>
                             </button>
 
                             <div id="userDropdown"
@@ -1745,7 +1758,7 @@
             <!-- Content Area -->
             {{-- `clip` (not `hidden`) so sticky elements inside pages (e.g. Payroll Settings sidebar) can stick to the viewport; `hidden` is the fallback for old browsers. --}}
             <div style="overflow-x: hidden; overflow-x: clip;">
-                <div class="@yield('content-class', 'p-6')">
+                <div class="@yield('content-class', 'p-4 sm:p-6')">
                     @yield('content')
                 </div>
             </div>

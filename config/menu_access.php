@@ -75,6 +75,8 @@ return [
         'general.offboarding.settings',          // Create = add a task, Edit = switches and tasks, Delete = delete a task
         'finance.legal-basis',                   // Create = add a rule or version, Edit = change / mark reviewed, Delete = supersede
         'finance.legal-basis.settings',          // Edit = change the show / draft / enforce switches
+        'legal.compliance',                      // Create = add a category / article / rule / critical rule / session, Edit = change one, Delete = delete one
+        'control-center.web-reports',            // Edit = change a report's status and notes (no Create or Delete: reports only arrive from the public Web Report form)
         'legal.sales-compliance',                // Create = start a request, Edit = change / submit / cancel your own draft, Delete = delete a never-submitted draft
         'legal.sales-compliance.settings',       // Create = add a step or question, Edit = change one, Delete = delete a step
         'legal.vendor-onboarding',               // Create = register a vendor, Edit = change / submit / start review / link a Business Partner, Delete = delete a never-submitted draft
@@ -135,7 +137,7 @@ return [
      * sebagian tab saja). Urutan = urutan tab di layar. Hanya memengaruhi pengelompokan di halaman Menu Access.
      */
     'hubs' => [
-        ['key' => 'legal',        'label' => 'Legal',                'tabs' => ['legal', 'finance.legal-basis', 'finance.legal-basis.settings']],
+        ['key' => 'legal',        'label' => 'Legal Basis',          'tabs' => ['finance.legal-basis', 'finance.legal-basis.settings']],
         ['key' => 'offboarding',   'label' => 'Offboarding',          'tabs' => ['general.offboarding.list', 'general.offboarding.settings']],
         ['key' => 'attendance',     'label' => 'Attendance',          'tabs' => ['general.attendance', 'general.attendance.monthly', 'general.attendance.correction', 'general.settings.shifts', 'general.settings.attendance']],
         ['key' => 'overtime',       'label' => 'Overtime Management', 'tabs' => ['general.overtime', 'general.settings.overtime', 'general.approval-workflow.overtime']],
@@ -190,6 +192,8 @@ return [
         'general.offboarding.settings'        => ['c' => 'Add a checklist task', 'e' => 'Change the switches and tasks', 'd' => 'Delete a checklist task'],
         'finance.legal-basis'                 => ['c' => 'Add a rule or a new version', 'e' => 'Edit an entry / mark it reviewed', 'd' => 'Mark a version superseded'],
         'finance.legal-basis.settings'        => ['e' => 'Change the show / draft / enforce switches'],
+        'legal.compliance'                    => ['c' => 'Add a category, article, rule, critical rule or training session', 'e' => 'Edit one of them', 'd' => 'Delete one of them'],
+        'control-center.web-reports'          => ['e' => 'Change the status of a report, the message to the reporter and the internal note'],
         'legal.sales-compliance'              => ['c' => 'Start a sales compliance request', 'e' => 'Change, submit or cancel your own draft', 'd' => 'Delete a draft that was never submitted'],
         'legal.sales-compliance.settings'     => ['c' => 'Add an approval step or a question', 'e' => 'Change a step or a question', 'd' => 'Delete an approval step'],
         'legal.vendor-onboarding'             => ['c' => 'Register a vendor', 'e' => 'Change / submit a registration, start the review, create or link the Business Partner', 'd' => 'Delete a draft that was never submitted'],
@@ -289,17 +293,19 @@ return [
         ['key' => 'ticketing',   'label' => 'Ticketing',                 'group' => 'Work & Service', 'short' => 'Ticketing', 'match' => ['tickets', 'tickets.*', 'ticket', 'ticket.*', 'room-chat', 'room-chat.*', 'ui', 'ui.*', 'staging', 'staging.*']],
         ['key' => 'delivery',    'label' => 'Delivery',                  'group' => 'Work & Service', 'short' => 'Delivery', 'match' => ['delivery', 'delivery.*', 'delivery-project.*', 'delivery-support.*']],
         ['key' => 'sla-rpmo',    'label' => 'SLA & RPMO',                'group' => 'Work & Service', 'short' => 'SLA & RPMO', 'match' => ['sla', 'sla.*', 'rpmo', 'rpmo.*']],
-        // Business & Legal — same order as the sidebar: Legal Basis (with the dashboard), Contract, Business Partner (Business Dev is not built yet)
-        // Sales Compliance and Vendor Onboarding come BEFORE Legal Basis on purpose: the first matching entry wins and Legal Basis claims `legal.*`.
+        // Business & Legal — same order as the sidebar: Legal Basis, Compliance Management, Sales Compliance, Vendor Onboarding, Contract, Document Identity, Business Partner (Business Dev is not built yet)
+        ['key' => 'legal-basis', 'label' => 'Legal · Legal Basis', 'group' => 'Business & Legal', 'short' => 'Legal Basis',
+            'about' => 'The Legal Basis register and its settings. Web Report Management is in Control Center.',
+            'match' => ['legal', 'finance.legal-basis', 'finance.legal-basis.*']],
+        ['key' => 'legal-compliance', 'label' => 'Legal · Compliance Management', 'group' => 'Business & Legal', 'short' => 'Compliance Management',
+            'about' => 'One slug for the four tabs (Dashboard, Reports, Content, Settings): View opens them, Create / Edit / Delete add, change and remove content and settings; Edit also lets a person follow up a report. Staff reach My Compliance without any permission.',
+            'match' => ['legal.compliance', 'legal.compliance.*']],
         ['key' => 'legal-sales-compliance', 'label' => 'Legal · Sales Compliance Approval', 'group' => 'Business & Legal', 'short' => 'Sales Compliance',
             'about' => 'Compliance review of each sales deal. Sales fill and submit; the people named on the approval steps (Settings) decide without needing a menu. The "Approve / Reject" box is only for someone who must decide without being named, and it also lets them see every request.',
             'match' => ['legal.sales-compliance', 'legal.sales-compliance.*']],
         ['key' => 'legal-vendor-onboarding', 'label' => 'Legal · Vendor Onboarding', 'group' => 'Business & Legal', 'short' => 'Vendor Onboarding',
             'about' => 'Review of vendor registrations. A verified vendor becomes a Business Partner of type Vendor (needs Create on Master → Business Partner).',
             'match' => ['legal.vendor-onboarding', 'legal.vendor-onboarding.*']],
-        ['key' => 'legal-basis', 'label' => 'Legal · Dashboard & Legal Basis', 'group' => 'Business & Legal', 'short' => 'Legal Basis',
-            'about' => 'One Legal page with two tabs: the Dashboard (summary cards — each card still follows your own Contract, External Contract and Document Identity access) and the Legal Basis register.',
-            'match' => ['legal', 'legal.*', 'finance.legal-basis', 'finance.legal-basis.*']],
         ['key' => 'legal-contract','label' => 'Legal · Contract',       'group' => 'Business & Legal', 'short' => 'Contract', 'match' => ['general.contracts', 'general.contracts.*']],
         ['key' => 'doc-identity', 'label' => 'Legal · Document Identity', 'group' => 'Business & Legal', 'short' => 'Document Identity',
             'about' => 'Letterheads and signers, shared by HR letters and Legal contracts. Give this to Legal instead of the whole Letter Templates settings (numbering, letter types and request types stay with HR).',

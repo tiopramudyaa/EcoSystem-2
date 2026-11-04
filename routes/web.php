@@ -193,8 +193,9 @@ Route::middleware(CheckAuthToken::class)->group(function () {
          ->name('rpmo.periods.index')->middleware('menu:rpmo.periods');
 
     // ==================== LEGAL ====================
-    Route::get('/legal', [\App\Http\Controllers\LegalDashboardController::class, 'index'])
-        ->name('legal')->middleware('menu:legal');
+    // The old Legal dashboard is gone: each Legal sub menu has its own Dashboard tab. The address (and the route name, which the menu
+    // registry still points to) now leads to Legal Basis.
+    Route::redirect('/legal', '/legal/basis')->name('legal');
 
     // ==================== ADMIN ====================
     Route::prefix('admin')->name('admin.')->group(function () {
@@ -739,6 +740,14 @@ require __DIR__ . '/hr-external.php';
 // ==================== OFFBOARDING + REGISTER DASAR HUKUM ROUTES ====================
 // Offboarding (HR & General) dan Legal Basis (Finance) — berkas baru; modul aditif
 require __DIR__ . '/hr-offboarding.php';
+
+// ==================== COMPLIANCE ROUTES ====================
+// My Compliance (semua pengguna login) dan manajemen Compliance di Legal (berkas baru; modul aditif)
+require __DIR__ . '/compliance.php';
+
+// ==================== WEB REPORT ROUTES ====================
+// Formulir laporan PUBLIK tanpa login (tombolnya di halaman login) dan Web Report Management di Control Center (berkas baru; modul aditif)
+require __DIR__ . '/web-report.php';
 
 // ==================== SALES COMPLIANCE APPROVAL + VENDOR ONBOARDING ROUTES ====================
 // Business & Legal: persetujuan compliance deal sales dan peninjauan pendaftaran vendor (berkas baru; modul aditif)

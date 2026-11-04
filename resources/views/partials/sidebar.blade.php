@@ -146,6 +146,14 @@
                         'active'  => Request::is('general/my-letter-requests*'),
                         'visible' => !empty($essConfig['my_letter_requests']) && $can('general.my-letter-requests'),
                     ],
+                    // Every signed-in user (slug ess.my_compliance is Global ESS); the content is managed in Legal → Compliance Management.
+                    'my_compliance' => [
+                        'label'   => 'My Compliance',
+                        'icon'    => 'fas fa-shield-halved',
+                        'href'    => route('compliance.index'),
+                        'active'  => Request::is('compliance', 'compliance/*'),
+                        'visible' => !empty($essConfig['my_compliance']),
+                    ],
                     'my_kpis' => [
                         'label'   => 'My KPI',
                         'icon'    => 'fas fa-chart-line',
@@ -450,9 +458,17 @@
             @endif
 @php $sb['offboarding'] = ob_get_clean(); @endphp
 @php ob_start(); @endphp
-            {{-- Business & Legal → Legal: ONE item for the Legal page (tabs: Dashboard · Register · Settings); opens the first tab this person may see. --}}
-            @if($can('legal') || $can('finance.legal-basis') || $can('finance.legal-basis.settings'))
-                @include('partials.ess-nav-item', ['href' => $can('legal') ? route('legal') : route($can('finance.legal-basis') ? 'finance.legal-basis.index' : 'finance.legal-basis.settings'), 'icon' => 'fas fa-scale-balanced', 'label' => 'Legal Basis', 'active' => Request::is('legal', 'legal/basis*'), 'nested' => false])
+            {{-- Business & Legal → Legal: Legal Basis (tabs: Register · Settings) opens at the first tab this person may see; Compliance Management is its own
+                 item (own permission, slug in config/compliance.php) with its own tabs. Web Report Management lives in Control Center. --}}
+            @php
+                $legalTabs = ['finance.legal-basis' => route('finance.legal-basis.index'), 'finance.legal-basis.settings' => route('finance.legal-basis.settings')];
+                $legalHref = collect($legalTabs)->first(fn ($url, $slug) => $can($slug));
+            @endphp
+            @if($legalHref)
+                @include('partials.ess-nav-item', ['href' => $legalHref, 'icon' => 'fas fa-scale-balanced', 'label' => 'Legal Basis', 'active' => Request::is('legal/basis*'), 'nested' => false])
+            @endif
+            @if($can(config('compliance.slugs.manage')))
+                @include('partials.ess-nav-item', ['href' => route('compliance.manage.reports'), 'icon' => 'fas fa-shield-halved', 'label' => 'Compliance Management', 'active' => Request::is('legal/compliance*'), 'nested' => false])
             @endif
 @php $sb['legal_basis'] = ob_get_clean(); @endphp
 @php ob_start(); @endphp
@@ -959,6 +975,14 @@
                                 <span class="nav-icon w-4 h-4 flex items-center justify-center"><i
                                         class="fas fa-music text-xs"></i></span>
                                 <span class="nav-text text-sm">Notif Sounds</span>
+                            </a>
+                        @endif
+                        @if($can(config('web-report.slug')))
+                            <a href="{{ route('admin.web-reports.index') }}"
+                                class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg {{ Request::is('admin/web-reports*') ? 'bg-white bg-opacity-15 text-white font-medium' : 'text-white text-opacity-70 hover:bg-white hover:bg-opacity-10 hover:text-white' }} transition-all">
+                                <span class="nav-icon w-4 h-4 flex items-center justify-center"><i
+                                        class="fas fa-bullhorn text-xs"></i></span>
+                                <span class="nav-text text-sm">Web Report Management</span>
                             </a>
                         @endif
                     </div>

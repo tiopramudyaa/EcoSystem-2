@@ -142,9 +142,9 @@ class MyContractController extends Controller
     {
         $c = EmployeeContract::findOrFail($contractId);
         $this->roleOf($c);
-        $legal = app(\App\Http\Controllers\HR_General\ContractSigningController::class);
+        $legal = app(\App\Http\Controllers\Legal\ContractSigningController::class);
 
-        return Pdf::loadView('hr-general.contracts.signing-record', $legal->recordData($c))->setPaper('a4')->stream('signing-record-' . $contractId . '.pdf');
+        return Pdf::loadView('legal.contracts.signing-record', $legal->recordData($c))->setPaper('a4')->stream('signing-record-' . $contractId . '.pdf');
     }
 
     /**

@@ -118,7 +118,7 @@
                 @if($isEdit) (letter type “{{ $def->label_en }}”)@else (set once the template is saved)@endif.
             </p>
 
-            @include('hr-general.contracts.components.word-editor', [
+            @include('legal.contracts.components.word-editor', [
                 'weHtml'         => $bodyId,
                 'weInput'        => 'bodyCurrent',
                 'weForm'         => 'designForm',

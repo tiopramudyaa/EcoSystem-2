@@ -23,7 +23,7 @@
 @section('content')
 <div class="w-full space-y-6 px-1 lg:px-2">
     @include('partials.accent-remap')
-    @include('hr-general.contracts.components.confirm-forms')
+    @include('legal.contracts.components.confirm-forms')
     @include('partials.hub-tabs', ['hubTabs' => collect($tabs)->map(fn ($t) => [
         'label' => $t['plural'], 'icon' => $t['icon'], 'route' => $t['route'], 'is' => 'general/external/' . $t['path'] . '*',
         'gate' => $t['slug'], 'strict' => true,

@@ -5,4 +5,4 @@
     ['label' => 'Settings', 'icon' => 'sliders', 'route' => 'general.external.timesheet.settings.index', 'is' => 'general/external/timesheet/settings*', 'gate' => 'general.external.timesheet.settings', 'strict' => true],
 ], 'hubHideSingle' => true])
 @include('partials.accent-remap')
-@include('hr-general.contracts.components.confirm-forms')
+@include('legal.contracts.components.confirm-forms')

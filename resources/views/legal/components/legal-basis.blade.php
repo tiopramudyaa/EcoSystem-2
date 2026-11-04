@@ -10,7 +10,7 @@
     $confTone = ['high' => 'text-green-700', 'medium' => 'text-amber-700', 'low' => 'text-red-600'];
 @endphp
     @include('partials.accent-remap')
-    @include('hr-general.contracts.components.confirm-forms')
+    @include('legal.contracts.components.confirm-forms')
     @include('hr-general.recruitment.components.form-errors')
     @if(session('success'))<div class="text-xs bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3"><i class="fas fa-circle-check mr-1"></i> {{ session('success') }}</div>@endif
 
