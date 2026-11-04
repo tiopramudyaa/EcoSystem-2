@@ -104,6 +104,23 @@ class TableAccess
             'self_permission' => null,
             'permission' => 'external.section.engagement_rate.view',
         ],
+        // Sales Compliance Approval: harga kontrak, MRP, jamuan, dan pernyataan compliance. Sales melihat permintaannya sendiri
+        // (`employee_id`); tabel anak tidak punya kolom itu, jadi hanya terbuka bagi yang memutuskan (slug `.approve`).
+        'sales_compliance_requests' => [
+            'self_field' => 'employee_id',
+            'self_permission' => 'legal.sales-compliance',
+            'permission' => 'legal.sales-compliance.approve',
+        ],
+        'sales_compliance_answers' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.sales-compliance.approve'],
+        'sales_compliance_attachments' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.sales-compliance.approve'],
+        'sales_compliance_approvals' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.sales-compliance.approve'],
+        'sales_compliance_logs' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.sales-compliance.approve'],
+        // Vendor Onboarding: NPWP/NIB/rekening bank vendor, jawaban due diligence, dan jalur berkas dokumen identitas.
+        'vendor_registrations' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.vendor-onboarding'],
+        'vendor_documents' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.vendor-onboarding'],
+        'vendor_answers' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.vendor-onboarding'],
+        'vendor_approvals' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.vendor-onboarding'],
+        'vendor_status_logs' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.vendor-onboarding'],
         // HC-D65 (J3/X5): data rekrutmen (pelamar, dokumen, jadwal wawancara, kompensasi penawaran) tak punya
         // jalur "milik sendiri" — pelamar belum menjadi pegawai. Hanya pemegang izin menu rekrutmen yang bersangkutan.
         'recruitment_candidates' => [
