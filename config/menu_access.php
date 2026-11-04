@@ -53,6 +53,7 @@ return [
         'general.external.contracts.rate',    // see and set the rate of an external contract (consultant rates only; internal salary stays under general.contracts.salary)
         'general.offboarding.settlement',       // final settlement amounts (severance, compensation, tax, net)
         'general.contracts.signing',   // send / forward / release a contract for signature — Legal and RPMO
+        'general.contracts.import',    // record an existing (physical) contract with its scanned PDF — HR, by owner's decision
     ],
 
     'crud_enforced' => [

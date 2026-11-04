@@ -9,6 +9,8 @@
     $canCreate = $canDo('general.contracts.list', 'create');
     $canEdit   = $canDo('general.contracts.list', 'edit');
     $canDelete = $canDo('general.contracts.list', 'delete');
+    // "Add existing contract": a paper contract recorded with its scanned PDF (slug general.contracts.import + the Contracts boxes).
+    $canImport = $canDo('general.contracts.import');
     $badge = [
         'active' => 'bg-green-100 text-green-700', 'draft' => 'bg-gray-200 text-gray-600', 'expired' => 'bg-red-100 text-red-700',
         'terminated' => 'bg-red-100 text-red-700', 'inactive' => 'bg-gray-100 text-gray-500',
@@ -118,11 +120,16 @@
                 <h3 class="text-sm font-bold text-gray-800">Contract History</h3>
                 <p class="text-[11px] text-gray-500 mt-0.5">{{ count($history) }} document{{ count($history) === 1 ? '' : 's' }} available</p>
             </div>
-            @if($canAdd)
-                <button type="button" onclick="openContractModal()" class="px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 shadow-sm"><i class="fas fa-plus mr-1"></i> Add Contract</button>
-            @elseif($canCreate)
-                <span class="text-[11px] text-gray-400" title="Complete the employee data first"><i class="fas fa-lock mr-1"></i> Add Contract unlocks at 100%</span>
-            @endif
+            <div class="flex flex-wrap items-center justify-end gap-2">
+                @if($canImport && $canCreate)
+                    <button type="button" id="existingOpen" class="px-4 py-2 bg-white border border-indigo-300 text-indigo-700 text-xs font-semibold rounded-lg hover:bg-indigo-50" title="Record a contract that was signed on paper, with its scanned PDF"><i class="fas fa-file-pdf mr-1"></i> Add existing contract</button>
+                @endif
+                @if($canAdd)
+                    <button type="button" onclick="openContractModal()" class="px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 shadow-sm"><i class="fas fa-plus mr-1"></i> Add Contract</button>
+                @elseif($canCreate)
+                    <span class="text-[11px] text-gray-400" title="Complete the employee data first"><i class="fas fa-lock mr-1"></i> Add Contract unlocks at 100%</span>
+                @endif
+            </div>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-xs text-left">
@@ -144,7 +151,7 @@
                         @endphp
                         <tr class="hover:bg-gray-50 align-top">
                             <td class="px-4 py-3 text-gray-400">{{ $loop->iteration }}</td>
-                            <td class="px-4 py-3"><span class="font-semibold text-gray-800">{{ $c->contract_number }}</span><span class="block text-[11px] text-gray-400">{{ $c->position ?: '-' }}</span></td>
+                            <td class="px-4 py-3"><span class="font-semibold text-gray-800">{{ $c->contract_number }}</span>@if($c->isImported())<span class="ml-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[9px] font-bold" title="Recorded from a paper contract">Imported</span>@endif<span class="block text-[11px] text-gray-400">{{ $c->position ?: '-' }}</span></td>
                             <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $typeBadge[$c->type_key] ?? 'bg-gray-100 text-gray-600' }}">{{ $kindLabels[$c->contract_kind] ?? ($c->type_key ?? $c->contract_type) }}</span></td>
                             <td class="px-4 py-3 whitespace-nowrap">{{ $c->start_date?->format('d M Y') }}<span class="block text-[11px] text-gray-400">until {{ $c->end_date?->format('d M Y') ?? '—' }}</span></td>
                             <td class="px-4 py-3">
@@ -159,8 +166,21 @@
                                     <div class="seg">
                                         <a href="{{ route('general.contracts.document', $c->contract_id) }}" class="seg-view">View</a>
                                         @if($canSalary)<a href="{{ route('general.contracts.document', $c->contract_id) }}?print=1" class="seg-print">Print</a>@endif
-                                        @if($canEdit)<button type="button" data-contract-id="{{ $c->contract_id }}" data-contract="{{ json_encode($payload) }}" onclick="openContractModal(JSON.parse(this.dataset.contract))" class="seg-edit">Edit</button>@endif
+                                        @if($canEdit && !$c->isImported())<button type="button" data-contract-id="{{ $c->contract_id }}" data-contract="{{ json_encode($payload) }}" onclick="openContractModal(JSON.parse(this.dataset.contract))" class="seg-edit">Edit</button>@endif
+                                        @if($canEdit && $canImport && $c->isImported())
+                                            <button type="button" class="seg-edit" data-existing-edit="{{ json_encode([
+                                                'id' => $c->contract_id, 'number' => $c->contract_number, 'type' => $c->contract_kind ?: ($c->type_key ?? $c->contract_type), 'status' => $c->lifecycle_status,
+                                                'start' => $c->start_date?->toDateString(), 'end' => $c->end_date?->toDateString(), 'signed' => $c->signed_date?->toDateString(),
+                                                'position' => $c->position, 'positionType' => $c->position_type, 'department' => $c->department, 'location' => $c->work_location, 'notes' => $c->notes,
+                                                'scan' => $c->signed_file_name, 'update' => route('general.contracts.existing.update', $c->contract_id),
+                                            ]) }}">Edit details</button>
+                                        @endif
                                     </div>
+                                    @if($canDelete && $canImport && $c->isImported())
+                                        <form method="POST" action="{{ route('general.contracts.existing.destroy', $c->contract_id) }}" data-confirm="Remove the imported contract {{ $c->contract_number }} and its scanned copy? Use this when it was recorded for the wrong employee or with the wrong file. This cannot be undone." data-confirm-title="Remove Imported Contract" data-confirm-ok="Remove" data-unsaved-ignore>@csrf
+                                            <button type="submit" class="px-2.5 py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 text-[11px] font-semibold">Remove</button>
+                                        </form>
+                                    @endif
                                     @if($canDelete && $c->lifecycle_status === 'draft')
                                         <form method="POST" action="{{ route('general.contracts.destroy', $c->contract_id) }}" data-confirm="Delete draft {{ $c->contract_number }}? This cannot be undone." data-confirm-title="Delete Draft" data-confirm-ok="Delete" data-unsaved-ignore>@csrf
                                             <button type="submit" class="px-2.5 py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 text-[11px] font-semibold">Delete</button>
@@ -467,5 +487,9 @@
 })();
 </script>
 @endpush
+@endif
+
+@if($canImport && ($canCreate || $canEdit))
+    @include('hr-general.contracts.components.existing-contract')
 @endif
 @endsection

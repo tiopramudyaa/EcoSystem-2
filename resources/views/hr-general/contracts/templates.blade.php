@@ -28,12 +28,24 @@
             <p class="mt-1 text-[11px] text-sky-800"><i class="fas fa-link"></i> Linked to <strong>Letter Templates → Settings</strong>: company <strong>{{ $linked['company'] ?: '—' }}</strong> and signing city <strong>{{ $linked['city'] ?: '—' }}</strong> fill the contract text; {{ $linked['signers'] }} signer{{ $linked['signers'] === 1 ? '' : 's' }} can be picked as the company signatory.
                 @if($canDo('general.letters.settings.signers'))<a href="{{ route('general.document-identity.index', ['section' => 'signers']) }}" class="underline font-semibold">Signers</a>@endif</p>
         </div>
-        @if($canCreate)
-            <div class="flex gap-2 shrink-0">
+        <div class="flex flex-col gap-2 shrink-0 sm:items-end">
+            @if($canCreate)
+            <div class="flex gap-2">
                 <a href="{{ route('general.contracts.templates.create', ['contract_type' => 'EXTERNAL']) }}" class="px-4 py-2 bg-white border border-indigo-300 text-indigo-700 text-xs font-semibold rounded-lg hover:bg-indigo-50 whitespace-nowrap"><i class="fas fa-user-tie mr-1"></i> Add EXT Template</a>
                 <a href="{{ route('general.contracts.templates.create') }}" class="px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 whitespace-nowrap"><i class="fas fa-plus mr-1"></i> Add Template</a>
             </div>
-        @endif
+            @endif
+            <div class="flex gap-2">
+                <details class="relative" id="tplExportMenu">
+                    <summary class="list-none cursor-pointer px-4 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 whitespace-nowrap select-none"><i class="fas fa-file-export mr-1"></i> Export templates <i class="fas fa-chevron-down text-[9px] ml-1"></i></summary>
+                    <div class="absolute right-0 z-20 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg p-1 text-xs">
+                        <a href="{{ route('general.contracts.templates.export', ['format' => 'json']) }}" class="block px-3 py-2 rounded-md hover:bg-gray-50"><span class="font-semibold text-gray-800">All templates — JSON</span><span class="block text-[11px] text-gray-500">Backup or move to another environment. Can be imported back.</span></a>
+                        <a href="{{ route('general.contracts.templates.export', ['format' => 'pdf']) }}" class="block px-3 py-2 rounded-md hover:bg-gray-50"><span class="font-semibold text-gray-800">All templates — PDF (ZIP)</span><span class="block text-[11px] text-gray-500">Sample contracts to read, print or send for review. Cannot be imported.</span></a>
+                    </div>
+                </details>
+                @if($canCreate)<button type="button" id="tplImportOpen" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 whitespace-nowrap" title="Add or update templates from a .json or .html file"><i class="fas fa-file-import mr-1"></i> Import templates</button>@endif
+            </div>
+        </div>
     </div>
 
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -57,6 +69,11 @@
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-end gap-1.5">
                                     <a href="{{ route('general.contracts.templates.show', $t->id) }}" class="px-2.5 py-1.5 rounded-md border border-sky-300 text-sky-700 hover:bg-sky-50 text-[11px] font-semibold"><i class="far fa-eye mr-1"></i>View</a>
+                                    <span class="inline-flex rounded-md border border-gray-300 overflow-hidden text-[10px] font-bold text-gray-500 divide-x divide-gray-300" role="group" aria-label="Export this template">
+                                        <a href="{{ route('general.contracts.templates.export', ['ids' => [$t->id], 'format' => 'json']) }}" class="px-2 py-1.5 hover:bg-gray-50" title="Export as JSON (can be imported back)">JSON</a>
+                                        <a href="{{ route('general.contracts.templates.export', ['ids' => [$t->id], 'format' => 'html']) }}" class="px-2 py-1.5 hover:bg-gray-50" title="Export as HTML (edit in an editor, then import back)">HTML</a>
+                                        <a href="{{ route('general.contracts.templates.export', ['ids' => [$t->id], 'format' => 'pdf']) }}" class="px-2 py-1.5 hover:bg-gray-50" title="Export as PDF with sample values (to read or print; cannot be imported)">PDF</a>
+                                    </span>
                                     @if($canEdit)<a href="{{ route('general.contracts.templates.edit', $t->id) }}" class="px-2.5 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 text-[11px] font-semibold"><i class="far fa-pen-to-square mr-1"></i>Edit</a>@endif
                                     @if($canDelete && !$t->is_system_default)
                                         <form method="POST" action="{{ route('general.contracts.templates.destroy', $t->id) }}" data-confirm="Delete template “{{ $t->name }}”? Contracts already Active keep the text they have." data-confirm-title="Delete Template" data-confirm-ok="Delete" data-unsaved-ignore>@csrf
@@ -74,4 +91,7 @@
         </div>
     </div>
 </div>
+@if($canCreate)
+    @include('hr-general.contracts.components.template-import')
+@endif
 @endsection

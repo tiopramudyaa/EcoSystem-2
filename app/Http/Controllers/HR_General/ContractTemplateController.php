@@ -10,12 +10,15 @@ use App\Models\Letters\LetterSetting;
 use App\Models\Position;
 use App\Services\Letters\LetterService;
 use App\Services\Contracts\ContractOptionService;
+use App\Models\Employee;
 use App\Services\Contracts\ContractService;
+use App\Services\Contracts\ContractTemplateTransfer;
 use App\Support\Contracts\ContractHtmlSanitizer;
 use App\Support\Contracts\ContractPlaceholders;
 use App\Support\Contracts\ContractRules;
 use App\Support\Contracts\PageSettings;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -96,6 +99,150 @@ class ContractTemplateController extends Controller
         return redirect()->route('general.contracts.templates.index')->with('success', "Template “{$template->name}” deleted.");
     }
 
+    // ── Ekspor / impor template (berkas JSON) ─────────────────────────────
+
+    /**
+     * Semua template (atau yang dipilih lewat ?ids[]=) dalam tiga bentuk (?format=):
+     *  json (bawaan) — untuk cadangan/pindah lingkungan, bisa diimpor lagi;
+     *  html — SATU template, bisa disunting di editor lalu diimpor lagi;
+     *  pdf  — contoh kontrak dengan nilai contoh untuk dibaca/dicetak (banyak template = ZIP); TIDAK bisa diimpor.
+     * Teks template saja, tanpa data karyawan.
+     */
+    public function export(Request $request)
+    {
+        $format = strtolower((string) $request->query('format', 'json'));
+        if (!in_array($format, ['json', 'html', 'pdf'], true)) {
+            return back()->withErrors(['template' => 'Unknown export format.']);
+        }
+        $ids = array_values(array_filter(array_map('intval', (array) $request->query('ids', []))));
+        $templates = ContractTemplate::query()->when($ids, fn ($q) => $q->whereIn('id', $ids))
+            ->orderByDesc('is_system_default')->orderBy('contract_type')->orderBy('name')->get();
+        $transfer = new ContractTemplateTransfer($this->contracts);
+        $stamp = now()->format('Ymd-His');
+
+        if ($format !== 'json' && $templates->isEmpty()) {
+            return back()->withErrors(['template' => 'There is no template to export.']);
+        }
+
+        if ($format === 'html') {
+            if ($templates->count() !== 1) {
+                return back()->withErrors(['template' => 'The HTML export is for one template at a time. Use the HTML link in that template’s row, or choose JSON for several.']);
+            }
+            $t = $templates->first();
+            $html = $transfer->exportHtml($t);
+
+            return response()->streamDownload(function () use ($html) {
+                echo $html;
+            }, $this->safeName($t->name) . '.html', ['Content-Type' => 'text/html; charset=utf-8']);
+        }
+
+        if ($format === 'pdf') {
+            if ($templates->count() === 1) {
+                $t = $templates->first();
+
+                return response()->streamDownload(function () use ($t) {
+                    echo $this->renderPdf($t)->output();
+                }, $this->safeName($t->name) . '.pdf', ['Content-Type' => 'application/pdf']);
+            }
+            if (!class_exists(\ZipArchive::class)) {
+                return back()->withErrors(['template' => 'The server cannot make a ZIP file. Export the templates one by one, or choose JSON.']);
+            }
+            if ($templates->count() > 40) {
+                return back()->withErrors(['template' => 'Too many templates for one PDF package (maximum 40). Export them one by one.']);
+            }
+            @set_time_limit(120);
+            $tmp = tempnam(sys_get_temp_dir(), 'tplpdf');
+            $zip = new \ZipArchive();
+            if ($zip->open($tmp, \ZipArchive::OVERWRITE) !== true) {
+                return back()->withErrors(['template' => 'The ZIP file could not be created.']);
+            }
+            $used = [];
+            foreach ($templates as $t) {
+                $base = $this->safeName($t->name);
+                $name = $base;
+                for ($n = 2; isset($used[$name]); $n++) {
+                    $name = $base . '-' . $n;
+                }
+                $used[$name] = true;
+                $zip->addFromString($name . '.pdf', $this->renderPdf($t)->output());
+            }
+            $zip->close();
+
+            return response()->download($tmp, 'contract-templates-pdf-' . $stamp . '.zip', ['Content-Type' => 'application/zip'])->deleteFileAfterSend(true);
+        }
+
+        $bundle = $transfer->export($templates);
+
+        return response()->streamDownload(function () use ($bundle) {
+            echo json_encode($bundle, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_INVALID_UTF8_SUBSTITUTE);
+        }, 'contract-templates-' . $stamp . '.json', ['Content-Type' => 'application/json; charset=utf-8']);
+    }
+
+    /** Nama berkas aman dari nama template. */
+    private function safeName(string $name): string
+    {
+        return \Illuminate\Support\Str::slug($name) ?: 'template';
+    }
+
+    private function renderPdf(ContractTemplate $template)
+    {
+        $doc = [
+            'title'      => $template->name,
+            'number'     => 'SAMPLE',
+            'html'       => ContractRules::render($template->body_html, ContractService::sampleValues($template->contract_type)),
+            'letterhead' => $template->use_letterhead ? Letterhead::forLetter(ContractService::LETTER_TYPE) : null,
+        ];
+        $doc['page'] = PageSettings::resolve(ContractService::templatePage($template), $doc['letterhead'] !== null);
+
+        return Pdf::loadView('hr-general.contracts.pdf', ['doc' => $doc])->setPaper(PageSettings::paper($doc));
+    }
+
+    /** Langkah 1: baca berkas dan jelaskan apa yang akan terjadi pada tiap template. Tidak menyimpan apa pun. */
+    public function importPreview(Request $request): JsonResponse
+    {
+        try {
+            $items = $this->readBundle($request);
+        } catch (\DomainException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+        $analysis = (new ContractTemplateTransfer($this->contracts))->analyze($items);
+
+        return response()->json(['success' => true, 'count' => count($analysis), 'items' => $analysis, 'canEdit' => $this->canEditTemplates()]);
+    }
+
+    /** Langkah 2: simpan sesuai pilihan (create / update / copy / skip) per template. Berkas yang sama dikirim ulang dan diperiksa ulang. */
+    public function importApply(Request $request): JsonResponse
+    {
+        try {
+            $items = $this->readBundle($request);
+        } catch (\DomainException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+        $decisions = json_decode((string) $request->input('decisions', '{}'), true);
+        if (!is_array($decisions)) {
+            return response()->json(['success' => false, 'message' => 'The choices could not be read. Check the file again.'], 422);
+        }
+
+        $report = (new ContractTemplateTransfer($this->contracts))->apply($items, $decisions, (int) session('user.id'), $this->canEditTemplates());
+
+        return response()->json(['success' => true, 'report' => $report]);
+    }
+
+    /** @return array<int,array<string,mixed>> @throws \DomainException */
+    private function readBundle(Request $request): array
+    {
+        $request->validate(['file' => ['required', 'file', 'max:' . (int) (ContractTemplateTransfer::MAX_BYTES / 1024)]], [
+            'file.max' => 'The file is larger than ' . (ContractTemplateTransfer::MAX_BYTES / 1024 / 1024) . ' MB.',
+        ]);
+
+        return (new ContractTemplateTransfer($this->contracts))->parse((string) file_get_contents($request->file('file')->getRealPath()));
+    }
+
+    private function canEditTemplates(): bool
+    {
+        return (bool) (Employee::find(session('user.id'))?->allPermissionMatrix()['general.contracts.templates']['edit'] ?? false);
+    }
+
     /** Pratinjau dengan nilai contoh — tidak membaca data karyawan mana pun. */
     public function show(int $templateId)
     {
@@ -113,16 +260,7 @@ class ContractTemplateController extends Controller
     /** The sample contract as the real PDF (letterhead on every page) — what the preview page shows. */
     public function pdf(int $templateId)
     {
-        $template = ContractTemplate::findOrFail($templateId);
-        $doc = [
-            'title'      => $template->name,
-            'number'     => 'SAMPLE',
-            'html'       => ContractRules::render($template->body_html, ContractService::sampleValues($template->contract_type)),
-            'letterhead' => $template->use_letterhead ? Letterhead::forLetter(ContractService::LETTER_TYPE) : null,
-        ];
-        $doc['page'] = PageSettings::resolve(ContractService::templatePage($template), $doc['letterhead'] !== null);
-
-        return Pdf::loadView('hr-general.contracts.pdf', ['doc' => $doc])->setPaper(PageSettings::paper($doc))->stream('template-' . $template->id . '.pdf');
+        return $this->renderPdf(ContractTemplate::findOrFail($templateId))->stream('template-' . $templateId . '.pdf');
     }
 
     /**

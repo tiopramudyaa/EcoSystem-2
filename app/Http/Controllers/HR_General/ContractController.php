@@ -243,6 +243,8 @@ class ContractController extends Controller
             'masked'   => $mask,
             'back'     => route('general.contracts.show', $contract->employee_id),
             'signing'  => $this->signingPanel($contract),
+            'imported' => $contract->isImported(),
+            'importedBy' => $contract->imported_by ? trim((string) \Illuminate\Support\Facades\DB::table('employee_basic_data')->where('employee_id', $contract->imported_by)->selectRaw("CONCAT_WS(' ', first_name, last_name) n")->value('n')) : null,
         ]);
     }
 
@@ -309,7 +311,11 @@ class ContractController extends Controller
     public function removeSigned(int $contractId)
     {
         $contract = EmployeeContract::findOrFail($contractId);
-        $this->contracts->removeSignedCopy($contract);
+        try {
+            $this->contracts->removeSignedCopy($contract);
+        } catch (\DomainException $e) {
+            return redirect()->route('general.contracts.document', $contractId)->withErrors(['contract' => $e->getMessage()]);
+        }
 
         return redirect()->route('general.contracts.document', $contractId)->with('success', 'Stamped copy removed.');
     }
@@ -320,6 +326,10 @@ class ContractController extends Controller
         abort_unless($this->employeeCanView('general.contracts.salary'), 403, 'Only holders of "View Salary" can print a contract.');
 
         $contract = EmployeeContract::findOrFail($contractId);
+        // A contract recorded from paper has no generated text: its document is the scanned copy.
+        if ($contract->isImported()) {
+            return redirect()->route('general.contracts.signed', ['contractId' => $contractId] + (request()->boolean('download') ? ['download' => 1] : []));
+        }
         $doc = $this->contracts->document($contract, false);
 
         $pdf = Pdf::loadView('hr-general.contracts.pdf', ['doc' => $doc])->setPaper(\App\Support\Contracts\PageSettings::paper($doc));

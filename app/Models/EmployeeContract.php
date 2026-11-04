@@ -59,7 +59,17 @@ class EmployeeContract extends Model
         // Signing workflow (ContractSigningService)
         'sign_stage', 'sign_deadline', 'sign_sent_at', 'sign_sent_by', 'sign_file_hash', 'employee_signed_at',
         'approver_employee_id', 'approver_name', 'approver_title', 'approver_signed_at', 'released_at', 'released_by', 'signed_pdf_path',
+        // Kontrak yang dicatat dari kontrak fisik (ExistingContractImporter)
+        'origin', 'imported_at', 'imported_by',
     ];
+
+    public const ORIGIN_SYSTEM = 'system';
+    public const ORIGIN_IMPORTED = 'imported';
+
+    public function isImported(): bool
+    {
+        return $this->origin === self::ORIGIN_IMPORTED;
+    }
 
     // Teks template beku bisa panjang; tidak ikut JSON seksi Contract di Master Employee.
     protected $hidden = ['body_html', 'signed_file_path', 'signed_pdf_path', 'sign_file_hash'];
@@ -73,6 +83,7 @@ class EmployeeContract extends Model
         'body_customized' => 'boolean',
         'signed_date' => 'date',
         'signed_file_at' => 'datetime',
+        'imported_at' => 'datetime',
         'sign_deadline' => 'date',
         'sign_sent_at' => 'datetime',
         'employee_signed_at' => 'datetime',

@@ -12,6 +12,7 @@ use App\Http\Controllers\HR_General\ContractController;
 use App\Http\Controllers\HR_General\ContractSettingController;
 use App\Http\Controllers\HR_General\ContractSigningController;
 use App\Http\Controllers\HR_General\ContractTemplateController;
+use App\Http\Controllers\HR_General\ExistingContractController;
 use App\Http\Controllers\HR_General\DashboardAttendanceController;
 use App\Http\Controllers\HR_General\MyCashAdvanceController;
 use App\Http\Controllers\HR_General\MyCashAdvanceReportController;
@@ -1254,6 +1255,10 @@ Route::prefix('general')
                 Route::get('/create', [ContractTemplateController::class, 'create'])->name('create')->middleware($tplCan('create'));
                 Route::post('/', [ContractTemplateController::class, 'store'])->name('store')->middleware($tplCan('create'));
                 Route::post('/preview', [ContractTemplateController::class, 'previewDraft'])->name('preview')->middleware('throttle:30,1');
+                // Ekspor / impor berkas JSON (memindahkan template antarlingkungan, memulihkannya sesudah database dibersihkan).
+                Route::get('/export', [ContractTemplateController::class, 'export'])->name('export');
+                Route::post('/import/preview', [ContractTemplateController::class, 'importPreview'])->name('import.preview')->middleware([$tplCan('create'), 'throttle:20,1']);
+                Route::post('/import/apply', [ContractTemplateController::class, 'importApply'])->name('import.apply')->middleware([$tplCan('create'), 'throttle:10,1']);
                 Route::whereNumber('templateId')->group(function () use ($tplCan) {
                     Route::get('/{templateId}', [ContractTemplateController::class, 'show'])->name('show');
                     Route::get('/{templateId}/pdf', [ContractTemplateController::class, 'pdf'])->name('pdf');
@@ -1282,12 +1287,17 @@ Route::prefix('general')
                 // Generates the text from the form for the editor under it; saves nothing (the controller checks Create / Edit).
                 Route::post('/list/employee/{employeeId}/preview', [ContractController::class, 'preview'])->whereNumber('employeeId')->name('preview')->middleware('throttle:30,1');
                 Route::post('/list/employee/{employeeId}/store', [ContractController::class, 'store'])->whereNumber('employeeId')->name('store')->middleware($listCan('create'));
+                // "Add existing contract": a paper contract recorded with its scanned PDF (slug general.contracts.import + the Contracts boxes).
+                Route::post('/list/employee/{employeeId}/existing', [ExistingContractController::class, 'store'])->whereNumber('employeeId')->name('existing.store')
+                    ->middleware(['menu:general.contracts.import', $listCan('create'), 'throttle:30,1']);
                 Route::whereNumber('contractId')->group(function () use ($listCan) {
                     Route::get('/list/{contractId}/document', [ContractController::class, 'document'])->name('document');
                     Route::get('/list/{contractId}/pdf', [ContractController::class, 'pdf'])->name('pdf');
                     Route::get('/list/{contractId}/signed', [ContractController::class, 'signedCopy'])->name('signed');
                     Route::post('/list/{contractId}/signed', [ContractController::class, 'uploadSigned'])->name('signed.upload')->middleware($listCan('edit'));
                     Route::post('/list/{contractId}/signed/delete', [ContractController::class, 'removeSigned'])->name('signed.remove')->middleware($listCan('edit'));
+                    Route::post('/list/{contractId}/existing/update', [ExistingContractController::class, 'update'])->name('existing.update')->middleware(['menu:general.contracts.import', $listCan('edit'), 'throttle:30,1']);
+                    Route::post('/list/{contractId}/existing/delete', [ExistingContractController::class, 'destroy'])->name('existing.destroy')->middleware(['menu:general.contracts.import', $listCan('delete')]);
                     Route::post('/list/{contractId}/update', [ContractController::class, 'update'])->name('update')->middleware($listCan('edit'));
                     Route::post('/list/{contractId}/delete', [ContractController::class, 'destroy'])->name('destroy')->middleware($listCan('delete'));
 

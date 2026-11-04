@@ -452,6 +452,11 @@ class ContractService
      */
     public function update(EmployeeContract $contract, array $d, bool $canSalary): EmployeeContract
     {
+        // Kontrak yang dicatat dari kontrak fisik tidak punya template/teks: formulir ini akan membuatkan teksnya diam-diam.
+        if ($contract->isImported()) {
+            throw new \DomainException('This contract was recorded from a paper contract. Use “Edit details” to correct it.');
+        }
+
         return DB::transaction(function () use ($contract, $d, $canSalary) {
             $attrs = $this->attributes((int) $contract->employee_id, $contract, $d, $canSalary);
             $contract->update($attrs);
@@ -619,7 +624,7 @@ class ContractService
     }
 
     /** Kontrak lain milik karyawan yang SEDANG berlaku (status berjalan Active). */
-    private function runningContract(int $employeeId, ?int $exceptId): ?EmployeeContract
+    public function runningContract(int $employeeId, ?int $exceptId): ?EmployeeContract
     {
         $today = now()->toDateString();
 
@@ -1081,6 +1086,9 @@ class ContractService
 
     public function removeSignedCopy(EmployeeContract $contract): void
     {
+        if ($contract->isImported()) {
+            throw new \DomainException('The scanned copy is the document of this contract. Replace it with another PDF, or remove the whole contract.');
+        }
         $this->assertStampedCopyFree($contract);
         if ($contract->signed_file_path) {
             \Illuminate\Support\Facades\Storage::disk('local')->delete($contract->signed_file_path);
