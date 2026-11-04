@@ -18,13 +18,14 @@
     </div>
     <div data-step-role class="{{ $type === 'role' ? '' : 'hidden' }}">
         <label class="{{ $label }}">Position</label>
-        <select name="approver_role_id" class="{{ $input }}">
+        <select name="approver_role_id" data-searchable="true" data-search-placeholder="Search position…" class="{{ $input }}">
             <option value="">Choose a position…</option>
             @foreach($roles as $role)<option value="{{ $role->id }}" @selected((int) old('approver_role_id', $step?->approver_role_id) === (int) $role->id)>{{ $role->name }}</option>@endforeach
         </select>
     </div>
     <div data-step-people class="md:col-span-2 {{ $type === 'employee' ? '' : 'hidden' }}">
         <label class="{{ $label }}">People (hold Ctrl / Cmd to pick several)</label>
+        <input type="search" data-people-filter placeholder="Search name or employee ID…" autocomplete="off" class="{{ $input }} mb-2">
         <select name="approver_employee_ids[]" multiple size="6" class="{{ $input }}">
             @foreach($employees as $e)<option value="{{ $e['id'] }}" @selected(in_array((int) $e['id'], $picked, true))>{{ $e['name'] }}</option>@endforeach
         </select>
@@ -40,6 +41,12 @@
     var form = document.getElementById(@json($uid));
     if (!form) return;
     var type = form.querySelector('[data-step-type]'), role = form.querySelector('[data-step-role]'), people = form.querySelector('[data-step-people]');
+    // Kotak cari untuk daftar pilihan ganda: opsi yang tidak cocok disembunyikan (pilihan yang sudah dicentang tetap tersimpan)
+    var pf = form.querySelector('[data-people-filter]'), ps = form.querySelector('select[multiple]');
+    if (pf && ps) pf.addEventListener('input', function () {
+        var q = pf.value.trim().toLowerCase();
+        Array.prototype.forEach.call(ps.options, function (o) { o.hidden = q !== '' && o.textContent.toLowerCase().indexOf(q) === -1; });
+    });
     type.addEventListener('change', function () {
         role.classList.toggle('hidden', type.value !== 'role');
         people.classList.toggle('hidden', type.value !== 'employee');
