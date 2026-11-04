@@ -41,11 +41,10 @@
                 @if(!$req && $employees->count())
                     <div class="md:col-span-2">
                         <label class="{{ $label }}">Sales person</label>
-                        <select name="employee_id" class="{{ $input }}">
-                            @foreach($employees as $e)
-                                <option value="{{ $e['id'] }}" @selected((int) old('employee_id', $meId) === (int) $e['id'])>{{ $e['name'] }}</option>
-                            @endforeach
-                        </select>
+                        {{-- Combobox mode ketat: harus karyawan dari daftar; ID tersimpan di input tersembunyi --}}
+                        <input type="hidden" name="employee_id" id="salesPersonId" value="{{ (int) old('employee_id', $meId) }}">
+                        <input type="text" id="salesPersonSearch" data-suggest-source="#salesPersonData" data-suggest-strict="#salesPersonId" data-suggest-label="person" data-suggest-plural="people" placeholder="Search a sales person" class="{{ $input }}">
+                        <script type="application/json" id="salesPersonData">@json($employees->map(fn ($e) => ['value' => $e['id'], 'label' => $e['name']])->values())</script>
                         <p class="text-xs text-gray-400 mt-1">You may start a request on behalf of a sales person. That person cannot be the one who decides it.</p>
                     </div>
                 @endif
@@ -55,8 +54,8 @@
                 </div>
                 <div>
                     <label class="{{ $label }}">Customer <span class="text-red-500">*</span></label>
-                    <input name="customer_name" value="{{ $field('customer_name') }}" maxlength="255" list="customerList" class="{{ $input }}" required>
-                    <datalist id="customerList">@foreach($customers as $c)<option value="{{ $c }}">@endforeach</datalist>
+                    <input name="customer_name" value="{{ $field('customer_name') }}" maxlength="255" data-suggest-source="#customerData" data-suggest-label="customer" placeholder="Search a customer or type a new name" class="{{ $input }}" required>
+                    <script type="application/json" id="customerData">@json(collect($customers)->values())</script>
                     <p class="text-xs text-gray-400 mt-1">Pick a Business Partner or type a new name.</p>
                 </div>
                 <div>
@@ -197,6 +196,7 @@
 </div>
 
 @include('legal.workflow._confirm')
+<script src="{{ asset('js/suggest-combobox.js') }}"></script>
 <script>
 (function () {
     document.querySelectorAll('[data-reveal]').forEach(function (box) {
