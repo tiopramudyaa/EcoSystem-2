@@ -5,13 +5,20 @@ order: 70
 title: Yang baru
 summary: Perubahan Oktober 2026 yang memengaruhi cara Anda bekerja, dari yang terbaru.
 requires: []
-updated: 2026-11-03
+updated: 2026-11-04
 ---
 Daftar singkat perubahan terkini yang akan Anda rasakan dalam pekerjaan sehari-hari. Setiap butir menaut ke topik yang menjelaskannya.
 
 ## Siapa yang menggunakan
 
 Semua orang yang masuk ke EcoSystem. Sebagian butir hanya berlaku bila Anda memiliki menu terkait.
+
+## 4 November 2026
+
+- **My Compliance.** Setiap karyawan dapat membaca aturan compliance dan pelatihan, mencarinya, serta melaporkan masalah secara online atau lewat kertas, atas nama sendiri atau anonim. Lihat [[my-compliance]].
+- **Compliance Management.** Tim Compliance menindaklanjuti laporan yang dikirim karyawan, mengekspor rekap per hari, bulan, tahun, atau rentang tanggal, dan mengelola isi serta pilihan dropdown My Compliance. Lihat [[compliance-management]].
+- **Web Report.** Siapa saja dapat melapor lewat tombol `Report` di halaman sign-in, dan orang yang menangani laporan menjawab di `Web Report Management`. Lihat [[web-report-management]].
+- **Legal Basis.** Tab `Dashboard` di Legal dihapus. `Legal Basis` kini memiliki tab `Register` dan `Settings`. Lihat [[legal-basis]].
 
 ## 3 November 2026
 

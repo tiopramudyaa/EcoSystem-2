@@ -5,13 +5,20 @@ order: 70
 title: What's new
 summary: Changes from October 2026 that affect how you work, newest first.
 requires: []
-updated: 2026-11-03
+updated: 2026-11-04
 ---
 A short list of recent changes that you will notice in daily work. Each item links to the topic that explains it.
 
 ## Who uses this
 
 Everyone who signs in to EcoSystem. Some items apply only if you have the related menu.
+
+## 4 November 2026
+
+- **My Compliance.** Every employee can read the compliance rules and training, search them, and report a concern online or on paper, in their own name or anonymously. See [[my-compliance]].
+- **Compliance Management.** The Compliance team follows up the reports employees send, exports a recap by day, month, year or date range, and manages the content and the dropdown choices of My Compliance. See [[compliance-management]].
+- **Web Report.** Anyone can report an issue from the `Report` button on the sign-in page, and the people who handle reports answer in `Web Report Management`. See [[web-report-management]].
+- **Legal Basis.** The Legal `Dashboard` tab is removed. `Legal Basis` now has the tabs `Register` and `Settings`. See [[legal-basis]].
 
 ## 3 November 2026
 

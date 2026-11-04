@@ -5,13 +5,13 @@ order: 10
 title: Legal Basis
 summary: Keep the register of laws and regulations behind payroll, BPJS, overtime, contract and offboarding rules.
 requires: [legal, finance.legal-basis, finance.legal-basis.settings]
-updated: 2026-10-27
+updated: 2026-11-04
 ---
 Legal Basis is a register of the laws and regulations behind the calculation rules in EcoSystem: PPh 21, BPJS, Overtime, Contract (PKWT) and Offboarding. For each rule it records the regulation, the date it came into force, when it was last amended and whether someone has reviewed it. The register documents the legal basis. It does not change the formulas or amounts in [[payroll]].
 
 ## Who uses this
 
-Legal, HR and Finance reviewers, and administrators. The page has three tabs: `Dashboard`, `Register` and `Settings`. You only see the tabs your role allows.
+Legal, HR and Finance reviewers, and administrators. The page has two tabs: `Register` and `Settings`. You only see the tabs your role allows.
 
 ## Before you start
 
@@ -73,4 +73,4 @@ Where enabled, other pages such as Payroll show a legal-basis panel or a warning
 - [[contracts]]
 - [[offboarding]]
 
-<!-- sources: routes/hr-offboarding.php, routes/web.php, app/Http/Controllers/Finance/LegalBasisController.php, app/Http/Controllers/LegalDashboardController.php, app/Services/Legal/LegalBasisService.php, resources/views/legal/*.blade.php, resources/views/finance/legal-basis/settings.blade.php -->
+<!-- sources: routes/hr-offboarding.php, routes/web.php, app/Http/Controllers/Finance/LegalBasisController.php, app/Services/Legal/LegalBasisService.php, resources/views/legal/*.blade.php, resources/views/finance/legal-basis/settings.blade.php -->
