@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * The one place that answers "who may act on which approval, and what is waiting for whom" — for every module that has a
- * step-by-step approval (Overtime, Reimbursement, Purchase Request, Cash Advance, Cash Advance Report).
+ * step-by-step approval (Overtime, Reimbursement, Purchase Request, Cash Advance, Cash Advance Report, Sales Compliance,
+ * Vendor Onboarding).
  *
  * WHY. A department head, a director or a finance officer is named on a workflow step but should not hold the HR / general menus
  * just to approve. The workflow is the source of truth for who approves; this engine reads it, so:
@@ -65,6 +66,16 @@ class ApprovalEngine
             'label' => 'Cash Advance Report', 'approval' => CashAdvanceReportApproval::class, 'relation' => 'report', 'fk' => 'cash_advance_report_id',
             'number' => 'report_no', 'route' => 'general.cash-advance-report.show', 'param' => 'cashAdvanceReport',
             'document' => \App\Models\CashAdvance\CashAdvanceReport::class, 'controller' => \App\Http\Controllers\HR_General\CashAdvanceReportController::class,
+        ],
+        'sales-compliance' => [
+            'label' => 'Sales Compliance', 'approval' => \App\Models\Legal\SalesCompliance\SalesComplianceApproval::class, 'relation' => 'request', 'fk' => 'request_id',
+            'number' => 'request_no', 'route' => 'legal.sales-compliance.show', 'param' => 'salesComplianceRequest',
+            'document' => \App\Models\Legal\SalesCompliance\SalesComplianceRequest::class, 'controller' => \App\Http\Controllers\Legal\SalesComplianceController::class,
+        ],
+        'vendor-onboarding' => [
+            'label' => 'Vendor Onboarding', 'approval' => \App\Models\Legal\VendorOnboarding\VendorApproval::class, 'relation' => 'registration', 'fk' => 'registration_id',
+            'number' => 'reference_no', 'route' => 'legal.vendor-onboarding.show', 'param' => 'vendorRegistration',
+            'document' => \App\Models\Legal\VendorOnboarding\VendorRegistration::class, 'controller' => \App\Http\Controllers\Legal\VendorOnboardingController::class,
         ],
     ];
 
@@ -276,6 +287,8 @@ class ApprovalEngine
             'purchase-request'    => \App\Models\PurchaseRequest\PurchaseRequestApprovalStep::class,
             'cash-advance',
             'cash-advance-report' => \App\Models\CashAdvance\CashAdvanceApprovalStep::class,
+            'sales-compliance'    => \App\Models\Legal\SalesCompliance\SalesComplianceApprovalStep::class,
+            'vendor-onboarding'   => \App\Models\Legal\VendorOnboarding\VendorApprovalStep::class,
             default               => null,
         };
     }
@@ -287,6 +300,8 @@ class ApprovalEngine
             'purchase-request'    => 'purchase_request',
             'cash-advance'        => 'cash_advance',
             'cash-advance-report' => 'cash_advance_report',
+            'sales-compliance'    => 'sales_compliance',
+            'vendor-onboarding'   => 'vendor_onboarding',
             default               => $module,
         };
     }

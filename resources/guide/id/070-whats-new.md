@@ -5,13 +5,18 @@ order: 70
 title: Yang baru
 summary: Perubahan Oktober 2026 yang memengaruhi cara Anda bekerja, dari yang terbaru.
 requires: []
-updated: 2026-10-27
+updated: 2026-11-03
 ---
 Daftar singkat perubahan terkini yang akan Anda rasakan dalam pekerjaan sehari-hari. Setiap butir menaut ke topik yang menjelaskannya.
 
 ## Siapa yang menggunakan
 
 Semua orang yang masuk ke EcoSystem. Sebagian butir hanya berlaku bila Anda memiliki menu terkait.
+
+## 3 November 2026
+
+- **Sales Compliance.** Setiap deal penjualan kini dapat dikirim untuk ditinjau compliance, lengkap dengan harga terhadap MRP, dokumen, dan pernyataan anti-suap. Penyetuju memutuskan dari [[my-approvals]]. Lihat [[sales-compliance]].
+- **Vendor Onboarding.** Pendaftaran vendor ditinjau bertahap, dan vendor yang terverifikasi menjadi Business Partner bertipe Vendor dengan satu klik. Lihat [[vendor-onboarding]].
 
 ## 27 Oktober 2026
 

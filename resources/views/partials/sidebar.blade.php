@@ -456,6 +456,18 @@
             @endif
 @php $sb['legal_basis'] = ob_get_clean(); @endphp
 @php ob_start(); @endphp
+            {{-- Business & Legal → Sales Compliance Approval: Requests + Settings (two slugs); a person who only decides (named on a step, or holds "Approve / Reject") opens Requests too. --}}
+            @if($can('legal.sales-compliance') || $can('legal.sales-compliance.approve') || $can('legal.sales-compliance.settings'))
+                @include('partials.ess-nav-item', ['href' => ($can('legal.sales-compliance') || $can('legal.sales-compliance.approve')) ? route('legal.sales-compliance.index') : route('legal.sales-compliance.settings.index'), 'icon' => 'fas fa-file-shield', 'label' => 'Sales Compliance', 'active' => Request::is('legal/sales-compliance*'), 'nested' => false])
+            @endif
+@php $sb['sales_compliance'] = ob_get_clean(); @endphp
+@php ob_start(); @endphp
+            {{-- Business & Legal → Vendor Onboarding: Registrations + Settings (two slugs). --}}
+            @if($can('legal.vendor-onboarding') || $can('legal.vendor-onboarding.approve') || $can('legal.vendor-onboarding.settings'))
+                @include('partials.ess-nav-item', ['href' => ($can('legal.vendor-onboarding') || $can('legal.vendor-onboarding.approve')) ? route('legal.vendor-onboarding.index') : route('legal.vendor-onboarding.settings.index'), 'icon' => 'fas fa-truck-field', 'label' => 'Vendor Onboarding', 'active' => Request::is('legal/vendor-onboarding*'), 'nested' => false])
+            @endif
+@php $sb['vendor_onboarding'] = ob_get_clean(); @endphp
+@php ob_start(); @endphp
             {{-- External (konsultan eksternal) — six pages, each with its own Menu Access slug; the section shows only when one passes. --}}
             @foreach([
                 ['general.external.consultants', 'general.external.consultants.index', 'general/external/consultants*', 'fas fa-user-tie', 'External Consultants'],
@@ -1215,7 +1227,7 @@
                     ['id' => 'Finance',   'title' => 'Finance',  'icon' => 'wallet', 'keys' => ['reimbursement', 'purchase_management', 'cash_advance', 'payroll', 'bpjs', 'pph21']],
                     ['id' => 'Work',      'title' => 'Work & Service',      'icon' => 'tools', 'keys' => ['ticket', 'my_tasks', 'workload', 'validation', 'delivery', 'sla', 'rpmo']],
                     ['id' => 'Ai',        'title' => 'AI Tools',            'icon' => 'sparkles', 'keys' => ['ess_tools']],
-                    ['id' => 'Business',  'title' => 'Business & Legal',    'icon' => 'building-skyscraper', 'keys' => ['legal_basis', 'contracts', 'partner', 'business']],
+                    ['id' => 'Business',  'title' => 'Business & Legal',    'icon' => 'building-skyscraper', 'keys' => ['legal_basis', 'contracts', 'sales_compliance', 'vendor_onboarding', 'partner', 'business']],
                     ['id' => 'Reporting', 'title' => 'Reporting',           'icon' => 'chart-histogram', 'keys' => ['reporting']],
                     ['id' => 'Admin',     'title' => 'Administration',      'icon' => 'shield-cog', 'keys' => ['management', 'control_center']],
                 ];

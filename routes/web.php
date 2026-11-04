@@ -734,3 +734,7 @@ require __DIR__ . '/hr-external.php';
 // ==================== OFFBOARDING + REGISTER DASAR HUKUM ROUTES ====================
 // Offboarding (HR & General) dan Legal Basis (Finance) — berkas baru; modul aditif
 require __DIR__ . '/hr-offboarding.php';
+
+// ==================== SALES COMPLIANCE APPROVAL + VENDOR ONBOARDING ROUTES ====================
+// Business & Legal: persetujuan compliance deal sales dan peninjauan pendaftaran vendor (berkas baru; modul aditif)
+require __DIR__ . '/legal-compliance.php';

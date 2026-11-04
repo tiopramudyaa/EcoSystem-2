@@ -76,6 +76,10 @@ return [
         'general.offboarding.settings',          // Create = add a task, Edit = switches and tasks, Delete = delete a task
         'finance.legal-basis',                   // Create = add a rule or version, Edit = change / mark reviewed, Delete = supersede
         'finance.legal-basis.settings',          // Edit = change the show / draft / enforce switches
+        'legal.sales-compliance',                // Create = start a request, Edit = change / submit / cancel your own draft, Delete = delete a never-submitted draft
+        'legal.sales-compliance.settings',       // Create = add a step or question, Edit = change one, Delete = delete a step
+        'legal.vendor-onboarding',               // Create = register a vendor, Edit = change / submit / start review / link a Business Partner, Delete = delete a never-submitted draft
+        'legal.vendor-onboarding.settings',      // Create = add a step, question or document type, Edit = change one, Delete = delete a step
         'general.external.timesheet.settings',   // approvers of the timesheet and invoice steps; per-consultant exceptions
         'general.external.contracts.settings',   // the same boxes, for the external contract forms
         'general.external.assignment-letters',   // Create = generate an assignment letter
@@ -187,6 +191,10 @@ return [
         'general.offboarding.settings'        => ['c' => 'Add a checklist task', 'e' => 'Change the switches and tasks', 'd' => 'Delete a checklist task'],
         'finance.legal-basis'                 => ['c' => 'Add a rule or a new version', 'e' => 'Edit an entry / mark it reviewed', 'd' => 'Mark a version superseded'],
         'finance.legal-basis.settings'        => ['e' => 'Change the show / draft / enforce switches'],
+        'legal.sales-compliance'              => ['c' => 'Start a sales compliance request', 'e' => 'Change, submit or cancel your own draft', 'd' => 'Delete a draft that was never submitted'],
+        'legal.sales-compliance.settings'     => ['c' => 'Add an approval step or a question', 'e' => 'Change a step or a question', 'd' => 'Delete an approval step'],
+        'legal.vendor-onboarding'             => ['c' => 'Register a vendor', 'e' => 'Change / submit a registration, start the review, create or link the Business Partner', 'd' => 'Delete a draft that was never submitted'],
+        'legal.vendor-onboarding.settings'    => ['c' => 'Add an approval step, a question or a document type', 'e' => 'Change one of them', 'd' => 'Delete an approval step'],
         'general.external.timesheet'          => ['c' => 'Fill a timesheet on behalf of a consultant', 'e' => 'Change a timesheet on behalf of a consultant / delete a Draft'],
         'general.external.timesheet.settings' => ['c' => 'Add an approval step or a per-consultant exception', 'e' => 'Change a step, an exception or the options', 'd' => 'Delete a step or an exception'],
         'general.external.contracts'          => ['c' => 'Create an external contract', 'e' => 'Edit an external contract / change its status', 'd' => 'Delete a Draft external contract'],
@@ -283,6 +291,13 @@ return [
         ['key' => 'delivery',    'label' => 'Delivery',                  'group' => 'Work & Service', 'short' => 'Delivery', 'match' => ['delivery', 'delivery.*', 'delivery-project.*', 'delivery-support.*']],
         ['key' => 'sla-rpmo',    'label' => 'SLA & RPMO',                'group' => 'Work & Service', 'short' => 'SLA & RPMO', 'match' => ['sla', 'sla.*', 'rpmo', 'rpmo.*']],
         // Business & Legal — same order as the sidebar: Legal Basis (with the dashboard), Contract, Business Partner (Business Dev is not built yet)
+        // Sales Compliance and Vendor Onboarding come BEFORE Legal Basis on purpose: the first matching entry wins and Legal Basis claims `legal.*`.
+        ['key' => 'legal-sales-compliance', 'label' => 'Legal · Sales Compliance Approval', 'group' => 'Business & Legal', 'short' => 'Sales Compliance',
+            'about' => 'Compliance review of each sales deal. Sales fill and submit; the people named on the approval steps (Settings) decide without needing a menu. The "Approve / Reject" box is only for someone who must decide without being named, and it also lets them see every request.',
+            'match' => ['legal.sales-compliance', 'legal.sales-compliance.*']],
+        ['key' => 'legal-vendor-onboarding', 'label' => 'Legal · Vendor Onboarding', 'group' => 'Business & Legal', 'short' => 'Vendor Onboarding',
+            'about' => 'Review of vendor registrations. A verified vendor becomes a Business Partner of type Vendor (needs Create on Master → Business Partner).',
+            'match' => ['legal.vendor-onboarding', 'legal.vendor-onboarding.*']],
         ['key' => 'legal-basis', 'label' => 'Legal · Dashboard & Legal Basis', 'group' => 'Business & Legal', 'short' => 'Legal Basis',
             'about' => 'One Legal page with two tabs: the Dashboard (summary cards — each card still follows your own Contract, External Contract and Document Identity access) and the Legal Basis register.',
             'match' => ['legal', 'legal.*', 'finance.legal-basis', 'finance.legal-basis.*']],

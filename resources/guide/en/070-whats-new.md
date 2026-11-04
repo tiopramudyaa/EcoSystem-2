@@ -5,13 +5,18 @@ order: 70
 title: What's new
 summary: Changes from October 2026 that affect how you work, newest first.
 requires: []
-updated: 2026-10-27
+updated: 2026-11-03
 ---
 A short list of recent changes that you will notice in daily work. Each item links to the topic that explains it.
 
 ## Who uses this
 
 Everyone who signs in to EcoSystem. Some items apply only if you have the related menu.
+
+## 3 November 2026
+
+- **Sales Compliance.** Each sales deal can now be sent for a compliance review, with the price against the MRP, the documents and the anti-bribery declarations. Approvers decide from [[my-approvals]]. See [[sales-compliance]].
+- **Vendor Onboarding.** Vendor registrations are reviewed step by step, and a verified vendor becomes a Business Partner of type Vendor with one click. See [[vendor-onboarding]].
 
 ## 27 October 2026
 

@@ -84,6 +84,8 @@
             \App\Services\PurchaseRequest\PurchaseRequestService::class,
             \App\Services\CashAdvance\CashAdvanceService::class,
             \App\Services\CashAdvance\CashAdvanceReportService::class,
+            \App\Services\Legal\SalesComplianceService::class,
+            \App\Services\Legal\VendorOnboardingService::class,
         ];
 
         foreach ($ccServices as $serviceClass) {

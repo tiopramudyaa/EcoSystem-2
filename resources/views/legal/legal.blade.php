@@ -47,7 +47,7 @@
     @else
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-10 text-center">
             <p class="text-sm font-semibold text-gray-700">Nothing to summarise yet</p>
-            <p class="text-xs text-gray-500 mt-1">The Legal dashboard shows a card for each Legal sub menu your position can open. Ask an administrator for access to Contract, External Contract or Document Identity.</p>
+            <p class="text-xs text-gray-500 mt-1">The Legal dashboard shows a card for each Legal sub menu your position can open. Ask an administrator for access to Contract, External Contract, Document Identity, Sales Compliance or Vendor Onboarding.</p>
         </div>
     @endif
 </div>

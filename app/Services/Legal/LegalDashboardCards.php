@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\DB;
  *   Contracts          general.contracts.list            by status, ending in 30 days, awaiting signature
  *   External contracts general.external.contracts        by status
  *   Document Identity  general.letters.settings.*        letterheads and signers (shared with HR letters)
+ *   Sales Compliance   legal.sales-compliance[.approve]  requests by status (own only, unless the viewer decides on them)
+ *   Vendor Onboarding  legal.vendor-onboarding[.approve] registrations by status
  */
 class LegalDashboardCards
 {
@@ -60,6 +62,38 @@ class LegalDashboardCards
                     ['All contracts', $s['total'], 'gray'],
                     ['Active', $s['active'], 'green'],
                     ['Draft', $s['draft'], 'amber'],
+                ],
+            ];
+        }
+
+        if ($can('legal.sales-compliance') || $can('legal.sales-compliance.approve')) {
+            // Pemegang `.approve` melihat semua permintaan; yang lain hanya miliknya — sama dengan daftarnya.
+            $me  = (int) $employee?->employee_id;
+            $all = $can('legal.sales-compliance.approve');
+            $n   = DB::table('sales_compliance_requests')
+                ->when(!$all, fn ($q) => $q->where(fn ($w) => $w->where('employee_id', $me)->orWhere('created_by', $me)))
+                ->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
+            $cards['sales-compliance'] = [
+                'title' => 'Sales Compliance', 'icon' => 'file-shield', 'link' => route('legal.sales-compliance.index'),
+                'stats' => [
+                    ['In review', (int) ($n['in_review'] ?? 0), 'amber', route('legal.sales-compliance.index', ['status' => 'in_review'])],
+                    ['Approved', (int) ($n['approved'] ?? 0), 'green', route('legal.sales-compliance.index', ['status' => 'approved'])],
+                    ['Rejected', (int) ($n['rejected'] ?? 0), 'red', route('legal.sales-compliance.index', ['status' => 'rejected'])],
+                    ['Draft', (int) ($n['draft'] ?? 0), 'gray', route('legal.sales-compliance.index', ['status' => 'draft'])],
+                ],
+            ];
+        }
+
+        if ($can('legal.vendor-onboarding') || $can('legal.vendor-onboarding.approve')) {
+            $n = DB::table('vendor_registrations')->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
+            $unlinked = DB::table('vendor_registrations')->where('status', 'verified')->whereNull('customer_id')->count();
+            $cards['vendor-onboarding'] = [
+                'title' => 'Vendor Onboarding', 'icon' => 'truck-field', 'link' => route('legal.vendor-onboarding.index'),
+                'stats' => [
+                    ['Waiting to start review', (int) ($n['submitted'] ?? 0), 'amber', route('legal.vendor-onboarding.index', ['status' => 'submitted'])],
+                    ['In review', (int) ($n['in_review'] ?? 0), 'amber', route('legal.vendor-onboarding.index', ['status' => 'in_review'])],
+                    ['Verified', (int) ($n['verified'] ?? 0), 'green', route('legal.vendor-onboarding.index', ['status' => 'verified'])],
+                    ['Verified, no Business Partner yet', $unlinked, 'red', route('legal.vendor-onboarding.index', ['status' => 'verified'])],
                 ],
             ];
         }
