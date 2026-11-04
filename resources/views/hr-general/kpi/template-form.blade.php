@@ -83,10 +83,18 @@
                 Set the indicators, audience, and assessment type.
             </p>
         </div>
+        <div class="flex flex-wrap items-center gap-2">
+            {{-- Edit: export THIS template (or import over it). New: import a filled-in Excel to create it (nothing to export yet). --}}
+            @if($isEdit)
+                @include('hr-general.partials.data-transfer', ['dataset' => 'kpi.template-indicators', 'bare' => true, 'query' => ['template_id' => $template->id]])
+            @else
+                @include('hr-general.partials.data-transfer', ['dataset' => 'kpi.template-indicators', 'bare' => true, 'noExport' => true, 'landOnImported' => true])
+            @endif
         <a href="{{ route('general.kpi-evaluation.templates.index') }}"
            class="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-200 transition-all">
             <i class="fas fa-chevron-left text-xs"></i> Back to Templates
         </a>
+        </div>
     </div>
 
     @if(isset($errors) && $errors->any())

@@ -29,6 +29,7 @@ class TabularExport implements FromArray, WithTitle, WithEvents
      * @param  array<int, array<mixed>>  $rows
      * @param  array<int, string>        $formats  index kolom (0-based) => int|money|date
      * @param  array<string>             $meta
+     * @param  array<int, array<string>> $choices  index kolom (0-based) => pilihan dropdown
      */
     public function __construct(
         private string $sheetTitle,
@@ -37,6 +38,7 @@ class TabularExport implements FromArray, WithTitle, WithEvents
         private array $rows,
         private array $formats = [],
         private array $meta = [],
+        private array $choices = [],
     ) {
     }
 
@@ -107,6 +109,12 @@ class TabularExport implements FromArray, WithTitle, WithEvents
 
                 $sheet->getStyle("A{$header}:{$lastCol}{$header}")->getBorders()->getAllBorders()
                     ->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('7F1D1D');
+
+                // Dropdowns where the form has one; also on spare rows below, for rows the user adds.
+                foreach ($this->choices as $index => $list) {
+                    $col = Coordinate::stringFromColumnIndex($index + 1);
+                    ListValidation::apply($sheet, "{$col}{$first}:{$col}" . (max($last, $first) + 500), $list, strtolower((string) ($this->headings[$index] ?? 'value')));
+                }
 
                 $sheet->freezePane('A' . $first);
                 $sheet->setAutoFilter("A{$header}:{$lastCol}" . max($last, $header));

@@ -37,7 +37,7 @@ class Registry
             self::corrections(), self::leavePermits(),
             RecruitmentDatasets::jobs(), RecruitmentDatasets::candidates(), self::interviews(), RecruitmentDatasets::offers(),
             LetterDatasets::templates(), LetterDatasets::codes(), LetterDatasets::requestTypes(),
-            self::lettersRegister(), self::letterRequests(), self::contracts(), self::kpiTemplates(),
+            self::lettersRegister(), self::letterRequests(), self::contracts(), self::kpiTemplates(), KpiTemplateDatasets::indicators(), self::leavePermitTypes(), self::leavePermitQuotas(), self::leavePermitReport(),
             RecapDatasets::recruitment(), RecapDatasets::inventory(),
         ])->keyBy('key')->all();
     }
@@ -680,6 +680,131 @@ class Registry
                     ->selectRaw("kpi_templates.*, IF(is_anonymous, 'Yes', 'No') as anonymous, IF(is_active, 'Yes', 'No') as active")
                     ->tap(fn ($q) => self::like($q, self::search($request), ['name', 'description']))
                     ->orderBy('name')->get();
+            }
+        );
+    }
+
+    private static function leavePermitTypes(): Dataset
+    {
+        $categories = ['leave' => 'Leave', 'permit' => 'Permit'];
+        $genders    = ['all' => 'Everyone', 'P' => 'Female (P)', 'L' => 'Male (L)'];
+
+        return new Dataset(
+            'leave-permit.types', 'Master Data Leave & Permit Type', 'hr_general.leave_permit.tab-types',
+            [
+                ['key' => 'code', 'label' => 'Code', 'required' => true, 'get' => fn ($r) => $r->code,
+                 'parse' => fn ($v) => ($t = Cell::text($v)) === null ? null : strtoupper($t), 'rules' => ['required', 'string', 'max:50'],
+                 'hint' => 'Unique code. An existing code is updated.', 'example' => 'CT'],
+                ['key' => 'name', 'label' => 'Leave & Permit Type', 'required' => true, 'get' => fn ($r) => $r->name,
+                 'parse' => fn ($v) => Cell::text($v), 'rules' => ['required', 'string', 'max:150'], 'example' => 'Annual Leave'],
+                ['key' => 'category', 'label' => 'Category', 'get' => fn ($r) => $categories[$r->category] ?? 'Leave',
+                 'parse' => fn ($v) => Cell::choice($v, $categories, 'category') ?? 'leave', 'rules' => ['required', Rule::in(array_keys($categories))],
+                 'choices' => array_values($categories), 'hint' => 'Leave or Permit. Blank = Leave.', 'example' => 'Leave'],
+                ['key' => 'default_quota', 'label' => 'Default Quota (days)', 'format' => 'money', 'get' => fn ($r) => (float) $r->default_quota,
+                 'parse' => fn ($v) => Cell::number($v) ?? 0, 'rules' => ['required', 'numeric', 'min:0', 'max:999999'],
+                 'hint' => 'Days per year. 0 = event based / no quota.', 'example' => 12],
+                ['key' => 'min_service_period', 'label' => 'Min Service Period', 'get' => fn ($r) => $r->min_service_period,
+                 'parse' => fn ($v) => Cell::text($v), 'rules' => ['nullable', 'string', 'max:50'], 'example' => '12 bln'],
+                ['key' => 'is_paid', 'label' => 'Paid', 'get' => fn ($r) => $r->paid,
+                 'parse' => fn ($v) => match (strtolower((string) Cell::text($v))) {
+                     'paid' => true, 'unpaid' => false, default => Cell::yesNo($v, true),
+                 }, 'rules' => ['boolean'], 'choices' => ['Paid', 'Unpaid'], 'hint' => 'Paid / Unpaid (or Yes / No). Blank = Paid.', 'example' => 'Paid'],
+                ['key' => 'gender_target', 'label' => 'Gender Target', 'get' => fn ($r) => $genders[$r->gender_target] ?? 'Everyone',
+                 'parse' => fn ($v) => Cell::choice($v, $genders, 'gender target') ?? 'all', 'rules' => ['required', Rule::in(array_keys($genders))],
+                 'choices' => array_values($genders), 'hint' => 'Everyone, Female (P) or Male (L). Blank = Everyone.', 'example' => 'Everyone'],
+                ['key' => 'requires_attachment', 'label' => 'Requires Attachment', 'get' => fn ($r) => self::yn((bool) $r->requires_attachment),
+                 'parse' => fn ($v) => Cell::yesNo($v), 'rules' => ['boolean'], 'hint' => 'Yes/No. Blank = No.', 'example' => 'No'],
+                ['key' => 'is_active', 'label' => 'Status', 'get' => fn ($r) => $r->active,
+                 'parse' => fn ($v) => Cell::yesNo($v, true), 'rules' => ['boolean'], 'choices' => ['Active', 'Nonactive'], 'hint' => 'Active / Nonactive (or Yes / No). Blank = Active.', 'example' => 'Active'],
+                ['key' => 'description', 'label' => 'Description', 'get' => fn ($r) => $r->description,
+                 'parse' => fn ($v) => Cell::text($v), 'rules' => ['nullable', 'string', 'max:1000'], 'example' => ''],
+            ],
+            function (Request $request) {
+                return DB::table('leave_permit_types')
+                    ->selectRaw("leave_permit_types.*, IF(is_paid, 'Paid', 'Unpaid') as paid, IF(is_active, 'Active', 'Nonactive') as active")
+                    ->tap(fn ($q) => self::like($q, self::search($request), ['code', 'name']))
+                    ->when($request->query('active') !== null && $request->query('active') !== '', fn ($q) => $q->where('is_active', (int) $request->query('active')))
+                    ->orderBy('name')->get();
+            },
+            [
+                'permission' => ['hr_general.leave_permit.tab-types', 'create'],
+                'key'        => 'code',
+                'find'       => fn (array $v) => \App\Models\LeavePermitType::where('code', $v['code'])->first(),
+                'save'       => function (array $v, $existing, int $actor) {
+                    $data = [
+                        'code' => $v['code'], 'name' => $v['name'], 'category' => $v['category'],
+                        'default_quota' => $v['default_quota'], 'min_service_period' => $v['min_service_period'],
+                        'is_paid' => (bool) $v['is_paid'], 'gender_target' => $v['gender_target'],
+                        'requires_attachment' => (bool) $v['requires_attachment'], 'is_active' => (bool) $v['is_active'],
+                        'description' => $v['description'],
+                    ];
+
+                    return $existing ? tap($existing)->update($data) : \App\Models\LeavePermitType::create($data);
+                },
+            ]
+        );
+    }
+
+    /** "All Employee Quotas" tab — same totals as the tab (event-based types excluded), for `year`. */
+    private static function leavePermitQuotas(): Dataset
+    {
+        return new Dataset(
+            'leave-permit.quotas', 'All Employee Leave Quotas', 'hr_general.leave_permit.tab-quotas',
+            [
+                self::plain('ECI', 'eci'), self::plain('Employee', 'employee_name'), self::plain('Year', 'year', 'int'),
+                self::plain('Total Allocated', 'allocated', 'money'), self::plain('Total Used', 'used', 'money'),
+                self::plain('Pending', 'pending', 'money'), self::plain('Total Remaining', 'remaining', 'money'),
+            ],
+            function (Request $request) {
+                $year       = (int) ($request->query('year') ?: date('Y'));
+                $controller = app(\App\Http\Controllers\HR\LeavePermitController::class);
+                $employees  = DB::table('employee as e')
+                    ->leftJoin('employee_basic_data as b', 'b.employee_id', '=', 'e.employee_id')
+                    ->where('e.is_active', true)
+                    ->tap(fn ($q) => self::like($q, self::search($request), ['e.eci', 'b.first_name', 'b.last_name']))
+                    ->select('e.employee_id', 'e.eci', DB::raw(self::person() . ' as employee_name'))
+                    ->orderBy('employee_name')->get();
+
+                return $employees->map(function ($emp) use ($controller, $year) {
+                    $totals = ['allocated' => 0.0, 'used' => 0.0, 'pending' => 0.0, 'remaining' => 0.0];
+                    foreach ($controller->calculateUserQuotaSummary((int) $emp->employee_id, $year) as $q) {
+                        if (!$q['is_event_based']) {
+                            $totals['allocated'] += $q['allocated_quota'];
+                            $totals['used']      += $q['used_quota'];
+                            $totals['pending']   += $q['pending_quota'];
+                            $totals['remaining'] += $q['remaining_quota'];
+                        }
+                    }
+
+                    return (object) ($totals + ['eci' => $emp->eci, 'employee_name' => $emp->employee_name, 'year' => $year]);
+                });
+            }
+        );
+    }
+
+    /** "Reports & Analytics" tab — the per-employee recap table, for `year` and optional `month` (by start date). */
+    private static function leavePermitReport(): Dataset
+    {
+        return new Dataset(
+            'leave-permit.report', 'Leave & Permit Employee Recap', 'hr_general.leave_permit.tab-report',
+            [
+                self::plain('ECI', 'eci'), self::plain('Employee', 'employee_name'),
+                self::plain('Total Requests', 'total_apps', 'int'), self::plain('Approved Days', 'approved_days', 'money'),
+                self::plain('Pending Days', 'pending_days', 'money'), self::plain('Rejected', 'rejected_apps', 'int'),
+            ],
+            function (Request $request) {
+                return DB::table('leave_permit_applications as a')
+                    ->join('employee as e', 'e.employee_id', '=', 'a.employee_id')
+                    ->leftJoin('employee_basic_data as b', 'b.employee_id', '=', 'a.employee_id')
+                    ->whereYear('a.start_date', (int) ($request->query('year') ?: date('Y')))
+                    ->when($request->query('month'), fn ($q, $m) => $q->whereMonth('a.start_date', (int) $m))
+                    ->tap(fn ($q) => self::like($q, self::search($request), ['e.eci', 'b.first_name', 'b.last_name']))
+                    ->groupBy('a.employee_id', 'e.eci', 'b.first_name', 'b.last_name')
+                    ->selectRaw("e.eci, " . self::person() . " as employee_name, COUNT(*) as total_apps,
+                        COALESCE(SUM(CASE WHEN a.status = 'approved' THEN a.total_days END), 0) as approved_days,
+                        COALESCE(SUM(CASE WHEN a.status = 'pending' THEN a.total_days END), 0) as pending_days,
+                        SUM(a.status = 'rejected') as rejected_apps")
+                    ->orderBy('employee_name')->get();
             }
         );
     }

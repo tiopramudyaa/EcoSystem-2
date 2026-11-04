@@ -38,8 +38,12 @@ class DataTransferController extends Controller
             $filters !== '' ? 'Filters — ' . $filters : 'No filters applied',
         ];
 
+        if ($def->layout) {
+            return Excel::download($def->layout->export($request, $meta), $def->filename());
+        }
+
         return Excel::download(
-            new TabularExport($def->title, $def->title, $def->headings(), $def->rows($request), $def->formats(), $meta),
+            new TabularExport($def->title, $def->title, $def->headings(), $def->rows($request), $def->formats(), $meta, $def->choices()),
             $def->filename()
         );
     }
@@ -58,7 +62,7 @@ class DataTransferController extends Controller
         $example = collect($def->columns)->map(fn ($c) => $c['example'] ?? '')->all();
 
         return Excel::download(
-            new TemplateExport($def->title, $def->headings(), $example, $guide),
+            new TemplateExport($def->title, $def->headings(), $example, $guide, $def->layout?->example(), $def->choices()),
             str_replace('.', '_', $def->key) . '_import_template.xlsx'
         );
     }
@@ -100,7 +104,11 @@ class DataTransferController extends Controller
 
         $skipped = (int) ($result['skipped'] ?? 0);
 
-        return back()->with('success', "{$def->title} imported: {$result['created']} added, {$result['updated']} updated"
+        // From a "new" form: open what was just imported (the dataset says where), so the user stays in the form.
+        $landing  = $request->boolean('land_on_imported') && isset($def->import['landing']) ? ($def->import['landing'])() : null;
+        $redirect = $landing ? redirect($landing) : back();
+
+        return $redirect->with('success', "{$def->title} imported: {$result['created']} added, {$result['updated']} updated"
             . ($skipped > 0 ? ", {$skipped} left unchanged (already closed)." : '.'));
     }
 
