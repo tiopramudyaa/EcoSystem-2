@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -22,15 +21,13 @@ class AdminBackupController extends Controller
 
     private function assertAdmin(): bool
     {
-        return (int) session('user.role.id') === RoleId::EC_ADMINISTRATOR->value;
+        return \App\Models\Employee::find(session('user.id'))?->hasPermission('control-center.backup') ?? false;
     }
 
+    /** Heads import timesheets for their team: the `timesheet.import` permission. */
     private function assertHeadOrAdmin(): bool
     {
-        $roleId = (int) session('user.role.id');
-        return $roleId === RoleId::EC_ADMINISTRATOR->value
-            || in_array($roleId, RoleId::HEAD_GROUP, true)
-            || $roleId === RoleId::DELIVERY_RPMO_HEAD->value;
+        return \App\Models\Employee::find(session('user.id'))?->hasPermission('timesheet.import') ?? false;
     }
 
     private function backupDisk()

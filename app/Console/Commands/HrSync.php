@@ -441,7 +441,7 @@ Anak menu 'general' saat ini:
 {$menus}
 
 --- ROLE & KARYAWAN ---
-{$f['role_total']} role di tabel employee_role (app/Enums/RoleId.php hanya memuat sebagian)
+{$f['role_total']} role di tabel employee_role (role dikenali lewat NAMA, bukan ID)
 Role HR sudah ada: {$this->hrRoles($f)}
 Karyawan: {$f['employee_total']} total, {$f['employee_active']} aktif
 employee.reports_to_id: {$this->yn($f['has_reports_to'])} — hierarki atasan belum dibangun

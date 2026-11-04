@@ -18,7 +18,8 @@ class MenuAccessRulesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->config = require __DIR__ . '/../../../config/menu_access.php';
+        // The caller injects the system owner's role id (found by name in production); any id works for the rule itself.
+        $this->config = array_merge(require __DIR__ . '/../../../config/menu_access.php', ['protected_role_id' => 1]);
         $this->rules = new MenuAccessRules($this->config);
     }
 

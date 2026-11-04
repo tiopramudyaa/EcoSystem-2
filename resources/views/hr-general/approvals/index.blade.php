@@ -9,13 +9,13 @@
 
     <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <a href="{{ route('general.approvals.index') }}"
-           class="bg-white rounded-xl p-5 shadow-sm border-2 {{ $active === '' ? 'border-red-800' : 'border-transparent' }}">
+           class="bg-white rounded-xl p-5 shadow-sm border-2 {{ $active === '' ? 'border-red-800' : 'border-transparent' }}" @if($active === '') aria-current="page" @endif>
             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Waiting for you</p>
             <p class="text-3xl font-bold mt-1 text-red-800">{{ $total }}</p>
         </a>
         @foreach($counts as $module => $count)
             <a href="{{ route('general.approvals.index', ['module' => $module]) }}"
-               class="bg-white rounded-xl p-5 shadow-sm border-2 {{ $active === $module ? 'border-red-800' : 'border-transparent' }}">
+               class="bg-white rounded-xl p-5 shadow-sm border-2 {{ $active === $module ? 'border-red-800' : 'border-transparent' }}" @if($active === $module) aria-current="page" @endif>
                 <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ $modules[$module] ?? $module }}</p>
                 <p class="text-3xl font-bold mt-1 text-gray-900">{{ $count }}</p>
             </a>
@@ -40,6 +40,7 @@
                         <th class="px-4 py-3">Requester</th>
                         <th class="px-4 py-3">Your step</th>
                         <th class="px-4 py-3">Waiting since</th>
+                        <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3 w-24 text-center">Action</th>
                     </tr>
                 </thead>
@@ -52,13 +53,20 @@
                             <td class="px-4 py-3 text-gray-900">{{ $row['requester'] ?? '—' }}</td>
                             <td class="px-4 py-3 text-gray-600">{{ $row['step'] }}</td>
                             <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $row['since']?->diffForHumans() ?? '—' }}</td>
+                            <td class="px-4 py-3">
+                                {{-- Pending until it has waited 3 days, then flagged overdue so the oldest requests stand out. --}}
+                                @include('partials.status-badge', ['status' => ($row['since'] && $row['since']->diffInDays(now()) >= 3) ? 'overdue' : 'pending'])
+                            </td>
                             <td class="px-4 py-3 text-center">
-                                <a href="{{ $row['url'] }}" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-200 text-red-800 hover:bg-red-50">Review</a>
+                                <a href="{{ $row['url'] }}" title="Review {{ $row['number'] }}" aria-label="Review {{ $row['label'] }} {{ $row['number'] }}"
+                                   class="inline-flex w-8 h-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                                    <i class="fas fa-eye text-xs" aria-hidden="true"></i>
+                                </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-gray-400">Nothing is waiting for you. You are all caught up.</td>
+                            <td colspan="8" class="px-4 py-12 text-center text-gray-400">Nothing is waiting for you. You are all caught up.</td>
                         </tr>
                     @endforelse
                 </tbody>

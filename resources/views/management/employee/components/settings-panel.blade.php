@@ -28,6 +28,12 @@
     $switches = collect($panel['rules'])->filter(fn ($r) => $r['type'] === 'bool');
 @endphp
 
+@include('partials.page-hint', [
+    'key'   => 'employee-settings',
+    'title' => 'What these settings do',
+    'text'  => 'Each list here fills a dropdown on the employee form, and each rule sets how data on this tab is saved. Open a list to add, reorder or switch off its options.',
+])
+
 <div class="space-y-5" id="employeeSettings-{{ $section }}">
     {{-- At a glance --}}
     <div class="flex flex-wrap items-center gap-2 text-xs">
@@ -127,7 +133,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="{{ $list['internal'] ? 7 : 6 }}" class="px-5 py-6 text-center text-sm text-gray-400">No option yet — the dropdown on the form is empty.</td></tr>
+                            <tr><td colspan="{{ $list['internal'] ? 7 : 6 }}" class="px-5 py-6 text-center text-sm text-gray-400">No option yet — the dropdown on the employee form is empty, so nobody can pick a value. {{ $canCreate ? 'Add the first option above.' : 'Ask someone with Create access on this tab to add one.' }}</td></tr>
                         @endforelse
                         <tr class="hidden" data-no-match="{{ $section }}-{{ $fieldKey }}"><td colspan="{{ $list['internal'] ? 7 : 6 }}" class="px-5 py-5 text-center text-sm text-gray-400">Nothing matches.</td></tr>
                     </tbody>

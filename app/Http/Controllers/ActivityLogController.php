@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Models\LoginActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,13 +9,13 @@ use Illuminate\Support\Facades\DB;
 class ActivityLogController extends Controller
 {
     /**
-     * Admin-only: render the activity log page.
+     * Needs the control-center.activity-log permission: render the activity log page.
      */
     public function index(Request $request)
     {
         $user = session('user');
 
-        if (($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
+        if (!(\App\Models\Employee::find(session('user.id'))?->hasPermission('control-center.activity-log') ?? false)) {
             abort(403, 'Access denied.');
         }
 
@@ -26,14 +25,14 @@ class ActivityLogController extends Controller
     }
 
     /**
-     * Admin-only: return paginated activity log data as JSON.
+     * Needs the control-center.activity-log permission: return paginated activity log data as JSON.
      * GET /api/admin/activity-logs?page=1&per_page=25&search=&status=&date_from=&date_to=&user_type=
      */
     public function getData(Request $request)
     {
         $user = session('user');
 
-        if (($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
+        if (!(\App\Models\Employee::find(session('user.id'))?->hasPermission('control-center.activity-log') ?? false)) {
             return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
         }
 

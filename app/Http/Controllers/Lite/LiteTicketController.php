@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Lite;
 
-use App\Enums\RoleId;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\TicketMessageController;
 use App\Models\EmployeeBasicData;
@@ -16,6 +15,12 @@ use Illuminate\Support\Facades\Validator;
 
 class LiteTicketController extends Controller
 {
+    // What a person may do comes from the function slugs ticked per role in Management → Roles → Menu Access; no role ID is compared.
+    private function can(array $user, string $slug): bool
+    {
+        return \App\Models\Employee::find((int) ($user['id'] ?? 0))?->hasPermission($slug) ?? false;
+    }
+
     /**
      * Daftar tiket — role-based filtering, dengan pagination.
      * Adaptasi dari TicketController::index() untuk Lite API.
@@ -43,17 +48,17 @@ class LiteTicketController extends Controller
 
             // ── Scope berdasarkan role ────────────────────────────────────────
             if (strtolower($user['employee_type'] ?? 'internal') === 'external'
-                && $roleId !== RoleId::EC_ADMINISTRATOR->value) {
+                && !$this->can($user, 'ticket.external-unrestricted')) {
                 // External employee: hanya tiket yang dia tangani
                 $query->where(function ($q) use ($employeeId) {
                     $q->where('ticket_lead_id', $employeeId)
                       ->orWhereHas('members', fn ($i) => $i->where('ticket_member.employee_id', $employeeId));
                 });
-            } elseif ($roleId === RoleId::DELIVERY_SUPPORT_USER->value) {
-                // DS User: hanya tiket belum di-assign (unassigned) — sesuai aplikasi utama
+            } elseif ($this->can($user, 'ticket.lite-unassigned-only')) {
+                // Holders of ticket.lite-unassigned-only: hanya tiket belum di-assign (unassigned) — sesuai aplikasi utama
                 $query->whereNull('ticket_lead_id');
             }
-            // Admin, Head, Helpdesk, Manager: lihat semua tiket
+            // Everyone else: lihat semua tiket
 
             // ── Filter ───────────────────────────────────────────────────────
             if ($status) {
@@ -118,7 +123,7 @@ class LiteTicketController extends Controller
                 return response()->json(['success' => false, 'message' => 'Ticket not found.'], 404);
             }
 
-            if ($ticket->is_hidden && (int) ($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
+            if ($ticket->is_hidden && !$this->can($user, 'ticket.view-hidden')) {
                 return response()->json(['success' => false, 'message' => 'Ticket not found.'], 404);
             }
 
@@ -441,13 +446,7 @@ class LiteTicketController extends Controller
                 return response()->json(['success' => false, 'message' => 'Note not found.'], 404);
             }
 
-            $roleIds = !empty($user['role_ids'])
-                ? array_map('intval', $user['role_ids'])
-                : DB::table('employee_role_assignment')
-                    ->where('employee_id', (int) ($user['id'] ?? 0))
-                    ->pluck('role_id')->map(fn ($id) => (int) $id)->toArray();
-
-            $isAdmin  = in_array(RoleId::EC_ADMINISTRATOR->value, $roleIds, true);
+            $isAdmin  = $this->can($user, 'ticket.delete-any-note');
             $isSender = $message->sender_id !== null
                 && (int) $message->sender_id === (int) ($user['id'] ?? 0);
 
@@ -491,14 +490,7 @@ class LiteTicketController extends Controller
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
             }
 
-            $roleId = (int) ($user['role']['id'] ?? 0);
-
-            $allowedRoles = array_merge(
-                RoleId::TICKET_MANAGER_GROUP,
-                [RoleId::DELIVERY_SUPPORT_MANAGER->value]
-            );
-
-            if (!in_array($roleId, $allowedRoles, true)) {
+            if (!$this->can($user, 'ticket.update-status')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You do not have permission to update ticket status.',

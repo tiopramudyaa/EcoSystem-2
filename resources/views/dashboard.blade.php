@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
     <meta charset="UTF-8">
@@ -1637,6 +1637,10 @@
                         @stack('page-actions-extra')
                         <!-- Notification Bell -->
                         <div class="flex items-center gap-2">
+                            <button type="button" onclick="openGlobalSearch()" title="Quick search (Ctrl+K)" aria-label="Quick search (Ctrl+K)" aria-haspopup="dialog"
+                                class="w-10 h-10 flex items-center justify-center border-2 border-gray-200 rounded-xl hover:border-red-800 hover:bg-red-50 transition-all text-gray-600 hover:text-red-800">
+                                <i class="fas fa-search text-sm" aria-hidden="true"></i>
+                            </button>
                             <button id="soundToggleBtn" onclick="toggleNotifSound()" title="Disable notification sound"
                                 class="w-10 h-10 flex items-center justify-center border-2 border-gray-200 rounded-xl hover:border-red-800 hover:bg-red-50 transition-all text-red-700 hover:text-red-800">
                                 <i id="soundToggleIcon" class="fas fa-volume-up text-sm"></i>
@@ -1942,6 +1946,9 @@
             });
         })();
     </script>
+    <script src="{{ asset('js/modal-a11y.js') }}?v={{ @filemtime(public_path('js/modal-a11y.js')) }}" defer></script>
+    <script src="{{ asset('js/import-errors.js') }}?v={{ @filemtime(public_path('js/import-errors.js')) }}" defer></script>
+    <script src="{{ asset('js/unsaved-guard.js') }}?v={{ @filemtime(public_path('js/unsaved-guard.js')) }}" defer></script>
     <script src="{{ asset('js/filter-icons.js') }}?v={{ @filemtime(public_path('js/filter-icons.js')) }}" defer></script>
     @stack('scripts')
 
@@ -2621,6 +2628,7 @@
             {{-- Global confirm modal — replaces browser native confirm() everywhere.
             Usage: if (await showConfirm('msg', 'title', 'danger')) { ... } --}}
             @include('partials.confirm-modal')
+            @include('partials.global-search')
 </body>
 
 </html>

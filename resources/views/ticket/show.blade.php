@@ -747,9 +747,10 @@
                 </div>
                 {{-- Team Members --}}
                 @php
+                    // Same rule the server enforces: ticket managers, or the ticket's own PIC.
                     $canManageMembers = $can('ui.ticket.manage-members') && (
-                            !$user->hasRole(\App\Enums\RoleId::DELIVERY_SUPPORT_USER->value) // non-DS-User roles: always OK
-                            || $ticket->ticket_lead_id == $user->id                          // DS User: only if they are the lead
+                            $can('ticket.manage')
+                            || $ticket->ticket_lead_id == $user->id
                         );
                     $allMemberIds = $ticket->allMembers->pluck('employee_id')->toArray();
                 @endphp
@@ -2465,14 +2466,7 @@
 
 <script>
     const ticketId                    = {{ $ticket->ticket_id }};
-    const userRoleIds                 = {!! json_encode($user->role_ids) !!};
-    const userRole                    = userRoleIds[0] ?? 0;
     let inMeeting                     = {{ $inMeeting ? 'true' : 'false' }};
-    const EC_ADMINISTRATOR_ROLE       = {{ \App\Enums\RoleId::EC_ADMINISTRATOR->value }};
-    const DELIVERY_SUPPORT_USER_ROLE  = {{ \App\Enums\RoleId::DELIVERY_SUPPORT_USER->value }};
-    const EC_USER_ROLE                = {{ \App\Enums\RoleId::EC_USER->value }};
-    const DELIVERY_HELPDESK_ROLE      = {{ \App\Enums\RoleId::DELIVERY_HELPDESK->value }};
-    const DELIVERY_RPMO_HEAD_ROLE     = {{ \App\Enums\RoleId::DELIVERY_RPMO_HEAD->value }};
     const canViewMyTicketTab          = {{ $can('room-chat.tab-my-ticket') ? 'true' : 'false' }};
     const ticketCustomerId            = {{ $ticket->customer_id ?? 'null' }};
     const currentUserId               = {{ $user->id ?? 'null' }};
@@ -5024,8 +5018,7 @@
     async function loadSidebarTickets() {
         try {
             let endpoint = '/api/tickets';
-            if (userRole === EC_USER_ROLE) endpoint = '/api/tickets/my';
-            else if ([EC_ADMINISTRATOR_ROLE, DELIVERY_SUPPORT_USER_ROLE, DELIVERY_HELPDESK_ROLE, DELIVERY_RPMO_HEAD_ROLE].includes(userRole) && sidebarView === 'my') endpoint = '/api/tickets/my';
+            if (sidebarView === 'my') endpoint = '/api/tickets/my';
 
             const response = await fetch(endpoint, {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },

@@ -14,11 +14,22 @@ class EmployeeRole extends Model
     protected $fillable = [
         'name',
         'description',
+        'period_domain', // 'project' | 'support' | null — the timesheet period domain this role is held to (see PeriodService)
     ];
 
     public function getRoleIdAttribute()
     {
         return $this->id;
+    }
+
+    /** @return list<int> ids of the roles every new employee receives (config/roles.php → new_employee_roles, by name) */
+    public static function newEmployeeRoleIds(): array
+    {
+        return static::query()
+            ->whereIn('name', config('roles.new_employee_roles', []))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     public function employees()

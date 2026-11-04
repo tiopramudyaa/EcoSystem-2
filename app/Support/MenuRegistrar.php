@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Enums\RoleId;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -201,14 +200,13 @@ class MenuRegistrar
     /**
      * ID role EC Administrator.
      *
-     * Diresolve lewat NAMA lebih dulu, karena `migrate:fresh` bisa menghasilkan
-     * ID role yang berbeda dari DB produksi. RoleId::EC_ADMINISTRATOR dipakai
-     * sebagai cadangan terakhir.
+     * Diresolve lewat NAMA (config/roles.php → admin_role_name), karena `migrate:fresh`
+     * bisa menghasilkan ID role yang berbeda dari DB produksi. ID 1 hanya cadangan
+     * terakhir untuk database yang rolenya belum ada.
      */
     public static function adminRoleId(): int
     {
-        return (int) (DB::table('employee_role')->where('name', 'EC Administrator')->value('id')
-            ?? RoleId::EC_ADMINISTRATOR->value);
+        return (int) (DB::table('employee_role')->where('name', config('roles.admin_role_name', 'EC Administrator'))->value('id') ?? 1);
     }
 
     // ── internal ────────────────────────────────────────────────────────────
@@ -243,7 +241,7 @@ class MenuRegistrar
      * Role/Menu/EmployeeController. Migrasi menulis `role_menu` langsung lewat
      * DB facade, jadi tanpa ini menu baru tidak muncul sampai cache kedaluwarsa.
      */
-    private static function flushPermCache($roleIds): void
+    public static function flushPermCache($roleIds): void
     {
         if ($roleIds->isEmpty()) {
             return;

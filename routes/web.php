@@ -199,7 +199,6 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // ==================== ADMIN ====================
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', function () {
-            if ((int) session('user.role.id') !== 1) abort(403);
             return view('admin.index');
         })->name('index')->middleware('menu:control-center.overview');
         Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log')->middleware('menu:control-center.activity-log');
@@ -597,6 +596,12 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::get('/latest-update', [TicketController::class, 'latestUpdate'])->name('latest-update');
         Route::get('/{id}', [TicketViewController::class, 'show'])->name('show');
     });
+
+    // Header quick search (Ctrl+K) — each group is limited inside the controller by the menus the person holds.
+    // "History" tab data (who changed what) — record types and their menus are listed in the controller.
+    Route::get('/history/{type}/{id}', \App\Http\Controllers\RecordHistoryController::class)->whereNumber('id')->name('record-history');
+
+    Route::get('/global-search', \App\Http\Controllers\GlobalSearchController::class)->name('global-search');
 
     // ==================== NOTIFICATIONS ====================
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

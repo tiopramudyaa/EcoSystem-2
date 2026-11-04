@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use App\Enums\RoleId;
 use App\Models\AuditLog;
 use App\Models\Notification;
 use App\Models\Ticket;
@@ -298,8 +297,9 @@ class MandaysController extends Controller
         $fromName    = $sessionUser['name'] ?? 'PIC';
         $fromId      = $sessionUser['id'] ?? null;
         $ticketNum   = $ticket->ticket_number ?? $ticketId;
-        $this->notifyRoles(
-            [RoleId::DELIVERY_HELPDESK->value],
+        // Whoever reviews mandays (ticket.review-mandays) is told a customer proposal is waiting.
+        $this->notifyHolders(
+            'ticket.review-mandays',
             'customer_mandays_proposed',
             $fromName,
             $fromId,
@@ -996,8 +996,9 @@ class MandaysController extends Controller
         $fromName    = $sessionUser['name'] ?? 'PIC';
         $fromId      = $sessionUser['id'] ?? null;
         $ticketNum   = $ticket->ticket_number ?? $ticketId;
-        $this->notifyRoles(
-            [RoleId::DELIVERY_SUPPORT_HEAD->value, RoleId::DELIVERY_PROJECT_HEAD->value],
+        // Whoever approves resolution days (ticket.approve-resolution-days) is told a proposal is waiting.
+        $this->notifyHolders(
+            'ticket.approve-resolution-days',
             'resolution_days_proposed',
             $fromName,
             $fromId,
@@ -1572,10 +1573,10 @@ class MandaysController extends Controller
         return array_values($people);
     }
 
-    private function notifyRoles(array $roleIds, string $type, string $fromName, ?int $fromId, string $preview, string $link): void
+    private function notifyHolders(string $slug, string $type, string $fromName, ?int $fromId, string $preview, string $link): void
     {
         try {
-            Employee::withAnyRole($roleIds)
+            Employee::withMenuPermission($slug)
                 ->where('is_active', true)
                 ->pluck('employee_id')
                 ->each(function ($empId) use ($type, $fromName, $fromId, $preview, $link) {
@@ -1590,7 +1591,7 @@ class MandaysController extends Controller
                     ]);
                 });
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('MandaysController::notifyRoles failed', ['error' => $e->getMessage()]);
+            \Illuminate\Support\Facades\Log::warning('MandaysController::notifyHolders failed', ['error' => $e->getMessage()]);
         }
     }
 

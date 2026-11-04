@@ -16,15 +16,10 @@
 
 @section('content')
 @php
-    $isRpmo           = $roleId === 7;
-    $isProjectHead    = $roleId === 4;
-    $isSupportHead    = $roleId === 5;
-    $isAdmin          = $roleId === 1;
-    $isHead           = $isProjectHead || $isSupportHead;
-    $headDomain       = $isProjectHead ? 'project' : ($isSupportHead ? 'support' : null);
-    // Superadmin gates
-    $canManageGlobal  = $isRpmo || $isAdmin;   // create period, open/close global, force-close
-    $canManageDomains = $isHead || $isAdmin;   // open/close domain, late exceptions
+    // Set by PeriodManagementController from the slugs ticked for the viewer's role(s) in Management → Roles.
+    $canManageDomains = $managedDomains !== [];                       // open/close a domain, Level-1 late-access decisions
+    $canExceptions    = $canManageDomains || $canApproveFinal;        // sees the late-access queue
+    $manages          = fn (string $d) => in_array($d, $managedDomains, true);
     $MONTHS           = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
 @endphp
 
@@ -39,10 +34,9 @@
         <div>
             <h2 class="text-2xl font-bold text-gray-900">Period Management</h2>
             <p class="text-sm text-gray-500 mt-0.5">
-                @if($isAdmin) Full period lifecycle control (EC Administrator)
-                @elseif($isRpmo) Full period lifecycle control (RPMO)
-                @elseif($isProjectHead) Project domain control & late exceptions
-                @elseif($isSupportHead) Support domain control & late exceptions
+                @if($canManageGlobal) Full period lifecycle control
+                @elseif($canManageDomains) {{ collect($managedDomains)->map(fn ($d) => ucfirst($d))->join(' & ') }} domain control & late exceptions
+                @elseif($canApproveFinal) Final approval of late access requests
                 @else Read-only view with audit logs
                 @endif
             </p>
@@ -92,18 +86,18 @@
                     <p class="text-[10px] text-gray-400 mt-1.5">Opened {{ \Carbon\Carbon::parse($active->opened_at)->format('d M Y') }}</p>
                     @endif
                 </div>
-                <div class="bg-white rounded-lg border {{ ($isProjectHead || $isAdmin) ? 'border-blue-300' : 'border-gray-200' }} p-3">
+                <div class="bg-white rounded-lg border {{ $manages('project') ? 'border-blue-300' : 'border-gray-200' }} p-3">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                        Project Domain @if($isProjectHead || $isAdmin)<span class="text-blue-500 normal-case font-normal"></span>@endif
+                        Project Domain @if($manages('project'))<span class="text-blue-500 normal-case font-normal"></span>@endif
                     </p>
                     @include('rpmo.periods._status_badge', ['status' => $pStatus])
                     @if($active->project_opened_at)
                     <p class="text-[10px] text-gray-400 mt-1.5">Opened {{ \Carbon\Carbon::parse($active->project_opened_at)->format('d M Y') }}</p>
                     @endif
                 </div>
-                <div class="bg-white rounded-lg border {{ ($isSupportHead || $isAdmin) ? 'border-blue-300' : 'border-gray-200' }} p-3">
+                <div class="bg-white rounded-lg border {{ $manages('support') ? 'border-blue-300' : 'border-gray-200' }} p-3">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                        Support Domain @if($isSupportHead || $isAdmin)<span class="text-blue-500 normal-case font-normal"></span>@endif
+                        Support Domain @if($manages('support'))<span class="text-blue-500 normal-case font-normal"></span>@endif
                     </p>
                     @include('rpmo.periods._status_badge', ['status' => $sStatus])
                     @if($active->support_opened_at)
@@ -148,48 +142,21 @@
                     @endif
                 @endif
 
-                {{-- Domain actions: Head (own domain only) --}}
-                @if($isHead)
-                    @php $myDomainStatus = $headDomain === 'project' ? $pStatus : $sStatus; @endphp
-                    @if($myDomainStatus !== 'open')
-                    <button onclick="periodAction({{ $active->id }}, 'open-domain')"
+                {{-- Domain actions: one pair of buttons for each domain the viewer manages --}}
+                @foreach($managedDomains as $dom)
+                    @php $domStatus = $dom === 'project' ? $pStatus : $sStatus; @endphp
+                    @if($domStatus !== 'open')
+                    <button onclick="periodAction({{ $active->id }}, 'open-domain', {domain:'{{ $dom }}'})"
                         class="inline-flex items-center gap-1.5 px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all">
-                        Open {{ ucfirst($headDomain) }} Period
-                    </button>
-                    @endif
-                    @if($myDomainStatus === 'open')
-                    <button onclick="confirmCloseDomain({{ $active->id }}, '{{ $headDomain }}', '{{ $periodLabel }}')"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all">
-                        Close {{ ucfirst($headDomain) }} Period
-                    </button>
-                    @endif
-
-                {{-- Domain actions: Admin (both domains) --}}
-                @elseif($isAdmin)
-                    @if($pStatus !== 'open')
-                    <button onclick="periodAction({{ $active->id }}, 'open-domain', {domain:'project'})"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all">
-                        Open Project Period
+                        Open {{ ucfirst($dom) }} Period
                     </button>
                     @else
-                    <button onclick="confirmCloseDomain({{ $active->id }}, 'project', '{{ $periodLabel }}')"
+                    <button onclick="confirmCloseDomain({{ $active->id }}, '{{ $dom }}', '{{ $periodLabel }}')"
                         class="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all">
-                        Close Project Period
+                        Close {{ ucfirst($dom) }} Period
                     </button>
                     @endif
-
-                    @if($sStatus !== 'open')
-                    <button onclick="periodAction({{ $active->id }}, 'open-domain', {domain:'support'})"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all">
-                        Open Support Period
-                    </button>
-                    @else
-                    <button onclick="confirmCloseDomain({{ $active->id }}, 'support', '{{ $periodLabel }}')"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all">
-                        Close Support Period
-                    </button>
-                    @endif
-                @endif
+                @endforeach
 
                 {{-- Audit log --}}
                 <button onclick="openAuditLog({{ $active->id }}, '{{ $periodLabel }}')"
@@ -198,7 +165,7 @@
                 </button>
 
                 {{-- Late exception requests button (visible to all with management access) --}}
-                @if($canManageDomains || $canManageGlobal)
+                @if($canExceptions)
                 <button onclick="openExRequestsModal()"
                     class="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-gray-600 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all">
                     <i class="fas fa-user-clock text-yellow-500 text-xs"></i> Exception Requests
@@ -334,12 +301,9 @@
                         <td class="px-4 py-3 text-center">@include('rpmo.periods._status_badge', ['status' => $p->support_status])</td>
                         <td class="px-4 py-3 text-center">
                             <button onclick="openPeriodMenu(event, {{ $p->id }}, '{{ $pLabel }}', {
-                                    isRpmo: {{ $isRpmo ? 'true' : 'false' }},
-                                    isHead: {{ $isHead ? 'true' : 'false' }},
-                                    isAdmin: {{ $isAdmin ? 'true' : 'false' }},
                                     canManageGlobal: {{ $canManageGlobal ? 'true' : 'false' }},
-                                    canManageDomains: {{ $canManageDomains ? 'true' : 'false' }},
-                                    headDomain: '{{ $headDomain ?? '' }}',
+                                    canExceptions: {{ $canExceptions ? 'true' : 'false' }},
+                                    domains: @json($managedDomains),
                                     globalStatus: '{{ $p->global_status }}',
                                     projectStatus: '{{ $p->project_status }}',
                                     supportStatus: '{{ $p->support_status }}',
@@ -743,31 +707,19 @@ function openPeriodMenu(event, id, label, cfg) {
         html += menuItem('fa-lock', 'text-gray-500', 'Close Period Globally', `pmConfirmCloseGlobal()`);
     }
 
-    // Domain actions: Head (own domain)
-    if (cfg.isHead && cfg.globalStatus === 'open' && cfg.headDomain) {
-        const domSt = cfg.headDomain === 'project' ? cfg.projectStatus : cfg.supportStatus;
-        if (domSt !== 'open') {
-            html += menuItem('fa-lock-open', 'text-green-500', `Open ${cap(cfg.headDomain)} Period`, `pmAction('open-domain')`);
-        } else {
-            html += menuItem('fa-lock', 'text-gray-500', `Close ${cap(cfg.headDomain)} Period`, `pmConfirmCloseDomain()`);
-        }
+    // Domain actions: each domain the viewer manages
+    if (cfg.globalStatus === 'open') {
+        (cfg.domains || []).forEach(function (dom) {
+            const domSt = dom === 'project' ? cfg.projectStatus : cfg.supportStatus;
+            if (domSt !== 'open') {
+                html += menuItem('fa-lock-open', 'text-green-500', `Open ${cap(dom)} Period`, `pmActionWithDomain('open-domain','${dom}')`);
+            } else {
+                html += menuItem('fa-lock', 'text-gray-500', `Close ${cap(dom)} Period`, `pmConfirmCloseDomainAdmin('${dom}')`);
+            }
+        });
     }
 
-    // Domain actions: Admin (both domains)
-    if (cfg.isAdmin && cfg.globalStatus === 'open') {
-        if (cfg.projectStatus !== 'open') {
-            html += menuItem('fa-lock-open', 'text-green-500', 'Open Project Period', `pmActionWithDomain('open-domain','project')`);
-        } else {
-            html += menuItem('fa-lock', 'text-gray-500', 'Close Project Period', `pmConfirmCloseDomainAdmin('project')`);
-        }
-        if (cfg.supportStatus !== 'open') {
-            html += menuItem('fa-lock-open', 'text-green-500', 'Open Support Period', `pmActionWithDomain('open-domain','support')`);
-        } else {
-            html += menuItem('fa-lock', 'text-gray-500', 'Close Support Period', `pmConfirmCloseDomainAdmin('support')`);
-        }
-    }
-
-    // Force close (RPMO / Admin)
+    // Force close (global control)
     if (cfg.canManageGlobal && cfg.globalStatus === 'open') {
         if (cfg.projectStatus !== 'closed') {
             html += menuItem('fa-times-circle', 'text-red-400', 'Force Close Project', `pmForceClose('project')`);
@@ -778,7 +730,7 @@ function openPeriodMenu(event, id, label, cfg) {
     }
 
     html += menuItem('fa-list-alt', 'text-gray-400', 'Audit Log', `pmAuditLog()`);
-    if (cfg.canManageDomains || {{ $isRpmo ? 'true' : 'false' }} || {{ $isAdmin ? 'true' : 'false' }}) {
+    if (cfg.canExceptions) {
         html += menuItem('fa-user-clock', 'text-yellow-500', 'Exception Requests', `openExRequestsModal()`);
     }
 
@@ -817,7 +769,6 @@ function closePeriodMenu() { document.getElementById('floatingPeriodMenu').class
 function pmAction(action)                  { closePeriodMenu(); periodAction(_pmId, action); }
 function pmActionWithDomain(action, domain){ closePeriodMenu(); periodAction(_pmId, action, {domain}); }
 function pmConfirmCloseGlobal()            { closePeriodMenu(); confirmCloseGlobal(_pmId, _pmLabel); }
-function pmConfirmCloseDomain()            { closePeriodMenu(); confirmCloseDomain(_pmId, _pmCfg.headDomain, _pmLabel); }
 function pmConfirmCloseDomainAdmin(domain) { closePeriodMenu(); confirmCloseDomain(_pmId, domain, _pmLabel); }
 function pmForceClose(domain)              { closePeriodMenu(); confirmForceClose(_pmId, domain, _pmLabel); }
 function pmAuditLog()                      { closePeriodMenu(); openAuditLog(_pmId, _pmLabel); }
@@ -975,7 +926,7 @@ async function executeDeletePeriod() {
 {{-- ════════════════════════════════════════════════════════════════ --}}
 {{-- MODAL: Exception Requests Queue (Head / RPMO / Admin)          --}}
 {{-- ════════════════════════════════════════════════════════════════ --}}
-@if($canManageDomains || $isRpmo || $isAdmin)
+@if($canExceptions)
 <div id="exRequestsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">

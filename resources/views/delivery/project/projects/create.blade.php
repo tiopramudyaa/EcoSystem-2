@@ -17,7 +17,7 @@
 $clients   = ($clients ?? collect())->sortBy(fn($c) => strtolower($c->basicData->name_1 ?? $c->email ?? 'zzz'))->values();
 $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicData->full_name ?? 'zzz'))->values();
 @endphp
-<form action="{{ route('projects.store') }}" method="POST" id="createProjectForm">
+<form action="{{ route('projects.store') }}" method="POST" id="createProjectForm" data-unsaved-guard data-autosave="project-create">
     @csrf
     {{-- Validation error toast + inline highlights --}}
     @if($errors->any())

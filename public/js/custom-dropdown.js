@@ -46,6 +46,7 @@ function initCustomDropdowns(root) {
 
         // Store panel ref so _selectItem can find it even when detached (fixed mode)
         dd._ddPanel = panel;
+        _ddAria(dd, btn, panel);
 
         // Multi-select mode (data-multi="true"): pre-fill checked state + label
         // from the hidden input's comma-separated value (set server-side for
@@ -86,6 +87,8 @@ function initCustomDropdowns(root) {
                     _positionFixed(btn, panel);
                 }
                 panel.classList.remove('hidden');
+                btn.setAttribute('aria-expanded', 'true');
+                _ddAria(dd, btn, panel); // items may have been injected since init
                 const arrow = dd.querySelector('.custom-dd-arrow');
                 if (arrow) arrow.classList.add('rotate-180');
 
@@ -116,6 +119,8 @@ function initCustomDropdowns(root) {
                 }
                 return;
             }
+
+            if (isOpen && e.key === 'Tab') { _closeAllDropdowns(); return; }
 
             // Navigasi saat panel terbuka (hanya dropdown tanpa search;
             // yang ada search input ditangani di _injectSearch).
@@ -328,6 +333,7 @@ function _injectSearch(dd, panel) {
 
     // Keyboard navigation dari search input
     input.addEventListener('keydown', e => {
+        if (e.key === 'Tab') { _closeAllDropdowns(); return; }
         if (e.key === 'Escape') {
             e.preventDefault();
             _closeAllDropdowns();
@@ -400,6 +406,31 @@ function _highlightItem(panel, item) {
         item.classList.add('custom-dd-highlight');
         item.scrollIntoView({ block: 'nearest' });
     }
+    // Screen readers follow the highlight: the focused control (search box, else the trigger) points at the active option.
+    const owner  = panel._ddOwner || panel.closest('.custom-dd');
+    const driver = panel._ddSearch || (owner && owner.querySelector('.custom-dd-btn'));
+    if (driver) {
+        if (item && item.id) driver.setAttribute('aria-activedescendant', item.id);
+        else driver.removeAttribute('aria-activedescendant');
+    }
+}
+
+// ARIA roles for the listbox pattern; idempotent, so it can run again after items are injected.
+let _ddUid = 0;
+function _ddAria(dd, btn, panel) {
+    if (!panel.id) panel.id = 'custom-dd-panel-' + (++_ddUid);
+    btn.setAttribute('aria-haspopup', 'listbox');
+    btn.setAttribute('aria-controls', panel.id);
+    if (!btn.hasAttribute('aria-expanded')) btn.setAttribute('aria-expanded', 'false');
+    panel.setAttribute('role', 'listbox');
+    if (dd.dataset.multi === 'true') panel.setAttribute('aria-multiselectable', 'true');
+    const hidden = dd.querySelector('input[type="hidden"]');
+    const picked = hidden && hidden.value ? hidden.value.split(',') : [];
+    panel.querySelectorAll('.custom-dd-item').forEach(item => {
+        if (!item.id) item.id = panel.id + '-opt-' + (++_ddUid);
+        item.setAttribute('role', 'option');
+        item.setAttribute('aria-selected', picked.includes(item.dataset.value) && item.dataset.value !== '' ? 'true' : 'false');
+    });
 }
 
 // Hapus highlight tanpa memilih item manapun.
@@ -515,6 +546,14 @@ function _selectItem(dd, val, text) {
     }
 
     if (panel) {
+        // Picked with the keyboard (focus is inside the panel / its search box): hand focus back to the trigger.
+        const trigger = dd.querySelector('.custom-dd-btn');
+        if (trigger) {
+            trigger.setAttribute('aria-expanded', 'false');
+            trigger.removeAttribute('aria-activedescendant');
+            if (panel.contains(document.activeElement)) trigger.focus();
+        }
+        panel.querySelectorAll('.custom-dd-item').forEach(i => i.setAttribute('aria-selected', i.dataset.value === String(val) && val ? 'true' : 'false'));
         panel.classList.add('hidden');
         _resetSearchState(panel);
         // Re-attach to original owner if detached via fixed mode
@@ -534,6 +573,8 @@ function _closeAllDropdowns() {
         _resetSearchState(p);
         const owner = p._ddOwner || p.closest('.custom-dd');
         if (owner) {
+            const trigger = owner.querySelector('.custom-dd-btn');
+            if (trigger) { trigger.setAttribute('aria-expanded', 'false'); trigger.removeAttribute('aria-activedescendant'); }
             const arrow = owner.querySelector('.custom-dd-arrow');
             if (arrow) arrow.classList.remove('rotate-180');
             // Re-attach fixed panel back to its owner
@@ -576,6 +617,7 @@ function _toggleMultiItem(dd, item, val) {
         item.querySelector('.custom-dd-check')?.classList.remove('opacity-0');
     }
     hidden.value = ids.join(',');
+    item.setAttribute('aria-selected', ids.includes(val) ? 'true' : 'false');
 
     _updateMultiLabel(dd, ids);
 }
