@@ -77,6 +77,10 @@ return [
         'finance.legal-basis.settings',          // Edit = change the show / draft / enforce switches
         'legal.compliance',                      // Create = add a category / article / rule / critical rule / session, Edit = change one, Delete = delete one
         'control-center.web-reports',            // Edit = change a report's status and notes (no Create or Delete: reports only arrive from the public Web Report form)
+        'legal.sales-compliance',                // Create = start a request, Edit = change / submit / cancel your own draft, Delete = delete a never-submitted draft
+        'legal.sales-compliance.settings',       // Create = add a step or question, Edit = change one, Delete = delete a step
+        'legal.vendor-onboarding',               // Create = register a vendor, Edit = change / submit / start review / link a Business Partner, Delete = delete a never-submitted draft
+        'legal.vendor-onboarding.settings',      // Create = add a step, question or document type, Edit = change one, Delete = delete a step
         'general.external.timesheet.settings',   // approvers of the timesheet and invoice steps; per-consultant exceptions
         'general.external.contracts.settings',   // the same boxes, for the external contract forms
         'general.external.assignment-letters',   // Create = generate an assignment letter
@@ -190,6 +194,10 @@ return [
         'finance.legal-basis.settings'        => ['e' => 'Change the show / draft / enforce switches'],
         'legal.compliance'                    => ['c' => 'Add a category, article, rule, critical rule or training session', 'e' => 'Edit one of them', 'd' => 'Delete one of them'],
         'control-center.web-reports'          => ['e' => 'Change the status of a report, the message to the reporter and the internal note'],
+        'legal.sales-compliance'              => ['c' => 'Start a sales compliance request', 'e' => 'Change, submit or cancel your own draft', 'd' => 'Delete a draft that was never submitted'],
+        'legal.sales-compliance.settings'     => ['c' => 'Add an approval step or a question', 'e' => 'Change a step or a question', 'd' => 'Delete an approval step'],
+        'legal.vendor-onboarding'             => ['c' => 'Register a vendor', 'e' => 'Change / submit a registration, start the review, create or link the Business Partner', 'd' => 'Delete a draft that was never submitted'],
+        'legal.vendor-onboarding.settings'    => ['c' => 'Add an approval step, a question or a document type', 'e' => 'Change one of them', 'd' => 'Delete an approval step'],
         'general.external.timesheet'          => ['c' => 'Fill a timesheet on behalf of a consultant', 'e' => 'Change a timesheet on behalf of a consultant / delete a Draft'],
         'general.external.timesheet.settings' => ['c' => 'Add an approval step or a per-consultant exception', 'e' => 'Change a step, an exception or the options', 'd' => 'Delete a step or an exception'],
         'general.external.contracts'          => ['c' => 'Create an external contract', 'e' => 'Edit an external contract / change its status', 'd' => 'Delete a Draft external contract'],
@@ -285,13 +293,19 @@ return [
         ['key' => 'ticketing',   'label' => 'Ticketing',                 'group' => 'Work & Service', 'short' => 'Ticketing', 'match' => ['tickets', 'tickets.*', 'ticket', 'ticket.*', 'room-chat', 'room-chat.*', 'ui', 'ui.*', 'staging', 'staging.*']],
         ['key' => 'delivery',    'label' => 'Delivery',                  'group' => 'Work & Service', 'short' => 'Delivery', 'match' => ['delivery', 'delivery.*', 'delivery-project.*', 'delivery-support.*']],
         ['key' => 'sla-rpmo',    'label' => 'SLA & RPMO',                'group' => 'Work & Service', 'short' => 'SLA & RPMO', 'match' => ['sla', 'sla.*', 'rpmo', 'rpmo.*']],
-        // Business & Legal — same order as the sidebar: Legal Basis, Compliance Management, Contract, Document Identity, Business Partner (Business Dev is not built yet)
+        // Business & Legal — same order as the sidebar: Legal Basis, Compliance Management, Sales Compliance, Vendor Onboarding, Contract, Document Identity, Business Partner (Business Dev is not built yet)
         ['key' => 'legal-basis', 'label' => 'Legal · Legal Basis', 'group' => 'Business & Legal', 'short' => 'Legal Basis',
             'about' => 'The Legal Basis register and its settings. Web Report Management is in Control Center.',
             'match' => ['legal', 'finance.legal-basis', 'finance.legal-basis.*']],
         ['key' => 'legal-compliance', 'label' => 'Legal · Compliance Management', 'group' => 'Business & Legal', 'short' => 'Compliance Management',
             'about' => 'One slug for the four tabs (Dashboard, Reports, Content, Settings): View opens them, Create / Edit / Delete add, change and remove content and settings; Edit also lets a person follow up a report. Staff reach My Compliance without any permission.',
             'match' => ['legal.compliance', 'legal.compliance.*']],
+        ['key' => 'legal-sales-compliance', 'label' => 'Legal · Sales Compliance Approval', 'group' => 'Business & Legal', 'short' => 'Sales Compliance',
+            'about' => 'Compliance review of each sales deal. Sales fill and submit; the people named on the approval steps (Settings) decide without needing a menu. The "Approve / Reject" box is only for someone who must decide without being named, and it also lets them see every request.',
+            'match' => ['legal.sales-compliance', 'legal.sales-compliance.*']],
+        ['key' => 'legal-vendor-onboarding', 'label' => 'Legal · Vendor Onboarding', 'group' => 'Business & Legal', 'short' => 'Vendor Onboarding',
+            'about' => 'Review of vendor registrations. A verified vendor becomes a Business Partner of type Vendor (needs Create on Master → Business Partner).',
+            'match' => ['legal.vendor-onboarding', 'legal.vendor-onboarding.*']],
         ['key' => 'legal-contract','label' => 'Legal · Contract',       'group' => 'Business & Legal', 'short' => 'Contract', 'match' => ['general.contracts', 'general.contracts.*']],
         ['key' => 'doc-identity', 'label' => 'Legal · Document Identity', 'group' => 'Business & Legal', 'short' => 'Document Identity',
             'about' => 'Letterheads and signers, shared by HR letters and Legal contracts. Give this to Legal instead of the whole Letter Templates settings (numbering, letter types and request types stay with HR).',

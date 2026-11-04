@@ -5023,4 +5023,15 @@ return array (
     'seq' => 7,
     'active' => true,
   ),
+  456 => 
+  array (
+    'slug' => 'control-center.user-guide',
+    'name' => 'User Guide Editor',
+    'type' => 'page',
+    'parent' => 'control-center',
+    'route' => 'admin.user-guide.index',
+    'icon' => 'fa-book',
+    'seq' => 12,
+    'active' => true,
+  ),
 );

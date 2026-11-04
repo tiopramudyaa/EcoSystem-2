@@ -233,6 +233,18 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         // Model AI yang dipakai kedua asisten — dipegang super admin.
         Route::get('/ai-settings', [\App\Http\Controllers\AiSettingsController::class, 'index'])->name('ai-settings')->middleware('menu:control-center.ai-settings');
         Route::post('/ai-settings', [\App\Http\Controllers\AiSettingsController::class, 'update'])->name('ai-settings.update')->middleware('menu:control-center.ai-settings');
+
+        // User Guide Editor: mengubah isi panduan tanpa deploy (topik berkas tetap menjadi bawaan yang bisa dipulihkan).
+        Route::prefix('user-guide')->name('user-guide.')->middleware('menu:control-center.user-guide')->group(function () {
+            $c = \App\Http\Controllers\UserGuideAdminController::class;
+            Route::get('/', [$c, 'index'])->name('index');
+            Route::get('/create', [$c, 'create'])->name('create');
+            Route::post('/', [$c, 'store'])->name('store');
+            Route::post('/preview', [$c, 'preview'])->name('preview');
+            Route::get('/{key}', [$c, 'edit'])->name('edit')->where('key', '[a-z0-9\-]+');
+            Route::put('/{key}', [$c, 'update'])->name('update')->where('key', '[a-z0-9\-]+');
+            Route::delete('/{key}', [$c, 'destroy'])->name('destroy')->where('key', '[a-z0-9\-]+');
+        });
     });
 
     // ==================== SLA ====================
@@ -440,6 +452,9 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     Route::get('/staging-tickets/rejected', [StagingTicketController::class, 'viewRejected'])->name('staging.rejected');
     Route::get('/staging-email-attachments/{stagingId}', [StagingTicketController::class, 'proxyEmailAttachment'])
         ->name('staging.email-attachment.proxy');
+    // User Guide: semua pengguna yang masuk; isi disaring di server menurut izin menu (lihat UserGuideController).
+    Route::get('/user-guide', [\App\Http\Controllers\UserGuideController::class, 'index'])->name('user-guide.index');
+    Route::get('/user-guide/pdf', [\App\Http\Controllers\UserGuideController::class, 'pdf'])->name('user-guide.pdf')->middleware('throttle:20,1');
     Route::get('/my-profile', [ProfileController::class, 'myProfile'])->name('profile.my');
     Route::get('/my-profile/photo', [ProfileController::class, 'myPhoto'])->name('profile.photo');
     Route::get('/my-profile/onboarding-progress', [ProfileController::class, 'myOnboardingProgress'])->name('profile.onboarding-progress');
@@ -734,3 +749,6 @@ require __DIR__ . '/compliance.php';
 // Formulir laporan PUBLIK tanpa login (tombolnya di halaman login) dan Web Report Management di Control Center (berkas baru; modul aditif)
 require __DIR__ . '/web-report.php';
 
+// ==================== SALES COMPLIANCE APPROVAL + VENDOR ONBOARDING ROUTES ====================
+// Business & Legal: persetujuan compliance deal sales dan peninjauan pendaftaran vendor (berkas baru; modul aditif)
+require __DIR__ . '/legal-compliance.php';
