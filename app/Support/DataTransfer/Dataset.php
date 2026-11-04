@@ -25,6 +25,8 @@ class Dataset
         public array $columns,
         public Closure $query,
         public ?array $import = null,
+        /** Optional form-like sheet layout (export / import template / normalize), instead of one flat table. */
+        public ?object $layout = null,
     ) {
     }
 
@@ -37,6 +39,26 @@ class Dataset
     public function headings(): array
     {
         return array_column($this->columns, 'label');
+    }
+
+    /**
+     * Dropdown options per column index: a column's own `choices`, or Yes/No for a column whose hint says so.
+     *
+     * @return array<int, array<int, string>>
+     */
+    public function choices(): array
+    {
+        $choices = [];
+
+        foreach (array_values($this->columns) as $i => $column) {
+            $list = $column['choices'] ?? (str_starts_with((string) ($column['hint'] ?? ''), 'Yes/No') ? ['Yes', 'No'] : null);
+
+            if ($list) {
+                $choices[$i] = array_values($list);
+            }
+        }
+
+        return $choices;
     }
 
     /** @return array<int, string> */

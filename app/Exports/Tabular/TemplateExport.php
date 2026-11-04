@@ -25,19 +25,22 @@ class TemplateExport implements WithMultipleSheets
         private array $headings,
         private array $example,
         private array $guide,
+        private ?object $dataSheet = null,
+        private array $choices = [],
     ) {
     }
 
     public function sheets(): array
     {
         return [
-            new TabularExport(
+            $this->dataSheet ?? new TabularExport(
                 'Data',
                 $this->title . ' — Import Template',
                 $this->headings,
                 [$this->example],
                 [],
-                ['Fill one row per record. Keep the header row (row 4) unchanged. See the "Guide" sheet for each column.']
+                ['Fill one row per record. Keep the header row (row 4) unchanged. See the "Guide" sheet for each column.'],
+                $this->choices
             ),
             new class($this->guide) implements FromArray, WithTitle, WithStyles, WithColumnWidths {
                 public function __construct(private array $guide)

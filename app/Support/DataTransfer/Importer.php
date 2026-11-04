@@ -24,6 +24,11 @@ class Importer
         $config = $dataset->import;
         $sheet  = $this->firstSheet($file);
 
+        // A dataset with its own sheet layout turns it back into one header row plus flat data rows.
+        if (isset($config['normalize'])) {
+            $sheet = ($config['normalize'])($sheet);
+        }
+
         [$headerIndex, $map] = $this->locateHeader($sheet, $dataset);
 
         if ($headerIndex === null) {
@@ -84,7 +89,8 @@ class Importer
                 }
             }
 
-            $key = $values[$config['key']] ?? null;
+            // `key` is a column, or a closure for a key made of several columns (e.g. template + indicator).
+            $key = $config['key'] instanceof \Closure ? ($config['key'])($values) : ($values[$config['key']] ?? null);
             if ($rowErr === [] && $key !== null) {
                 $id = mb_strtolower((string) $key);
                 if (isset($seen[$id])) {
@@ -107,6 +113,11 @@ class Importer
 
         if ($parsed === []) {
             return $this->failure('The file has no data rows below the header.');
+        }
+
+        // Optional rule over the whole file (e.g. weights that must add up to 100), once every row is valid.
+        if (isset($config['check_all']) && ($message = ($config['check_all'])($parsed))) {
+            return $this->failure($message);
         }
 
         $created = $updated = $skipped = 0;
