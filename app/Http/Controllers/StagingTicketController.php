@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Http\Controllers\Concerns\ChecksMenuAccess;
 
 /**
  * StagingTicketController
@@ -33,6 +34,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class StagingTicketController extends Controller
 {
+    use ChecksMenuAccess;
+
     /**
      * Ambang "terlantar" untuk klaim ai_analysis_status='pending' — lihat
      * docblock analyze(). Margin di atas set_time_limit(630) (~10.5 menit)
@@ -52,9 +55,8 @@ class StagingTicketController extends Controller
     {
         $user = SessionUser::fromSession(session('user'));
 
-        // Admin, Helpdesk, dan Head of Support yang boleh akses
-        $allowed = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP);
-        if (!$user || !$user->hasAnyRole($allowed)) {
+        // Siapa yang boleh akses ditentukan Menu Access (tickets.staging), bukan daftar role di kode.
+        if (!$user || !$this->canManageStagingTicket(null)) {
             abort(403, 'Unauthorized');
         }
 
@@ -91,8 +93,7 @@ class StagingTicketController extends Controller
     {
         $user = SessionUser::fromSession(session('user'));
 
-        $allowed = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP);
-        if (!$user || !$user->hasAnyRole($allowed)) {
+        if (!$user || !$this->canManageStagingTicket(null)) {
             abort(403, 'Unauthorized');
         }
 
@@ -128,7 +129,7 @@ class StagingTicketController extends Controller
 
         $isCustomerViewer = RoleId::EC_USER->value === $roleId;
 
-        if (in_array($roleId, array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value, RoleId::EC_USER->value], RoleId::STAGING_GROUP), true)) {
+        if ($isCustomerViewer || $this->canManageStagingTicket($roleId)) {
             $query = StagingTicket::query();
         } else {
             Log::warning('StagingTicketController@index: forbidden — role not allowed', [
@@ -207,8 +208,7 @@ class StagingTicketController extends Controller
         // dengan menebak angka di URL.
         $roleId = $sessionUser['role']['id'] ?? null;
         $isCustomerViewer = RoleId::EC_USER->value === $roleId;
-        $allowedRoles = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value, RoleId::EC_USER->value], RoleId::STAGING_GROUP);
-        if (!in_array($roleId, $allowedRoles, true)) {
+        if (!$isCustomerViewer && !$this->canManageStagingTicket($roleId)) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -386,7 +386,7 @@ class StagingTicketController extends Controller
         }
 
         $roleId = $sessionUser['role']['id'];
-        if (!in_array($roleId, array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP), true)) {
+        if (!$this->canManageStagingTicket($roleId)) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -527,7 +527,7 @@ class StagingTicketController extends Controller
             // chat pribadi ke lead modul. Dikirim setelah response supaya validator
             // tidak menunggu Power Automate, dan kegagalannya tidak pernah
             // membatalkan approve yang sudah tersimpan.
-            $this->notifyTeamsTicketValidated($ticket, $sessionUser);
+            $this->notifyTeamsTicketValidated($ticket, $sessionUser, $firstMessage);
 
             // Room AI Research BERSAMA — dibuat SEKARANG (bukan saat tombol
             // "Ask AI Research" diklik) supaya semua anggota tim tiket
@@ -572,7 +572,7 @@ class StagingTicketController extends Controller
      * di channel tim, dan flow bisa memilih melewati bagian chat pribadi dengan
      * memeriksa `lead_emails` yang kosong.
      */
-    private function notifyTeamsTicketValidated(Ticket $ticket, array $sessionUser): void
+    private function notifyTeamsTicketValidated(Ticket $ticket, array $sessionUser, ?TicketMessage $firstMessage = null): void
     {
         try {
             $powerAutomate = app(\App\Services\PowerAutomateService::class);
@@ -600,6 +600,11 @@ class StagingTicketController extends Controller
             // try/catch sendiri, terpisah dari dispatch di bawah: Teams yang
             // bermasalah tidak boleh ikut membatalkan notifikasi Power Automate
             // yang selama ini sudah jalan.
+            // Guest yang ditunda karena belum dikenal Teams (lihat
+            // TeamsChatService::createForTicket). Mereka belum anggota grup saat
+            // flow 5 memposting kartu, jadi tidak ikut di-@mention.
+            $pendingGuests = [];
+
             try {
                 $teamsChat = app(\App\Services\Teams\TeamsChatService::class)->createForTicket(
                     (int) $ticket->ticket_id,
@@ -614,6 +619,25 @@ class StagingTicketController extends Controller
                     // Tanpa Condition atas flag ini di sisi Power Automate, satu
                     // tiket akan punya DUA grup — satu dari sini, satu dari flow.
                     $chatPayload['created_by_ecosystem'] = true;
+
+                    $pendingGuests = app(\App\Services\Teams\TeamsChatService::class)
+                        ->pendingGuestEmails((int) $ticket->ticket_id);
+
+                    // Email/permintaan pertama customer ikut diteruskan ke grup.
+                    // Hanya bisa di sini: sebelum titik ini tiket belum punya
+                    // group chat, jadi queueCustomerMessage() akan melewatinya.
+                    // Lampirannya sudah diproses di approve() sebelum method ini.
+                    if ($firstMessage) {
+                        try {
+                            app(\App\Services\Teams\TeamsOutboxService::class)->queueCustomerMessage($firstMessage);
+                        } catch (\Throwable $e) {
+                            Log::warning('StagingTicketController@approve: gagal mengantre pesan pertama customer ke Teams (non-fatal)', [
+                                'ticket_id'  => $ticket->ticket_id,
+                                'message_id' => $firstMessage->id,
+                                'error'      => $e->getMessage(),
+                            ]);
+                        }
+                    }
                 }
             } catch (\Throwable $e) {
                 Log::warning('StagingTicketController@approve: gagal membuat group chat Teams lewat Graph (non-fatal)', [
@@ -628,6 +652,20 @@ class StagingTicketController extends Controller
                     'ticket'       => $payloadTicket,
                     'module_leads' => $leads,
                     'lead_emails'  => $leadEmails,
+                    // Rujukan user untuk "Get an @mention token" di flow 5:
+                    // email untuk lead internal, object id untuk lead guest.
+                    // Konektor menolak alamat Gmail guest tetapi menerima object
+                    // id-nya (terbukti 20 Okt 2026). Guest yang tidak bisa
+                    // di-resolve dibuang supaya loop mention tidak berhenti;
+                    // begitu juga guest yang masih ditunda — mereka belum
+                    // anggota grup saat kartu ini diposting.
+                    'lead_teams_ids' => array_values(array_filter(array_map(
+                        static fn ($email) => app(\App\Services\Teams\TeamsGuestService::class)->teamsUserRef((string) $email),
+                        array_filter(
+                            $leadEmails,
+                            static fn ($email) => !in_array(mb_strtolower(trim((string) $email)), $pendingGuests, true)
+                        )
+                    ))),
                     // Bahan group chat tiket (aksi Teams "Create a chat"):
                     // `chat.topic` jadi nama grup sekaligus kunci yang dipakai
                     // flow "ticket member added" untuk menemukan grup ini lagi
@@ -985,10 +1023,8 @@ class StagingTicketController extends Controller
      */
     private function canManageStagingTicket(?int $roleId): bool
     {
-        return in_array($roleId, array_merge(
-            [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value],
-            RoleId::STAGING_GROUP,
-        ), true);
+        // $roleId dipertahankan agar pemanggil lama tetap jalan; izin kini murni dari Menu Access.
+        return $this->menuAllowed('tickets.staging');
     }
 
     /**
@@ -1093,7 +1129,7 @@ class StagingTicketController extends Controller
         }
 
         $roleId = $sessionUser['role']['id'];
-        if (!in_array($roleId, array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP), true)) {
+        if (!$this->canManageStagingTicket($roleId)) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
