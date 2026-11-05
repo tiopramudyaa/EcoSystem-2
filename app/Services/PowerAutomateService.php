@@ -28,6 +28,7 @@ class PowerAutomateService
     public const FLOW_TICKET_OPEN_REMINDER = 'ticket_open_reminder';
     public const FLOW_TICKET_MEMBER_ADDED  = 'ticket_member_added';
     public const FLOW_TEAMS_POST_MESSAGE   = 'teams_post_message';
+    public const FLOW_TICKET_DELIVERABLE_REMINDER = 'ticket_deliverable_reminder';
 
     // ─── Konfigurasi ─────────────────────────────────────────────────────────
 

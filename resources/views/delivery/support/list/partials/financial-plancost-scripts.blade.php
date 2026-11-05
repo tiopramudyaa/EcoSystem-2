@@ -145,6 +145,23 @@
 
     let _currentActual = 0;
 
+    // Actual detail modal: release item (untuk kartu Release / Avail. Release)
+    let _adRelease = null;
+
+    // Release modal state
+    let _rlCostId = null;   // cost leaf yang sedang diatur
+    let _rlDirty  = false;  // release berubah → tabel & monthly perlu reload
+
+    // Tampilan section: 'plan' | 'monthly'. Monthly di-fetch saat dibuka dan
+    // ditandai basi setiap data Plan Cost berubah.
+    let _view         = 'plan';
+    let _monthlyStale = true;
+
+    // Izin section (UI saja — penegakan di middleware route).
+    const _section   = document.getElementById('plancost');
+    const CAN_EDIT   = _section?.dataset.permEdit === '1';
+    const CAN_MANAGE = _section?.dataset.permManage === '1';
+
     async function init() {
         await ensureInit();
         await load();
@@ -162,6 +179,8 @@
             _costs = res.data.costs ?? [];
             renderTable(_costs);
             renderSummaryCards(res.data.summary ?? {});
+            _monthlyStale = true;
+            if (_view === 'monthly') loadMonthly();
         } catch (e) {
             console.error('SupportPlanCost: load error', e);
             document.getElementById('supPlanCostTableBody').innerHTML =
@@ -232,16 +251,25 @@
             ? `<td class="px-4 py-3 text-right whitespace-nowrap bg-orange-50/40 cursor-pointer hover:bg-orange-100 transition-colors"
                    onclick="SupportPlanCost.openActualDetailModal(${item.id}, '${(item.name ?? '').replace(/'/g, "\\'")}')"
                    title="Click to view / add expense details">
-                   <span class="text-orange-700 font-mono text-xs">${fmtRp(actual)}</span>
+                   <span class="text-orange-700 font-mono text-xs underline decoration-dotted underline-offset-2">${fmtRp(actual)}</span>
                </td>`
             : `<td class="px-4 py-3 text-right whitespace-nowrap text-orange-700 font-mono text-xs bg-orange-50/40">${fmtRp(actual)}</td>`;
+
+        // Release cell: leaf → buka "Atur Release Cost" (total + jadwal bulanan).
+        const releaseCell = !isParent
+            ? `<td class="px-4 py-3 text-right whitespace-nowrap bg-blue-50/40 cursor-pointer hover:bg-blue-100 transition-colors"
+                   onclick="SupportPlanCost.openReleaseModal(${item.id})"
+                   title="Click to set the release total & monthly schedule">
+                   <span class="text-blue-700 font-mono text-xs underline decoration-dotted underline-offset-2">${fmtRp(release)}</span>
+               </td>`
+            : `<td class="px-4 py-3 text-right whitespace-nowrap text-blue-700 font-mono text-xs bg-blue-50/40">${fmtRp(release)}</td>`;
 
         return `
         <tr class="${rowBg} transition-colors">
             <td class="px-4 py-3 whitespace-nowrap">${codeLabel}</td>
             <td class="px-4 py-3 ${nameClass}">${item.name ?? ''}</td>
             <td class="px-4 py-3 text-right whitespace-nowrap text-gray-800 font-mono text-xs">${fmtRp(budget)}</td>
-            <td class="px-4 py-3 text-right whitespace-nowrap text-blue-700 font-mono text-xs bg-blue-50/40">${fmtRp(release)}</td>
+            ${releaseCell}
             ${actualCell}
             <td class="px-4 py-3 text-right whitespace-nowrap font-mono text-xs ${availColor(avBudg)} bg-green-50/40">${fmtRp(avBudg)}</td>
             <td class="px-4 py-3 text-right whitespace-nowrap font-mono text-xs ${availColor(avRel)}  bg-teal-50/40">${fmtRp(avRel)}</td>
@@ -500,7 +528,12 @@
         async openActualDetailModal(costId, costName) {
             _adCostId = costId;
             _adDirty  = false;
-            document.getElementById('actualDetailSubtitle').textContent = costName;
+
+            // Judul "<code> <name>" + release item untuk kartu ringkasan.
+            const costItem = findItem(costId, _costs);
+            _adRelease = costItem?.release_amount ?? null;
+            document.getElementById('actualDetailSubtitle').textContent =
+                [costItem?.code, costItem?.name ?? costName].filter(Boolean).join(' ');
             _adResetForm();
             document.getElementById('actualDetailModal').classList.remove('hidden');
             await _adLoadItems();
@@ -518,10 +551,15 @@
             const rawAmt = document.getElementById('adAmountInput').value.replace(/\./g, '').replace(',', '.');
             const amount = parseFloat(rawAmt);
             const file   = document.getElementById('adFileInput').files[0];
+            const date   = document.getElementById('adDateInput').value;
 
             if (!desc) {
                 showPlanCostToast('Expense name is required.', 'error');
                 document.getElementById('adDescInput').focus();
+                return;
+            }
+            if (!date) {
+                showPlanCostToast('Expense date is required.', 'error');
                 return;
             }
             if (!rawAmt || isNaN(amount) || amount <= 0) {
@@ -536,6 +574,7 @@
                 const fd = new FormData();
                 fd.append('description', desc);
                 fd.append('amount', amount);
+                fd.append('expense_date', date);
                 fd.append('_token', getCsrf());
                 if (file) fd.append('document', file);
 
@@ -547,7 +586,9 @@
                 _adDirty = true;
                 _adAppendRow(res.data.item, _adGetCurrentCount() + 1);
                 _adUpdateSummary();
-                _adResetForm();
+                // Tanggal dipertahankan: biasanya beberapa expense diinput
+                // berturut-turut untuk bulan yang sama.
+                _adResetForm(true);
                 showPlanCostToast('Expense added successfully.', 'success');
             } catch (err) {
                 const msg = err.response?.data?.message
@@ -632,6 +673,10 @@
             document.getElementById('aeDescInput').value   = desc;
             document.getElementById('aeAmountInput').value = amount
                 ? new Intl.NumberFormat('id-ID').format(amount) : '';
+            // Expense lama belum punya tanggal → kalender kosong + tanda agar user mengisi.
+            const exDate = rowEl?.dataset.expenseDate ?? '';
+            document.getElementById('aeDateInput').value = exDate;
+            document.getElementById('aeDateHint').classList.toggle('hidden', !!exDate);
 
             const curRow = document.getElementById('aeCurrentDocRow');
             if (docUrl) {
@@ -695,10 +740,15 @@
             const rawAmt = document.getElementById('aeAmountInput').value.replace(/\./g, '').replace(',', '.');
             const amount = parseFloat(rawAmt);
             const file   = document.getElementById('aeFileInput').files[0];
+            const date   = document.getElementById('aeDateInput').value;
 
             if (!desc) {
                 showPlanCostToast('Expense name is required.', 'error');
                 document.getElementById('aeDescInput').focus();
+                return;
+            }
+            if (!date) {
+                showPlanCostToast('Expense date is required.', 'error');
                 return;
             }
             if (!rawAmt || isNaN(amount) || amount <= 0) {
@@ -713,6 +763,7 @@
                 const fd = new FormData();
                 fd.append('description', desc);
                 fd.append('amount', amount);
+                fd.append('expense_date', date);
                 if (file) fd.append('document', file);
                 if (_adEditRemoveDoc) fd.append('remove_document', '1');
 
@@ -739,6 +790,293 @@
         },
     };
 
+    // ── Toggle tampilan: Plan Cost ↔ Monthly Cost vs TOP Invoiced ──
+    const VIEW_META = {
+        plan:    ['Plan Cost', 'Support cost recapitulation: Indirect Cost & Direct Cost'],
+        monthly: ['Monthly Cost vs TOP Invoiced', 'Monthly recap: Release, Actual, and terms already invoiced to the customer'],
+    };
+
+    SupportPlanCost.switchView = function (view) {
+        _view = view === 'monthly' ? 'monthly' : 'plan';
+        const monthly = _view === 'monthly';
+
+        document.getElementById('supPcViewPlan').classList.toggle('hidden', monthly);
+        document.getElementById('supPcViewMonthly').classList.toggle('hidden', !monthly);
+        document.getElementById('supPcAddCostBtn')?.classList.toggle('hidden', monthly);
+        document.getElementById('supPcViewTitle').textContent    = VIEW_META[_view][0];
+        document.getElementById('supPcViewSubtitle').textContent = VIEW_META[_view][1];
+
+        const ACTIVE   = ['primary-gradient', 'text-white'];
+        const INACTIVE = ['text-gray-600', 'hover:bg-white'];
+        [['supPcTabPlan', !monthly], ['supPcTabMonthly', monthly]].forEach(([id, on]) => {
+            const b = document.getElementById(id);
+            b.classList.remove(...ACTIVE, ...INACTIVE);
+            b.classList.add(...(on ? ACTIVE : INACTIVE));
+        });
+
+        // Selalu muat ulang: termin TOP bisa berubah di section lain tanpa menandai basi.
+        if (monthly) loadMonthly();
+    };
+
+    async function loadMonthly() {
+        _monthlyStale = false;
+        try {
+            const res = await axios.get(`${BASE_URL}/monthly`);
+            renderMonthly(res.data);
+        } catch (e) {
+            _monthlyStale = true;
+            console.error('SupportPlanCost: monthly load error', e);
+            document.getElementById('supMonthlyCostTableBody').innerHTML =
+                `<tr><td colspan="6" class="text-center py-8 text-red-500 text-sm">Failed to load monthly data. Please try again.</td></tr>`;
+        }
+    }
+
+    function renderMonthly(r) {
+        const t = r.totals ?? {};
+
+        const card = (label, value, cls) => `
+            <div class="bg-white rounded-lg border border-gray-200 p-4 flex flex-col gap-1 shadow-sm">
+                <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">${label}</span>
+                <span class="text-base font-bold font-mono ${cls}">${fmtRp(value ?? 0)}</span>
+            </div>`;
+        document.getElementById('supMonthlyCostSummaryCards').innerHTML =
+            card('Total Release', t.release, 'text-gray-800') +
+            card('Total Actual', t.actual, 'text-orange-600') +
+            card('Total TOP Invoiced', t.top, 'text-green-700') +
+            card('Cumulative Position (TOP Invoiced − Actual)', t.diff, (t.diff ?? 0) < 0 ? 'text-red-600' : 'text-gray-800');
+
+        // null → "-" (bulan tanpa data di kolom tsb.)
+        const money = v => (v === null || v === undefined) ? '<span class="text-gray-400">-</span>' : fmtRp(v);
+        const signed = v => `<span class="${v < 0 ? 'text-red-600' : 'text-gray-800'}">${fmtRp(v)}</span>`;
+        const row = (label, d, extra = '') => `
+            <tr class="hover:bg-gray-50 ${extra}">
+                <td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">${label}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${money(d.release)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${money(d.actual)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${money(d.top)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${signed(d.diff)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${signed(d.cumulative)}</td>
+            </tr>`;
+
+        const months = r.months ?? [];
+        let html = months.map(m => row(_fmtPeriod(m.period), m)).join('');
+        if (r.has_unscheduled) {
+            html += row('Unscheduled / no period', r.unscheduled, 'bg-amber-50/40 italic');
+        }
+        if (!html) {
+            html = `<tr><td colspan="6" class="text-center py-10 text-gray-400 text-sm">No monthly data yet. Set release schedules, add expenses, or invoice a TOP term to see the report.</td></tr>`;
+        } else {
+            html += `
+            <tr class="bg-gray-100 font-bold border-t-2 border-gray-300">
+                <td class="px-4 py-3 text-gray-800">Total</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${fmtRp(t.release)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${fmtRp(t.actual)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${fmtRp(t.top)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${signed(t.diff)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${signed(t.diff)}</td>
+            </tr>`;
+        }
+        document.getElementById('supMonthlyCostTableBody').innerHTML = html;
+    }
+
+    // ── Atur Release Cost modal ──────────────────────────────────
+    /** Cost leaf (sub-item, atau parent tanpa sub-item) berurutan sesuai tabel. */
+    function _leafCosts() {
+        return _costs.flatMap(c => c.has_children ? (c.children ?? []) : [c]);
+    }
+
+    SupportPlanCost.openReleaseModal = async function (costId) {
+        _rlCostId = costId;
+
+        const sel = document.getElementById('rlCostSelect');
+        sel.innerHTML = _leafCosts().map(c =>
+            `<option value="${c.id}">${_esc([c.code, c.name].filter(Boolean).join(' - '))}</option>`).join('');
+        sel.value = String(costId);
+
+        document.getElementById('rlAmountInput').value = '';
+        document.getElementById('rlNotesInput').value  = '';
+        if (!document.getElementById('rlDateInput').value) {
+            document.getElementById('rlDateInput').value = _today();
+        }
+        // UI mengikuti izin section; server tetap menegakkan lewat middleware.
+        document.getElementById('rlSaveTotalBtn').classList.toggle('hidden', !CAN_EDIT);
+        document.getElementById('rlTotalInput').disabled = !CAN_EDIT;
+        document.getElementById('rlAddForm').classList.toggle('hidden', !CAN_MANAGE);
+
+        document.getElementById('rlScheduleList').innerHTML =
+            `<p class="py-3 text-center text-xs text-gray-400">Loading…</p>`;
+        document.getElementById('releaseModal').classList.remove('hidden');
+
+        try {
+            const res = await axios.get(`${BASE_URL}/${costId}/releases`);
+            _rlRender(res.data);
+        } catch (err) {
+            document.getElementById('rlScheduleList').innerHTML =
+                `<p class="py-3 text-center text-xs text-red-500">${_esc(err.response?.data?.message ?? 'Failed to load release data.')}</p>`;
+        }
+    };
+
+    SupportPlanCost.closeReleaseModal = async function () {
+        document.getElementById('releaseModal').classList.add('hidden');
+        _rlCostId = null;
+        if (_rlDirty) {
+            _rlDirty = false;
+            await load();
+        }
+    };
+
+    SupportPlanCost.saveReleaseTotal = async function () {
+        if (!_rlCostId) return;
+        const raw = document.getElementById('rlTotalInput').value.replace(/\./g, '').replace(',', '.');
+        const btn = document.getElementById('rlSaveTotalBtn');
+        btn.disabled = true;
+        try {
+            const res = await axios.post(`${BASE_URL}/${_rlCostId}/release`,
+                { release_amount: raw === '' ? null : parseFloat(raw) },
+                { headers: { 'X-HTTP-Method-Override': 'PUT' } });
+            _rlDirty = true;
+            _rlRender(res.data);
+            showPlanCostToast('Total release saved.', 'success');
+        } catch (err) {
+            showPlanCostToast(_errMsg(err, 'Failed to save total release.'), 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    SupportPlanCost.addReleaseSchedule = async function () {
+        if (!_rlCostId) return;
+        const date   = document.getElementById('rlDateInput').value;
+        const amount = parseFloat(document.getElementById('rlAmountInput').value.replace(/\./g, '').replace(',', '.'));
+        const notes  = document.getElementById('rlNotesInput').value.trim();
+
+        if (!date) {
+            showPlanCostToast('Date is required.', 'error');
+            return;
+        }
+        if (isNaN(amount) || amount <= 0) {
+            showPlanCostToast('Amount must be greater than 0.', 'error');
+            document.getElementById('rlAmountInput').focus();
+            return;
+        }
+
+        const btn = document.getElementById('rlAddBtn');
+        btn.disabled = true;
+        try {
+            const res = await axios.post(`${BASE_URL}/${_rlCostId}/releases`,
+                { schedule_date: date, amount, notes: notes || null });
+            _rlDirty = true;
+            _rlRender(res.data);
+            // Tanggal dipertahankan untuk input berikutnya.
+            document.getElementById('rlAmountInput').value = '';
+            document.getElementById('rlNotesInput').value  = '';
+            showPlanCostToast('Release schedule added.', 'success');
+        } catch (err) {
+            showPlanCostToast(_errMsg(err, 'Failed to add release schedule.'), 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    SupportPlanCost.deleteReleaseSchedule = async function (scheduleId, btn) {
+        if (!_rlCostId) return;
+        if (btn) btn.disabled = true;
+        try {
+            const res = await axios.post(`${BASE_URL}/${_rlCostId}/releases/${scheduleId}/delete`);
+            _rlDirty = true;
+            _rlRender(res.data);
+            showPlanCostToast('Release schedule deleted.', 'success');
+        } catch (err) {
+            if (btn) btn.disabled = false;
+            showPlanCostToast(_errMsg(err, 'Failed to delete release schedule.'), 'error');
+        }
+    };
+
+    function _rlRender(d) {
+        const total = d.release_amount;
+        document.getElementById('rlTotalCard').textContent     = fmtRp(total ?? 0);
+        document.getElementById('rlScheduledCard').textContent = fmtRp(d.scheduled ?? 0);
+        const un = document.getElementById('rlUnscheduledCard');
+        un.textContent = fmtRp(d.unscheduled ?? 0);
+        un.className   = `text-lg font-bold font-mono ${(d.unscheduled ?? 0) === 0 ? 'text-gray-800' : 'text-red-600'}`;
+
+        document.getElementById('rlTotalInput').value =
+            (total !== null && total !== undefined) ? new Intl.NumberFormat('id-ID').format(total) : '';
+
+        const schedules = d.schedules ?? [];
+
+        // Subtotal per bulan + baris "Belum dijadwalkan" (= total − terjadwal).
+        const listEl = document.getElementById('rlMonthlyList');
+        const shown  = _renderMonthlyList(listEl, schedules.map(s => [s.period, s.amount]), '');
+        if (Math.abs(d.unscheduled ?? 0) > 0.004) {
+            listEl.insertAdjacentHTML('beforeend', `
+                <div class="flex justify-between py-1.5">
+                    <span class="text-red-600">Unscheduled</span>
+                    <span class="font-semibold font-mono text-red-600">${fmtRp(d.unscheduled)}</span>
+                </div>`);
+        } else if (!shown) {
+            listEl.innerHTML = `<p class="py-2 text-xs text-gray-400 italic">No release yet.</p>`;
+        }
+
+        document.getElementById('rlScheduleList').innerHTML = schedules.length
+            ? schedules.map(s => `
+                <div class="flex items-center justify-between gap-3 py-2">
+                    <span class="text-gray-700">${_fmtDate(s.schedule_date)} - ${_esc(s.notes || '-')}</span>
+                    <span class="flex items-center gap-3">
+                        <span class="font-semibold font-mono text-gray-800">${fmtRp(s.amount)}</span>
+                        ${CAN_MANAGE ? `<button type="button" data-closed-hide data-perm-action="manage"
+                                onclick="SupportPlanCost.deleteReleaseSchedule(${s.id}, this)"
+                                class="text-xs font-medium text-red-500 hover:text-red-700 disabled:opacity-50">Delete</button>` : ''}
+                    </span>
+                </div>`).join('')
+            : `<p class="py-2 text-xs text-gray-400 italic">No monthly schedule yet.</p>`;
+    }
+
+    function _errMsg(err, fallback) {
+        return err.response?.data?.message
+            ?? (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(' ') : null)
+            ?? fallback;
+    }
+
+    // ── Period helpers ────────────────────────────────────────────
+    const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    /** "2026-10" (atau "2026-10-04") → "Okt 2026"; kosong (expense lama) → "—". */
+    function _fmtPeriod(period) {
+        if (!period) return '—';
+        const [y, m] = String(period).split('-');
+        return `${MONTHS_SHORT[Number(m) - 1] ?? m} ${y}`;
+    }
+
+    /** "2026-11-04" → "04/11/2026". */
+    function _fmtDate(date) {
+        if (!date) return '—';
+        const [y, m, d] = String(date).split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    function _today() {
+        const n = new Date();
+        return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+    }
+
+    /**
+     * Daftar "Subtotal per bulan": pasangan [period, amount] diurutkan
+     * kronologis; period kosong ditaruh paling bawah dengan label `emptyLabel`.
+     */
+    function _renderMonthlyList(el, pairs, emptyLabel, emptyClass = 'text-gray-500') {
+        const sums = {};
+        pairs.forEach(([p, a]) => { sums[p || ''] = (sums[p || ''] ?? 0) + (parseFloat(a) || 0); });
+        const keys = Object.keys(sums).filter(Boolean).sort();
+        if ('' in sums && Math.abs(sums['']) > 0.004) keys.push('');
+        el.innerHTML = keys.map(p => `
+            <div class="flex justify-between py-1.5">
+                <span class="${p ? 'text-gray-700' : emptyClass}">${p ? _fmtPeriod(p) : emptyLabel}</span>
+                <span class="font-semibold font-mono ${p ? 'text-gray-800' : emptyClass}">${fmtRp(sums[p])}</span>
+            </div>`).join('');
+        return keys.length;
+    }
+
     function showPlanCostToast(msg, type) {
         if (typeof window.showToast === 'function') window.showToast(msg, type);
         else if (typeof window.showNotification === 'function') window.showNotification(msg, type);
@@ -748,7 +1086,7 @@
     async function _adLoadItems() {
         const tbody = document.getElementById('actualDetailTableBody');
         const tfoot = document.getElementById('actualDetailTableFoot');
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-400 text-sm">
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-400 text-sm">
             <svg class="animate-spin h-5 w-5 primary-text mx-auto mb-2" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -767,13 +1105,13 @@
             }
             _adUpdateSummary();
         } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-red-500 text-sm">Failed to load data.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-red-500 text-sm">Failed to load data.</td></tr>`;
         }
     }
 
     function _adShowEmpty() {
         document.getElementById('actualDetailTableBody').innerHTML =
-            `<tr><td colspan="5" class="text-center py-8 text-gray-400 text-sm italic" data-empty>No expense records found.</td></tr>`;
+            `<tr><td colspan="6" class="text-center py-8 text-gray-400 text-sm italic" data-empty>No expense records found.</td></tr>`;
         document.getElementById('actualDetailTableFoot').classList.add('hidden');
     }
 
@@ -791,11 +1129,14 @@
         tr.dataset.itemId  = item.id;
         tr.dataset.desc    = item.description ?? '';
         tr.dataset.amount  = item.amount ?? 0;
+        tr.dataset.period  = item.period ?? '';
+        tr.dataset.expenseDate = item.expense_date ?? '';
         tr.dataset.docName = item.document_name ?? '';
         tr.dataset.docUrl  = item.document_url ?? '';
         tr.innerHTML = `
             <td class="px-4 py-2.5 text-gray-400 text-xs">${no}</td>
             <td class="px-4 py-2.5 text-gray-700 text-sm">${_esc(item.description)}</td>
+            <td class="px-4 py-2.5 text-center text-gray-600 text-xs whitespace-nowrap">${_fmtPeriod(item.period)}</td>
             <td class="px-4 py-2.5 text-right font-mono text-sm text-blue-700 font-medium whitespace-nowrap">${fmtRp(item.amount)}</td>
             <td class="px-4 py-2.5 text-center whitespace-nowrap">${docCell}</td>
             <td class="px-4 py-2.5 text-center whitespace-nowrap">
@@ -836,12 +1177,15 @@
         if (!tr || !item) return;
         tr.dataset.desc    = item.description ?? '';
         tr.dataset.amount  = item.amount ?? 0;
+        tr.dataset.period  = item.period ?? '';
+        tr.dataset.expenseDate = item.expense_date ?? '';
         tr.dataset.docName = item.document_name ?? '';
         tr.dataset.docUrl  = item.document_url ?? '';
         const tds = tr.querySelectorAll('td');
         if (tds[1]) tds[1].textContent = item.description ?? '';
-        if (tds[2]) tds[2].textContent = fmtRp(item.amount);
-        if (tds[3]) tds[3].innerHTML   = _adDocCellHtml(item);
+        if (tds[2]) tds[2].textContent = _fmtPeriod(item.period);
+        if (tds[3]) tds[3].textContent = fmtRp(item.amount);
+        if (tds[4]) tds[4].innerHTML   = _adDocCellHtml(item);
     }
 
     function _adRenumberRows() {
@@ -858,9 +1202,26 @@
     function _adUpdateSummary() {
         document.getElementById('adTotalItems').textContent  = fmtRp(_adTotal);
         document.getElementById('adFooterTotal').textContent = fmtRp(_adTotal);
+        document.getElementById('adReleaseCard').textContent = fmtRp(_adRelease ?? 0);
+        const avail = (_adRelease ?? 0) - _adTotal;
+        const availEl = document.getElementById('adAvailReleaseCard');
+        availEl.textContent = fmtRp(avail);
+        availEl.className   = `text-lg font-bold font-mono ${avail < 0 ? 'text-red-600' : 'text-gray-800'}`;
+
+        // Subtotal per bulan dari seluruh expense.
+        const shown = _renderMonthlyList(
+            document.getElementById('adMonthlyList'),
+            Array.from(document.querySelectorAll('#actualDetailTableBody tr[data-item-id]'))
+                .map(tr => [tr.dataset.period, tr.dataset.amount]),
+            'No period'
+        );
+        document.getElementById('adMonthlyWrap').classList.toggle('hidden', !shown);
     }
 
-    function _adResetForm() {
+    function _adResetForm(keepDate = false) {
+        if (!keepDate) {
+            document.getElementById('adDateInput').value = _today();
+        }
         document.getElementById('adDescInput').value  = '';
         document.getElementById('adAmountInput').value = '';
         document.getElementById('adFileInput').value   = '';
@@ -875,7 +1236,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         axios.defaults.headers.common['X-CSRF-TOKEN'] = getCsrf();
-        ['costBudgetInput', 'costReleaseInput', 'adAmountInput', 'aeAmountInput'].forEach(id => {
+        ['costBudgetInput', 'costReleaseInput', 'adAmountInput', 'aeAmountInput', 'rlTotalInput', 'rlAmountInput'].forEach(id => {
             const el = document.getElementById(id);
             if (el) formatCurrencyInput(el);
         });

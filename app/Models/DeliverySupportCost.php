@@ -56,6 +56,14 @@ class DeliverySupportCost extends Model
                     ->orderBy('created_at');
     }
 
+    /** Jadwal release bulanan; jumlahnya boleh ≠ release_amount (sisa = belum dijadwalkan). */
+    public function releaseSchedules()
+    {
+        return $this->hasMany(DeliverySupportCostReleaseSchedule::class, 'delivery_support_cost_id')
+                    ->orderBy('schedule_date')
+                    ->orderBy('id');
+    }
+
     // ── Computed helpers ──────────────────────────────────────────
 
     public function getAvailableBudgetAttribute(): ?float

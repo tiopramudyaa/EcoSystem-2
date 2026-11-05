@@ -349,6 +349,10 @@ return [
             // app-only (hanya Teamwork.Migrate.All, untuk migrasi), jadi arah
             // keluar wajib lewat Power Automate. Lihat design §3.
             'teams_post_message'   => env('POWER_AUTOMATE_FLOW_TEAMS_POST_MESSAGE'),
+
+            // Tiket Closed tapi dokumen deliverable mandatory belum lengkap ->
+            // pesan harian di group chat tiket + @mention PIC (flow 8).
+            'ticket_deliverable_reminder' => env('POWER_AUTOMATE_FLOW_TICKET_DELIVERABLE_REMINDER'),
         ],
 
         'reminder' => [
@@ -385,6 +389,35 @@ return [
             // true = berhenti mengingatkan begitu tiket sudah punya PIC atau member,
             // walaupun statusnya masih open.
             'stop_when_assigned' => (bool) env('POWER_AUTOMATE_REMINDER_STOP_WHEN_ASSIGNED', false),
+        ],
+
+        // Reminder harian dokumen deliverable untuk tiket Closed (flow 8,
+        // command tickets:deliverable-reminders). Satu tiket dikirimi paling
+        // banyak sekali per hari kalender, sampai semua doc type mandatory-nya
+        // punya dokumen atau tiketnya dibuka lagi.
+        'deliverable_reminder' => [
+            // Jendela jam kirim (zona waktu aplikasi). Command dijadwalkan tiap
+            // jam dan keluar tanpa efek di luar jendela ini, supaya tidak ada
+            // ping di malam hari. Tiket yang tidak kebagian karena batch_limit
+            // ikut terkirim pada jam berikutnya di hari yang sama.
+            'send_from'   => env('POWER_AUTOMATE_DELIVERABLE_REMINDER_FROM', '09:00'),
+            'send_until'  => env('POWER_AUTOMATE_DELIVERABLE_REMINDER_UNTIL', '17:00'),
+
+            // Hari tenggang setelah tanggal close sebelum reminder pertama.
+            // 0 = mulai di hari tiket di-close.
+            'grace_days'  => (int) env('POWER_AUTOMATE_DELIVERABLE_REMINDER_GRACE_DAYS', 0),
+
+            // Batas jumlah reminder per tiket. 0 = tanpa batas (sampai lengkap).
+            'max_count'   => (int) env('POWER_AUTOMATE_DELIVERABLE_REMINDER_MAX_COUNT', 0),
+
+            // Tiket yang diproses per satu kali jalan (pagar ledakan).
+            'batch_limit' => (int) env('POWER_AUTOMATE_DELIVERABLE_REMINDER_BATCH_LIMIT', 50),
+
+            // Hanya tiket yang di-close pada/setelah tanggal ini. ISI dengan
+            // tanggal go-live (mis. "2026-11-03") - tanpa itu seluruh tiket
+            // closed lama yang dokumennya belum lengkap ikut ditagih tiap hari.
+            // Kosong = semua tiket closed.
+            'since'       => env('POWER_AUTOMATE_DELIVERABLE_REMINDER_SINCE'),
         ],
     ],
 
