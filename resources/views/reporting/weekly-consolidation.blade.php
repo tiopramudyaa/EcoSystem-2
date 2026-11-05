@@ -168,6 +168,7 @@
                 <tr>
                     <th class="wc-th text-left" data-filter-key="last_update" style="min-width:150px;">Last Update</th>
                     <th class="wc-th text-left" data-filter-key="ticket_number" style="min-width:130px;">Ticket</th>
+                    <th class="wc-th text-left" data-filter-key="customer_name" style="min-width:160px;">Customer</th>
                     <th class="wc-th text-left" data-filter-key="description" style="min-width:220px;">Description</th>
                     <th class="wc-th text-left" data-filter-key="start_date" style="min-width:150px;">Start Date</th>
                     <th class="wc-th text-left" data-filter-key="ticket_type" style="min-width:120px;">Type</th>
@@ -180,7 +181,7 @@
                 </tr>
             </thead>
             <tbody id="wcTableBody">
-                <tr><td colspan="11" class="text-center py-10 text-gray-400 text-sm">No tickets loaded yet.</td></tr>
+                <tr><td colspan="12" class="text-center py-10 text-gray-400 text-sm">No tickets loaded yet.</td></tr>
             </tbody>
         </table>
     </div>
@@ -507,7 +508,7 @@ function wcOnSelectionChange() {
     clearTimeout(wcAutoViewTimer);
     if (!hasSelection) {
         document.getElementById('wcResultSummary').textContent = 'Select a module and click View Tickets to see its open tickets.';
-        document.getElementById('wcTableBody').innerHTML = wcEmptyRow('No tickets loaded yet.', 11);
+        document.getElementById('wcTableBody').innerHTML = wcEmptyRow('No tickets loaded yet.', 12);
         return;
     }
 
@@ -553,7 +554,7 @@ async function wcViewTickets() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i>Loading...';
 
     const body = document.getElementById('wcTableBody');
-    body.innerHTML = wcEmptyRow('Loading...', 11);
+    body.innerHTML = wcEmptyRow('Loading...', 12);
 
     try {
         const res = await fetch(`/api/reporting/weekly-consolidation/preview?${wcBuildModuleParams().toString()}`, {
@@ -575,7 +576,7 @@ async function wcViewTickets() {
     } catch (e) {
         console.error(e);
         wcShowMsg(e.message);
-        body.innerHTML = `<tr><td colspan="11" class="text-center py-10 text-red-500 text-sm">${escHtml(e.message)}</td></tr>`;
+        body.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-red-500 text-sm">${escHtml(e.message)}</td></tr>`;
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-eye mr-1.5"></i>View Tickets';
@@ -659,7 +660,7 @@ async function wcRefresh() {
 async function wcOpenBatch(id) {
     wcClearMsg();
     const body = document.getElementById('wcTableBody');
-    body.innerHTML = wcEmptyRow('Loading...', 11);
+    body.innerHTML = wcEmptyRow('Loading...', 12);
 
     try {
         const res = await fetch(`/api/reporting/weekly-consolidation/${id}`, {
@@ -673,7 +674,7 @@ async function wcOpenBatch(id) {
     } catch (e) {
         console.error(e);
         wcShowMsg(e.message);
-        body.innerHTML = `<tr><td colspan="11" class="text-center py-10 text-red-500 text-sm">${escHtml(e.message)}</td></tr>`;
+        body.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-red-500 text-sm">${escHtml(e.message)}</td></tr>`;
     }
 }
 
@@ -803,7 +804,7 @@ function wcResetToIdle(message) {
     document.getElementById('wcGenerateBar').classList.add('hidden');
     document.getElementById('wcViewBtn').disabled = true;
     document.getElementById('wcResultSummary').textContent = message;
-    document.getElementById('wcTableBody').innerHTML = wcEmptyRow('No tickets loaded yet.', 11);
+    document.getElementById('wcTableBody').innerHTML = wcEmptyRow('No tickets loaded yet.', 12);
     wcRenderModuleField();
 }
 
@@ -868,7 +869,7 @@ function wcRenderRows(rows, editable) {
 
     if (!rows.length) {
         const msg = wcAllRows.length ? 'No tickets match your filters.' : 'No open tickets found for the selected module(s).';
-        body.innerHTML = wcEmptyRow(msg, 11);
+        body.innerHTML = wcEmptyRow(msg, 12);
         return;
     }
 
@@ -878,6 +879,7 @@ function wcRenderRows(rows, editable) {
             <td class="wc-td">
                 <a href="/ticket/${r.ticket_id}" onclick="return wcTicketClick(event, ${r.ticket_id})" class="font-semibold text-red-800 hover:underline">${escHtml(r.ticket_number)}</a>
             </td>
+            <td class="wc-td">${r.customer_name ? escHtml(r.customer_name) : '<span class="text-gray-300 italic">—</span>'}</td>
             <td class="wc-td wc-td-desc">${r.description ? escHtml(r.description) : '<span class="text-gray-300 italic">—</span>'}</td>
             <td class="wc-td text-xs text-gray-500 whitespace-nowrap">${r.start_date ? new Date(r.start_date).toLocaleString('en-US') : '—'}</td>
             <td class="wc-td">${r.ticket_type ? escHtml(r.ticket_type) : '<span class="text-gray-300 italic">—</span>'}</td>
@@ -918,7 +920,7 @@ function wcAutoResizeNote(el) {
 // ── Per-column header filters (satu filter teks per kolom, sama pola dengan
 // tabel "Ringkasan per Tiket" di Log Shifting) ──────────────────────────────
 
-const WC_FILTER_KEYS = ['last_update', 'ticket_number', 'description', 'start_date', 'ticket_type', 'status', 'module_name', 'lead_member', 'pic', 'progress', 'notes'];
+const WC_FILTER_KEYS = ['last_update', 'ticket_number', 'customer_name', 'description', 'start_date', 'ticket_type', 'status', 'module_name', 'lead_member', 'pic', 'progress', 'notes'];
 
 function wcInitColumnFilters() {
     document.querySelectorAll('#wcTicketTable thead th[data-filter-key]').forEach(th => {
@@ -1005,6 +1007,7 @@ function wcUpdateFilterIndicators() {
 function wcGetFilterText(row, key) {
     switch (key) {
         case 'ticket_number': return row.ticket_number || '';
+        case 'customer_name': return row.customer_name || '';
         case 'description':   return row.description || '';
         case 'start_date':    return row.start_date ? new Date(row.start_date).toLocaleString('en-US') : '';
         case 'last_update':   return row.last_update ? new Date(row.last_update).toLocaleString('en-US') : '';
@@ -1086,6 +1089,7 @@ function wcOpenTicketModal(ticketId) {
         <div class="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
             <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Start Date</span>${r.start_date ? new Date(r.start_date).toLocaleString('en-US') : '—'}</div>
             <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Last Update</span>${r.last_update ? new Date(r.last_update).toLocaleString('en-US') : '—'}</div>
+            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Customer</span>${r.customer_name ? escHtml(r.customer_name) : '<span class="text-gray-300 italic">—</span>'}</div>
             <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Type</span>${r.ticket_type ? escHtml(r.ticket_type) : '<span class="text-gray-300 italic">—</span>'}</div>
             <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Module</span>${r.module_name ? escHtml(r.module_name) : '<span class="text-gray-300 italic">—</span>'}</div>
             <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Lead &amp; Member</span>${r.lead_member ? escHtml(r.lead_member) : '<span class="text-gray-300 italic">—</span>'}</div>
