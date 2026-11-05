@@ -193,7 +193,7 @@ class LegalBasisService
         if ($payload !== '') {
             json_decode($payload);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \DomainException('The calculation data must be valid JSON.');
+                throw new \DomainException('The calculation values could not be read. Reload the page and try again.');
             }
         }
         $row = [

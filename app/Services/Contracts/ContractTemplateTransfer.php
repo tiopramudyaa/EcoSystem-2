@@ -96,6 +96,14 @@ final class ContractTemplateTransfer
 
     // ── Impor: baca ───────────────────────────────────────────────────────
 
+    /** Jenis berkas dari ISINYA (bukan namanya): json | html | pdf. Dipakai untuk memeriksa izin impor per format sebelum dibaca. */
+    public static function kindOf(string $raw): string
+    {
+        $head = ltrim($raw, "\xEF\xBB\xBF \t\r\n");
+
+        return str_starts_with($head, '%PDF-') ? 'pdf' : (str_starts_with($head, '<') ? 'html' : 'json');
+    }
+
     /**
      * @return array<int,array<string,mixed>> template mentah dari berkas (.json hasil ekspor, atau satu berkas .html hasil ekspor HTML)
      * @throws \DomainException

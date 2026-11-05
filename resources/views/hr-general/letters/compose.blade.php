@@ -218,7 +218,7 @@
                             Write it as in Word — fonts, tables, indents, page breaks. <strong>Fields</strong> inserts what is filled in for this letter
                             (<code>@{{signature_block}}</code> prints the city, date, signature and signer). <strong>Preview</strong> shows the PDF. Press <kbd class="px-1 border rounded bg-gray-50">F1</kbd> for shortcuts.
                         </p>
-                        @include('hr-general.contracts.components.word-editor', [
+                        @include('legal.contracts.components.word-editor', [
                             'weHtml'         => $customBody,
                             'weInput'        => 'bodyHtml',
                             'weForm'         => 'composeForm',

@@ -144,7 +144,7 @@ class ReimbursementImportController extends Controller
                 'message'  => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Nothing was imported — ' . $e->getMessage());
+            return back()->with('error', 'Nothing was imported. ' . AppSupportUserMessage::of($e, 'The file could not be processed. Check it against the template and try again.'));
         }
 
         return redirect()

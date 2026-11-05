@@ -98,8 +98,10 @@ class ExternalTimesheetController extends Controller
     private function periodsByConsultant(): array
     {
         $out = [];
-        foreach ($this->consultants->options() as $c) {
-            $open = array_values(array_filter($this->sheets->periodsFor($c['id']), fn ($p) => $p['sheet_id'] === null));
+        $consultants = $this->consultants->options();
+        $all = $this->sheets->periodsForMany(array_column($consultants, 'id'));   // 2 query untuk semua konsultan, bukan 2 per konsultan
+        foreach ($consultants as $c) {
+            $open = array_values(array_filter($all[$c['id']] ?? [], fn ($p) => $p['sheet_id'] === null));
             if ($open) {
                 $out[$c['id']] = array_map(fn ($p) => ['contract_id' => $p['contract_id'], 'year' => $p['year'], 'month' => $p['month'],
                     'label' => $p['label'] . ' — ' . $p['contract_number']], $open);

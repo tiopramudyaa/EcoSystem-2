@@ -247,24 +247,35 @@ class ApprovalEngine
     public function inbox(int $employeeId): Collection
     {
         $rows = collect();
+        $requesterIds = [];
 
         foreach (self::MODULES as $module => $cfg) {
             foreach ($this->waitingFor($module, $employeeId) as $step) {
                 $document = $step->{$cfg['relation']};
                 $requesterId = (int) ($document->employee_id ?? 0);
+                if ($requesterId) {
+                    $requesterIds[$requesterId] = true;
+                }
 
                 $rows->push([
                     'module'    => $module,
                     'label'     => $cfg['label'],
                     'id'        => (int) $document->getKey(),
                     'number'    => (string) ($document->{$cfg['number']} ?? '#' . $document->getKey()),
-                    'requester' => $requesterId ? $this->nameOf($requesterId) : null,
+                    'requester' => $requesterId ?: null,   // diganti dengan nama di bawah: satu query untuk semua pemohon
                     'step'      => (string) $step->step_name,
                     'since'     => $step->updated_at ?? $step->created_at ?? $document->created_at,
                     'url'       => $this->urlFor($module, $document),
                 ]);
             }
         }
+
+        $names = $this->namesOf(array_keys($requesterIds));
+        $rows = $rows->map(function ($r) use ($names) {
+            $r['requester'] = $r['requester'] ? ($names[$r['requester']] ?? null) : null;
+
+            return $r;
+        });
 
         return $rows->sortBy(fn ($r) => $r['since']?->timestamp ?? 0)->values();
     }
@@ -306,8 +317,15 @@ class ApprovalEngine
         };
     }
 
-    private function nameOf(int $employeeId): ?string
+    /** @param int[] $employeeIds @return array<int,?string> employee_id → nama, dengan satu query untuk semua */
+    private function namesOf(array $employeeIds): array
     {
-        return \App\Models\Employee::with('basicData:basic_data_id,employee_id,nick_name,first_name,last_name')->find($employeeId)?->fullNameLabel();
+        if ($employeeIds === []) {
+            return [];
+        }
+
+        return \App\Models\Employee::with('basicData:basic_data_id,employee_id,nick_name,first_name,last_name')
+            ->whereIn('employee_id', $employeeIds)->get()
+            ->mapWithKeys(fn ($e) => [(int) $e->employee_id => $e->fullNameLabel()])->all();
     }
 }

@@ -5,13 +5,13 @@ order: 10
 title: Legal Basis
 summary: Kelola daftar undang-undang dan peraturan di balik aturan payroll, BPJS, lembur, kontrak, dan offboarding.
 requires: [legal, finance.legal-basis, finance.legal-basis.settings]
-updated: 2026-10-27
+updated: 2026-11-04
 ---
 Legal Basis adalah daftar (register) undang-undang dan peraturan di balik aturan perhitungan di EcoSystem: PPh 21, BPJS, Overtime, Contract (PKWT), dan Offboarding. Untuk setiap aturan, register mencatat peraturannya, tanggal mulai berlaku, perubahan terakhir, dan apakah sudah ada yang meninjaunya. Register ini mendokumentasikan dasar hukum; ia tidak mengubah rumus atau nominal di [[payroll]].
 
 ## Siapa yang menggunakan
 
-Peninjau dari Legal, HR, dan Finance, serta administrator. Halaman ini memiliki tiga tab: `Dashboard`, `Register`, dan `Settings`. Anda hanya melihat tab yang diizinkan untuk Role Anda.
+Peninjau dari Legal, HR, dan Finance, serta administrator. Halaman ini memiliki dua tab: `Register` dan `Settings`. Anda hanya melihat tab yang diizinkan untuk Role Anda.
 
 ## Sebelum Anda mulai
 
@@ -73,4 +73,4 @@ Bila diaktifkan, halaman lain seperti Payroll menampilkan panel dasar hukum atau
 - [[contracts]]
 - [[offboarding]]
 
-<!-- sources: routes/hr-offboarding.php, routes/web.php, app/Http/Controllers/Finance/LegalBasisController.php, app/Http/Controllers/LegalDashboardController.php, app/Services/Legal/LegalBasisService.php, resources/views/legal/*.blade.php, resources/views/finance/legal-basis/settings.blade.php -->
+<!-- sources: routes/hr-offboarding.php, routes/web.php, app/Http/Controllers/Finance/LegalBasisController.php, app/Services/Legal/LegalBasisService.php, resources/views/legal/*.blade.php, resources/views/finance/legal-basis/settings.blade.php -->

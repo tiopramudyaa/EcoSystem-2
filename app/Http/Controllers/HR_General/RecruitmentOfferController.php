@@ -179,7 +179,7 @@ class RecruitmentOfferController extends Controller
         } catch (\Throwable $e) {
             Log::error('Recruitment: failed to sign offering letter', ['offer_id' => $offer->id, 'error' => $e->getMessage()]);
 
-            return back()->with('error', 'Failed to sign the letter: ' . $e->getMessage());
+            return back()->with('error', 'Failed to sign the letter. ' . AppSupportUserMessage::of($e, 'Please try again.'));
         }
 
         return back()->with('success', "Offering letter {$offer->letter_number} signed by {$offer->signatory_name}. It can now be downloaded and sent to the candidate.");
@@ -217,7 +217,7 @@ class RecruitmentOfferController extends Controller
         } catch (\Throwable $e) {
             Log::error('Recruitment: failed to send offering letter', ['offer_id' => $offer->id, 'error' => $e->getMessage()]);
 
-            return back()->with('error', 'Failed to send the offering letter: ' . $e->getMessage());
+            return back()->with('error', 'Failed to send the offering letter. ' . AppSupportUserMessage::of($e, 'Check the candidate email and the mail settings, then try again.'));
         }
     }
 
@@ -269,7 +269,7 @@ class RecruitmentOfferController extends Controller
         } catch (\Throwable $e) {
             Log::error('Recruitment: failed to create employee account', ['offer_id' => $offer->id, 'error' => $e->getMessage()]);
 
-            return back()->with('error', 'Failed to create the employee account: ' . $e->getMessage());
+            return back()->with('error', 'Failed to create the employee account. ' . AppSupportUserMessage::of($e, 'Please try again.'));
         }
 
         // The letter's amounts become the employee's first salary components (Master Employee → Contract),
@@ -279,7 +279,7 @@ class RecruitmentOfferController extends Controller
             EmployeeSalaryComponent::seedFromOffer($offer, (int) $employee->employee_id, $joinDate);
         } catch (\Throwable $e) {
             Log::error('Recruitment: failed to copy the offer compensation to the employee', ['offer_id' => $offer->id, 'error' => $e->getMessage()]);
-            $salaryWarning = "The salary components could not be copied to the employee ({$e->getMessage()}). Add them in Master Employee → Contract → Salary Components.";
+            $salaryWarning = "The salary components could not be copied to the employee. Add them in Master Employee → Contract → Salary Components.";
         }
 
         try {
@@ -289,7 +289,7 @@ class RecruitmentOfferController extends Controller
 
             return back()
                 ->with('success', 'Offer accepted and the employee account was created.')
-                ->with('warning', trim("The sign-in details could not be emailed ({$e->getMessage()}). Give the candidate their username ({$data['eci']}) and the default password you set yourself. {$salaryWarning}"));
+                ->with('warning', trim("The sign-in details could not be emailed. Give the candidate their username ({$data['eci']}) and the default password you set yourself. {$salaryWarning}"));
         }
 
         return back()

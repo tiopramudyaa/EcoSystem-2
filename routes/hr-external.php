@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\HR_General\ExternalConsultantController;
-use App\Http\Controllers\HR_General\ContractSettingController;
+use App\Http\Controllers\Legal\ContractSettingController;
 use App\Http\Controllers\HR_General\ExternalContractController;
 use App\Http\Controllers\HR_General\ExternalDocumentController;
 use App\Http\Controllers\HR_General\ExternalMyTimesheetController;
@@ -125,6 +125,7 @@ Route::prefix('general/external')
             $can = fn (string $action) => "menu.can:general.external.contracts,{$action}";
 
             Route::get('/', [ExternalContractController::class, 'index'])->name('index');
+            Route::get('/dashboard', [ExternalContractController::class, 'dashboard'])->name('dashboard');
 
             Route::whereNumber('employeeId')->group(function () use ($can) {
                 Route::get('/consultant/{employeeId}', [ExternalContractController::class, 'manage'])->name('manage');

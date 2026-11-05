@@ -193,7 +193,7 @@
         @endphp
         <div class="grid grid-cols-2 sm:grid-cols-3 {{ $kpiCols }} divide-x divide-y divide-gray-100 xl:divide-y-0">
             @foreach($kpiCards as $card)
-            <a href="{{ $card['href'] }}" class="group relative flex items-center gap-3.5 px-5 py-4 transition-colors hover:bg-gray-50">
+            <a href="{{ $card['href'] }}" class="group relative flex items-center gap-3 px-3 py-3.5 transition-colors hover:bg-gray-50 sm:gap-3.5 sm:px-5 sm:py-4">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ $card['bg'] }}">
                     <i class="fas {{ $card['icon'] }} {{ $card['color'] }} text-sm"></i>
                 </span>

@@ -139,22 +139,22 @@
                     <span class="mx-1 text-gray-300">&middot;</span>
                     <span class="tabular-nums"><span id="dashHeroClock">{{ now()->format('H:i') }}</span> {{ $tzLabel }}</span>
                 </p>
-                <h2 class="mt-0.5 truncate text-2xl font-bold leading-tight tracking-tight text-gray-900">{{ $greeting }}, {{ $firstName }}</h2>
+                <h2 class="mt-0.5 text-xl sm:truncate sm:text-2xl font-bold leading-tight tracking-tight text-gray-900">{{ $greeting }}, {{ $firstName }}</h2>
             </div>
         </div>
 
         {{-- Aksi --}}
         @if($canLeaveAny || $canSelf)
-        <div class="flex shrink-0 flex-wrap items-center gap-2.5">
+        <div class="flex w-full shrink-0 flex-wrap items-center gap-2.5 lg:w-auto">
             @if($canLeaveAny)
             <a href="{{ route('my-leave-permit') }}"
-               class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-95">
+               class="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm lg:flex-none font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-95">
                 <i class="fas fa-calendar-check text-xs text-gray-500"></i> Apply Leave &amp; Permit
             </a>
             @endif
             @if($canSelf)
             <a href="{{ route('general.my-attendance.index') }}"
-               class="primary-surface inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 active:scale-95">
+               class="primary-surface inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 lg:flex-none text-sm font-semibold text-white shadow-sm transition hover:opacity-90 active:scale-95">
                 <i id="dashAttCtaIcon" class="fas fa-fingerprint text-xs"></i> <span id="dashAttCta">Open attendance</span>
             </a>
             @endif
@@ -166,14 +166,14 @@
     {{-- Panel presensi hari ini — SENGAJA menonjol: check-in/check-out adalah kewajiban harian, jadi angka dibuat besar dan
          panel berubah menjadi pengingat (kuning) saat ada yang terlewat. Status warna selalu disertai teks (bukan warna saja). --}}
     <div id="dashAttBand" class="border-t border-gray-100 bg-gray-50/60 px-5 py-4 transition-colors sm:px-6">
-        <div class="flex flex-wrap items-center gap-x-10 gap-y-4">
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-4 sm:gap-x-10">
 
             <div>
                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Today's attendance</p>
                 <span id="dashAttBadge" class="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">Loading…</span>
             </div>
 
-            <div class="flex items-center gap-9">
+            <div class="flex items-center gap-5 sm:gap-9">
                 <div>
                     <p class="flex items-center gap-1.5 text-xs font-medium text-gray-500">
                         <i class="fas fa-arrow-right-to-bracket text-xs text-emerald-600 w-3.5 text-center"></i> Check-in

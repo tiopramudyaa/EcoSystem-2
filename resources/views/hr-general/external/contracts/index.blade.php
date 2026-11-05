@@ -15,7 +15,7 @@
     @include('hr-general.external.contracts.components.tabs')
     @include('partials.accent-remap')
     @include('hr-general.recruitment.components.form-errors')
-    @include('hr-general.contracts.components.confirm-forms')
+    @include('legal.contracts.components.confirm-forms')
 
     <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-xs text-gray-500 max-w-3xl">

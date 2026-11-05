@@ -55,20 +55,6 @@
                 </button>
                 @endif
 
-                {{-- Export period: the selected Year, optionally narrowed to one month (blank = full year). --}}
-                <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm text-xs" title="Period used by the Excel export">
-                    <i class="fas fa-file-export text-gray-400"></i>
-                    <span class="font-semibold text-gray-600">Export:</span>
-                    <select id="selectExportMonth" class="bg-transparent font-bold text-gray-800 focus:outline-none cursor-pointer" onchange="syncExportLink()">
-                        <option value="">Full year</option>
-                        @foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $mi => $mn)
-                            <option value="{{ $mi + 1 }}">{{ $mn }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                @include('hr-general.partials.data-transfer', ['dataset' => 'leave-permit.applications', 'bare' => true])
-
                 <!-- Action Buttons — "Log Leave / Permit" is available on every tab, so it is the Create box of the page itself -->
                 @if($canDo('hr_general.leave_permit', 'create'))
                 <button onclick="openApplyModal()"
@@ -124,6 +110,18 @@
                     </h3>
                     <div class="flex items-center gap-3">
                         <p class="text-[10px] text-gray-400">Use the <i class="fas fa-filter text-[9px]"></i> icons in the table header to search &amp; filter.</p>
+                        {{-- Export period: the header Year, optionally narrowed to one month (blank = full year). --}}
+                        <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm text-xs" title="Period used by the Excel export">
+                            <i class="fas fa-file-export text-gray-400"></i>
+                            <span class="font-semibold text-gray-600">Export:</span>
+                            <select id="selectExportMonth" class="bg-transparent font-bold text-gray-800 focus:outline-none cursor-pointer" onchange="syncExportLink()">
+                                <option value="">Full year</option>
+                                @foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $mi => $mn)
+                                    <option value="{{ $mi + 1 }}">{{ $mn }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @include('hr-general.partials.data-transfer', ['dataset' => 'leave-permit.applications', 'bare' => true])
                         <button type="button" onclick="resetInboxFilters()"
                             class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap">
                             <i class="fas fa-rotate-left text-[10px]"></i> Reset Filter
@@ -232,6 +230,7 @@
                             and gender eligibility rules. Delete action is restricted to maintain history integrity.</p>
                     </div>
                     <div class="flex items-center gap-2">
+                        @include('hr-general.partials.data-transfer', ['dataset' => 'leave-permit.types', 'bare' => true])
                         <button type="button" onclick="resetMasterTypesFilters()"
                             class="px-3 py-2 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap">
                             <i class="fas fa-rotate-left text-[10px]"></i> Reset Filter
@@ -410,10 +409,13 @@
                         <p class="text-xs text-gray-400 mt-0.5">Overview of total quota allocated, used, and remaining
                             balances per employee.</p>
                     </div>
-                    <button type="button" onclick="resetAllQuotasFilters()"
-                        class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-1.5 self-start sm:self-auto">
+                    <div class="flex items-center gap-2 self-start sm:self-auto">
+                        @include('hr-general.partials.data-transfer', ['dataset' => 'leave-permit.quotas', 'bare' => true])
+                                        <button type="button" onclick="resetAllQuotasFilters()"
+                        class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-1.5 ">
                         <i class="fas fa-rotate-left text-[10px]"></i> Reset Filter
                     </button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-xs text-left">
@@ -558,7 +560,7 @@
                     </div>
                     <div>
                         <label class="block font-semibold text-gray-500 mb-1">Month Period</label>
-                        <select id="rptFilterMonth" class="border border-gray-300 rounded-lg px-3 py-1.5 font-semibold text-gray-700 focus:ring-1 focus:ring-red-500" onchange="loadReportData()">
+                        <select id="rptFilterMonth" class="border border-gray-300 rounded-lg px-3 py-1.5 font-semibold text-gray-700 focus:ring-1 focus:ring-red-500" onchange="syncExportLink(); loadReportData()">
                             <option value="">All Months (Full Annual Report)</option>
                             <option value="1">January</option>
                             <option value="2">February</option>
@@ -577,6 +579,7 @@
                 </div>
 
                 <div class="flex items-center gap-2">
+                    @include('hr-general.partials.data-transfer', ['dataset' => 'leave-permit.report', 'bare' => true])
                     <button onclick="loadReportData()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-all shadow-sm">
                         <i class="fas fa-sync-alt"></i> Refresh Analytics Data
                     </button>
@@ -1080,13 +1083,18 @@
             if (FIRST_TAB && FIRST_TAB !== 'inbox') switchTab(FIRST_TAB);
         });
 
-        // Point the Excel export link at the chosen year (+ optional month) so the file is a monthly / annual recap.
+        // Point each tab's Excel export link at the chosen year; the applications export also takes the Export month,
+        // the report export the report's Month Period.
         function syncExportLink() {
-            const month = document.getElementById('selectExportMonth')?.value || '';
-            document.querySelectorAll('[data-excel-panel] a[href*="/leave-permit.applications/export"]').forEach(a => {
+            const monthByDataset = {
+                'leave-permit.applications': document.getElementById('selectExportMonth')?.value || '',
+                'leave-permit.report': document.getElementById('rptFilterMonth')?.value || '',
+            };
+            document.querySelectorAll('[data-excel-panel] a[href*="/leave-permit."][href*="/export"]').forEach(a => {
                 const u = new URL(a.href, location.origin);
+                const dataset = decodeURIComponent(u.pathname.split('/').slice(-2, -1)[0] || '');
                 u.searchParams.set('year', globalYear);
-                if (month) u.searchParams.set('month', month); else u.searchParams.delete('month');
+                if (monthByDataset[dataset]) u.searchParams.set('month', monthByDataset[dataset]); else u.searchParams.delete('month');
                 a.href = u.toString();
             });
         }

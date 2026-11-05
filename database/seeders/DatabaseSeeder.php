@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             EmployeeSeeder::class,         // hanya akun ECI_ADMIN
             UserSystemRolesSeeder::class,  // beri admin baris employee_role_assignment
             LeavePermitTypeSeeder::class,  // katalog jenis cuti/izin (Cuti Tahunan, Sakit, dst) — wajib, bukan data dummy
+            ComplianceDefaultsSeeder::class, // status laporan & pilihan dropdown Compliance Management — wajib, bukan data dummy
 
             // ── Demo / testing data — dinonaktifkan untuk clean install ─────────
             // Aktifkan (hapus komentar) hanya untuk instance demo/testing, atau
@@ -40,6 +41,7 @@ class DatabaseSeeder extends Seeder
             // DbmlMissingTablesSeeder::class,   // membuat seed_employee dummy
             // ConsultantWorkloadSeeder::class,  // butuh ECI_HELPDESK (akan skip)
             // EssTestAccountsSeeder::class,     // akun uji ESS (Siti Rahma, Budi, Dewi HR) + relasi atasan mereka
+            // ComplianceDemoSeeder::class,      // contoh Compliance + laporan akun uji ESS001 — jalankan setelah EssTestAccountsSeeder
             // KpiTemplateSeeder::class,         // contoh template KPI (Self/Lead/Bench Consultant/PMO/dst) — aman untuk data riil, hanya menarget by posisi
             // KpiDemoEvaluationSeeder::class,   // evaluasi KPI palsu untuk employee_id tertentu — jalankan setelah EssTestAccountsSeeder + KpiTemplateSeeder
         ]);

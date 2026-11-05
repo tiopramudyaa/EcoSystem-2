@@ -8,6 +8,9 @@
               array kunci (menu dropdown diberi judul per tabel).
               $bare    — true bila pemanggil sudah menaruhnya di dalam baris toolbar
                          (default: dibungkus baris sendiri, rata kanan).
+              $noExport  — true: hanya Import + template (mis. halaman "buat baru", belum ada yang diekspor).
+              $landOnImported — true: setelah impor berhasil buka data yang baru diimpor (bila dataset menyediakannya), bukan daftar.
+              $query   — (opsional) parameter tambahan untuk ekspor, mis. ['template_id' => 5].
     Ekspor memakai query string halaman ini, jadi filter yang sedang aktif ikut.
     Letakkan di LUAR elemen `data-live-region` agar tidak ikut diganti saat filter.
 --}}
@@ -37,7 +40,7 @@
         <div data-excel-panel class="fixed w-72 max-h-[70vh] overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 text-sm">
             @foreach($__defs as $__def)
                 @php
-                    $__canExport = \App\Support\DataTransfer\Registry::canExport($__def);
+                    $__canExport = empty($noExport) && \App\Support\DataTransfer\Registry::canExport($__def);
                     $__canImport = \App\Support\DataTransfer\Registry::canImport($__def);
                     $__modalId   = 'dtModal-' . str_replace('.', '-', $__def->key);
                 @endphp
@@ -49,7 +52,7 @@
                 @endif
 
                 @if($__canExport)
-                <a href="{{ route('general.data.export', array_merge(request()->query(), ['dataset' => $__def->key])) }}"
+                <a href="{{ route('general.data.export', array_merge(request()->query(), (array) ($query ?? []), ['dataset' => $__def->key])) }}"
                    class="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50">
                     <i class="fas fa-file-arrow-up w-4 text-green-600"></i> Export to Excel
                 </a>
@@ -74,6 +77,7 @@
         <dialog id="dtModal-{{ str_replace('.', '-', $__def->key) }}" class="rounded-xl p-0 w-full max-w-md backdrop:bg-black/40">
             <form method="POST" action="{{ route('general.data.import', $__def->key) }}" enctype="multipart/form-data" class="p-6 space-y-4">
                 @csrf
+                @if(!empty($landOnImported))<input type="hidden" name="land_on_imported" value="1">@endif
                 <div>
                     <h3 class="text-lg font-bold text-gray-900">Import {{ $__def->title }}</h3>
                     <p class="text-xs text-gray-500 mt-1">
