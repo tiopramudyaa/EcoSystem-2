@@ -5,6 +5,9 @@
 
 @php
     $canCreate = $canDo('general.contracts.templates', 'create');
+    // Export / import per format (Menu Access boxes general.contracts.templates.{export|import}-{pdf|html|json}).
+    $xPdf = $canDo('general.contracts.templates.export-pdf'); $xHtml = $canDo('general.contracts.templates.export-html'); $xJson = $canDo('general.contracts.templates.export-json');
+    $iHtml = $canDo('general.contracts.templates.import-html'); $iJson = $canDo('general.contracts.templates.import-json');
     $canEdit   = $canDo('general.contracts.templates', 'edit');
     $canDelete = $canDo('general.contracts.templates', 'delete');
     $typeBadge = ['PKWT' => 'tone-primary', 'PKWTT' => 'tone-primary-strong', 'INTERNSHIP' => 'bg-sky-100 text-sky-700', 'ADDENDUM' => 'bg-purple-100 text-purple-700', 'EXTERNAL' => 'bg-amber-100 text-amber-700'];
@@ -36,14 +39,17 @@
             </div>
             @endif
             <div class="flex gap-2">
+                {{-- One Menu Access box per format: a person only sees the choices they were given. --}}
+                @if($xPdf || $xJson)
                 <details class="relative" id="tplExportMenu">
                     <summary class="list-none cursor-pointer px-4 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 whitespace-nowrap select-none"><i class="fas fa-file-export mr-1"></i> Export templates <i class="fas fa-chevron-down text-[9px] ml-1"></i></summary>
                     <div class="absolute right-0 z-20 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg p-1 text-xs">
-                        <a href="{{ route('general.contracts.templates.export', ['format' => 'json']) }}" class="block px-3 py-2 rounded-md hover:bg-gray-50"><span class="font-semibold text-gray-800">All templates — JSON</span><span class="block text-[11px] text-gray-500">Backup or move to another environment. Can be imported back.</span></a>
-                        <a href="{{ route('general.contracts.templates.export', ['format' => 'pdf']) }}" class="block px-3 py-2 rounded-md hover:bg-gray-50"><span class="font-semibold text-gray-800">All templates — PDF (ZIP)</span><span class="block text-[11px] text-gray-500">Sample contracts to read, print or send for review. Cannot be imported.</span></a>
+                        @if($xPdf)<a href="{{ route('general.contracts.templates.export', ['format' => 'pdf']) }}" class="block px-3 py-2 rounded-md hover:bg-gray-50"><span class="font-semibold text-gray-800">All templates — PDF (ZIP)</span><span class="block text-[11px] text-gray-500">Sample contracts to read, print or send for review. Cannot be imported back.</span></a>@endif
+                        @if($xJson)<a href="{{ route('general.contracts.templates.export', ['format' => 'json']) }}" class="block px-3 py-2 rounded-md hover:bg-gray-50"><span class="font-semibold text-gray-800">All templates — backup file</span><span class="block text-[11px] text-gray-500">To keep a copy or move the templates to another system. Not meant to be read.</span></a>@endif
                     </div>
                 </details>
-                @if($canCreate)<button type="button" id="tplImportOpen" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 whitespace-nowrap" title="Add or update templates from a .json or .html file"><i class="fas fa-file-import mr-1"></i> Import templates</button>@endif
+                @endif
+                @if($canCreate && ($iHtml || $iJson))<button type="button" id="tplImportOpen" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 whitespace-nowrap" title="Add or update templates from a file"><i class="fas fa-file-import mr-1"></i> Import templates</button>@endif
             </div>
         </div>
     </div>
@@ -69,11 +75,13 @@
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-end gap-1.5">
                                     <a href="{{ route('general.contracts.templates.show', $t->id) }}" class="px-2.5 py-1.5 rounded-md border border-sky-300 text-sky-700 hover:bg-sky-50 text-[11px] font-semibold"><i class="far fa-eye mr-1"></i>View</a>
+                                    @if($xPdf || $xHtml || $xJson)
                                     <span class="inline-flex rounded-md border border-gray-300 overflow-hidden text-[10px] font-bold text-gray-500 divide-x divide-gray-300" role="group" aria-label="Export this template">
-                                        <a href="{{ route('general.contracts.templates.export', ['ids' => [$t->id], 'format' => 'json']) }}" class="px-2 py-1.5 hover:bg-gray-50" title="Export as JSON (can be imported back)">JSON</a>
-                                        <a href="{{ route('general.contracts.templates.export', ['ids' => [$t->id], 'format' => 'html']) }}" class="px-2 py-1.5 hover:bg-gray-50" title="Export as HTML (edit in an editor, then import back)">HTML</a>
-                                        <a href="{{ route('general.contracts.templates.export', ['ids' => [$t->id], 'format' => 'pdf']) }}" class="px-2 py-1.5 hover:bg-gray-50" title="Export as PDF with sample values (to read or print; cannot be imported)">PDF</a>
+                                        @if($xPdf)<a href="{{ route('general.contracts.templates.export', ['ids' => [$t->id], 'format' => 'pdf']) }}" class="px-2 py-1.5 hover:bg-gray-50" title="Export as PDF with sample values (to read or print; cannot be imported back)">PDF</a>@endif
+                                        @if($xHtml)<a href="{{ route('general.contracts.templates.export', ['ids' => [$t->id], 'format' => 'html']) }}" class="px-2 py-1.5 hover:bg-gray-50" title="Export as an editable HTML file (edit it, then import it back)">HTML</a>@endif
+                                        @if($xJson)<a href="{{ route('general.contracts.templates.export', ['ids' => [$t->id], 'format' => 'json']) }}" class="px-2 py-1.5 hover:bg-gray-50" title="Export as a backup file (can be imported back)">Backup</a>@endif
                                     </span>
+                                    @endif
                                     @if($canEdit)<a href="{{ route('general.contracts.templates.edit', $t->id) }}" class="px-2.5 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 text-[11px] font-semibold"><i class="far fa-pen-to-square mr-1"></i>Edit</a>@endif
                                     @if($canDelete && !$t->is_system_default)
                                         <form method="POST" action="{{ route('general.contracts.templates.destroy', $t->id) }}" data-confirm="Delete template “{{ $t->name }}”? Contracts already Active keep the text they have." data-confirm-title="Delete Template" data-confirm-ok="Delete" data-unsaved-ignore>@csrf
@@ -92,6 +100,6 @@
     </div>
 </div>
 @if($canCreate)
-    @include('legal.contracts.components.template-import')
+    @include('legal.contracts.components.template-import', ['importHtml' => $iHtml, 'importJson' => $iJson])
 @endif
 @endsection

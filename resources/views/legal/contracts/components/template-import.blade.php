@@ -9,7 +9,7 @@
         <div class="flex items-start justify-between gap-4">
             <div>
                 <h3 class="text-lg font-bold text-gray-800">Import contract templates</h3>
-                <p class="text-xs text-gray-500 mt-0.5">Bring templates from a <strong>JSON</strong> or <strong>HTML</strong> file made by <strong>Export templates</strong> (from this or another environment). Nothing is saved until you confirm.</p>
+                <p class="text-xs text-gray-500 mt-0.5">Bring templates from @if(($importHtml ?? true) && ($importJson ?? true))a <strong>backup file</strong> or an <strong>HTML file</strong>@elseif($importHtml ?? true)an <strong>HTML file</strong>@else a <strong>backup file</strong>@endif made by <strong>Export templates</strong> (from this or another system). Nothing is saved until you confirm.</p>
             </div>
             <button type="button" data-ti-close class="text-gray-400 hover:text-gray-700" aria-label="Close"><i class="fas fa-xmark"></i></button>
         </div>
@@ -22,8 +22,11 @@
                 <p>The file holds the template <strong>text</strong> (with its placeholders), paper settings and the default signer — no employee data.</p>
                 <p>Each template is checked the same way as when you save it in the editor. A template with the same name and contract type can be <strong>updated</strong> or added as a <strong>copy</strong>.</p>
             </div>
-            <input type="file" id="tiFile" accept=".json,.html,.htm,application/json,text/html" class="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg p-2">
-            <p class="text-xs text-gray-400">.json (one or many templates) or .html (one template, from Export &rsaquo; HTML), up to 2 MB. A PDF is for reading only and cannot be imported.</p>
+            <input type="file" id="tiFile" accept="{{ implode(',', array_filter([($importJson ?? true) ? '.json,application/json' : null, ($importHtml ?? true) ? '.html,.htm,text/html' : null])) }}" class="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg p-2">
+            <p class="text-xs text-gray-400">
+                @if($importJson ?? true)Backup file (.json): one or many templates. @endif
+                @if($importHtml ?? true)HTML file: one template, from Export &rsaquo; HTML. @endif
+                Up to 2 MB. A PDF is for reading only and cannot be imported.</p>
             <div class="flex justify-end gap-2">
                 <button type="button" data-ti-close class="px-4 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50">Cancel</button>
                 <button type="button" id="tiCheck" class="px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90">Check file</button>
@@ -93,7 +96,7 @@
 
     $('tiCheck').addEventListener('click', function () {
         fail('');
-        if (!file.files.length) { fail('Choose a .json or .html file first.'); return; }
+        if (!file.files.length) { fail('Choose a file first.'); return; }
         var btn = this; btn.disabled = true; btn.textContent = 'Checking...';
         var fd = new FormData(); fd.append('file', file.files[0]);
         post(dlg.dataset.previewUrl, fd).then(function (j) {
@@ -121,6 +124,8 @@
             if (!it.errors.length && !it.warnings.length) { c3.appendChild(el('span', 'text-gray-300', '-')); }
             var c4 = el('td', 'px-3 py-2'), sel = el('select', 'w-full border border-gray-300 rounded-md px-2 py-1.5 text-xs bg-white');
             sel.dataset.index = it.index;
+            // Dropdown kustom aplikasi dipasang di luar <dialog> (yang tampil di lapisan paling atas), jadi daftarnya tertutup: pakai pilihan bawaan peramban.
+            sel.setAttribute('data-no-enhance', '');
             it.options.forEach(function (o) {
                 var op = el('option', '', LABEL[o]); op.value = o;
                 if (o === 'update' && !canEdit) { op.disabled = true; op.textContent = LABEL[o] + ' (needs Edit permission)'; }

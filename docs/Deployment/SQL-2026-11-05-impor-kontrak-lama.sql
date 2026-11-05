@@ -49,3 +49,30 @@ INSERT INTO `migrations` (`migration`, `batch`)
 SELECT t.`name`, (SELECT MAX(x.`batch`) FROM `migrations` x)
 FROM (SELECT '2026_11_05_000001_existing_contract_import' AS `name`) t
 WHERE NOT EXISTS (SELECT 1 FROM `migrations` m WHERE m.`migration` = t.`name`);
+
+-- 4. Izin ekspor / impor Template per format (padanan migrasi 2026_11_05_000002_contract_template_transfer_permissions).
+--    Lahir aktif HANYA untuk EC Administrator; dibagikan ke role lain lewat Control Center > Menu Access.
+INSERT INTO `menu` (`parent_id`, `name`, `slug`, `type`, `order_seq`, `is_active`, `created_at`, `updated_at`)
+SELECT p.`id`, v.`name`, v.`slug`, 'function', v.`seq`, 1, NOW(), NOW()
+FROM `menu` p
+JOIN (
+  SELECT 'general.contracts.templates.export-pdf'  AS `slug`, 'Template export — PDF'                    AS `name`, 13 AS `seq`
+  UNION ALL SELECT 'general.contracts.templates.export-html', 'Template export — HTML (editable)',          14
+  UNION ALL SELECT 'general.contracts.templates.export-json', 'Template export — backup file (.json)',     15
+  UNION ALL SELECT 'general.contracts.templates.import-html', 'Template import — HTML file',               16
+  UNION ALL SELECT 'general.contracts.templates.import-json', 'Template import — backup file (.json)',     17
+) v ON 1 = 1
+WHERE p.`slug` = 'general.contracts'
+  AND NOT EXISTS (SELECT 1 FROM `menu` m WHERE m.`slug` = v.`slug`);
+
+INSERT INTO `role_menu` (`role_id`, `menu_id`, `can_view`, `can_create`, `can_edit`, `can_delete`, `created_at`, `updated_at`)
+SELECT r.`id`, m.`id`, 1, 0, 0, 0, NOW(), NOW()
+FROM `employee_role` r
+JOIN `menu` m ON m.`slug` LIKE 'general.contracts.templates.%port-%'
+WHERE r.`name` = 'EC Administrator'
+  AND NOT EXISTS (SELECT 1 FROM `role_menu` x WHERE x.`role_id` = r.`id` AND x.`menu_id` = m.`id`);
+
+INSERT INTO `migrations` (`migration`, `batch`)
+SELECT t.`name`, (SELECT MAX(x.`batch`) FROM `migrations` x)
+FROM (SELECT '2026_11_05_000002_contract_template_transfer_permissions' AS `name`) t
+WHERE NOT EXISTS (SELECT 1 FROM `migrations` m WHERE m.`migration` = t.`name`);

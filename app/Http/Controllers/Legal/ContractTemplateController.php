@@ -114,6 +114,9 @@ class ContractTemplateController extends Controller
         if (!in_array($format, ['json', 'html', 'pdf'], true)) {
             return back()->withErrors(['template' => 'Unknown export format.']);
         }
+        if (!$this->canTransfer('export', $format)) {
+            return back()->withErrors(['template' => 'You do not have permission to export templates in this format. Ask your administrator (Menu Access).']);
+        }
         $ids = array_values(array_filter(array_map('intval', (array) $request->query('ids', []))));
         $templates = ContractTemplate::query()->when($ids, fn ($q) => $q->whereIn('id', $ids))
             ->orderByDesc('is_system_default')->orderBy('contract_type')->orderBy('name')->get();
@@ -126,7 +129,7 @@ class ContractTemplateController extends Controller
 
         if ($format === 'html') {
             if ($templates->count() !== 1) {
-                return back()->withErrors(['template' => 'The HTML export is for one template at a time. Use the HTML link in that template’s row, or choose JSON for several.']);
+                return back()->withErrors(['template' => 'The HTML export is for one template at a time. Use the HTML link in that template’s row, or choose the backup file for several.']);
             }
             $t = $templates->first();
             $html = $transfer->exportHtml($t);
@@ -235,7 +238,20 @@ class ContractTemplateController extends Controller
             'file.max' => 'The file is larger than ' . (ContractTemplateTransfer::MAX_BYTES / 1024 / 1024) . ' MB.',
         ]);
 
-        return (new ContractTemplateTransfer($this->contracts))->parse((string) file_get_contents($request->file('file')->getRealPath()));
+        $raw = (string) file_get_contents($request->file('file')->getRealPath());
+        // Izin impor per format, dinilai dari ISI berkas (nama berkas bisa dipalsukan).
+        $kind = ContractTemplateTransfer::kindOf($raw);
+        if ($kind !== 'pdf' && !$this->canTransfer('import', $kind)) {
+            throw new \DomainException('You do not have permission to import ' . ($kind === 'html' ? 'HTML files' : 'backup (.json) files') . '. Ask your administrator (Menu Access).');
+        }
+
+        return (new ContractTemplateTransfer($this->contracts))->parse($raw);
+    }
+
+    /** One of the per-format boxes (Menu Access): general.contracts.templates.{export|import}-{pdf|html|json}. */
+    private function canTransfer(string $direction, string $format): bool
+    {
+        return (bool) Employee::find(session('user.id'))?->canAccessMenu("general.contracts.templates.{$direction}-{$format}");
     }
 
     private function canEditTemplates(): bool

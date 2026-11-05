@@ -80,7 +80,9 @@ class RecruitmentSettingController extends Controller
         try {
             $provider->listBetween(now()->startOfDay(), now()->endOfDay());
         } catch (\Throwable $e) {
-            return $e->getMessage();
+            IlluminateSupportFacadesLog::warning('Calendar connection test failed', ['error' => $e->getMessage()]);
+
+            return AppSupportUserMessage::of($e, 'Could not connect. Check the credentials and the calendar settings, then try again.');
         }
 
         return null;

@@ -33,32 +33,54 @@ class ExternalTimesheetService
      */
     public function periodsFor(int $employeeId): array
     {
+        return $this->periodsForMany([$employeeId])[$employeeId] ?? [];
+    }
+
+    /**
+     * Sama dengan periodsFor() untuk banyak konsultan sekaligus: 2 query untuk SEMUA (bukan 2 per konsultan), dipakai halaman indeks
+     * Timesheets. Hasil per konsultan identik dengan periodsFor().
+     *
+     * @param  int[]  $employeeIds
+     * @return array<int,array<int,array<string,mixed>>> employee_id → periode (terbaru dulu); konsultan tanpa kontrak memberi larik kosong
+     */
+    public function periodsForMany(array $employeeIds): array
+    {
+        $employeeIds = array_values(array_unique(array_map('intval', $employeeIds)));
+        if ($employeeIds === []) {
+            return [];
+        }
         $today = now();
-        $contracts = DB::table('employee_contract')->where('employee_id', $employeeId)
+        $contracts = DB::table('employee_contract')->whereIn('employee_id', $employeeIds)
             ->whereIn(DB::raw('UPPER(contract_type)'), self::TYPE_ALIASES)
             ->where(fn ($q) => $q->whereNull('lifecycle_status')->orWhere('lifecycle_status', '!=', 'draft'))
-            ->whereNotNull('start_date')->get();
-        $sheets = DB::table('external_timesheets')->where('employee_id', $employeeId)->get()
-            ->keyBy(fn ($s) => $s->contract_id . '-' . $s->period_year . '-' . $s->period_month);
+            ->whereNotNull('start_date')->get()->groupBy('employee_id');
+        $sheets = DB::table('external_timesheets')->whereIn('employee_id', $employeeIds)->get()
+            ->groupBy('employee_id')
+            ->map(fn ($rows) => $rows->keyBy(fn ($s) => $s->contract_id . '-' . $s->period_year . '-' . $s->period_month));
 
-        $out = [];
-        foreach ($contracts as $c) {
-            $from = new \DateTimeImmutable(substr($c->start_date, 0, 7) . '-01');
-            $until = new \DateTimeImmutable(($c->end_date && substr($c->end_date, 0, 10) < $today->toDateString() ? substr($c->end_date, 0, 7) : $today->format('Y-m')) . '-01');
-            // Dari bulan terakhir mundur ke awal kontrak (maks 60 bulan terbaru), supaya bulan berjalan selalu tersedia.
-            for ($d = $until, $n = 0; $d >= $from && $n < 60; $d = $d->modify('-1 month'), $n++) {
-                $key = $c->contract_id . '-' . (int) $d->format('Y') . '-' . (int) $d->format('n');
-                $sheet = $sheets->get($key);
-                $out[] = [
-                    'contract_id' => (int) $c->contract_id, 'contract_number' => $c->contract_number,
-                    'year' => (int) $d->format('Y'), 'month' => (int) $d->format('n'), 'label' => $d->format('F Y'),
-                    'sheet_id' => $sheet?->id, 'status' => $sheet?->status,
-                ];
+        $result = [];
+        foreach ($employeeIds as $employeeId) {
+            $mine = $sheets->get($employeeId, collect());
+            $out = [];
+            foreach ($contracts->get($employeeId, collect()) as $c) {
+                $from = new \DateTimeImmutable(substr($c->start_date, 0, 7) . '-01');
+                $until = new \DateTimeImmutable(($c->end_date && substr($c->end_date, 0, 10) < $today->toDateString() ? substr($c->end_date, 0, 7) : $today->format('Y-m')) . '-01');
+                // Dari bulan terakhir mundur ke awal kontrak (maks 60 bulan terbaru), supaya bulan berjalan selalu tersedia.
+                for ($d = $until, $n = 0; $d >= $from && $n < 60; $d = $d->modify('-1 month'), $n++) {
+                    $key = $c->contract_id . '-' . (int) $d->format('Y') . '-' . (int) $d->format('n');
+                    $sheet = $mine->get($key);
+                    $out[] = [
+                        'contract_id' => (int) $c->contract_id, 'contract_number' => $c->contract_number,
+                        'year' => (int) $d->format('Y'), 'month' => (int) $d->format('n'), 'label' => $d->format('F Y'),
+                        'sheet_id' => $sheet?->id, 'status' => $sheet?->status,
+                    ];
+                }
             }
+            usort($out, fn ($a, $b) => [$b['year'], $b['month']] <=> [$a['year'], $a['month']]);
+            $result[$employeeId] = $out;
         }
-        usort($out, fn ($a, $b) => [$b['year'], $b['month']] <=> [$a['year'], $a['month']]);
 
-        return $out;
+        return $result;
     }
 
     /**
