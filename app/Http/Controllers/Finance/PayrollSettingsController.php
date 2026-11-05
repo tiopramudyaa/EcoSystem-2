@@ -226,7 +226,7 @@ class PayrollSettingsController extends Controller
         }
 
         if ($on && ($blocked = app(\App\Services\Legal\LegalBasisService::class)->payrollBlockers())) {
-            return redirect()->route('finance.payroll.settings')->withErrors(['Payroll cannot be switched on: these legal-basis rules are not reviewed yet — ' . implode(', ', $blocked) . '. Review them in Business & Legal → Legal Basis, or switch Enforce off there.']);
+            return redirect()->route('finance.payroll.settings')->withErrors(['Payroll cannot be switched on: these legal-basis rules are not ready — ' . implode(', ', $blocked) . '. Review them in Business & Legal → Legal Basis, or switch Enforce off there.']);
         }
 
         $actor = session('user.id') ? (int) session('user.id') : null;

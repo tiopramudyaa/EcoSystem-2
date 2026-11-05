@@ -20,6 +20,7 @@
     {{-- Legal basis of the rules on this page (Register Dasar Hukum; read-only here) --}}
     @include('partials.legal-basis-panel', ['legalModule' => 'pph21'])
     @include('hr-general.recruitment.components.form-errors')
+    @include('finance.components.rates-from-legal-banner', ['what' => 'PTKP, progressive rates, occupational cost and TER', 'detail' => 'Changes made on this page to those numbers are not accepted; the tax year and the “employer premiums count as gross” choice stay here.'])
 
     {{-- Year selector + new year --}}
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4 flex flex-col md:flex-row md:items-end md:justify-between gap-4">

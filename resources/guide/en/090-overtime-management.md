@@ -5,7 +5,7 @@ order: 90
 title: Overtime Management
 summary: Review overtime requests against attendance, approve or reject them, export, and set the overtime rules.
 requires: [general.overtime, general.settings.overtime]
-updated: 2026-10-27
+updated: 2026-11-05
 ---
 `Overtime Management` lists all overtime requests, shows them next to the attendance record, and lets approvers decide. Its `Settings` tab holds the rules that employees must follow when they submit.
 
@@ -55,6 +55,10 @@ Select `Save Settings` when you finish.
 
 > [!WARNING]
 > Rule changes apply to new requests from the moment you save. Check with HR leadership before enabling self-approval.
+
+### How overtime pay is calculated
+
+Whether overtime is paid at all is decided in [[payroll]] settings. The multipliers follow Indonesian regulation (PP 35/2021) by default: on a working day 1.5 times for the first hour and 2 times after that; on a rest day or holiday 2 times, then 3 times and 4 times for later hours. One hour of pay is the monthly wage divided by 173. Finance can instead set the multipliers in `Legal` › `Legal Basis` › `Settings` (card `Overtime multipliers`). The payslip records which source was used.
 
 ## What happens next
 

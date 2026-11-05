@@ -56,6 +56,15 @@ class OvertimeRateService
     private const MINUTES_PER_HOUR = 60;
 
     /**
+     * @param  array{divisor?:float|int,workday?:array,rest5?:array,rest6?:array}|null  $rules  Aturan dari Legal Basis (sudah dalam bentuk band:
+     *         [['label'=>..,'minutes'=>int|null,'multiplier'=>float],...]). NULL = aturan baku PP 35/2021 di bawah (perilaku bawaan, tidak berubah).
+     *         Bagian yang tidak diberikan memakai aturan baku.
+     */
+    public function __construct(private ?array $rules = null)
+    {
+    }
+
+    /**
      * Rincian pengali untuk satu pengajuan lembur.
      *
      * @param  int         $durationMinutes  Durasi lembur dalam menit.
@@ -144,7 +153,7 @@ class OvertimeRateService
             throw new InvalidArgumentException('Monthly wage cannot be negative.');
         }
 
-        return $monthlyWage / self::MONTHLY_DIVISOR;
+        return $monthlyWage / max(1.0, (float) ($this->rules['divisor'] ?? self::MONTHLY_DIVISOR));
     }
 
     /** @return array<int, string> */
@@ -162,6 +171,12 @@ class OvertimeRateService
      */
     private function bands(string $dayType, int $workDaysPerWeek): array
     {
+        // Aturan dari Legal Basis (bila diberikan) menggantikan aturan baku untuk jenis hari itu.
+        $custom = $this->rules[$dayType === self::DAY_WORKDAY ? 'workday' : ($workDaysPerWeek >= 6 ? 'rest6' : 'rest5')] ?? null;
+        if (is_array($custom) && $custom !== []) {
+            return $custom;
+        }
+
         if ($dayType === self::DAY_WORKDAY) {
             return [
                 ['label' => 'First hour',       'minutes' => 60,   'multiplier' => 1.5],

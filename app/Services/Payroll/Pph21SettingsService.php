@@ -27,6 +27,9 @@ class Pph21SettingsService
     /** @return string[] galat; kosong = tersimpan */
     public function savePtkp(int $year, array $amounts, ?int $actorId): array
     {
+        if ($m = $this->legalManaged()) {
+            return [$m];
+        }
         if ($lock = $this->lockError($year)) {
             return [$lock];
         }
@@ -48,6 +51,9 @@ class Pph21SettingsService
     /** @param array<int,array{upper_limit:mixed,rate:mixed}> $rows @return string[] */
     public function saveBrackets(int $year, array $rows, ?int $actorId): array
     {
+        if ($m = $this->legalManaged()) {
+            return [$m];
+        }
         if ($lock = $this->lockError($year)) {
             return [$lock];
         }
@@ -73,6 +79,9 @@ class Pph21SettingsService
     /** @param array<int,array{upper_limit:mixed,rate:mixed}> $rows @return string[] */
     public function saveTer(int $year, string $category, array $rows, ?int $actorId): array
     {
+        if ($m = $this->legalManaged()) {
+            return [$m];
+        }
         if ($lock = $this->lockError($year)) {
             return [$lock];
         }
@@ -109,6 +118,12 @@ class Pph21SettingsService
     {
         if ($lock = $this->lockError($year)) {
             return [$lock];
+        }
+        // Sumber tarif = Legal Basis: biaya jabatan tidak diubah dari sini (nilai yang dikirim diabaikan, nilai tersimpan dipertahankan).
+        if (\App\Services\Legal\PayrollRatesFromLegal::useLegal()) {
+            $row = DB::table('pph21_settings')->where('year', $year)->first();
+            $in['occupational_cost_rate'] = $row->occupational_cost_rate;
+            $in['occupational_cost_monthly_max'] = $row->occupational_cost_monthly_max;
         }
         if ($errors = Pph21RateRules::validateSettings($in)) {
             return $errors;
@@ -165,6 +180,13 @@ class Pph21SettingsService
         });
 
         return [];
+    }
+
+    /** Bila sumber tarif Payroll = Legal Basis, PTKP / tarif progresif / TER diubah di sana, bukan di sini. */
+    private function legalManaged(): ?string
+    {
+        return \App\Services\Legal\PayrollRatesFromLegal::useLegal()
+            ? 'PTKP, progressive rates and TER are managed in Legal Basis (Register). Change them there; Payroll reads them from it.' : null;
     }
 
     private function lockError(int $year): ?string

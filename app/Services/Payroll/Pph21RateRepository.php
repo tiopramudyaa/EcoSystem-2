@@ -2,6 +2,7 @@
 
 namespace App\Services\Payroll;
 
+use App\Services\Legal\PayrollRatesFromLegal;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -24,23 +25,35 @@ class Pph21RateRepository
     }
 
     /** @return array<string,float> kode PTKP → nilai setahun */
-    public function ptkp(int $year): array
+    public function ptkp(int $year, ?bool $legal = null): array
     {
+        if ($legal ?? PayrollRatesFromLegal::useLegal()) {
+            return app(PayrollRatesFromLegal::class)->ptkp($year);   // satu sumber: Legal Basis
+        }
+
         return DB::table('pph21_ptkp')->where('year', $year)->orderBy('id')->pluck('annual_amount', 'code')
             ->map(fn ($v) => (float) $v)->all();
     }
 
     /** @return array<int,array{upper_limit:?float,rate:float}> */
-    public function brackets(int $year): array
+    public function brackets(int $year, ?bool $legal = null): array
     {
+        if ($legal ?? PayrollRatesFromLegal::useLegal()) {
+            return app(PayrollRatesFromLegal::class)->brackets($year);
+        }
+
         return DB::table('pph21_progressive_brackets')->where('year', $year)->orderBy('seq')->get()
             ->map(fn ($r) => ['upper_limit' => $r->upper_limit === null ? null : (float) $r->upper_limit, 'rate' => (float) $r->rate])
             ->all();
     }
 
     /** @return array<string,array<int,array{gross_over:float,gross_upto:?float,rate:float}>> */
-    public function ter(int $year): array
+    public function ter(int $year, ?bool $legal = null): array
     {
+        if ($legal ?? PayrollRatesFromLegal::useLegal()) {
+            return app(PayrollRatesFromLegal::class)->ter($year);
+        }
+
         $out = [];
         foreach (DB::table('pph21_ter_rates')->where('year', $year)->orderBy('category')->orderBy('seq')->get() as $r) {
             $out[$r->category][] = [
@@ -54,30 +67,36 @@ class Pph21RateRepository
     }
 
     /** @return array{occupational_cost_rate:float,occupational_cost_monthly_max:float,include_employer_premiums:bool,notes:?string} */
-    public function settings(int $year): array
+    public function settings(int $year, ?bool $legal = null): array
     {
         $row = DB::table('pph21_settings')->where('year', $year)->first();
         if (!$row) {
             throw new RuntimeException("PPh 21 settings for tax year {$year} have not been set up.");
         }
 
-        return [
+        $s = [
             'occupational_cost_rate'        => (float) $row->occupational_cost_rate,
             'occupational_cost_monthly_max' => (float) $row->occupational_cost_monthly_max,
             'include_employer_premiums'     => (bool) $row->include_employer_premiums,
             'notes'                         => $row->notes,
         ];
+        // Biaya jabatan = regulasi: dari Legal Basis. "Premi pemberi kerja masuk bruto" dan catatan = pilihan perusahaan: tetap di sini.
+        if ($legal ?? PayrollRatesFromLegal::useLegal()) {
+            $s = array_merge($s, app(PayrollRatesFromLegal::class)->occupational($year));
+        }
+
+        return $s;
     }
 
     /** Paket lengkap untuk satu tahun (dipakai kalkulator/payroll). */
-    public function bundle(int $year): array
+    public function bundle(int $year, ?bool $legal = null): array
     {
         return [
             'year'        => $year,
-            'ptkp'        => $this->ptkp($year),
-            'brackets'    => $this->brackets($year),
-            'ter'         => $this->ter($year),
-            'settings'    => $this->settings($year),
+            'ptkp'        => $this->ptkp($year, $legal),
+            'brackets'    => $this->brackets($year, $legal),
+            'ter'         => $this->ter($year, $legal),
+            'settings'    => $this->settings($year, $legal),
         ];
     }
 }

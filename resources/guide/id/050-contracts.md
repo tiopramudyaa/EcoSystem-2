@@ -5,7 +5,7 @@ order: 50
 title: Contract
 summary: Siapkan Contract kerja sebagai Draft, lengkapi data untuk mengaktifkannya, kelola Template, dan jalankan penandatanganan.
 requires: [general.contracts, general.contracts.list, general.contracts.templates]
-updated: 2026-10-27
+updated: 2026-11-05
 ---
 Menu `Contract` adalah tempat HR menyiapkan Contract kerja Employee internal: dari Draft, menjadi Contract Active, hingga salinan bertanda tangan dirilis kepada Employee.
 
@@ -71,6 +71,50 @@ Jika ada yang kurang, halaman mendaftar tiap item. Klik sebuah item untuk membuk
 
 Template bawaan sistem dapat diubah tetapi tidak dapat dihapus. Kop surat dan penandatangan dikelola di Document Identity, lihat [[letter-templates]].
 
+### Ekspor dan impor Template
+
+Gunakan ini untuk menyimpan salinan Template, memeriksanya di luar sistem, atau memindahkannya ke sistem lain. Pada tab `Templates`:
+
+1. Pilih `Export templates` untuk membuka menu. `All templates — PDF (ZIP)` menghasilkan contoh Contract dengan nilai contoh, untuk dibaca, dicetak, atau dikirim untuk ditinjau. PDF tidak dapat diimpor kembali. `All templates — backup file` menghasilkan satu berkas berisi semua Template, untuk menyimpan salinan atau memindahkan Template.
+2. Pada baris sebuah Template, gunakan `PDF`, `HTML`, atau `Backup` untuk Template itu saja.
+3. Untuk menyunting naskah di luar sistem, unduh `HTML` lalu buka di editor teks seperti Notepad atau VS Code. Jangan simpan ulang dari Word: rincian Template hilang dan impor ditolak.
+4. Pilih `Import templates` lalu pilih berkas backup (satu atau banyak Template) atau berkas HTML (satu Template). PDF ditolak, karena tidak dapat dibaca kembali dengan aman.
+5. Pilih `Check file`. Belum ada yang tersimpan.
+6. Tinjau tiap Template di tabel: `Template in the file`, `In this system`, `Notes`, dan `What to do`. Pilih `Add as new`, `Update the existing one`, `Add as a copy`, atau `Skip`.
+7. Pilih `Import`.
+
+Cara pemeriksaan bekerja:
+
+- Template dicocokkan lewat jenis Contract ditambah nama. Template yang identik ditampilkan sebagai "Already here, identical".
+- Template dengan placeholder tidak dikenal, jenis Contract tidak dikenal, atau teks kosong otomatis diatur ke `Skip` beserta alasannya.
+- Template bawaan sistem yang hilang dipulihkan.
+- Penandatangan dicocokkan lewat ECI Employee. Jika orangnya belum terdaftar sebagai penandatangan di sistem ini, kolomnya dikosongkan dengan peringatan.
+- Script dalam teks dibuang, seperti saat menyimpan di editor.
+- Kop surat dan data perusahaan tidak ikut: atur di `Letter Templates` › `Settings`. Jenis Contract dan jenis posisi harus sudah ada di `Settings` Contract, bila belum muncul peringatan dan Template tetap tersimpan.
+
+> [!TIP]
+> Setelah database dibersihkan, ikuti urutan: `Settings` Contract, penandatangan, impor Template, lalu Contract.
+
+Setiap tombol hanya tampil bila Role Anda diberi izinnya di `Control Center` › `Menu Access` (menu Contract), misalnya `Template export — PDF` atau `Template import — backup file (.json)`. Secara bawaan hanya EC Administrator yang memilikinya. Impor juga memerlukan Create pada menu Templates, dan Edit untuk memperbarui Template yang sudah ada.
+
+### Mencatat Contract yang sudah berlaku
+
+Gunakan ini untuk Contract yang sudah berlaku dan ada sebagai dokumen cetak atau hasil pindai. Tidak ada teks buatan sistem dan tidak ada gaji yang dicatat.
+
+1. Buka `Contracts`, lalu buka Employee dengan `Manage`.
+2. Pilih `Add existing contract`.
+3. Isi `Contract number (as printed)`, `Contract type`, `Start date`, `End date`, dan `Signed date`.
+4. Atur `Status` ke `Active — still running` atau `Terminated — already ended`.
+5. Isi `Position`, `Position type`, `Department`, `Work location`, dan `Notes` bila perlu.
+6. Lampirkan `Scanned contract (PDF)`. Wajib diisi (PDF sungguhan, maksimal 10 MB) dan disimpan privat. Hanya yang dapat melihat gaji yang dapat membukanya.
+7. Simpan catatan.
+
+Aturannya: PKWT wajib tanggal akhir (maksimal 60 bulan), PKWTT tanpa tanggal akhir, Internship wajib tanggal akhir, nomor harus unik, dan Employee hanya boleh memiliki satu Contract berjalan (catat yang lama sebagai `Terminated — already ended`).
+
+Riwayat menampilkan lencana `Imported`. Halaman dokumen menampilkan hasil pindai, tanpa teks buatan sistem, panel Signing, atau tab Generated. Payroll dan Salary Components tidak tersentuh, dan tanda tangan elektronik tidak berlaku.
+
+Untuk mengoreksi catatan, pilih `Edit details` (perbaiki data atau ganti PDF). Pilih `Remove` bila salah Employee atau berkas: hasil pindai ikut terhapus. Tombol `Edit` biasa tidak berlaku untuk Contract impor.
+
 ### Menandatangani Contract
 
 Penandatanganan dimulai ketika Contract bukan lagi Draft. Tahapannya adalah `E-stamped`, `Employee signs`, `Approver signs`, `Print`, dan `Released`.
@@ -92,6 +136,12 @@ Contract Active muncul di riwayat Contract Employee dan dihitung dalam [[onboard
 **Mengapa saya tidak bisa memilih Active?** Data Employee belum lengkap. Simpan sebagai Draft dan lengkapi item yang kurang.
 
 **Mengapa gaji tidak terlihat?** Nilai gaji memerlukan izin tersendiri.
+
+**Bisakah saya mengimpor PDF sebagai Template?** Tidak. PDF tidak menyimpan struktur teks dan isian `{{placeholder}}`. Impor berkas backup atau berkas HTML.
+
+**Mengapa Add existing contract atau tombol ekspor tidak ada?** Role Anda belum diberi izinnya. Hubungi administrator.
+
+**Mengapa sebuah Template dilewati saat impor?** Kolom `Notes` memberi alasannya. Perbaiki berkasnya lalu periksa lagi.
 
 ## Topik terkait
 

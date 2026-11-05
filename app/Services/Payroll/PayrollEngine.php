@@ -358,7 +358,7 @@ class PayrollEngine
             'attendance' => self::attendanceAppliesTo($set, $start) ? ['deductible_days' => $deductible, 'late_minutes_chargeable' => $chargeable] : null,
             'employee' => ['ptkp_code' => $ptkp === '' ? null : $ptkp, 'bpjs_health_active' => !empty($f['bpjs_health']), 'bpjs_employment_active' => !empty($f['bpjs_employment']),
                 'bpjs_dependents' => $dependents, 'has_tax_id' => !empty($f['has_tax_id'])],
-            'settings' => $sim, 'bpjs' => $ctx['bpjs'], 'pph21' => $ctx['pph21'], 'final_tax_period' => $ctx['final'], 'ytd' => $ytd,
+            'settings' => $sim, 'bpjs' => $ctx['bpjs'], 'pph21' => $ctx['pph21'], 'overtime_rules' => $ctx['overtime_rules'], 'final_tax_period' => $ctx['final'], 'ytd' => $ytd,
         ]);
 
         return ['result' => $result, 'rates' => $ctx['snapshot'], 'settings' => $sim, 'attendance_applies' => self::attendanceAppliesTo($set, $start), 'period' => ['start' => $start, 'end' => $end],
@@ -411,12 +411,22 @@ class PayrollEngine
         $win['assumed']  = $win['trusted_end'] < $win['end']
             ? PayrollCalendar::workdays(date('Y-m-d', strtotime($win['trusted_end'] . ' +1 day')), $win['end'], $dow, $holidays) : [];
 
+        // Aturan lembur: dari Legal Basis hanya bila saklar lembur menyala (bawaan mati = aturan baku PP 35/2021, perilaku lama). Belum lengkap = galat jelas.
+        $overtimeRules = null;
+        if (\App\Services\Legal\PayrollRatesFromLegal::useLegal(\App\Services\Legal\PayrollRatesFromLegal::AREA_OVERTIME)) {
+            $overtimeRules = app(\App\Services\Legal\PayrollRatesFromLegal::class)->overtimeRules($end);
+            if ($overtimeRules === null) {
+                throw new \InvalidArgumentException('Overtime multipliers are set to be read from Legal Basis, but the rule overtime.multipliers is not complete. Fix it in Legal Basis, or switch overtime back to the built-in standard.');
+            }
+        }
+
         return [
-            'bpjs' => $bpjs, 'pph21' => $pph, 'settings' => $settings, 'att' => $win,
+            'bpjs' => $bpjs, 'pph21' => $pph, 'settings' => $settings, 'att' => $win, 'overtime_rules' => $overtimeRules,
             'workdays' => PayrollCalendar::workdays($start, $end, $dow, $holidays),
             'final' => PayrollPeriodRules::isFinalTaxPeriod($end, $settings['final_tax_month']),
             'snapshot' => ['bpjs_effective_date' => $bpjs['effective_date'], 'pph21_year' => $year, 'settings' => $settings,
-                           'pph21_settings' => $pph['settings'] ?? null],
+                           'pph21_settings' => $pph['settings'] ?? null,
+                           'overtime_source' => $overtimeRules === null ? 'standard' : 'legal_basis', 'overtime_rules' => $overtimeRules],
         ];
     }
 
@@ -674,7 +684,7 @@ class PayrollEngine
                 'bpjs_employment_active' => $e['bpjs_employment_active'], 'bpjs_dependents' => $e['bpjs_dependents'],
                 'has_tax_id' => isset($data['npwp'][$id]),
             ],
-            'settings' => $empSet, 'bpjs' => $ctx['bpjs'], 'pph21' => $ctx['pph21'],
+            'settings' => $empSet, 'bpjs' => $ctx['bpjs'], 'pph21' => $ctx['pph21'], 'overtime_rules' => $ctx['overtime_rules'],
             'final_tax_period' => $ctx['final'],
             'ytd' => $data['ytd'][$id] ?? ['gross' => 0, 'employee_pension' => 0, 'pph21_withheld' => 0, 'months' => 0],
         ]);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Finance;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\HR_General\Concerns\ChecksExternalAccess;
 use App\Services\Legal\LegalBasisService;
+use App\Services\Legal\PayrollRatesFromLegal;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -31,10 +32,51 @@ class LegalBasisController extends Controller
     /** Tab Settings: saklar tampil / Draft mode / Enforce per modul (izin sendiri: finance.legal-basis.settings). */
     public function settings()
     {
+        $rates = new PayrollRatesFromLegal($this->legal);
+
         return view('finance.legal-basis.settings', [
             'modules' => LegalBasisService::MODULES, 'switches' => $this->legal->allSwitches(),
             'pending' => collect(array_keys(LegalBasisService::MODULES))->mapWithKeys(fn ($m) => [$m => $this->legal->pending($m)]),
+            'ratesSource' => PayrollRatesFromLegal::useLegal() ? PayrollRatesFromLegal::SOURCE_LEGAL : PayrollRatesFromLegal::SOURCE_SETTINGS,
+            'ratesMissing' => $rates->missing(), 'ratesDiffs' => $rates->differences(),
+            // Lembur punya saklar sendiri (perusahaan bisa belum memakainya)
+            'overtimeSource' => PayrollRatesFromLegal::useLegal(PayrollRatesFromLegal::AREA_OVERTIME) ? PayrollRatesFromLegal::SOURCE_LEGAL : PayrollRatesFromLegal::SOURCE_SETTINGS,
+            'overtimeMissing' => $rates->missingOvertime(), 'overtimeDiffs' => $rates->differencesOvertime(),
         ]);
+    }
+
+    /**
+     * Pilih sumber tarif Payroll. Beralih ke Legal Basis hanya bila semua aturan wajib punya nilai yang bisa dibaca; bila angkanya berbeda
+     * dari Payroll Settings, harus dikonfirmasi (hasil hitung gaji akan ikut berubah). Kembali ke Payroll Settings selalu boleh.
+     */
+    public function saveRatesSource(Request $request)
+    {
+        $to = $request->input('source') === PayrollRatesFromLegal::SOURCE_LEGAL ? PayrollRatesFromLegal::SOURCE_LEGAL : PayrollRatesFromLegal::SOURCE_SETTINGS;
+        $area = $request->input('area') === PayrollRatesFromLegal::AREA_OVERTIME ? PayrollRatesFromLegal::AREA_OVERTIME : PayrollRatesFromLegal::AREA_RATES;
+        $overtime = $area === PayrollRatesFromLegal::AREA_OVERTIME;
+        $back = redirect()->route('finance.legal-basis.settings');
+
+        if ($to === PayrollRatesFromLegal::SOURCE_LEGAL) {
+            $rates = new PayrollRatesFromLegal($this->legal);
+            $missing = $overtime ? $rates->missingOvertime() : $rates->missing();
+            if ($missing) {
+                return $back->withErrors([($overtime ? 'Overtime cannot read its multipliers from Legal Basis yet: ' : 'Payroll cannot read its rates from Legal Basis yet: ') . implode('; ', array_map(fn ($k, $w) => "{$k} {$w}", array_keys($missing), $missing)) . '.']);
+            }
+            if (($overtime ? $rates->differencesOvertime() : $rates->differences()) && !$request->boolean('confirm_differences')) {
+                return $back->withErrors([($overtime ? 'The overtime multipliers in Legal Basis differ from the built-in standard' : 'The numbers in Legal Basis differ from Payroll Settings') . ', so payroll results would change. Tick the confirmation box to switch anyway, or make the two match first.']);
+            }
+        }
+        PayrollRatesFromLegal::setSource($to, $area);
+
+        if ($overtime) {
+            return $back->with('success', $to === PayrollRatesFromLegal::SOURCE_LEGAL
+                ? 'Overtime multipliers are now read from Legal Basis. It applies the next time a period is calculated (and only while overtime is switched on in Payroll Settings).'
+                : 'Overtime uses the built-in standard multipliers again (PP 35/2021).');
+        }
+
+        return $back->with('success', $to === PayrollRatesFromLegal::SOURCE_LEGAL
+            ? 'Payroll now reads PPh 21 and BPJS regulation rates from Legal Basis. It applies the next time a period is calculated.'
+            : 'Payroll reads its rates from Payroll Settings again.');
     }
 
     public function store(Request $request)
@@ -96,7 +138,7 @@ class LegalBasisController extends Controller
             'regulation_type' => ['required', Rule::in(array_keys(LegalBasisService::TYPES))], 'number' => 'required|string|max:40', 'year' => 'required|integer|min:1945|max:2100',
             'title' => 'required|string|max:400', 'article' => 'nullable|string|max:400', 'effective_date' => 'required|date', 'last_amended_date' => 'nullable|date',
             'amended_by' => 'nullable|string|max:400', 'source_url' => 'nullable|url|max:500', 'confidence' => ['required', Rule::in(array_keys(LegalBasisService::CONFIDENCE))],
-            'payload' => 'nullable|string|max:20000', 'notes' => 'nullable|string|max:3000',
+            'payload' => 'nullable|string|max:60000', 'notes' => 'nullable|string|max:3000', 'owner_employee_id' => 'nullable|integer',
         ]);
 
         try {

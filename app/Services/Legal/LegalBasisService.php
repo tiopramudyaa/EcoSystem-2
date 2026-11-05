@@ -18,6 +18,50 @@ class LegalBasisService
     public const BADGES = ['active' => 'bg-green-100 text-green-700', 'needs_review' => 'bg-amber-100 text-amber-700', 'superseded' => 'bg-gray-200 text-gray-500'];
     public const CONFIDENCE = ['high' => 'High', 'medium' => 'Medium', 'low' => 'Low'];
 
+    /** Ulasan berlaku 12 bulan; peringatan dimulai 30 hari sebelum jatuh tempo. */
+    public const REVIEW_MONTHS = 12;
+    public const REVIEW_WARN_DAYS = 30;
+
+    /** Apakah kolom pemilik sudah ada di database ini (SQL/migrasi 6 Nov 2026); tanpa itu fitur pemilik diam, yang lain tetap jalan. */
+    public function hasOwnerColumn(): bool
+    {
+        static $has = null;
+        try {
+            return $has ??= \Illuminate\Support\Facades\Schema::hasColumn('legal_basis_register', 'owner_employee_id');
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /** Karyawan aktif untuk pilihan pemilik. @return array<int,string> employee_id → nama */
+    public function ownerOptions(): array
+    {
+        return DB::table('employee as e')->join('employee_basic_data as b', 'b.employee_id', '=', 'e.employee_id')
+            ->where('e.is_active', 1)->orderBy('b.first_name')->orderBy('b.last_name')
+            ->get(['e.employee_id', 'b.first_name', 'b.last_name', 'e.eci'])
+            ->mapWithKeys(fn ($r) => [(int) $r->employee_id => trim($r->first_name . ' ' . $r->last_name) . ' (' . $r->eci . ')'])->all();
+    }
+
+    /** Dua payload dianggap sama bila isinya sama (urutan kunci dan spasi tidak penting). */
+    private function samePayload(?string $a, ?string $b): bool
+    {
+        $da = ($a === null || trim($a) === '') ? null : json_decode($a, true);
+        $db = ($b === null || trim($b) === '') ? null : json_decode($b, true);
+        $canon = function ($v) use (&$canon) {
+            if (is_array($v)) {
+                $isList = array_is_list($v);
+                $v = array_map($canon, $v);
+                if (!$isList) {
+                    ksort($v);
+                }
+            }
+
+            return $v;
+        };
+
+        return json_encode($canon($da)) === json_encode($canon($db));
+    }
+
     /** Aturan yang wajib sudah diulas sebelum kalkulator Offboarding boleh dinyalakan. */
     public const OFFBOARDING_REQUIRED = [
         'offboarding.pkwt_compensation', 'offboarding.severance_table', 'offboarding.reason_multipliers', 'offboarding.severance_tax', 'offboarding.leave_divisor',
@@ -101,7 +145,22 @@ class LegalBasisService
     /** Penahan fitur Payroll: gabungan blockers pph21 + bpjs + overtime (kosong selama saklar Enforce ketiganya mati). @return string[] */
     public function payrollBlockers(): array
     {
-        return array_values(array_unique(array_merge($this->blockers('pph21'), $this->blockers('bpjs'), $this->blockers('overtime'))));
+        $blockers = array_merge($this->blockers('pph21'), $this->blockers('bpjs'), $this->blockers('overtime'));
+        // Sumber tarif = Legal Basis: aturan yang belum punya nilai yang bisa dibaca Payroll ikut menahan (kalau tidak, hasil hitung bisa nol).
+        if (PayrollRatesFromLegal::useLegal()) {
+            foreach ((new PayrollRatesFromLegal($this))->missing() as $key => $why) {
+                $blockers[] = "{$key} ({$why})";
+            }
+        }
+
+        // Saklar lembur sendiri: bila lembur dibaca dari Legal Basis, aturan pengalinya harus lengkap.
+        if (PayrollRatesFromLegal::useLegal(PayrollRatesFromLegal::AREA_OVERTIME)) {
+            foreach ((new PayrollRatesFromLegal($this))->missingOvertime() as $key => $why) {
+                $blockers[] = "{$key} ({$why})";
+            }
+        }
+
+        return array_values(array_unique($blockers));
     }
 
     /** Aturan wajib yang belum Reviewed (untuk spanduk peringatan), terlepas dari saklar enforce. @return string[] */
@@ -146,10 +205,12 @@ class LegalBasisService
     /** @return \Illuminate\Support\Collection<int,object> semua versi (terbaru dulu), dengan nama pengulas */
     public function all(?string $module = null)
     {
+        $owners = $this->hasOwnerColumn();
         $rows = DB::table('legal_basis_register as l')->leftJoin('employee_basic_data as b', 'b.employee_id', '=', 'l.reviewed_by')
+            ->when($owners, fn ($q) => $q->leftJoin('employee_basic_data as o', 'o.employee_id', '=', 'l.owner_employee_id'))
             ->when($module, fn ($q) => $q->where('l.module', $module))
             ->orderBy('l.module')->orderBy('l.rule_key')->orderByDesc('l.effective_date')
-            ->get(['l.*', DB::raw("CONCAT_WS(' ', b.first_name, b.last_name) as reviewer")]);
+            ->get(array_merge(['l.*', DB::raw("CONCAT_WS(' ', b.first_name, b.last_name) as reviewer")], $owners ? [DB::raw("CONCAT_WS(' ', o.first_name, o.last_name) as owner_name")] : []));
 
         return $rows->map(fn ($r) => $this->decode($r));
     }
@@ -165,7 +226,9 @@ class LegalBasisService
             'rows' => $rows->groupBy('module'), 'module' => isset(self::MODULES[$module]) ? $module : '', 'modules' => self::MODULES, 'types' => self::TYPES,
             'statuses' => self::STATUSES, 'badges' => self::BADGES, 'confidence' => self::CONFIDENCE,
             'switches' => $this->allSwitches(), 'pending' => collect(array_keys(self::MODULES))->mapWithKeys(fn ($m) => [$m => $this->pending($m)]),
-            'counts' => ['total' => $rows->count(), 'needs_review' => $rows->where('status', 'needs_review')->count(), 'stale' => $stale, 'reviewed' => $rows->where('status', 'active')->count()],
+            'counts' => ['total' => $rows->count(), 'needs_review' => $rows->where('status', 'needs_review')->count(), 'stale' => $stale, 'reviewed' => $rows->where('status', 'active')->count(),
+                'due_soon' => $rows->filter(fn ($r) => $r->status === 'active' && $r->review_days_left !== null && $r->review_days_left >= 0 && $r->review_days_left <= self::REVIEW_WARN_DAYS)->count()],
+            'hasOwners' => $this->hasOwnerColumn(), 'ownerOptions' => $this->hasOwnerColumn() ? $this->ownerOptions() : [],
         ];
     }
 
@@ -211,9 +274,32 @@ class LegalBasisService
             throw new \DomainException('Enter a valid last-amended date.');
         }
 
+        // Pemilik (penanggung jawab). Hanya bila kolomnya sudah ada di database ini.
+        $ownerGiven = array_key_exists('owner_employee_id', $d) && $this->hasOwnerColumn();
+        $owner = $ownerGiven && ($d['owner_employee_id'] ?? '') !== '' ? (int) $d['owner_employee_id'] : null;
+        if ($ownerGiven) {
+            if ($owner !== null && !DB::table('employee')->where('employee_id', $owner)->exists()) {
+                throw new \DomainException('The chosen owner was not found.');
+            }
+            $row['owner_employee_id'] = $owner;
+        }
+
         if ($id) {
-            if (!DB::table('legal_basis_register')->where('id', $id)->exists()) {
+            $old = DB::table('legal_basis_register')->where('id', $id)->first();
+            if (!$old) {
                 throw new \DomainException('Entry not found.');
+            }
+            // Mengubah HANYA pemilik bukan perubahan isi: status Reviewed dan pengulasnya dipertahankan.
+            $content = array_diff_key($row, array_flip(['status', 'reviewed_by', 'reviewed_at', 'updated_by', 'updated_at', 'owner_employee_id', 'payload']));
+            $same = $this->samePayload($old->payload, $row['payload']);
+            foreach ($content as $k => $v) {
+                if ((string) ($old->$k ?? '') !== (string) ($v ?? '')) {
+                    $same = false;
+                    break;
+                }
+            }
+            if ($same) {
+                unset($row['status'], $row['reviewed_by'], $row['reviewed_at']);
             }
             $clash = DB::table('legal_basis_register')->where('rule_key', $row['rule_key'])->where('effective_date', $row['effective_date'])->where('id', '!=', $id)->exists();
             if ($clash) {
@@ -292,6 +378,14 @@ class LegalBasisService
     {
         $row->payload_data = $row->payload ? json_decode($row->payload, true) : null;
         $row->label = trim($row->regulation_type . ' ' . $row->number . '/' . $row->year);
+        // Ulasan berlaku REVIEW_MONTHS bulan: sisa hari sampai jatuh tempo (negatif = terlambat); hanya untuk yang sudah Reviewed.
+        $row->review_due_at = null;
+        $row->review_days_left = null;
+        if (($row->status ?? null) === 'active' && !empty($row->reviewed_at)) {
+            $due = \Illuminate\Support\Carbon::parse($row->reviewed_at)->startOfDay()->addMonths(self::REVIEW_MONTHS);
+            $row->review_due_at = $due->toDateString();
+            $row->review_days_left = (int) now()->startOfDay()->diffInDays($due, false);
+        }
 
         return $row;
     }
