@@ -13,6 +13,8 @@
     $hasLetterhead = (bool) $doc['letterhead']?->backgroundPath();
     // Dibuka dari External → External Contract ($external): tanpa tab Contract dan tanpa salinan bermeterai (itu di menu Contract).
     $external = $external ?? false;
+    // Kontrak yang dicatat dari kontrak fisik: dokumennya adalah salinan scan (tanpa teks buatan sistem, tanpa alur tanda tangan).
+    $imported = !$external && ($imported ?? false);
     $hasSigned = !$external && !empty($contract->signed_file_path);
     $canEditList = !$external && $canDo('general.contracts.list', 'edit');
     $canUpload = $canEditList && $contract->lifecycle_status !== 'draft' && !$masked;
@@ -48,7 +50,7 @@
             @if($canUpload)
                 <form id="signedForm" method="POST" action="{{ route('general.contracts.signed.upload', $contract->contract_id) }}" enctype="multipart/form-data" data-unsaved-ignore>@csrf
                     <input type="file" name="signed_file" id="signedFile" accept="application/pdf" class="hidden">
-                    <button type="button" id="signedPick" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50"><i class="fas fa-stamp mr-1"></i> {{ $hasSigned ? 'Replace stamped copy' : 'Upload stamped copy' }}</button>
+                    <button type="button" id="signedPick" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50"><i class="fas fa-stamp mr-1"></i> {{ $imported ? 'Replace scanned copy' : ($hasSigned ? 'Replace stamped copy' : 'Upload stamped copy') }}</button>
                 </form>
             @endif
             @unless($masked)
@@ -58,21 +60,21 @@
         </div>
     </div>
 
-    @if($masked)
+    @if($masked && !$imported)
         <div class="text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-3"><i class="fas fa-lock mr-1"></i>
             Salary amounts are hidden because you do not hold the “View Salary” permission, so this copy cannot be printed or downloaded.</div>
     @endif
-    @if(!$hasLetterhead && $doc['use_letterhead'])
+    @if(!$imported && !$hasLetterhead && $doc['use_letterhead'])
         <div class="text-xs bg-sky-50 border border-sky-200 text-sky-900 rounded-lg px-4 py-3"><i class="fas fa-circle-info mr-1"></i>
             No letterhead is set for “Employment Contract” yet. Add one in Letter Templates → Settings and tick this letter type.
             @if($canDo('general.letters.settings.letterheads'))<a href="{{ route('general.document-identity.index', ['section' => 'letterheads']) }}" class="underline font-semibold">Open letterheads</a>@endif</div>
     @endif
-    @if(!$contract->signatory_name)
+    @if(!$imported && !$contract->signatory_name)
         <div class="text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-3"><i class="fas fa-pen-nib mr-1"></i>
             No company signatory is chosen for this contract yet, so the signatory name and title print as “-”. Edit the contract and pick a signer.
             @if($canDo('general.letters.settings.signers'))<a href="{{ route('general.document-identity.index', ['section' => 'signers']) }}" class="underline font-semibold">Manage signers</a>@endif</div>
     @endif
-    @if($doc['warnings'])
+    @if(!$imported && $doc['warnings'])
         <div class="text-xs bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3"><i class="fas fa-triangle-exclamation mr-1"></i>
             The template contains placeholders this contract type does not have: {{ $warnText }}. They are printed as typed — fix the template.</div>
     @endif
@@ -90,16 +92,23 @@
             @if($hasSigned)
                 <div class="flex items-center gap-2 text-gray-700">
                     <span class="w-8 h-8 rounded-lg tone-primary flex items-center justify-center"><i class="fas fa-stamp"></i></span>
+                    @if($imported)
+                    <div><p class="font-semibold">Scanned copy of the paper contract <span class="font-normal text-gray-400">· {{ $contract->signed_file_name }}</span> <span class="ml-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[9px] font-bold">Imported</span></p>
+                        <p class="text-[11px] text-gray-400">Recorded {{ ($contract->imported_at ?? $contract->signed_file_at)?->format('d M Y H:i') }}@if($importedBy) by {{ $importedBy }}@endif · this scan is the contract document; there is no system-generated text.</p></div>
+                    @else
                     <div><p class="font-semibold">Stamped copy on file <span class="font-normal text-gray-400">· {{ $contract->signed_file_name }}</span></p>
                         <p class="text-[11px] text-gray-400">Uploaded {{ $contract->signed_file_at?->format('d M Y H:i') }}@if($signedBy) by {{ $signedBy }}@endif</p></div>
+                    @endif
                 </div>
                 <div class="flex items-center gap-2">
+                    @unless($imported)
                     <div class="seg">
                         <button type="button" data-doc-view="signed" class="seg-print">Stamped copy</button>
                         <button type="button" data-doc-view="generated" class="seg-view">Generated</button>
                     </div>
+                    @endunless
                     <a href="{{ $signedUrl }}?download=1" class="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-50"><i class="fas fa-download mr-1"></i> Download</a>
-                    @if($canEditList)
+                    @if($canEditList && !$imported)
                         <form method="POST" action="{{ route('general.contracts.signed.remove', $contract->contract_id) }}" data-confirm="Remove the stamped copy of {{ $doc['number'] }}? The contract itself is not affected." data-confirm-title="Remove Stamped Copy" data-confirm-ok="Remove" data-unsaved-ignore>@csrf
                             <button type="submit" class="px-3 py-1.5 border border-red-300 text-red-600 font-semibold rounded-lg hover:bg-red-50">Remove</button>
                         </form>
@@ -115,14 +124,16 @@
         </div>
     @endunless
 
-    @unless($masked || $external)
+    @unless($masked || $external || $imported)
         @include('legal.contracts.components.signing-panel')
     @endunless
 
-    @if($masked)
+    @if($masked && $imported)
+        <div class="text-xs text-gray-500 bg-white border border-gray-200 rounded-xl px-4 py-8 text-center"><i class="fas fa-lock mr-1"></i> The scanned contract can be opened only by holders of the “View Salary” permission.</div>
+    @elseif($masked)
         <div class="overflow-x-auto pb-6"><div class="contract-text">{!! $doc['html'] !!}</div></div>
     @else
-        <iframe id="contractFrame" class="contract-frame" src="{{ $hasSigned ? $signedUrl : $pdfUrl }}#view=FitH" title="Contract {{ $doc['number'] }}"></iframe>
+        <iframe id="contractFrame" class="contract-frame" src="{{ $hasSigned || $imported ? $signedUrl : $pdfUrl }}#view=FitH" title="Contract {{ $doc['number'] }}"></iframe>
         <p class="text-[11px] text-gray-400">This is the PDF as it prints. If the sheet does not show, <a href="{{ $pdfUrl }}" target="_blank" class="underline font-semibold">open the PDF</a>.</p>
     @endif
 </div>

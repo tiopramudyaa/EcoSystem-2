@@ -36,6 +36,10 @@ class ContractSigningService
     {
         $this->assertCan($c, S::ACTION_SEND, 'send this contract to the employee');
 
+        if ($c->isImported()) {
+            throw new \DomainException('This contract was recorded from a signed paper contract; it does not go through electronic signing.');
+        }
+
         if (($c->lifecycle_status ?? '') === 'draft') {
             throw new \DomainException('A Draft cannot be sent for signing. Set the contract to Active first.');
         }
