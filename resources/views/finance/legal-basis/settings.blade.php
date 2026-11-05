@@ -14,6 +14,112 @@
     @include('hr-general.recruitment.components.form-errors')
     @if(session('success'))<div class="text-xs bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3"><i class="fas fa-circle-check mr-1"></i> {{ session('success') }}</div>@endif
 
+    {{-- Where Payroll reads its PPh 21 / BPJS regulation rates (one source of truth) --}}
+    @php $viaLegal = $ratesSource === 'legal'; @endphp
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="px-5 py-3.5 border-b border-gray-100 flex items-start gap-3">
+            <span class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><i class="fas fa-scale-balanced"></i></span>
+            <div class="flex-1">
+                <h3 class="text-sm font-bold text-gray-800">Where Payroll reads its rates</h3>
+                <p class="text-[11px] text-gray-500 mt-0.5">One place for the regulation numbers: PPh 21 (progressive rates, occupational cost, PTKP, TER) and BPJS (rates and wage ceilings). Company choices such as the JKK class, which tax year is active and the Payroll on/off switches stay in Payroll Settings.</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 {{ $viaLegal ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ $viaLegal ? 'Using Legal Basis' : 'Using Payroll Settings' }}</span>
+        </div>
+        <form method="POST" action="{{ route('finance.legal-basis.rates-source') }}" class="px-5 py-4 space-y-4">
+            @csrf
+            <input type="hidden" name="area" value="rates">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label class="flex items-start gap-3 rounded-lg border {{ !$viaLegal ? 'border-indigo-300 bg-indigo-50/40' : 'border-gray-200' }} p-3 cursor-pointer">
+                    <input type="radio" name="source" value="settings" class="mt-1" @checked(!$viaLegal) @disabled(!$canEdit)>
+                    <span><span class="block text-sm font-semibold text-gray-800">Payroll Settings <span class="text-[10px] font-bold text-gray-500">(current behaviour)</span></span>
+                        <span class="block text-xs text-gray-500 mt-0.5">Rates are typed in Finance › Payroll › Settings (BPJS, PPh 21). Legal Basis is a reference copy.</span></span>
+                </label>
+                <label class="flex items-start gap-3 rounded-lg border {{ $viaLegal ? 'border-indigo-300 bg-indigo-50/40' : 'border-gray-200' }} p-3 cursor-pointer">
+                    <input type="radio" name="source" value="legal" class="mt-1" @checked($viaLegal) @disabled(!$canEdit)>
+                    <span><span class="block text-sm font-semibold text-gray-800">Legal Basis <span class="text-[10px] font-bold text-indigo-600">(single source)</span></span>
+                        <span class="block text-xs text-gray-500 mt-0.5">Type the regulation numbers once, in the Register. Payroll reads them from there, by effective date. The rate fields in Payroll Settings are then managed here.</span></span>
+                </label>
+            </div>
+
+            @if($ratesMissing)
+                <div class="text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-3">
+                    <p class="font-semibold mb-1"><i class="fas fa-triangle-exclamation mr-1"></i> Not ready: these rules have no values Payroll can read yet</p>
+                    <ul class="list-disc ml-5 space-y-0.5">@foreach($ratesMissing as $k => $why)<li><code class="text-[11px]">{{ $k }}</code> {{ $why }}</li>@endforeach</ul>
+                    <p class="mt-1.5">Open the <a href="{{ route('finance.legal-basis.index') }}" class="underline font-semibold">Register</a> and fill in their Calculation values.</p>
+                </div>
+            @else
+                <div class="text-xs bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3"><i class="fas fa-circle-check mr-1"></i> Every rule Payroll needs has values in the Register.</div>
+            @endif
+
+            @if(!$ratesMissing && $ratesDiffs)
+                <div class="text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-3">
+                    <p class="font-semibold mb-1"><i class="fas fa-not-equal mr-1"></i> {{ count($ratesDiffs) }} difference{{ count($ratesDiffs) === 1 ? '' : 's' }} between Payroll Settings and Legal Basis. Switching would change payroll results.</p>
+                    <ul class="list-disc ml-5 space-y-0.5 max-h-40 overflow-y-auto">@foreach($ratesDiffs as $d)<li>{{ $d }}</li>@endforeach</ul>
+                    @if(!$viaLegal && $canEdit)
+                        <label class="flex items-start gap-2 mt-2 font-semibold"><input type="checkbox" name="confirm_differences" value="1" class="mt-0.5 rounded border-gray-300"> I checked the differences and want Payroll to use the Legal Basis numbers.</label>
+                    @endif
+                </div>
+            @elseif(!$ratesMissing)
+                <div class="text-xs bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3"><i class="fas fa-equals mr-1"></i> Payroll Settings and Legal Basis hold the same numbers, so switching does not change any payroll result.</div>
+            @endif
+
+            @if($canEdit)<div class="flex justify-end"><button class="px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 shadow-sm">Save source</button></div>@endif
+        </form>
+    </div>
+
+    {{-- Overtime multipliers: its own switch, because a company may not use overtime pay yet --}}
+    @php $otLegal = $overtimeSource === 'legal'; @endphp
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="px-5 py-3.5 border-b border-gray-100 flex items-start gap-3">
+            <span class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><i class="fas fa-clock"></i></span>
+            <div class="flex-1">
+                <h3 class="text-sm font-bold text-gray-800">Overtime multipliers</h3>
+                <p class="text-[11px] text-gray-500 mt-0.5">How much each overtime hour pays (for example 1.5× the first hour on a working day) and the divisor that turns a monthly wage into an hourly wage (173). Switch this on only when your company has decided its overtime rules. Whether overtime is paid at all is still decided in Payroll Settings.</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 {{ $otLegal ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ $otLegal ? 'On: reads Legal Basis' : 'Off: built-in standard' }}</span>
+        </div>
+        <form method="POST" action="{{ route('finance.legal-basis.rates-source') }}" class="px-5 py-4 space-y-4">
+            @csrf
+            <input type="hidden" name="area" value="overtime">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label class="flex items-start gap-3 rounded-lg border {{ !$otLegal ? 'border-indigo-300 bg-indigo-50/40' : 'border-gray-200' }} p-3 cursor-pointer">
+                    <input type="radio" name="source" value="settings" class="mt-1" @checked(!$otLegal) @disabled(!$canEdit)>
+                    <span><span class="block text-sm font-semibold text-gray-800">Off — built-in standard <span class="text-[10px] font-bold text-gray-500">(current behaviour)</span></span>
+                        <span class="block text-xs text-gray-500 mt-0.5">The multipliers of PP 35/2021 written into the system: workday 1.5× then 2×, rest day or holiday 2× / 3× / 4×, divisor 173.</span></span>
+                </label>
+                <label class="flex items-start gap-3 rounded-lg border {{ $otLegal ? 'border-indigo-300 bg-indigo-50/40' : 'border-gray-200' }} p-3 cursor-pointer">
+                    <input type="radio" name="source" value="legal" class="mt-1" @checked($otLegal) @disabled(!$canEdit)>
+                    <span><span class="block text-sm font-semibold text-gray-800">On — read from Legal Basis <span class="text-[10px] font-bold text-indigo-600">(editable)</span></span>
+                        <span class="block text-xs text-gray-500 mt-0.5">Payroll uses the numbers in the Register rule <code class="text-[10px]">overtime.multipliers</code>, so a change of rules needs no developer.</span></span>
+                </label>
+            </div>
+
+            @if($overtimeMissing)
+                <div class="text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-3">
+                    <p class="font-semibold mb-1"><i class="fas fa-triangle-exclamation mr-1"></i> Not ready: the overtime rule has no complete values yet</p>
+                    <ul class="list-disc ml-5 space-y-0.5">@foreach($overtimeMissing as $k => $why)<li><code class="text-[11px]">{{ $k }}</code> {{ $why }}</li>@endforeach</ul>
+                    <p class="mt-1.5">Open the <a href="{{ route('finance.legal-basis.index') }}" class="underline font-semibold">Register</a>, edit <code class="text-[11px]">overtime.multipliers</code> and fill in its Calculation values.</p>
+                </div>
+            @else
+                <div class="text-xs bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3"><i class="fas fa-circle-check mr-1"></i> The overtime rule has complete values in the Register.</div>
+            @endif
+
+            @if(!$overtimeMissing && $overtimeDiffs)
+                <div class="text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-3">
+                    <p class="font-semibold mb-1"><i class="fas fa-not-equal mr-1"></i> {{ count($overtimeDiffs) }} difference{{ count($overtimeDiffs) === 1 ? '' : 's' }} from the built-in standard. Switching on would change overtime pay.</p>
+                    <ul class="list-disc ml-5 space-y-0.5">@foreach($overtimeDiffs as $d)<li>{{ $d }}</li>@endforeach</ul>
+                    @if(!$otLegal && $canEdit)
+                        <label class="flex items-start gap-2 mt-2 font-semibold"><input type="checkbox" name="confirm_differences" value="1" class="mt-0.5 rounded border-gray-300"> I checked the differences and want overtime to use the Legal Basis numbers.</label>
+                    @endif
+                </div>
+            @elseif(!$overtimeMissing)
+                <div class="text-xs bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3"><i class="fas fa-equals mr-1"></i> The Register holds the same multipliers as the built-in standard, so switching does not change any overtime pay.</div>
+            @endif
+
+            @if($canEdit)<div class="flex justify-end"><button class="px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 shadow-sm">Save overtime source</button></div>@endif
+        </form>
+    </div>
+
     {{-- Saklar penerapan per modul --}}
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div class="px-5 py-3.5 border-b border-gray-100 flex items-start gap-3">

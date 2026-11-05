@@ -23,6 +23,7 @@
     {{-- Legal basis of the rules on this page (Register Dasar Hukum; read-only here) --}}
     @include('partials.legal-basis-panel', ['legalModule' => 'bpjs'])
     @include('hr-general.recruitment.components.form-errors')
+    @include('finance.components.rates-from-legal-banner', ['what' => 'BPJS rates and wage ceilings (Kesehatan, JHT, JP, JKM)', 'detail' => 'Numbers typed in the form below for those fields are ignored while Payroll reads from Legal Basis. The JKK rate, effective date and the Payroll switches still come from here.'])
 
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 

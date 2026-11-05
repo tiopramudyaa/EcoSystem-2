@@ -5,7 +5,7 @@ order: 90
 title: Pengelolaan Overtime
 summary: Tinjau permintaan Overtime terhadap Attendance, setujui atau tolak, Export, dan atur aturan Overtime.
 requires: [general.overtime, general.settings.overtime]
-updated: 2026-10-27
+updated: 2026-11-05
 ---
 `Overtime Management` mendaftar semua permintaan Overtime, menampilkannya berdampingan dengan catatan Attendance, dan memungkinkan Approver memutuskan. Tab `Settings` berisi aturan yang harus dipatuhi Employee saat mengajukan.
 
@@ -55,6 +55,10 @@ Pilih `Save Settings` setelah selesai.
 
 > [!WARNING]
 > Perubahan aturan berlaku untuk permintaan baru sejak Anda menyimpan. Konsultasikan dengan pimpinan HR sebelum mengaktifkan persetujuan oleh diri sendiri.
+
+### Cara upah Overtime dihitung
+
+Apakah Overtime dibayar atau tidak ditentukan di pengaturan [[payroll]]. Pengali bawaannya mengikuti peraturan (PP 35/2021): pada hari kerja 1,5 kali untuk jam pertama dan 2 kali sesudahnya; pada hari istirahat atau libur 2 kali, lalu 3 kali dan 4 kali untuk jam berikutnya. Upah satu jam adalah upah sebulan dibagi 173. Finance dapat menetapkan pengali sendiri di `Legal` › `Legal Basis` › `Settings` (kartu `Overtime multipliers`). Slip mencatat sumber aturan yang dipakai.
 
 ## Apa yang terjadi selanjutnya
 

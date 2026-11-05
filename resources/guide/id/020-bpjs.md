@@ -5,7 +5,7 @@ order: 20
 title: BPJS
 summary: Kelola tarif dan batas upah BPJS, periksa iuran per periode payroll, dan buat surat penonaktifan.
 requires: [finance.bpjs, finance.bpjs.settings, finance.bpjs.report, finance.bpjs.letters]
-updated: 2026-10-27
+updated: 2026-11-05
 ---
 Halaman BPJS berisi tarif yang dipakai [[payroll]] untuk BPJS Kesehatan dan BPJS Ketenagakerjaan, laporan iuran per periode payroll, serta alat untuk membuat surat penonaktifan BPJS.
 
@@ -51,6 +51,10 @@ Gunakan `BPJS base simulation` (`Sample wage base (IDR)`, `As of date`, `Extra f
 5. Klik `Generate`. Sistem membuat PDF dua halaman: surat pernyataan dan daftar lampiran. Surat juga tercatat di Letter Register dengan nomornya sendiri.
 
 Bila surat dibuat keliru, klik `Void` di `Generated letters` dan isi alasannya. Nomor surat tetap terpakai.
+
+### Bila tarif dikelola di Legal Basis
+
+Bila `Legal` › `Legal Basis` › `Settings` diatur agar Payroll membaca tarif dari `Legal Basis`, sebuah spanduk tampil di halaman ini. Tarif (BPJS Kesehatan, JHT, JP, JKM) dan batas upah yang Anda ketik pada versi baru tidak dipakai; ubah di [[legal-basis]]. Kelas JKK, `Effective date`, dan dua saklar payroll tetap berlaku di sini.
 
 ## Apa yang terjadi selanjutnya
 

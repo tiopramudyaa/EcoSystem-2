@@ -5,7 +5,7 @@ order: 10
 title: Payroll
 summary: Create a payroll period, calculate pay, generate and publish payslips, then lock the period.
 requires: [finance.payroll, finance.payroll.periods, finance.payroll.settings, finance.payroll.simulation]
-updated: 2026-10-27
+updated: 2026-11-05
 ---
 Payroll turns each employee's salary components, attendance, leave, overtime and approved reimbursements into a monthly payslip, with BPJS and PPh 21 included. You work through one period at a time: create it, calculate it, review it, issue the payslips and lock it.
 
@@ -78,6 +78,18 @@ In `Settings` you set the rules used by every period, for example work schedule 
 - `Publish payslips automatically after calculating`: after `Calculate`, payslips are numbered and published without extra clicks. Leave it off if you want to review first.
 
 Items marked "not connected yet" (timesheet allowances, loan deduction) are saved but do not affect payslips.
+
+## Where the rates come from
+
+Payroll can read the regulation rates (income tax tables, BPJS rates and wage caps) from one of two places. The choice is made in `Legal` › `Legal Basis` › `Settings`, in the card `Where Payroll reads its rates`:
+
+- `Payroll Settings` (default): rates are typed in [[pph21]] and [[bpjs]].
+- `Legal Basis`: the numbers are typed once in the Register and Payroll reads them by effective date. See [[legal-basis]].
+
+Before you switch, the card shows whether every rule has a value and compares the numbers of both sources. If they differ, tick the confirmation, because payslip results will change. You can go back to `Payroll Settings` at any time. The change applies to the next calculation. Company choices such as the active tax year, the JKK class, the BPJS and PPh 21 switches, rounding and the overtime switch stay in `Payroll Settings`. While the source is `Legal Basis`, `Calculate` is refused if a rule has no value, and the message names the rule.
+
+> [!TIP]
+> Make both sources show the same numbers before you switch. Then the results do not change.
 
 ## What happens next
 

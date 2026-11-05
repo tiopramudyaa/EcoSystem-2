@@ -5,13 +5,23 @@ order: 70
 title: What's new
 summary: Changes from October 2026 that affect how you work, newest first.
 requires: []
-updated: 2026-11-04
+updated: 2026-11-05
 ---
 A short list of recent changes that you will notice in daily work. Each item links to the topic that explains it.
 
 ## Who uses this
 
 Everyone who signs in to EcoSystem. Some items apply only if you have the related menu.
+
+## 5 November 2026
+
+- **Legal Basis without JSON text.** The `Calculation values` of a rule are now a form with labelled numbers and tables. Rupiah and percentages are typed the usual way. See [[legal-basis]].
+- **Changes button.** In `Legal Basis` the `Changes` button compares a version with the previous one. See [[legal-basis]].
+- **Owners and review reminders.** Each rule has an `Owner (responsible person)`, who is reminded in Notifications when a review is due or overdue. See [[legal-basis]].
+- **Payroll can read rates from Legal Basis.** In `Settings` you can choose whether Payroll reads the PPh 21 and BPJS rates from `Legal Basis` or from `Payroll Settings`, which stays the default. See [[legal-basis]] and [[payroll]].
+- **Overtime multipliers from Legal Basis.** An optional switch in `Settings` makes overtime multipliers come from `Legal Basis` instead of the built-in standard. See [[legal-basis]].
+- **Contract templates.** Templates can be exported (PDF, HTML or backup) and imported. See [[contracts]].
+- **Add existing contract.** The `Add existing contract` button records a contract that was signed before. See [[contracts]].
 
 ## 4 November 2026
 

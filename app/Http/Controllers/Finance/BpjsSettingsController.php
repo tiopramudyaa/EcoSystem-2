@@ -69,9 +69,15 @@ class BpjsSettingsController extends Controller
             'employment_in_payroll' => $request->boolean('employment_in_payroll'),
         ], session('user.id') ? (int) session('user.id') : null);
 
-        return $errors
-            ? redirect()->route('finance.bpjs.settings')->withErrors($errors)->withInput()
-            : redirect()->route('finance.bpjs.settings')->with('success', 'New BPJS setting saved. Earlier versions were left unchanged.');
+        if ($errors) {
+            return redirect()->route('finance.bpjs.settings')->withErrors($errors)->withInput();
+        }
+        $back = redirect()->route('finance.bpjs.settings')->with('success', 'New BPJS setting saved. Earlier versions were left unchanged.');
+
+        // Tarif dan batas upah dibaca dari Legal Basis: angka yang baru diketik untuk itu tidak dipakai Payroll. Katakan terus terang.
+        return \App\Services\Legal\PayrollRatesFromLegal::useLegal()
+            ? $back->with('warning', 'Payroll currently reads BPJS rates and wage ceilings from Legal Basis, so the rate and ceiling numbers you typed here are not used. Change them in Legal Basis. The JKK rate, effective date and switches saved here do apply.')
+            : $back;
     }
 
     /** Simulasi (GET, JSON): tidak menyimpan apa pun. */

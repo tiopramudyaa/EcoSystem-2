@@ -5,7 +5,7 @@ order: 50
 title: Contracts
 summary: Prepare employment contracts as Draft, complete the data to activate them, manage templates and run signing.
 requires: [general.contracts, general.contracts.list, general.contracts.templates]
-updated: 2026-10-27
+updated: 2026-11-05
 ---
 The `Contract` menu is where HR prepares employment contracts for internal employees: from a Draft, to an Active contract, to a signed copy released to the employee.
 
@@ -17,7 +17,7 @@ HR staff who prepare contracts, and Legal staff who run the signing. Employees a
 
 Open `Human Capital` › `Contract`. It has up to four tabs, depending on your access: `Dashboard`, `Contracts`, `Templates` and `Settings`.
 
-- `Dashboard` shows contracts ending soon, the latest records, and totals by month, type and department.
+- `Dashboard` shows contracts ending soon, the latest records and totals.
 - `Contracts` lists every contract with `Employee`, `Contract No.`, `Type`, `Department`, `Start`, `End` and `Status`. Use `View`, `Print`, `Edit` or `Manage` on a row.
 - `Templates` holds the contract wording.
 - `Settings` controls the contract types and position types offered on the form.
@@ -69,7 +69,47 @@ If something is missing, the page lists each item. Click an item to open the rig
 4. Write the `Contract Text` like in a word processor.
 5. Select `Create Template` or `Save Template`.
 
-A system default template can be edited but not deleted. Letterheads and signers are managed in Document Identity, see [[letter-templates]].
+A system default template can be edited but not deleted. Letterheads and signers are managed in [[letter-templates]].
+
+### Export and import templates
+
+On the `Templates` tab:
+
+1. Select `Export templates` to open the menu. `All templates — PDF (ZIP)` gives sample contracts with example values, for reading or printing; it cannot be imported back. `All templates — backup file` saves every template in one file, to keep a copy or move templates.
+2. On a template's row, use `PDF`, `HTML` or `Backup` for that one template.
+3. To edit the wording outside the system, download `HTML` and open it in a text editor such as Notepad or VS Code. Do not save it again from Word: the template details are lost and the import is refused.
+4. Select `Import templates` and choose a backup file or an HTML file. A PDF is refused, because it cannot be read back safely.
+5. Select `Check file`. Nothing is saved yet.
+6. Review each row (`Template in the file`, `In this system`, `Notes`) and set `What to do`: `Add as new`, `Update the existing one`, `Add as a copy` or `Skip`.
+7. Select `Import`.
+
+The check works like this:
+
+- Templates are matched by contract type plus name. An identical one shows "Already here, identical".
+- A template with an unknown placeholder, unknown contract type or empty text is set to `Skip`, with the reason in `Notes`.
+- Signers are matched by employee ECI. If the person is not yet a signer here, the column is left empty with a warning.
+- Scripts in the text are removed, as when you save in the editor.
+- Letterheads and company data are not included: set them in `Letter Templates` › `Settings`. Contract types and position types must already exist in the contract `Settings`, otherwise a warning appears and the template is still saved.
+
+Each button shows only if your role has its permission under `Control Center` › `Menu Access` (Contract menu), such as `Template export — PDF` or `Template import — backup file (.json)`. By default only the EC Administrator has them. Import also needs Create (and Edit, to update) on the Templates menu.
+
+### Record an existing contract
+
+Use this for a contract already in force that exists as a printed or scanned document. No salary is recorded.
+
+1. Open `Contracts`, then open the employee with `Manage`.
+2. Select `Add existing contract`.
+3. Fill `Contract number (as printed)`, `Contract type`, `Start date`, `End date` and `Signed date`.
+4. Set `Status` to `Active — still running` or `Terminated — already ended`.
+5. Optionally fill `Position`, `Position type`, `Department`, `Work location` and `Notes`.
+6. Attach `Scanned contract (PDF)`. It is required (a real PDF, up to 10 MB) and stored privately. Only people who can view salary can open it.
+7. Save the record.
+
+Rules: a PKWT needs an end date (up to 60 months), a PKWTT has none, an Internship needs one, the number must be unique, and an employee can have only one running contract (record older ones as `Terminated — already ended`).
+
+The history shows an `Imported` badge. The document page shows the scan, without system text, Signing panel or Generated tab. Payroll is not touched, and electronic signing does not apply.
+
+To correct a record, select `Edit details` (fix data or replace the PDF). Select `Remove` for a wrong employee or file: the scan is deleted too. The regular `Edit` does not apply to imported contracts.
 
 ### Sign a contract
 
@@ -92,6 +132,10 @@ An Active contract appears in the employee's contract history and counts for [[o
 **Why can't I choose Active?** The employee data is not complete yet. Save as Draft and fill the missing items.
 
 **Why is the salary hidden?** Salary values need a separate permission.
+
+**Can I import a PDF as a template?** No. A PDF does not keep the text and `{{placeholder}}` fields. Use the backup or HTML file.
+
+**Why is Add existing contract or an export button missing?** Your role lacks that permission. Ask your administrator.
 
 ## Related topics
 

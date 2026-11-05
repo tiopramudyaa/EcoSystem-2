@@ -29,6 +29,8 @@ Schedule::command('cash-advance:car-reminders')->dailyAt('08:30')->withoutOverla
 
 // Contracts waiting for a signature (employee deadline close / approver waiting): one bell reminder per person per day.
 Schedule::command('contracts:signing-reminders')->dailyAt('08:00');
+// Legal Basis: pemilik aturan diingatkan (lonceng) saat ulasan 12 bulan hampir jatuh tempo / terlambat; paling banyak sekali per aturan per 7 hari.
+Schedule::command('legal-basis:review-reminders')->dailyAt('08:15');
 Schedule::command('offboarding:process')->dailyAt('00:10');
 
 // Periksa & perbaiki share link OneDrive tiap hari 02:30 — link bisa mati sendiri

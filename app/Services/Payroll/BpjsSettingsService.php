@@ -28,7 +28,15 @@ class BpjsSettingsService
      */
     public function effectiveOn(?string $date = null): array
     {
-        return BpjsSettingRules::effectiveOn($this->all(), $date ?? now()->toDateString());
+        $date ??= now()->toDateString();
+        $row = BpjsSettingRules::effectiveOn($this->all(), $date);
+
+        // Satu sumber: tarif dan batas upah (regulasi) dari Legal Basis; kelas JKK, saklar, dan tanggal versi tetap dari baris Payroll Settings.
+        if (\App\Services\Legal\PayrollRatesFromLegal::useLegal()) {
+            $row = array_merge($row, app(\App\Services\Legal\PayrollRatesFromLegal::class)->bpjsOverlay($date));
+        }
+
+        return $row;
     }
 
     /**

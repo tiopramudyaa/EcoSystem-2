@@ -129,9 +129,10 @@ class PayrollCalculator
         $overtimeTotal = 0.0;
         // Dasar upah lembur: gaji pokok + tunjangan tetap (bawaan) atau gaji pokok saja (Payroll Settings).
         $otWage = ($set['overtime_wage_basis'] ?? 'base_fixed') === 'base_only' ? $baseOnlyWage : $rateWage;
-        $hourly = (new OvertimeRateService())->hourlyRateFromMonthly($otWage);
+        // Aturan lembur dari Legal Basis (saklar lembur menyala) atau NULL = aturan baku PP 35/2021.
+        $hourly = (new OvertimeRateService($in['overtime_rules'] ?? null))->hourlyRateFromMonthly($otWage);
         if (!empty($set['overtime_enabled']) && !empty($in['overtime'])) {
-            $svc = new OvertimeRateService();
+            $svc = new OvertimeRateService($in['overtime_rules'] ?? null);
             $wd  = (int) (($set['overtime_work_days'] ?? null) ?: ($set['work_days_per_week'] ?? 5)) === 6 ? 6 : 5;
             foreach ($in['overtime'] as $o) {
                 // Ambang menit minimum dan pembulatan menit (Payroll Settings): di bawah ambang tidak dibayar.

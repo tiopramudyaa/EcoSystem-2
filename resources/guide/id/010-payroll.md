@@ -5,7 +5,7 @@ order: 10
 title: Payroll
 summary: Buat periode payroll, hitung gaji, buat dan publikasikan slip gaji, lalu kunci periode.
 requires: [finance.payroll, finance.payroll.periods, finance.payroll.settings, finance.payroll.simulation]
-updated: 2026-10-27
+updated: 2026-11-05
 ---
 Payroll mengubah komponen gaji, kehadiran, cuti, lembur, dan reimbursement yang sudah disetujui menjadi slip gaji bulanan, lengkap dengan BPJS dan PPh 21. Anda bekerja satu periode demi satu periode: membuat, menghitung, memeriksa, menerbitkan slip, lalu mengunci.
 
@@ -78,6 +78,18 @@ Di `Settings` Anda mengatur aturan untuk semua periode, misalnya jadwal kerja da
 - `Publish payslips automatically after calculating`: setelah `Calculate`, slip langsung diberi nomor dan dipublikasikan. Biarkan mati bila Anda ingin memeriksa dulu.
 
 Item bertanda "not connected yet" (tunjangan timesheet, potongan pinjaman) tersimpan tetapi belum memengaruhi slip.
+
+## Dari mana tarif berasal
+
+Payroll dapat membaca tarif peraturan (tabel pajak penghasilan, tarif BPJS, dan batas upah) dari satu di antara dua tempat. Pilihannya ada di `Legal` › `Legal Basis` › `Settings`, pada kartu `Where Payroll reads its rates`:
+
+- `Payroll Settings` (bawaan): tarif diketik di [[pph21]] dan [[bpjs]].
+- `Legal Basis`: angka diketik sekali di Register dan Payroll membacanya menurut tanggal berlaku. Lihat [[legal-basis]].
+
+Sebelum beralih, kartu menampilkan apakah setiap aturan sudah punya nilai dan membandingkan angka kedua sumber. Bila ada selisih, centang konfirmasi karena hasil slip akan berubah. Anda dapat kembali ke `Payroll Settings` kapan saja. Perubahan berlaku pada perhitungan berikutnya. Pilihan perusahaan seperti tahun pajak aktif, kelas JKK, saklar BPJS dan PPh 21, pembulatan, dan saklar lembur tetap di `Payroll Settings`. Saat sumbernya `Legal Basis`, `Calculate` ditolak bila ada aturan yang belum punya nilai, dan pesannya menyebut aturan tersebut.
+
+> [!TIP]
+> Samakan dulu angka di kedua sumber sebelum beralih. Dengan begitu hasil tidak berubah.
 
 ## Apa yang terjadi selanjutnya
 

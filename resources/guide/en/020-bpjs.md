@@ -5,7 +5,7 @@ order: 20
 title: BPJS
 summary: Maintain BPJS rates and wage caps, review contributions per payroll period and issue deactivation letters.
 requires: [finance.bpjs, finance.bpjs.settings, finance.bpjs.report, finance.bpjs.letters]
-updated: 2026-10-27
+updated: 2026-11-05
 ---
 The BPJS page holds the rates that [[payroll]] uses for BPJS Health and BPJS Employment, a report of contributions per payroll period, and a tool to create BPJS deactivation letters.
 
@@ -51,6 +51,10 @@ Use `BPJS base simulation` (`Sample wage base (IDR)`, `As of date`, `Extra famil
 5. Click `Generate`. A two-page PDF is created: the statement letter and the attachment list. It is also registered in the Letter Register with its own number.
 
 If a letter was made by mistake, click `Void` in `Generated letters` and give a reason. The number stays used.
+
+### When the rates are managed in Legal Basis
+
+If `Legal` › `Legal Basis` › `Settings` is set to read Payroll rates from `Legal Basis`, a banner appears on this page. The rates (BPJS Health, JHT, JP, JKM) and wage caps you type in a new version are not used; change them in [[legal-basis]]. The JKK class, the `Effective date` and the two payroll switches still apply here.
 
 ## What happens next
 

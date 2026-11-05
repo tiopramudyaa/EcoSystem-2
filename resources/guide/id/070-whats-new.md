@@ -5,13 +5,23 @@ order: 70
 title: Yang baru
 summary: Perubahan Oktober 2026 yang memengaruhi cara Anda bekerja, dari yang terbaru.
 requires: []
-updated: 2026-11-04
+updated: 2026-11-05
 ---
 Daftar singkat perubahan terkini yang akan Anda rasakan dalam pekerjaan sehari-hari. Setiap butir menaut ke topik yang menjelaskannya.
 
 ## Siapa yang menggunakan
 
 Semua orang yang masuk ke EcoSystem. Sebagian butir hanya berlaku bila Anda memiliki menu terkait.
+
+## 5 November 2026
+
+- **Legal Basis tanpa teks JSON.** `Calculation values` sebuah aturan kini berupa form dengan angka berlabel dan tabel. Rupiah dan persen diketik seperti biasa. Lihat [[legal-basis]].
+- **Tombol Changes.** Di `Legal Basis`, tombol `Changes` membandingkan sebuah versi dengan versi sebelumnya. Lihat [[legal-basis]].
+- **Pemilik dan pengingat ulasan.** Setiap aturan memiliki `Owner (responsible person)` yang diingatkan lewat Notification saat ulasan jatuh tempo atau terlambat. Lihat [[legal-basis]].
+- **Payroll dapat membaca tarif dari Legal Basis.** Di `Settings` Anda dapat memilih apakah Payroll membaca tarif PPh 21 dan BPJS dari `Legal Basis` atau dari `Payroll Settings`, yang tetap menjadi bawaan. Lihat [[legal-basis]] dan [[payroll]].
+- **Pengali lembur dari Legal Basis.** Saklar opsional di `Settings` membuat pengali lembur berasal dari `Legal Basis`, bukan standar bawaan. Lihat [[legal-basis]].
+- **Template Contract.** Template dapat diekspor (PDF, HTML, atau Backup) dan diimpor. Lihat [[contracts]].
+- **Add existing contract.** Tombol `Add existing contract` mencatat kontrak yang sudah ditandatangani sebelumnya. Lihat [[contracts]].
 
 ## 4 November 2026
 

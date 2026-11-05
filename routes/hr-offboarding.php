@@ -56,6 +56,8 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::post('/', [LegalBasisController::class, 'store'])->name('store')->middleware($gate('create'));
         Route::get('/settings', [LegalBasisController::class, 'settings'])->name('settings')->middleware("menu:{$set}");
         Route::post('/switches', [LegalBasisController::class, 'saveSwitches'])->name('switches')->middleware(["menu:{$set}", "menu.can:{$set},edit"]);
+        // Where Payroll reads its PPh 21 / BPJS regulation rates: Payroll Settings (default) or this register.
+        Route::post('/rates-source', [LegalBasisController::class, 'saveRatesSource'])->name('rates-source')->middleware(["menu:{$set}", "menu.can:{$set},edit", 'throttle:20,1']);
         Route::post('/module/{module}/review', [LegalBasisController::class, 'reviewModule'])->name('review-module')->whereIn('module', ['pph21', 'bpjs', 'overtime', 'contract', 'offboarding'])->middleware($gate('edit'));
         Route::whereNumber('id')->group(function () use ($gate) {
             Route::post('/{id}/update', [LegalBasisController::class, 'update'])->name('update')->middleware($gate('edit'));
