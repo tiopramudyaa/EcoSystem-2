@@ -224,7 +224,7 @@ class WeeklyConsolidationController extends Controller
         $moduleIds = $this->resolveModuleIds($request, $employee);
 
         $tickets = $this->liveTicketRowsQuery($moduleIds)
-            ->with(['ticketLead.basicData', 'members.basicData', 'modules'])
+            ->with(['ticketLead.basicData', 'members.basicData', 'modules', 'customer.basicData'])
             ->orderByDesc('last_message_at')
             ->get();
 
@@ -673,7 +673,7 @@ class WeeklyConsolidationController extends Controller
     {
         return $consolidation->lines()
             ->with(['ticket' => function ($q) {
-                $q->with(['ticketLead.basicData', 'members.basicData', 'modules']);
+                $q->with(['ticketLead.basicData', 'members.basicData', 'modules', 'customer.basicData']);
             }])
             ->get()
             ->map(fn (WeeklyConsolidationTicket $line) => $this->shapeTicketRow($line->ticket, $line->id, $line->notes))
@@ -706,6 +706,7 @@ class WeeklyConsolidationController extends Controller
             'line_id'             => $lineId,
             'ticket_id'           => $t->ticket_id,
             'ticket_number'       => $t->ticket_number ?? '—',
+            'customer_name'       => $t->customer?->basicData?->name_1,
             'module_id'           => $t->module_id,
             // Daftar LENGKAP modul tiket ini (gabung koma), bukan cuma modul
             // utama — tiket lintas-modul (mis. "FI, ABAP") tetap kelihatan
