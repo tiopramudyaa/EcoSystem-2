@@ -7446,11 +7446,12 @@
         let headHtml = '<tr class="bg-gray-50">';
         headHtml += '<th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 border border-gray-200">Activity</th>';
         modules.forEach(m => {
-            const mEsc = m.replace(/"/g, '&quot;');
+            // Nama modul masuk lewat atribut data-* yang di-escape (bukan string di dalam onclick),
+            // supaya tanda kutip / apostrof di nama tidak merusak tombol hapus kolom.
             const removeBtn = !picReadOnly
-                ? `<button onclick="picRemoveModuleCol('${mEsc}')" class="ml-1 text-red-300 hover:text-red-600 font-bold leading-none" title="Remove column">&times;</button>`
+                ? `<button data-mod="${escHtml(m)}" onclick="picRemoveModuleCol(this.dataset.mod)" class="ml-1 text-red-300 hover:text-red-600 font-bold leading-none" title="Remove column">&times;</button>`
                 : '';
-            headHtml += `<th class="px-2 py-2 text-center text-xs font-semibold text-gray-600 border border-gray-200 whitespace-nowrap">${m}${removeBtn}</th>`;
+            headHtml += `<th class="px-2 py-2 text-center text-xs font-semibold text-gray-600 border border-gray-200 whitespace-nowrap">${escHtml(m)}${removeBtn}</th>`;
         });
         headHtml += '</tr>';
         document.getElementById('picMandaysHead').innerHTML = headHtml;
@@ -7464,18 +7465,21 @@
             </td></tr>`;
         }
         activities.forEach(act => {
-            const actEsc = act.replace(/"/g, '&quot;');
+            // Activity dibaca kembali lewat dataset (nilai asli), jadi cukup di-escape untuk HTML.
+            // Tombol hapus memakai data-act, bukan string di dalam onclick: nama dengan apostrof
+            // (mis. "Customer's request") sebelumnya membuat onclick error dan baris tak bisa dihapus.
+            const actEsc = escHtml(act);
             const removeRowBtn = !picReadOnly
-                ? `<button onclick="picRemoveActivityRow('${actEsc}')" class="ml-1 text-red-300 hover:text-red-600 font-bold leading-none" title="Remove row">&times;</button>`
+                ? `<button data-act="${actEsc}" onclick="picRemoveActivityRow(this.dataset.act)" class="ml-1 text-red-300 hover:text-red-600 font-bold leading-none" title="Remove row">&times;</button>`
                 : '';
-            bodyHtml += `<tr data-activity="${act}">`;
-            bodyHtml += `<td class="px-2 py-1.5 border border-gray-200 text-xs font-medium text-gray-700 whitespace-nowrap">${act}${removeRowBtn}</td>`;
+            bodyHtml += `<tr data-activity="${actEsc}">`;
+            bodyHtml += `<td class="px-2 py-1.5 border border-gray-200 text-xs font-medium text-gray-700 whitespace-nowrap">${actEsc}${removeRowBtn}</td>`;
             modules.forEach(m => {
                 const val = valueMap[act]?.[m] || '';
                 bodyHtml += `<td class="border border-gray-200 p-0">
                     <input type="number" min="0" step="0.5"
                         class="pic-cell w-full px-2 py-1.5 text-xs text-center focus:outline-none focus:bg-gray-100 ${picReadOnly ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'}"
-                        data-activity="${act}" data-module="${m}" value="${val}"
+                        data-activity="${actEsc}" data-module="${escHtml(m)}" value="${val}"
                         ${picReadOnly ? 'readonly' : ''} oninput="picDirty=true; picUpdateTotal()">
                     </td>`;
             });
@@ -7599,7 +7603,7 @@
                 method: 'POST', headers: getHeaders(), credentials: 'same-origin',
                 body: JSON.stringify(payload),
             });
-            const data = await res.json();
+            const data = await picReadJson(res);
             if (data.success) {
                 showNotification('Draft saved!', 'success');
                 picDirty = false;
@@ -7607,6 +7611,9 @@
                 picDraftData = data.data;
                 document.getElementById('picMandaysVersion').textContent     = picDraftData?.version ?? '—';
                 document.getElementById('picMandaysStatusLabel').textContent = 'Draft';
+                // Draft baru saja tersimpan: tombol Delete Draft harus muncul sekarang, bukan baru
+                // setelah modal dibuka ulang (sebelumnya hanya dievaluasi saat tabel digambar).
+                document.getElementById('picBtnDeleteDraft').classList.toggle('hidden', picReadOnly || picDraftData?.status !== 'draft');
             } else {
                 showNotification(data.message || 'Failed to save', 'error');
             }
@@ -7662,16 +7669,31 @@
         finally { btn.disabled = false; btn.textContent = 'Submit to Helpdesk'; }
     }
 
+    // Baca respons API modal Propose Mandays. Bila server mengirim sesuatu yang bukan JSON
+    // (halaman error, output PHP liar, respons proxy), tampilkan status HTTP dan cuplikan body
+    // alih-alih pesan JSON.parse yang tidak menjelaskan apa-apa; body penuh ada di console.
+    async function picReadJson(res) {
+        const text = await res.text();
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('Respons bukan JSON', { status: res.status, url: res.url, body: text });
+            const snippet = text.replace(/\s+/g, ' ').trim().slice(0, 140);
+            throw new Error(`Server mengirim respons yang tidak terbaca (HTTP ${res.status}): ${snippet || '(kosong)'}`);
+        }
+    }
+
     async function picDeleteDraft() {
         if (!picDraftData || picDraftData.status !== 'draft') return;
         if (!await showConfirm('Delete this draft? This cannot be undone.', 'Delete Draft', 'danger')) return;
         const btn = document.getElementById('picBtnDeleteDraft');
         btn.disabled = true; btn.textContent = 'Deleting...';
         try {
-            const res = await fetch(MANDAYS_API('pic-draft'), {
-                method: 'DELETE', headers: getHeaders(), credentials: 'same-origin',
+            // POST (bukan DELETE): WAF production memblokir method DELETE.
+            const res = await fetch(MANDAYS_API('pic-draft/delete'), {
+                method: 'POST', headers: getHeaders(), credentials: 'same-origin',
             });
-            const data = await res.json();
+            const data = await picReadJson(res);
             if (data.success) {
                 showNotification('Draft deleted.', 'success');
                 picMandaysUpdateSidebarBadge(data.ticket_mandays_status);

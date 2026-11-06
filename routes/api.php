@@ -408,6 +408,8 @@ Route::middleware(['web'])->group(function () {
         Route::get('/', [CustomerReportTemplateController::class, 'index'])->middleware('customer.section:report_templates,view');
         Route::post('/', [CustomerReportTemplateController::class, 'store'])->middleware('customer.section:report_templates');
         Route::delete('/{reportTemplate}', [CustomerReportTemplateController::class, 'destroy'])->middleware('customer.section:report_templates');
+        // Varian POST untuk UI: WAF di production memblokir method DELETE.
+        Route::post('/{reportTemplate}/delete', [CustomerReportTemplateController::class, 'destroy'])->middleware('customer.section:report_templates');
         Route::get('/{reportTemplate}/download', [CustomerReportTemplateController::class, 'download'])->middleware('customer.section:report_templates,view');
     });
 
@@ -536,6 +538,8 @@ Route::middleware(['web'])->group(function () {
         Route::post('/{ticketId}/mandays/pic-draft', [MandaysController::class, 'saveCustomerDraft']);
         Route::post('/{ticketId}/mandays/pic-draft/submit', [MandaysController::class, 'submitCustomerDraft']);
         Route::delete('/{ticketId}/mandays/pic-draft', [MandaysController::class, 'deleteCustomerDraft']);
+        // Varian POST untuk UI: WAF di production memblokir method DELETE (pola yang sama dengan route ".../delete" lain).
+        Route::post('/{ticketId}/mandays/pic-draft/delete', [MandaysController::class, 'deleteCustomerDraft']);
 
         // Customer Mandays — Helpdesk
         Route::get('/{ticketId}/mandays/hd-draft', [MandaysController::class, 'getHelpdeskDraft']);
@@ -640,6 +644,9 @@ Route::middleware(['web'])->group(function () {
         Route::put('/weekly-consolidation/{id}', [\App\Http\Controllers\WeeklyConsolidationController::class, 'update']);
         Route::delete('/weekly-consolidation/{id}/force', [\App\Http\Controllers\WeeklyConsolidationController::class, 'forceDestroy']);
         Route::delete('/weekly-consolidation/{id}', [\App\Http\Controllers\WeeklyConsolidationController::class, 'destroy']);
+        // Varian POST untuk UI: WAF di production memblokir method DELETE.
+        Route::post('/weekly-consolidation/{id}/force/delete', [\App\Http\Controllers\WeeklyConsolidationController::class, 'forceDestroy']);
+        Route::post('/weekly-consolidation/{id}/delete', [\App\Http\Controllers\WeeklyConsolidationController::class, 'destroy']);
         Route::post('/weekly-consolidation/{id}/restore', [\App\Http\Controllers\WeeklyConsolidationController::class, 'restore']);
         Route::post('/weekly-consolidation/{id}/tickets/{ticketId}/notes', [\App\Http\Controllers\WeeklyConsolidationController::class, 'updateNote']);
         Route::get('/resolution-days', [\App\Http\Controllers\ReportingController::class, 'resolutionDays']);
