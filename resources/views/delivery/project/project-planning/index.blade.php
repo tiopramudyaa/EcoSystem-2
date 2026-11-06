@@ -91,9 +91,7 @@
                         $groups = $project->plannings->where('is_group', true);
                         
                         // Ambil visible phases untuk project ini
-                        $visiblePhases = $project->phases()
-                            ->where('is_visible', true)
-                            ->get();
+                        $visiblePhases = $project->phases; // sudah di-eager-load (visible, urut order_sequence) oleh controller
                         
                         $totalPhaseWeight = 0;
                         $weightedPhaseProgress = 0;
@@ -298,9 +296,7 @@
                             $groups = $project->plannings->where('is_group', true);
                             
                             // Ambil visible phases untuk project ini
-                            $visiblePhases = $project->phases()
-                                ->where('is_visible', true)
-                                ->get();
+                            $visiblePhases = $project->phases; // sudah di-eager-load (visible, urut order_sequence) oleh controller
                             
                             $totalPhaseWeight = 0;
                             $weightedPhaseProgress = 0;

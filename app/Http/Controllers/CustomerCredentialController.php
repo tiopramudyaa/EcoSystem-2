@@ -9,11 +9,24 @@ use App\Models\CustomerCredential;
 
 class CustomerCredentialController extends Controller
 {
+    use \App\Http\Controllers\Concerns\ChecksMenuAccess;
+
     /**
      * Get credential for a customer.
+     *
+     * Dipakai dua tempat: modal Credential di halaman ticket (slug ticket.view-credential)
+     * dan tab Credential di halaman customer (slug customer.section.credential.view).
+     * Izin murni dari Role Access: cukup salah satu slug.
      */
     public function show($customerId)
     {
+        if (!$this->menuAllowed('ticket.view-credential') && !$this->menuAllowed('customer.section.credential.view')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view customer credentials.',
+            ], 403);
+        }
+
         try {
             $customerExists = DB::table('customer')->where('customer_id', $customerId)->exists();
             if (!$customerExists) {

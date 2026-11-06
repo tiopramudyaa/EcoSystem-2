@@ -1,6 +1,6 @@
 ---
 key: user-guide-editor
-chapter: administration
+chapter: control-center
 order: 130
 title: User Guide Editor
 summary: Ubah topik yang dibaca karyawan di User Guide, tambah topik baru, dan kembalikan teks aslinya.

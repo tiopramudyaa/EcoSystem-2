@@ -44,6 +44,32 @@ Ticket leads and consultants who propose, Helpdesk who reviews Customer Mandays,
 2. Submit it. The status becomes `Pending Head`.
 3. The head uses `Review Resolution Days` to approve it, or rejects it with a reason.
 
+## Rules to know
+
+### Customer Mandays
+
+- A proposal needs a total above 0 mandays. EcoSystem refuses to save an empty one.
+- You cannot edit a proposal while it is waiting for Helpdesk or after it was sent to the customer. Wait for the answer, or ask Helpdesk to cancel it.
+- Helpdesk can adjust the draft, send it to the customer by chat and email, or approve it directly. Approval by Helpdesk is enough: sending it to the customer first is not required.
+- The customer can reject the proposal from the link they receive and may write a reason. Helpdesk then revises it, which creates a new version.
+- On a `Change Request` ticket only the ticket lead can propose Customer Mandays. Heads are not held to this.
+- Cancelling a proposal needs the cancel permission. Cancelling one that is already approved needs a separate permission, and the customer is not told automatically, so Helpdesk follows up by email.
+- Proposing Customer Mandays needs the `Propose Mandays Customer` function and proposing Resolution Days needs the `Propose Resolution Days` function in `Menu Access`, on top of being the ticket lead or a member. Saving a review needs `Save Draft`, `Send to Customer` or `Approve Proposal`, because sending and approving save your edits first. Without the function the request is refused, even if it is sent directly.
+- Who gets the bell notification follows `Role Access`, not a fixed role. When a Customer Mandays proposal is submitted, everyone whose role has the review permission is notified. When Resolution Days is submitted, everyone whose role has the head or Resolution Days approval permission is notified.
+- Sub-actions in the review screen (edit, save draft, send to customer, approve, cancel) each have their own permission in `Role Access`. A role that can open the review but lacks these sees the proposal without the action buttons.
+
+### Resolution Days
+
+- Only the ticket lead or a member of the ticket can prepare and submit them. You can keep editing the proposal until it is approved.
+- On a `Change Request` ticket you cannot submit Resolution Days, and the head cannot approve them, until the Customer Mandays are approved.
+- The head (Head of Support or the administrator) fills in the approved days for each person. This is required: approval cannot go through without it.
+- If the approved numbers would leave someone with negative remaining MD, EcoSystem warns first and asks the head to confirm before approving.
+- The head can also reject, with a reason. The proposal is then corrected and submitted again.
+
+### Effect on timesheets
+
+- The approved days are each person's quota on the ticket. A consultant cannot log more MD than the remaining quota, and cannot submit a timesheet on a ticket that has no approved proposal. See the timesheet topic for the details.
+
 ## What happens next
 
 Approved days are used for the workload shown in `My Tasks` and in `Consultant Workload`, and for the quota in the `MD Validation` report. A rejected Resolution Days proposal is corrected and sent again.

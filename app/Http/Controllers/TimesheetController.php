@@ -31,6 +31,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class TimesheetController extends Controller
 {
+    use \App\Http\Controllers\Concerns\ChecksMenuAccess;
+
     /**
      * Get submitted timesheets for approval (for Head of Project/Head of Support)
      */
@@ -615,6 +617,14 @@ class TimesheetController extends Controller
      */
     public function store(Request $request)
     {
+        // Izin murni dari Role Access (slug timesheet.create), sama dengan tombol di UI.
+        if (!$this->menuAllowed('timesheet.create')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create timesheets.',
+            ], 403);
+        }
+
         try {
             Log::info('Creating timesheet with data:', $request->all());
             
@@ -921,6 +931,13 @@ class TimesheetController extends Controller
 
             // Auto-assign period if date changed or period not yet set
             $this->assignPeriod($validated);
+
+            // A rejected entry that the owner corrects goes back to draft so it can be
+            // submitted again (submit() only accepts drafts); the old reason is cleared.
+            if ($timesheet->status === 'rejected') {
+                $validated['status'] = 'draft';
+                $validated['rejection_reason'] = null;
+            }
 
             if ($isProject) {
                 $overlapError = null;

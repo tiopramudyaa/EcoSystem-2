@@ -81,15 +81,52 @@ The cards above the list count your entries as `Draft`, `Submitted`, `Approved` 
 > [!NOTE]
 > If you are allowed to approve timesheets, you also see `Approve` and `Reject`, including for several entries at once. Always write a clear reason when you reject.
 
+## Rules to know
+
+These rules are checked when you save or submit. If one is broken, EcoSystem shows a message and does not save.
+
+### For every entry
+
+- Creating a timesheet needs the `Create Timesheet` function and creating a calendar event needs the `Create Event` function in `Menu Access`. Without it the request is refused, even if it is sent directly.
+- The date cannot be in the future.
+- The end time must be later than the start time, and the activity description is required.
+- If your role belongs to the Project or Support domain, you can only log time in the current period or the previous period, and only while that period is open. A period is open when RPMO has opened it and the Head of your domain has opened your domain. If it is closed, ask for late access. Roles that belong to no domain are not held to these period limits.
+- You can edit your own entries while they are `Draft` or `Rejected`. Only the EC Administrator, the RPMO Head and the Heads of Project and Support can also change the entries of other people. A `Submitted` entry cannot be edited, you can only delete it. An `Approved` entry can be neither edited nor deleted.
+
+### Support entries (with a ticket)
+
+- Choose the ticket you worked on and fill the `Activity Date`.
+- `MD Consumed` cannot be more than your remaining quota on that ticket. The quota is what the approved mandays proposal gives you, and your drafts, submitted and approved entries all count against it. If you need more, ask your Head to raise the quota.
+- You can save a draft before a mandays proposal is approved, but you cannot submit it: EcoSystem says there is no approved proposal for the ticket, or that you are not listed in it. For a Change Request the Customer Mandays must be approved first.
+- If your personnel subarea is `Project`, one support entry can use at most 1 MD. Split bigger work into several entries.
+
+### Project entries
+
+- You can only log time on a project you are a team member of, and the project must not be closed.
+- The date is always today and the location is captured when you create the entry. You cannot backdate a project entry, and editing it later does not change the date or location.
+- The time cannot overlap another project entry of yours on the same day. A rejected entry frees its slot again.
+- Choose an activity that is assigned to you and running on that day. On a non-working day, or when you have no assigned activity, tick the option to log without an activity.
+
+### Office entries
+
+- Choose an `Activity Type`: `Development`, `Meeting`, `Documentation`, `Testing`, `Support`, `Training` or `Other`.
+
+### Submitting and approving
+
+- You can submit only your own `Draft` entries. Submitting notifies the right approvers: the Head of Support for support entries, the Head of Project for project entries and RPMO for office entries.
+- Approving and rejecting is done by the EC Administrator, the RPMO Head, the Head of Project and the Head of Support. Only `Submitted` entries can be approved or rejected, one by one or in bulk.
+- A rejection needs a written reason. The employee sees it, can correct the entry (it goes back to `Draft`) and submit it again.
+- An approved entry is final: it cannot be reopened, edited or deleted from this page.
+
 ## What happens next
 
-A rejected entry shows the reason: correct it and submit again. A late access request shows `Pending Head`, then `Pending RPMO`. Once both approve, you can fill in that period until its deadline.
+A rejected entry shows the reason: correct it, which puts it back to `Draft`, and submit again. A late access request shows `Pending Head`, then `Pending RPMO`. Once both approve, you can fill in that period until its deadline.
 
 ## Common questions
 
 **I cannot create a timesheet for a period that has passed.** The period is closed. If you must fill it in, use `Request Late Access`, including for last month.
 
-**Can I change a submitted timesheet?** No. Ask the person who approves it to reject it, then correct it.
+**Can I change a submitted timesheet?** No, you can only delete it. Ask the person who approves it to reject it, then correct it and submit again.
 
 **Why are `Quota MD` and `Remaining` empty?** They fill in after you choose a ticket.
 

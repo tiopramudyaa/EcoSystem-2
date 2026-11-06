@@ -81,15 +81,52 @@ Kartu di atas daftar menghitung entri Anda sebagai `Draft`, `Submitted`, `Approv
 > [!NOTE]
 > Jika Anda berwenang menyetujui timesheet, Anda juga melihat `Approve` dan `Reject`, termasuk untuk beberapa entri sekaligus. Selalu tulis alasan yang jelas saat menolak.
 
+## Aturan yang perlu diketahui
+
+Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar, EcoSystem menampilkan pesan dan tidak menyimpan.
+
+### Untuk setiap entri
+
+- Membuat timesheet memerlukan fungsi `Create Timesheet` dan membuat event kalender memerlukan fungsi `Create Event` di `Menu Access`. Tanpa fungsi itu permintaan ditolak, meskipun dikirim langsung.
+- Tanggal tidak boleh di masa depan.
+- Jam selesai harus lebih lambat dari jam mulai, dan deskripsi aktivitas wajib diisi.
+- Bila role Anda termasuk domain Project atau Support, Anda hanya dapat mencatat waktu di periode berjalan atau periode sebelumnya, dan hanya selama periode itu terbuka. Periode terbuka bila RPMO sudah membukanya dan Head domain Anda sudah membuka domain Anda. Bila tertutup, minta akses terlambat. Role yang tidak termasuk domain mana pun tidak dibatasi oleh aturan periode ini.
+- Anda dapat mengubah entri sendiri selama berstatus `Draft` atau `Rejected`. Hanya EC Administrator, RPMO Head, serta Head of Project dan Head of Support yang juga dapat mengubah entri orang lain. Entri `Submitted` tidak bisa diubah, hanya bisa dihapus. Entri `Approved` tidak bisa diubah maupun dihapus.
+
+### Entri support (dengan ticket)
+
+- Pilih ticket yang Anda kerjakan dan isi `Activity Date`.
+- `MD Consumed` tidak boleh melebihi sisa kuota Anda pada ticket itu. Kuota adalah jatah dari proposal mandays yang disetujui, dan draft, entri submitted, dan approved Anda semuanya dihitung. Bila perlu tambahan, minta Head Anda menaikkan kuota.
+- Anda dapat menyimpan draft sebelum proposal mandays disetujui, tetapi tidak dapat mengirimnya: EcoSystem menyatakan belum ada proposal yang disetujui untuk ticket itu, atau Anda tidak tercantum di dalamnya. Untuk Change Request, Customer Mandays harus disetujui dulu.
+- Bila personnel subarea Anda `Project`, satu entri support paling banyak 1 MD. Pecah pekerjaan yang lebih besar menjadi beberapa entri.
+
+### Entri project
+
+- Anda hanya dapat mencatat waktu di project yang timnya Anda ikuti, dan project tidak boleh sudah ditutup.
+- Tanggal selalu hari ini dan lokasi direkam saat Anda membuat entri. Entri project tidak bisa diberi tanggal mundur, dan mengubahnya kemudian tidak mengubah tanggal maupun lokasi.
+- Waktunya tidak boleh bertumpuk dengan entri project Anda yang lain di hari yang sama. Entri yang ditolak membebaskan slotnya lagi.
+- Pilih aktivitas yang ditugaskan kepada Anda dan sedang berjalan pada hari itu. Pada hari non-kerja, atau bila Anda tidak punya aktivitas yang ditugaskan, centang opsi untuk mencatat tanpa aktivitas.
+
+### Entri office
+
+- Pilih `Activity Type`: `Development`, `Meeting`, `Documentation`, `Testing`, `Support`, `Training`, atau `Other`.
+
+### Mengirim dan menyetujui
+
+- Anda hanya dapat mengirim entri `Draft` milik sendiri. Pengiriman memberi notifikasi ke penyetuju yang tepat: Head of Support untuk entri support, Head of Project untuk entri project, dan RPMO untuk entri office.
+- Menyetujui dan menolak dilakukan oleh EC Administrator, RPMO Head, Head of Project, dan Head of Support. Hanya entri `Submitted` yang dapat disetujui atau ditolak, satu per satu atau sekaligus.
+- Penolakan memerlukan alasan tertulis. Karyawan melihatnya, dapat memperbaiki entri (kembali ke `Draft`), dan mengirimnya lagi.
+- Entri yang sudah disetujui bersifat final: tidak dapat dibuka kembali, diubah, atau dihapus dari halaman ini.
+
 ## Apa yang terjadi selanjutnya
 
-Entri yang ditolak menampilkan alasannya: perbaiki lalu kirim ulang. Permintaan akses terlambat menampilkan `Pending Head`, lalu `Pending RPMO`. Setelah keduanya menyetujui, Anda dapat mengisi periode itu sampai batas waktunya.
+Entri yang ditolak menampilkan alasannya: perbaiki (entri kembali ke `Draft`) lalu kirim ulang. Permintaan akses terlambat menampilkan `Pending Head`, lalu `Pending RPMO`. Setelah keduanya menyetujui, Anda dapat mengisi periode itu sampai batas waktunya.
 
 ## Pertanyaan umum
 
 **Saya tidak dapat membuat timesheet untuk periode yang sudah lewat.** Periodenya sudah ditutup. Bila Anda memang harus mengisinya, gunakan `Request Late Access`, termasuk untuk bulan lalu.
 
-**Bisakah saya mengubah timesheet yang sudah dikirim?** Tidak. Minta orang yang menyetujuinya untuk menolak, lalu perbaiki.
+**Bisakah saya mengubah timesheet yang sudah dikirim?** Tidak, hanya bisa dihapus. Minta orang yang menyetujuinya untuk menolak, lalu perbaiki dan kirim ulang.
 
 **Mengapa `Quota MD` dan `Remaining` kosong?** Keduanya terisi setelah Anda memilih ticket.
 

@@ -385,8 +385,8 @@ class StagingTicketController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $roleId = $sessionUser['role']['id'];
-        if (!$this->canManageStagingTicket($roleId)) {
+        // Izin murni dari Role Access (slug staging.approve), sama dengan tombol di UI.
+        if (!$this->menuAllowed('staging.approve')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -1128,8 +1128,8 @@ class StagingTicketController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $roleId = $sessionUser['role']['id'];
-        if (!$this->canManageStagingTicket($roleId)) {
+        // Izin murni dari Role Access (slug staging.reject), sama dengan tombol di UI.
+        if (!$this->menuAllowed('staging.reject')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 

@@ -176,7 +176,14 @@
                     Grant Access
                 </button>
 
-                <button onclick="revokeLoginAccess()" id="btnRevokeLogin" title="Revoke Jarvies Access" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-orange-500 text-orange-600 text-xs font-semibold rounded-lg hover:bg-orange-50 transition-all hidden">
+                <button onclick="sendResetLink()" id="btnSendResetLink" title="Send Password Reset Link" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-blue-600 text-blue-600 text-xs font-semibold rounded-lg hover:bg-blue-50 transition-all hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                    </svg>
+                    Send Reset Link
+                </button>
+
+                <button onclick="revokeLoginAccess()" id="btnRevokeLogin"title="Revoke Jarvies Access" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-orange-500 text-orange-600 text-xs font-semibold rounded-lg hover:bg-orange-50 transition-all hidden">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
                     </svg>
@@ -423,13 +430,16 @@
                         const contact = contactsData.find(c => parseInt(c.contact_id) === parseInt(selectedContactId));
                         const btnGrant  = document.getElementById('btnGrantLogin');
                         const btnRevoke = document.getElementById('btnRevokeLogin');
+                        const btnReset  = document.getElementById('btnSendResetLink');
                         if (contact && btnGrant && btnRevoke) {
                             if (contact.auth_user_id) {
                                 btnGrant.classList.add('hidden');
                                 btnRevoke.classList.remove('hidden');
+                                btnReset?.classList.remove('hidden');
                             } else {
                                 btnGrant.classList.remove('hidden');
                                 btnRevoke.classList.add('hidden');
+                                btnReset?.classList.add('hidden');
                             }
                         }
                     }
@@ -558,14 +568,17 @@
         const contact = contactsData.find(c => parseInt(c.contact_id) === parseInt(contactId));
         const btnGrant  = document.getElementById('btnGrantLogin');
         const btnRevoke = document.getElementById('btnRevokeLogin');
+        const btnReset  = document.getElementById('btnSendResetLink');
 
         if (contact) {
             if (contact.auth_user_id) {
                 btnGrant.classList.add('hidden');
                 btnRevoke.classList.remove('hidden');
+                btnReset?.classList.remove('hidden');
             } else {
                 btnGrant.classList.remove('hidden');
                 btnRevoke.classList.add('hidden');
+                btnReset?.classList.add('hidden');
             }
         }
     }
@@ -1015,6 +1028,41 @@
         modal.classList.add('flex');
     }
 
+    /**
+     * Send a password reset link to the selected contact's login email
+     */
+    async function sendResetLink() {
+        if (!selectedContactId) {
+            showNotification('Please select a contact first', 'warning');
+            return;
+        }
+        const contact = contactsData.find(c => parseInt(c.contact_id) === parseInt(selectedContactId));
+        if (!confirm(`Send a password reset link to ${contact?.full_name || 'this contact'}?`)) return;
+
+        const btn = document.getElementById('btnSendResetLink');
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(`/api/customers/{{ $customerId }}/contacts/${selectedContactId}/send-reset-link`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                credentials: 'same-origin'
+            });
+
+            const data = await response.json();
+            showNotification(data.message || (data.success ? 'Reset link sent' : 'Failed to send reset link'), data.success ? 'success' : 'error');
+        } catch (error) {
+            console.error('Error sending reset link:', error);
+            showNotification('An error occurred', 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
     function closeRevokeLoginModal() {
         const modal = document.getElementById('revokeLoginModal');
         modal.classList.add('hidden');
@@ -1043,6 +1091,7 @@
                 showNotification(data.message, 'success');
                 loadContacts();
                 document.getElementById('btnRevokeLogin').classList.add('hidden');
+                document.getElementById('btnSendResetLink')?.classList.add('hidden');
                 document.getElementById('btnGrantLogin').classList.remove('hidden');
             } else {
                 showNotification(data.message || 'Failed to revoke access', 'error');
@@ -1292,6 +1341,7 @@
     window.confirmGrantLogin = confirmGrantLogin;
     window.toggleViewAllTickets = toggleViewAllTickets;
     window.revokeLoginAccess = revokeLoginAccess;
+    window.sendResetLink = sendResetLink;
     window.closeRevokeLoginModal = closeRevokeLoginModal;
     window.confirmRevokeLogin = confirmRevokeLogin;
     window.loadContacts = loadContacts;
