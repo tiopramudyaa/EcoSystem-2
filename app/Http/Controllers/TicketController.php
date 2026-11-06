@@ -1641,10 +1641,15 @@ class TicketController extends Controller
                         ->unique()
                         ->values();
 
+                    // Ticket delivery yang dikelola + ticket yang ia pegang sebagai lead/member/Co-PM.
+                    // (Dulu hanya ticket delivery, sehingga manager yang juga konsultan kehilangan
+                    // ticket lead/member-nya di luar delivery yang dikelola.)
                     $query = Ticket::with(['customer.basicData', 'endCustomer.basicData', 'ticketLead.basicData', 'members.basicData', 'sla.policy', 'modules'])
                         ->whereNull('ticket.is_hidden')
                         ->where(function ($q) use ($managedTicketIds, $employeeId) {
                             $q->whereIn('ticket.ticket_id', $managedTicketIds)
+                                ->orWhere('ticket.ticket_lead_id', $employeeId)
+                                ->orWhereHas('members', fn ($inner) => $inner->where('ticket_member.employee_id', $employeeId))
                                 ->orWhereIn('ticket.ticket_id', $this->coPmTicketIds($employeeId));
                         });
                 } else {
@@ -1901,8 +1906,10 @@ class TicketController extends Controller
 
                     $scopedQuery = Ticket::whereNull('is_hidden')
                         ->where(function ($query) use ($managedTicketIds, $employeeId) {
-                            $query->whereIn('ticket_id', $managedTicketIds)
-                                ->orWhereIn('ticket_id', $this->coPmTicketIds($employeeId));
+                            $query->whereIn('ticket.ticket_id', $managedTicketIds)
+                                ->orWhere('ticket.ticket_lead_id', $employeeId)
+                                ->orWhereHas('members', fn ($inner) => $inner->where('ticket_member.employee_id', $employeeId))
+                                ->orWhereIn('ticket.ticket_id', $this->coPmTicketIds($employeeId));
                         });
                 } else {
                     $scopedQuery = Ticket::whereNull('is_hidden')

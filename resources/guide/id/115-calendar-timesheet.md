@@ -96,6 +96,7 @@ Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar,
 ### Entri support (dengan ticket)
 
 - Pilih ticket yang Anda kerjakan dan isi `Activity Date`.
+- Daftar `Ticket` menampilkan ticket tempat Anda menjadi lead, anggota, atau Co-PM (ditambah ticket Delivery Support yang Anda kelola), tetapi hanya jika usulan yang approved mencantumkan Anda dan kuota masih tersisa. Draft yang sedang diedit tetap bisa memilih ticketnya sendiri.
 - `MD Consumed` tidak boleh melebihi sisa kuota Anda pada ticket itu. Kuota adalah jatah dari proposal mandays yang disetujui, dan draft, entri submitted, dan approved Anda semuanya dihitung. Bila perlu tambahan, minta Head Anda menaikkan kuota.
 - Anda dapat menyimpan draft sebelum proposal mandays disetujui, tetapi tidak dapat mengirimnya: EcoSystem menyatakan belum ada proposal yang disetujui untuk ticket itu, atau Anda tidak tercantum di dalamnya. Untuk Change Request, Customer Mandays harus disetujui dulu.
 - Bila personnel subarea Anda `Project`, satu entri support paling banyak 1 MD. Pecah pekerjaan yang lebih besar menjadi beberapa entri.
