@@ -56,6 +56,12 @@ Support manager, helpdesk, support head, dan project administrator. Setiap bagia
 2. Pilih `New Recons`, pilih ticket closed yang memenuhi syarat, lalu simpan. Recons dimulai sebagai draft dan kemudian disubmit.
 3. Tanggal close terisi saat ticket mencapai `Closed`. Ticket yang sudah masuk recons tidak dapat ditambahkan lagi.
 
+## Aturan yang perlu diketahui
+
+- Data jadwal di balik tampilan tabel, Gantt, dan S-curve (termasuk ringkasannya) hanya diberikan kepada role yang memegang fungsi lihat `Activities & Planning` di `Menu Access`. Selain itu ditolak, meskipun permintaan dikirim langsung.
+- Di bagian SLA, membaca policy memerlukan fungsi lihat `SLA Configuration` (atau `SLA Report`), dan membuat, mengubah, atau menghapus policy memerlukan fungsi buat atau hapus `SLA Configuration` (atau `SLA Config`). Setiap policy terikat pada tepat satu delivery support.
+- Menugaskan ticket ke support dari sini memerlukan fungsi `Assign to Delivery Support`, sama dengan yang dipakai di halaman ticket.
+
 ## Apa yang terjadi selanjutnya
 
 Kebijakan SLA berlaku untuk ticket support ini sejak saat itu. Batch recons menjadi dasar rekonsiliasi mandays dengan customer.

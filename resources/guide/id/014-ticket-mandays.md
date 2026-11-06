@@ -54,6 +54,9 @@ Ticket lead dan konsultan yang mengusulkan, Helpdesk yang meninjau Customer Mand
 - Customer dapat menolak proposal dari tautan yang diterimanya dan boleh menulis alasan. Helpdesk lalu merevisinya, yang membuat versi baru.
 - Pada ticket `Change Request`, hanya ticket lead yang dapat mengusulkan Customer Mandays. Head tidak dibatasi aturan ini.
 - Membatalkan proposal memerlukan izin cancel. Membatalkan yang sudah disetujui memerlukan izin tersendiri, dan customer tidak diberi tahu otomatis, jadi Helpdesk menindaklanjuti lewat email.
+- Mengusulkan Customer Mandays memerlukan fungsi `Propose Mandays Customer` dan mengusulkan Resolution Days memerlukan fungsi `Propose Resolution Days` di `Menu Access`, selain menjadi ticket lead atau member. Menyimpan hasil review memerlukan `Save Draft`, `Send to Customer`, atau `Approve Proposal`, karena mengirim dan menyetujui menyimpan perubahan Anda lebih dulu. Tanpa fungsi itu permintaan ditolak, meskipun dikirim langsung.
+- Penerima notifikasi bell mengikuti `Role Access`, bukan role tetap. Saat proposal Customer Mandays dikirim, semua orang yang rolenya punya izin review mendapat notifikasi. Saat Resolution Days dikirim, semua orang yang rolenya punya izin head atau persetujuan Resolution Days mendapat notifikasi.
+- Aksi di layar review (edit, simpan draft, kirim ke customer, setujui, batalkan) masing-masing punya izin sendiri di `Role Access`. Role yang bisa membuka review tetapi tidak punya izin ini melihat proposal tanpa tombol aksi.
 
 ### Resolution Days
 

@@ -67,6 +67,7 @@ Pilih `View Rejected` (lencana menunjukkan jumlahnya). Anda dapat mencari menuru
 
 ## Aturan yang perlu diketahui
 
+- Menyetujui memerlukan fungsi `Action Validate` dan menolak memerlukan fungsi `Action Reject` di `Menu Access`. Memiliki halamannya saja tidak cukup: tanpa fungsi itu permintaan ditolak, meskipun dikirim langsung.
 - `Type` dan `Priority` wajib untuk menyetujui. Tipenya `Incident`, `Change Request`, `Service Request`, `EWA`, `RISE`, dan `Consult`. Prioritasnya `Very High`, `High`, `Medium`, dan `Low`. `Scale` opsional (`Simple`, `Medium`, atau `Complex`).
 - Menyetujui memerlukan analisis AI yang sudah selesai. Bila gagal, pakai `Re-analyze`. Bila analisis sedang berjalan, tunggu.
 - `Delivery Support` wajib bila customer punya delivery support, dan harus milik customer yang sama.
@@ -75,7 +76,7 @@ Pilih `View Rejected` (lencana menunjukkan jumlahnya). Anda dapat mencari menuru
 - Menolak memerlukan alasan tertulis maksimal 1000 karakter. Customer melihat notifikasi di portal yang memuat awal alasan, dan penolakan disinkronkan ke portal customer.
 - Menyetujui juga memberi tahu customer, tim, dan chat Teams ticket.
 - Setelah request disetujui atau ditolak, request tidak dapat diproses lagi, dan analisis AI serta `Ask a question` ditutup. Satu pertanyaan maksimal 2000 karakter.
-- Bila analisis AI menyebut catatan kredensial customer yang tersimpan, hanya role dengan akses lihat `Customer Credential` yang dapat membacanya. Yang lain mengklasifikasikan request secara manual.
+- Bila analisis AI menyebut catatan kredensial customer yang tersimpan, hanya role dengan akses lihat `Customer Credential` yang dapat membacanya. Yang lain mengklasifikasikan request secara manual. Kredensial tersimpan itu sendiri hanya diberikan kepada role yang memegang `View Customer Credential` (halaman ticket) atau `View Credential` (halaman customer) di `Menu Access`; selain itu ditolak.
 
 ## Apa yang terjadi selanjutnya
 

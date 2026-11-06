@@ -4,7 +4,7 @@ chapter: management
 order: 16
 title: Dropdown Settings
 summary: Manage the lists behind the dropdowns of Employee Information, such as Position, Division and Department.
-requires: [management.employee.dropdown-settings]
+requires: [management.employee.dropdown-settings, management.employee.dropdown-settings.manage]
 updated: 2026-11-02
 ---
 `Management` › `Master Employee Settings` › `Dropdown Settings` controls the choices shown in the employee form: Department, Division, Employee Group, Employee Subgroup, Personnel Area, Personnel Subarea, Position and any list you add.
@@ -31,6 +31,10 @@ Administrators and HR, and any role given the `Management` › `Dropdown Setting
 5. Use the pencil to rename or switch a value to inactive, so it is no longer offered. Use the bin to delete it.
 6. To add a new list, choose `New Dropdown List`. Fill `Name` (the label shown on the form), a unique `Code` and a `Description`.
 7. To change or remove a whole list, use the pencil or the bin next to its title.
+
+## Rules to know
+
+- Opening the page needs `Dropdown Settings`. Adding, editing or deleting a dropdown list or one of its values also needs the `Manage Dropdown Lists & Values` function in `Menu Access`. Without it the change is refused, even if the request is sent directly. Reading the lists, which the Employee forms do, stays open to every signed-in user.
 
 ## What happens next
 

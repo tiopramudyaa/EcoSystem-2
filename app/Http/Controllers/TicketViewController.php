@@ -76,22 +76,6 @@ class TicketViewController extends Controller
     }
 
     /**
-     * Display create ticket form (if needed)
-     */
-    public function create()
-    {
-        $user = $this->getUserObject();
-
-        if (!$user) {
-            return redirect()->route('login');
-        }
-
-        return view('ticket.create', [
-            'user' => $user
-        ]);
-    }
-
-    /**
      * Buka tiket berdasarkan NOMOR tiket (mis. "26070128"), lalu redirect ke
      * halaman tiket (yang memakai id). Dipakai hyperlink "#NNNNNNNN" di internal note.
      */

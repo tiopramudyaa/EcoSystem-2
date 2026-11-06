@@ -87,6 +87,7 @@ Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar,
 
 ### Untuk setiap entri
 
+- Membuat timesheet memerlukan fungsi `Create Timesheet` dan membuat event kalender memerlukan fungsi `Create Event` di `Menu Access`. Tanpa fungsi itu permintaan ditolak, meskipun dikirim langsung.
 - Tanggal tidak boleh di masa depan.
 - Jam selesai harus lebih lambat dari jam mulai, dan deskripsi aktivitas wajib diisi.
 - Bila role Anda termasuk domain Project atau Support, Anda hanya dapat mencatat waktu di periode berjalan atau periode sebelumnya, dan hanya selama periode itu terbuka. Periode terbuka bila RPMO sudah membukanya dan Head domain Anda sudah membuka domain Anda. Bila tertutup, minta akses terlambat. Role yang tidak termasuk domain mana pun tidak dibatasi oleh aturan periode ini.

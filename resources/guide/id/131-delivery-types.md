@@ -39,6 +39,10 @@ Administrator, dan role yang diberi `Management` › `Project Type`, `Support Ty
 4. Atur status menjadi `Active` agar tipe muncul di daftar dokumen tiket.
 5. Pilih `Save`. Pakai `Edit` atau `Delete` pada sebuah baris kemudian.
 
+## Aturan yang perlu diketahui
+
+- Menambah, mengubah, atau menghapus Project Type memerlukan menu `Project Type`, dan hal yang sama untuk Support Type memerlukan menu `Support Type` di `Menu Access`. Tanpa itu perubahan ditolak, meskipun permintaan dikirim langsung. Daftar yang tampil di form delivery dapat dibaca semua pengguna yang login.
+
 ## Apa yang terjadi selanjutnya
 
 Nilai baru atau yang diubah muncul di formulir terkait saat seseorang membukanya berikutnya. Tipe dokumen yang aktif muncul di formulir `New Document` dan di daftar jendela `Deliverable Documents` pada tiket. Setiap tiket dimulai dengan pilihan `Mandatory` dan `Optional` default dari tipe tiketnya, dan perubahan pada default berlaku ke semua tiket bertipe itu yang belum diubah manual.

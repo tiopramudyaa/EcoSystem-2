@@ -56,6 +56,12 @@ Support managers, helpdesk, support heads and project administrators. Each secti
 2. Choose `New Recons`, pick the eligible closed tickets and save. A recons starts as a draft and is later submitted.
 3. The close date is filled in when a ticket reaches `Closed`. A ticket already in a recons cannot be added again.
 
+## Rules to know
+
+- The schedule data behind the table, Gantt and S-curve views (including the summary) is only given to roles that hold the `Activities & Planning` view function in `Menu Access`. Anyone else is refused, even if the request is sent directly.
+- In the SLA section, reading the policies needs the `SLA Configuration` view function (or `SLA Report`), and creating, changing or deleting a policy needs the `SLA Configuration` create or delete function (or `SLA Config`). Every policy belongs to exactly one delivery support.
+- Assigning a ticket to a support from here needs the `Assign to Delivery Support` function, the same one used on the ticket page.
+
 ## What happens next
 
 SLA policies apply to the tickets of this support from then on. Recons batches are the basis for the customer reconciliation of mandays.

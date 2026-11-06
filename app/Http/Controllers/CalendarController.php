@@ -10,6 +10,8 @@ use Carbon\Carbon;
 
 class CalendarController extends Controller
 {
+    use \App\Http\Controllers\Concerns\ChecksMenuAccess;
+
     /**
      * Display calendar index view
      */
@@ -177,6 +179,14 @@ class CalendarController extends Controller
      */
     public function store(Request $request)
     {
+        // Izin murni dari Role Access (slug calendar.events.create), sama dengan tombol di UI.
+        if (!$this->menuAllowed('calendar.events.create')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create events.',
+            ], 403);
+        }
+
         try {
             $validated = $request->validate([
                 'title' => 'required|string|max:255',

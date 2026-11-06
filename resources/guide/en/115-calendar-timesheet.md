@@ -87,6 +87,7 @@ These rules are checked when you save or submit. If one is broken, EcoSystem sho
 
 ### For every entry
 
+- Creating a timesheet needs the `Create Timesheet` function and creating a calendar event needs the `Create Event` function in `Menu Access`. Without it the request is refused, even if it is sent directly.
 - The date cannot be in the future.
 - The end time must be later than the start time, and the activity description is required.
 - If your role belongs to the Project or Support domain, you can only log time in the current period or the previous period, and only while that period is open. A period is open when RPMO has opened it and the Head of your domain has opened your domain. If it is closed, ask for late access. Roles that belong to no domain are not held to these period limits.

@@ -67,6 +67,7 @@ Select `View Rejected` (the badge shows how many). You can search by customer or
 
 ## Rules to know
 
+- Approving needs the `Action Validate` function and rejecting needs the `Action Reject` function in `Menu Access`. Having the page is not enough: without the function the request is refused, even if it is sent directly.
 - `Type` and `Priority` are required to approve. The types are `Incident`, `Change Request`, `Service Request`, `EWA`, `RISE` and `Consult`. The priorities are `Very High`, `High`, `Medium` and `Low`. `Scale` is optional (`Simple`, `Medium` or `Complex`).
 - Approving needs a finished AI analysis. If it failed, use `Re-analyze`. If an analysis is already running, wait for it.
 - `Delivery Support` is required when the customer has any delivery support, and it must belong to that same customer.
@@ -75,7 +76,7 @@ Select `View Rejected` (the badge shows how many). You can search by customer or
 - Rejecting needs a written reason of at most 1000 characters. The customer sees a portal notification that starts with the reason, and the rejection is synced to the customer portal.
 - Approving also notifies the customer, the team and the Teams chat of the ticket.
 - Once a request is approved or rejected it cannot be processed again, and its AI analysis and `Ask a question` are closed. A question can be at most 2000 characters.
-- If the AI analysis mentions the customer's stored credential notes, only roles with `Customer Credential` view access can read it. Others classify the request by hand.
+- If the AI analysis mentions the customer's stored credential notes, only roles with `Customer Credential` view access can read it. Others classify the request by hand. The stored credential itself is only returned to roles that hold `View Customer Credential` (ticket page) or `View Credential` (customer page) in `Menu Access`; anyone else is refused.
 
 ## What happens next
 

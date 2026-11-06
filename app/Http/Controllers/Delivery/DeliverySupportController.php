@@ -485,6 +485,7 @@ class DeliverySupportController extends Controller
         $linkedTickets = $canRemoveTicket
             ? DB::table('delivery_support_activities')
                 ->join('ticket', 'delivery_support_activities.ticket_id', '=', 'ticket.ticket_id')
+                ->whereNull('ticket.deleted_at')
                 ->where('delivery_support_activities.delivery_support_id', $support->id)
                 ->whereNotNull('delivery_support_activities.ticket_id')
                 ->get([

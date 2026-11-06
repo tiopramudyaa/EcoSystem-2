@@ -4,7 +4,7 @@ chapter: management
 order: 16
 title: Dropdown Settings
 summary: Kelola daftar di balik dropdown Employee Information, seperti Position, Division, dan Department.
-requires: [management.employee.dropdown-settings]
+requires: [management.employee.dropdown-settings, management.employee.dropdown-settings.manage]
 updated: 2026-11-02
 ---
 `Management` › `Master Employee Settings` › `Dropdown Settings` mengatur pilihan yang tampil di formulir karyawan: Department, Division, Employee Group, Employee Subgroup, Personnel Area, Personnel Subarea, Position, dan daftar lain yang Anda tambah.
@@ -31,6 +31,10 @@ Administrator dan HR, dan role mana pun yang diberi menu `Management` › `Dropd
 5. Pakai pensil untuk mengganti nama atau menonaktifkan value agar tidak ditawarkan lagi. Pakai tempat sampah untuk menghapusnya.
 6. Untuk menambah daftar baru, pilih `New Dropdown List`. Isi `Name` (label di formulir), `Code` yang unik, dan `Description`.
 7. Untuk mengubah atau menghapus satu daftar penuh, pakai pensil atau tempat sampah di samping judulnya.
+
+## Aturan yang perlu diketahui
+
+- Membuka halaman memerlukan `Dropdown Settings`. Menambah, mengubah, atau menghapus daftar dropdown maupun nilainya juga memerlukan fungsi `Manage Dropdown Lists & Values` di `Menu Access`. Tanpa fungsi itu perubahan ditolak, meskipun permintaan dikirim langsung. Membaca daftar, yang dilakukan form Employee, tetap terbuka bagi semua pengguna yang login.
 
 ## Apa yang terjadi selanjutnya
 

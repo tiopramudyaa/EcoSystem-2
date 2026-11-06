@@ -39,6 +39,10 @@ Administrators, and roles given `Management` › `Project Type`, `Support Type` 
 4. Set the status to `Active` so the type appears in the ticket document list.
 5. Select `Save`. Use `Edit` or `Delete` on a row later.
 
+## Rules to know
+
+- Adding, editing or deleting a Project Type needs the `Project Type` menu and doing the same to a Support Type needs the `Support Type` menu in `Menu Access`. Without it the change is refused, even if the request is sent directly. The lists shown in the delivery forms can be read by every signed-in user.
+
 ## What happens next
 
 The new or changed values appear in the related form the next time someone opens it. Active document types show up on the ticket's `New Document` form and in the document list of the `Deliverable Documents` window. Every ticket starts with the default `Mandatory` and `Optional` choices of its ticket type, and a change to the default applies to all tickets of that type that were not changed by hand.

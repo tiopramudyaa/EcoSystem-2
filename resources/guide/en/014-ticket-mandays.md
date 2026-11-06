@@ -54,6 +54,9 @@ Ticket leads and consultants who propose, Helpdesk who reviews Customer Mandays,
 - The customer can reject the proposal from the link they receive and may write a reason. Helpdesk then revises it, which creates a new version.
 - On a `Change Request` ticket only the ticket lead can propose Customer Mandays. Heads are not held to this.
 - Cancelling a proposal needs the cancel permission. Cancelling one that is already approved needs a separate permission, and the customer is not told automatically, so Helpdesk follows up by email.
+- Proposing Customer Mandays needs the `Propose Mandays Customer` function and proposing Resolution Days needs the `Propose Resolution Days` function in `Menu Access`, on top of being the ticket lead or a member. Saving a review needs `Save Draft`, `Send to Customer` or `Approve Proposal`, because sending and approving save your edits first. Without the function the request is refused, even if it is sent directly.
+- Who gets the bell notification follows `Role Access`, not a fixed role. When a Customer Mandays proposal is submitted, everyone whose role has the review permission is notified. When Resolution Days is submitted, everyone whose role has the head or Resolution Days approval permission is notified.
+- Sub-actions in the review screen (edit, save draft, send to customer, approve, cancel) each have their own permission in `Role Access`. A role that can open the review but lacks these sees the proposal without the action buttons.
 
 ### Resolution Days
 
