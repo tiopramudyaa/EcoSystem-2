@@ -45,10 +45,20 @@ class SlaController extends Controller
 
     // Diatur lewat Role Management (menu slug: sla.config), bukan role hardcode,
     // supaya role apa pun bisa diberi/dicabut akses kelola SLA Policy dari UI Role Management.
+    // Kelola policy juga bisa dari bagian SLA di halaman Delivery Support (delivery-support.sla.manage).
+    // Setiap policy selalu terikat ke satu delivery support, jadi izin itu cukup untuk aksinya.
     private function canManagePolicies(): bool
     {
         $employee = Employee::find(session('user.id'));
-        return (bool) $employee?->hasPermission('sla.config');
+        return (bool) ($employee?->hasPermission('sla.config') || $employee?->hasPermission('delivery-support.sla.manage'));
+    }
+
+    // Membaca daftar policy: dari halaman SLA Report (sla.report) ATAU dari bagian SLA di
+    // halaman Delivery Support (delivery-support.sla.view).
+    private function canViewPolicies(): bool
+    {
+        $employee = Employee::find(session('user.id'));
+        return (bool) ($employee?->hasPermission('sla.report') || $employee?->hasPermission('delivery-support.sla.view'));
     }
 
     // Diatur lewat Role Management (menu slug: ticket.meeting), bukan role hardcode,
@@ -78,7 +88,7 @@ class SlaController extends Controller
 
     public function getPolicies(Request $request)
     {
-        if (!$this->assertSlaAccess()) {
+        if (!$this->canViewPolicies()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -647,7 +657,8 @@ class SlaController extends Controller
             $firstResolvedByTicket->get($s->ticket_id),
             $docSentByTicket->get($s->ticket_id),
             $notesByTicket->get($s->ticket_id),
-            $pausesByTicket->get($s->ticket_id)
+            $pausesByTicket->get($s->ticket_id, collect()),
+            true
         ));
 
         // Live-filtered met/breached (see $filterLive above) — filter on the recomputed
@@ -1045,8 +1056,11 @@ class SlaController extends Controller
         ?Carbon $firstResolvedAt = null,
         ?Carbon $docSentAt = null,
         ?\Illuminate\Support\Collection $notes = null,
-        ?\Illuminate\Support\Collection $pauses = null
+        ?\Illuminate\Support\Collection $pauses = null,
+        bool $batched = false
     ): array {
+        // $batched = nilai-nilai di atas berasal dari batch-fetch untuk seluruh report, jadi
+        // null berarti "memang tidak ada" (bukan "belum diambil") dan tidak perlu query ulang.
         $t       = $s->ticket;
         $staging = $s->stagingTicket;
         $policy  = $s->policy;
@@ -1154,8 +1168,8 @@ class SlaController extends Controller
                 'target_days'   => $toWorkingDays($resolutionTargetHours),
                 'start_at'      => $this->sla->resolutionStartAt($s)?->toDateTimeString(),
                 'due_at'        => $this->sla->resolutionDueAt($s)?->toDateTimeString(),
-                'resolved_at'   => ($firstResolvedAt ?? $this->sla->firstResolvedAt($s))?->toDateTimeString(),
-                'doc_sent_at'   => ($docSentAt ?? $this->sla->resolutionDocSentAt($s))?->toDateTimeString(),
+                'resolved_at'   => ($batched ? $firstResolvedAt : ($firstResolvedAt ?? $this->sla->firstResolvedAt($s)))?->toDateTimeString(),
+                'doc_sent_at'   => ($batched ? $docSentAt : ($docSentAt ?? $this->sla->resolutionDocSentAt($s)))?->toDateTimeString(),
                 'time_status'   => $resolutionTimeStatus,
                 'met'           => in_array($resolutionStatus, ['met', 'pending_validation']),
             ],

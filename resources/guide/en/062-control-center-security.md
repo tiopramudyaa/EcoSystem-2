@@ -1,6 +1,6 @@
 ---
 key: control-center-security
-chapter: administration
+chapter: control-center
 order: 62
 title: Control Center - Security and platform pages
 summary: Watch for suspicious activity, check scheduled tasks, follow AI usage and manage two-step verification and the seasonal theme.

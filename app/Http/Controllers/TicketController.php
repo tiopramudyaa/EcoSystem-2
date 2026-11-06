@@ -29,7 +29,29 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class TicketController extends Controller
 {
+    use \App\Http\Controllers\Concerns\ChecksMenuAccess;
+
     public function __construct(private readonly TicketNumberService $ticketNumbers) {}
+
+    /**
+     * Boleh menambah/mengubah/menghapus member ticket lewat Role Access (ui.ticket.manage-members).
+     * Aturan yang sama dengan tombol "Team Members" di ticket/show.blade.php: pemegang Delivery
+     * Support User hanya boleh bila ia Ticket Lead tiket ini (aturan posisi); role lain cukup
+     * punya izin. Jalur Ticket Lead / Module Lead ditangani terpisah lewat TicketTeamAccess.
+     */
+    private function canManageTicketMembersBySlug(Ticket $ticket, array $sessionUser): bool
+    {
+        if (!$this->menuAllowed('ui.ticket.manage-members')) {
+            return false;
+        }
+
+        $roleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
+        if (in_array(RoleId::DELIVERY_SUPPORT_USER->value, $roleIds, true)) {
+            return (int) $ticket->ticket_lead_id === (int) ($sessionUser['id'] ?? 0);
+        }
+
+        return true;
+    }
 
     /**
      * Get user info for history
@@ -101,6 +123,11 @@ class TicketController extends Controller
         if ($ticket && !$sla->relationLoaded('ticket')) {
             $sla->setRelation('ticket', $ticket);
         }
+
+        // Semua pemanggil mengirim peta batch ->get($ticketId), yang null untuk tiket tanpa
+        // pause. Null ke liveResolutionMetrics() memicu query pause per tiket (N+1 saat cache
+        // dingin), jadi "tidak ada pause" dinyatakan eksplisit sebagai koleksi kosong.
+        $pauses ??= collect();
 
         $pausesFingerprint = $pauses && $pauses->isNotEmpty()
             ? $pauses->count() . ':' . optional($pauses->max('ended_at'))->format('YmdHisu')
@@ -411,6 +438,7 @@ class TicketController extends Controller
             ->join('customer', 'customer.customer_id', '=', 'ticket.customer_id')
             ->leftJoin('customer_basic_data', 'customer_basic_data.customer_id', '=', 'customer.customer_id')
             ->whereNull('ticket.is_hidden')
+            ->whereNull('ticket.deleted_at')
             ->select('customer.customer_id as id', DB::raw('COALESCE(customer_basic_data.name_1, customer.email) as name'))
             ->distinct()
             ->orderBy('name')
@@ -420,6 +448,7 @@ class TicketController extends Controller
             ->join('employee', 'employee.employee_id', '=', 'ticket.ticket_lead_id')
             ->leftJoin('employee_basic_data', 'employee_basic_data.employee_id', '=', 'employee.employee_id')
             ->whereNull('ticket.is_hidden')
+            ->whereNull('ticket.deleted_at')
             ->select('employee.employee_id as id', DB::raw('COALESCE(employee_basic_data.nick_name, employee_basic_data.first_name) as name'))
             ->distinct()
             ->orderBy('name')
@@ -433,6 +462,7 @@ class TicketController extends Controller
             ->join('delivery_support as ds', 'ds.id', '=', 'dsa.delivery_support_id')
             ->leftJoin('customer_basic_data as cbd', 'cbd.customer_id', '=', 'ds.client_id')
             ->whereNull('ticket.is_hidden')
+            ->whereNull('ticket.deleted_at')
             ->whereNotNull('dsa.ticket_id')
             ->select('ds.id as id', DB::raw("TRIM(CONCAT(COALESCE(ds.name, CONCAT('Support #', ds.id)), COALESCE(CONCAT(' (', cbd.name_1, ')'), ''))) as name"))
             ->distinct()
@@ -1611,10 +1641,15 @@ class TicketController extends Controller
                         ->unique()
                         ->values();
 
+                    // Ticket delivery yang dikelola + ticket yang ia pegang sebagai lead/member/Co-PM.
+                    // (Dulu hanya ticket delivery, sehingga manager yang juga konsultan kehilangan
+                    // ticket lead/member-nya di luar delivery yang dikelola.)
                     $query = Ticket::with(['customer.basicData', 'endCustomer.basicData', 'ticketLead.basicData', 'members.basicData', 'sla.policy', 'modules'])
                         ->whereNull('ticket.is_hidden')
                         ->where(function ($q) use ($managedTicketIds, $employeeId) {
                             $q->whereIn('ticket.ticket_id', $managedTicketIds)
+                                ->orWhere('ticket.ticket_lead_id', $employeeId)
+                                ->orWhereHas('members', fn ($inner) => $inner->where('ticket_member.employee_id', $employeeId))
                                 ->orWhereIn('ticket.ticket_id', $this->coPmTicketIds($employeeId));
                         });
                 } else {
@@ -1871,8 +1906,10 @@ class TicketController extends Controller
 
                     $scopedQuery = Ticket::whereNull('is_hidden')
                         ->where(function ($query) use ($managedTicketIds, $employeeId) {
-                            $query->whereIn('ticket_id', $managedTicketIds)
-                                ->orWhereIn('ticket_id', $this->coPmTicketIds($employeeId));
+                            $query->whereIn('ticket.ticket_id', $managedTicketIds)
+                                ->orWhere('ticket.ticket_lead_id', $employeeId)
+                                ->orWhereHas('members', fn ($inner) => $inner->where('ticket_member.employee_id', $employeeId))
+                                ->orWhereIn('ticket.ticket_id', $this->coPmTicketIds($employeeId));
                         });
                 } else {
                     $scopedQuery = Ticket::whereNull('is_hidden')
@@ -2194,11 +2231,11 @@ class TicketController extends Controller
                 ], 401);
             }
             
-            // Pastikan user adalah employee
-            if ($sessionUser['role']['id'] !== RoleId::DELIVERY_SUPPORT_USER->value) {
+            // Izin murni dari Role Access (slug ticket.take), bukan role tetap.
+            if (!$this->menuAllowed('ticket.take')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Only employees can take tickets'
+                    'message' => 'You do not have permission to take tickets.'
                 ], 403);
             }
 
@@ -2302,6 +2339,7 @@ class TicketController extends Controller
                 ->join('customer', 'ticket.customer_id', '=', 'customer.customer_id')
                 ->leftJoin('customer_basic_data', 'customer.customer_id', '=', 'customer_basic_data.customer_id')
                 ->where('ticket_confirmation.status', 'pending')
+                ->whereNull('ticket.deleted_at')
                 ->select(
                     'ticket_confirmation.*',
                     'ticket.description',
@@ -2698,120 +2736,48 @@ class TicketController extends Controller
     }
 
     /**
-     * Update man days (Customer & Admin only)
+     * Hapus tiket (soft delete): tiket diberi deleted_at dan hilang dari semua daftar,
+     * sedangkan datanya (mandays, pesan, SLA, timesheet, dst.) tetap tersimpan di database.
+     * Hanya yang punya izin menu ticket.delete.
      */
-    public function updateManDays(Request $request, $id)
+    public function destroy($id)
     {
         $sessionUser = session('user');
-        
-        // Only admin can update man days
-        if (!$sessionUser || $sessionUser['role']['id'] !== RoleId::EC_ADMINISTRATOR->value) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized. Only admin can update man days.'
-            ], 403);
+        if (!$sessionUser) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $validator = Validator::make($request->all(), [
-            'man_days' => 'required|numeric|min:0|max:9999.99',
-            'notes' => 'nullable|string|max:500'
-        ]);
+        $employee = Employee::find($sessionUser['id'] ?? null);
+        if (!$employee || !$employee->hasPermission('ticket.delete')) {
+            return response()->json(['success' => false, 'message' => 'Access denied'], 403);
+        }
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+        $ticket = Ticket::find($id);
+        if (!$ticket) {
+            return response()->json(['success' => false, 'message' => 'Ticket not found'], 404);
         }
 
         try {
-            $ticket = Ticket::findOrFail($id);
-            
-            // Check if ticket is confirmed (has ticket_lead_id)
-            if (!$ticket->ticket_lead_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ticket must be assigned and confirmed first'
-                ], 400);
-            }
+            $ticket->delete();
 
-            DB::beginTransaction();
+            Log::info('Ticket deleted (soft)', [
+                'ticket_id'       => $ticket->ticket_id,
+                'ticket_number'   => $ticket->ticket_number,
+                'deleted_by'      => $sessionUser['id'],
+                'deleted_by_name' => $sessionUser['name'] ?? null,
+            ]);
 
-            $userInfo = $this->getUserInfo($sessionUser);
-
-            // Save history
-            DB::table('mandays_history')->insert([
+            return response()->json(['success' => true, 'message' => 'Ticket deleted successfully']);
+        } catch (\Exception $e) {
+            Log::error('Error deleting ticket', [
                 'ticket_id' => $id,
-                'old_value' => $ticket->man_days ?? 0,
-                'new_value' => $request->man_days,
-                'changed_by' => $userInfo['id'],
-                'changed_by_name' => $userInfo['name'],
-                'changed_by_role' => $userInfo['role'],
-                'notes' => $request->notes,
-                'created_at' => now(),
-                'updated_at' => now()
+                'error'     => $e->getMessage(),
+                'error_at'  => $e->getFile() . ':' . $e->getLine(),
             ]);
 
-            // Update ticket
-            $ticket->update(['man_days' => $request->man_days]);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Man days updated successfully'
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error updating man days:', [
-                'error' => $e->getMessage(),
-                'error_at' => $e->getFile() . ':' . $e->getLine()
-            ]);
-            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update man days',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get man days history
-     */
-    public function getMandaysHistory($id)
-    {
-        try {
-            $sessionUser = session('user');
-            
-            if (!$sessionUser) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 401);
-            }
-
-            $ticket = Ticket::findOrFail($id);
-
-            $history = DB::table('mandays_history')
-                ->where('ticket_id', $id)
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'data' => $history
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error fetching history:', [
-                'error' => $e->getMessage(),
-                'error_at' => $e->getFile() . ':' . $e->getLine()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load history',
-                'error' => $e->getMessage()
+                'message' => 'Failed to delete ticket',
             ], 500);
         }
     }
@@ -3429,6 +3395,7 @@ class TicketController extends Controller
                 ->join('employee', 'member_change_requests.requested_by', '=', 'employee.employee_id')
                 ->join('employee_basic_data', 'employee.employee_id', '=', 'employee_basic_data.employee_id')
                 ->where('member_change_requests.status', 'pending')
+                ->whereNull('ticket.deleted_at')
                 ->select(
                     'member_change_requests.*',
                     'ticket.description as ticket_description',
@@ -3658,18 +3625,16 @@ class TicketController extends Controller
         }
 
         $ticket  = Ticket::with('members.basicData')->findOrFail($id);
-        $roleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id']]);
-        $isAdmin    = (bool) array_intersect($roleIds, [RoleId::EC_ADMINISTRATOR->value]);
-        $isHelpdesk = (bool) array_intersect($roleIds, RoleId::TICKET_MANAGER_GROUP);
-        $isPic      = in_array(RoleId::DELIVERY_SUPPORT_USER->value, $roleIds, true) && $ticket->ticket_lead_id == $sessionUser['id'];
+        // Izin murni dari Role Access (slug ui.ticket.manage-members), sama dengan tombol di UI.
+        $hasSlugAccess = $this->canManageTicketMembersBySlug($ticket, $sessionUser);
         // Jalur "team lead": Ticket Lead tiket ini (role apa pun) atau Module Lead module tiket.
-        $isLeadPath = !$isAdmin && !$isHelpdesk
+        $isLeadPath = !$hasSlugAccess
             && TicketTeamAccess::canManageAsLead((int) $sessionUser['id'], $ticket);
 
-        if (!$isAdmin && !$isHelpdesk && !$isPic && !$isLeadPath) {
+        if (!$hasSlugAccess && !$isLeadPath) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only Admin, Helpdesk, or the assigned PIC can add members.',
+                'message' => 'You do not have permission to add members to this ticket.',
             ], 403);
         }
 
@@ -3869,18 +3834,16 @@ class TicketController extends Controller
         }
 
         $ticket  = Ticket::findOrFail($id);
-        $roleId     = $sessionUser['role']['id'];
-        $isAdmin    = $roleId === RoleId::EC_ADMINISTRATOR->value;
-        $isHelpdesk = in_array($roleId, RoleId::TICKET_MANAGER_GROUP, true);
-        $isPic      = $roleId === RoleId::DELIVERY_SUPPORT_USER->value && $ticket->ticket_lead_id == $sessionUser['id'];
+        // Izin murni dari Role Access (slug ui.ticket.manage-members), sama dengan tombol di UI.
+        $hasSlugAccess = $this->canManageTicketMembersBySlug($ticket, $sessionUser);
         // Jalur "team lead": Ticket Lead tiket ini (role apa pun) atau Module Lead module tiket.
-        $isLeadPath = !$isAdmin && !$isHelpdesk
+        $isLeadPath = !$hasSlugAccess
             && TicketTeamAccess::canManageAsLead((int) $sessionUser['id'], $ticket);
 
-        if (!$isAdmin && !$isHelpdesk && !$isPic && !$isLeadPath) {
+        if (!$hasSlugAccess && !$isLeadPath) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only Admin, Helpdesk, or the assigned PIC can manage members.'
+                'message' => 'You do not have permission to manage members of this ticket.'
             ], 403);
         }
 
@@ -4043,20 +4006,12 @@ class TicketController extends Controller
         }
 
         $ticket  = Ticket::with('members.basicData')->findOrFail($ticketId);
-        $roleIds = !empty($sessionUser['role_ids'])
-            ? array_map('intval', $sessionUser['role_ids'])
-            : DB::table('employee_role_assignment')
-                ->where('employee_id', (int) ($sessionUser['id'] ?? 0))
-                ->pluck('role_id')->map(fn($id) => (int) $id)->toArray();
-        $isAdmin    = in_array(RoleId::EC_ADMINISTRATOR->value, $roleIds, true);
-        $isHoS      = in_array(RoleId::DELIVERY_SUPPORT_HEAD->value, $roleIds, true);
-        $isManager  = in_array(RoleId::DELIVERY_SUPPORT_MANAGER->value, $roleIds, true);
-        $isHelpdesk = (bool) array_intersect($roleIds, RoleId::HELPDESK_GROUP);
-        $isPic      = in_array(RoleId::DELIVERY_SUPPORT_USER->value, $roleIds, true) && $ticket->ticket_lead_id == $sessionUser['id'];
+        // Izin murni dari Role Access (slug ui.ticket.manage-members), sama dengan tombol di UI.
+        $hasSlugAccess = $this->canManageTicketMembersBySlug($ticket, $sessionUser);
         // Jalur "team lead": Ticket Lead tiket ini (role apa pun) atau Module Lead module tiket.
         $isLeadPath = TicketTeamAccess::canManageAsLead((int) $sessionUser['id'], $ticket);
 
-        if (!$isAdmin && !$isHoS && !$isManager && !$isHelpdesk && !$isPic && !$isLeadPath) {
+        if (!$hasSlugAccess && !$isLeadPath) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak memiliki akses untuk menghapus member.'
@@ -4349,6 +4304,7 @@ class TicketController extends Controller
                 ->join('customer', 'ticket.customer_id', '=', 'customer.customer_id')
                 ->leftJoin('customer_basic_data', 'customer.customer_id', '=', 'customer_basic_data.customer_id')
                 ->where('ticket_confirmation.confirmation_id', $confirmationId)
+                ->whereNull('ticket.deleted_at')
                 ->select(
                     'ticket_confirmation.*',
                     'ticket.description',
@@ -4415,13 +4371,7 @@ class TicketController extends Controller
                 ], 401);
             }
 
-            // Admin, Helpdesk, and Head of Support can assign tickets to support
-            if (!in_array($sessionUser['role']['id'], [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_HELPDESK->value, RoleId::DELIVERY_SUPPORT_HEAD->value], true)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Only Admin, Helpdesk, and Delivery Support Head can assign tickets to delivery support'
-                ], 403);
-            }
+            // Izin dicek oleh middleware menu:ticket.assign-delivery-support pada rutenya (Menu Access).
 
             $ticket = Ticket::findOrFail($id);
 
@@ -4497,13 +4447,7 @@ class TicketController extends Controller
             ], 401);
         }
 
-        // Admin, Helpdesk, and Head of Support can assign tickets
-        if (!in_array($sessionUser['role']['id'], [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_HELPDESK->value, RoleId::DELIVERY_SUPPORT_HEAD->value], true)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only Admin, Helpdesk, and Delivery Support Head can assign tickets to delivery support'
-            ], 403);
-        }
+        // Izin dicek oleh middleware menu:ticket.assign-delivery-support pada rutenya (Menu Access).
 
         $validator = Validator::make($request->all(), [
             'support_id' => 'required|exists:delivery_support,id',
@@ -4749,12 +4693,11 @@ class TicketController extends Controller
             ], 401);
         }
 
-        // Only Admin, Helpdesk, and RPMO can create delivery supports
-        $roleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id']]);
-        if (!array_intersect($roleIds, RoleId::TICKET_MANAGER_GROUP)) {
+        // Izin murni dari Role Access (slug ticket.assign-delivery-support), bukan role tetap.
+        if (!$this->menuAllowed('ticket.assign-delivery-support')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only Admin, Helpdesk, and RPMO can create delivery supports'
+                'message' => 'You do not have permission to create delivery supports.'
             ], 403);
         }
 

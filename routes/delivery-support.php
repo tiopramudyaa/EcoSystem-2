@@ -103,7 +103,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         // TICKET ASSIGNMENT
         // =====================================================================
         // Assign ticket to support - creates activity automatically
-        Route::post('/assign-ticket', [DeliverySupportController::class, 'assignTicket'])->name('assign-ticket');
+        Route::post('/assign-ticket', [DeliverySupportController::class, 'assignTicket'])->name('assign-ticket')->middleware('menu:ticket.assign-delivery-support');
 
         // =====================================================================
         // PLANNING
@@ -212,52 +212,12 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         // =====================================================================
         // DATA ENDPOINTS (Table, Gantt, S-Curve)
         // =====================================================================
-        Route::prefix('data')->name('data.')->group(function () {
+        // Data jadwal/aktivitas support: izin yang sama dengan halaman planning-nya (activities.view).
+        Route::prefix('data')->name('data.')->middleware('menu:delivery-support.activities.view')->group(function () {
             Route::get('/table', [DeliverySupportDataController::class, 'getTableData'])->name('table');
             Route::get('/gantt', [DeliverySupportDataController::class, 'getGanttData'])->name('gantt');
             Route::get('/scurve', [DeliverySupportDataController::class, 'getSCurveData'])->name('scurve');
             Route::get('/summary', [DeliverySupportDataController::class, 'getSummary'])->name('summary');
-        });
-
-        // =====================================================================
-        // DOCUMENTS
-        // =====================================================================
-        Route::prefix('documents')->name('documents.')->group(function () {
-            Route::get('/', [DeliverySupportController::class, 'getDocuments'])->name('index')->middleware('menu:delivery-support.documents.view');
-            Route::put('/{document}', [DeliverySupportController::class, 'updateDocument'])->name('update')->middleware('menu:delivery-support.documents.edit');
-
-            Route::middleware('menu:delivery-support.documents.manage')->group(function () {
-                Route::post('/', [DeliverySupportController::class, 'storeDocument'])->name('store');
-                Route::delete('/{document}', [DeliverySupportController::class, 'destroyDocument'])->name('destroy');
-                Route::post('/{document}/delete', [DeliverySupportController::class, 'destroyDocument'])->name('destroy-post');
-            });
-        });
-
-        // =====================================================================
-        // UPDATES/NOTES — bagian dari section Activities
-        // =====================================================================
-        Route::prefix('updates')->name('updates.')->group(function () {
-            Route::get('/', [DeliverySupportController::class, 'getUpdates'])->name('index')->middleware('menu:delivery-support.activities.view');
-            Route::put('/{update}', [DeliverySupportController::class, 'updateUpdate'])->name('update')->middleware('menu:delivery-support.activities.edit');
-
-            Route::middleware('menu:delivery-support.activities.manage')->group(function () {
-                Route::post('/', [DeliverySupportController::class, 'storeUpdate'])->name('store');
-                Route::delete('/{update}', [DeliverySupportController::class, 'destroyUpdate'])->name('destroy');
-                Route::post('/{update}/delete', [DeliverySupportController::class, 'destroyUpdate'])->name('destroy-post');
-            });
-        });
-
-        // =====================================================================
-        // TEAM MEMBERS — hanya tambah/hapus, tidak ada aksi edit
-        // =====================================================================
-        Route::prefix('team')->name('team.')->group(function () {
-            Route::get('/', [DeliverySupportController::class, 'getTeamMembers'])->name('index')->middleware('menu:delivery-support.team.view');
-
-            Route::middleware('menu:delivery-support.team.manage')->group(function () {
-                Route::post('/', [DeliverySupportController::class, 'addTeamMember'])->name('store');
-                Route::delete('/{employee}', [DeliverySupportController::class, 'removeTeamMember'])->name('destroy');
-                Route::post('/{employee}/delete', [DeliverySupportController::class, 'removeTeamMember'])->name('destroy-post');
-            });
         });
 
         // =====================================================================
@@ -372,9 +332,6 @@ Route::prefix('api/delivery/support')->middleware(CheckAuthToken::class)->name('
 
     // Quick search/lookup
     Route::get('/search', [DeliverySupportController::class, 'search'])->name('search');
-
-    // Get support by ticket
-    Route::get('/ticket/{ticketId}', [DeliverySupportController::class, 'findByTicket'])->name('by-ticket');
 
     // Statistics
     Route::get('/statistics', [DeliverySupportController::class, 'getStatistics'])->name('statistics');

@@ -319,12 +319,6 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         });
     });
 
-    // ==================== DASHBOARD API ====================
-    Route::get('/dashboard/monthly-trends', [DashboardController::class, 'getMonthlyTrends'])->name('dashboard.trends');
-    Route::get('/dashboard/project-progress', [DashboardController::class, 'getProjectProgress'])->name('dashboard.progress');
-    Route::post('/dashboard/clear-cache', [DashboardController::class, 'clearCache'])->name('dashboard.clear-cache');
-    Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
-
     // ==================== PROJECT DELIVERY ROUTES ====================
 
     // Project routes (CRUD)
@@ -566,8 +560,6 @@ Route::middleware(CheckAuthToken::class)->group(function () {
 
         // Main planning page
         Route::get('/', [DeliveryProjectPlanningController::class, 'show'])->name('show');
-        Route::get('/gantt', [DeliveryProjectPlanningController::class, 'gantt'])->name('gantt');
-        Route::get('/scurve', [DeliveryProjectPlanningController::class, 'scurve'])->name('scurve');
         Route::get('/phases-list', [DeliveryProjectPlanningController::class, 'getPhases'])->name('phases-list');
 
         // Phase Management — baca butuh Planning View, tulis dipecah edit vs manage
@@ -672,7 +664,6 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // ==================== TICKET ====================
     Route::prefix('ticket')->name('ticket.')->group(function () {
         Route::get('/', [TicketViewController::class, 'index'])->name('index')->middleware('menu:tickets.inbox');
-        Route::get('/create', [TicketViewController::class, 'create'])->name('create');
         Route::get('/export', [TicketController::class, 'exportToExcel'])->name('export')->middleware('menu:ticket.export');
         Route::get('/consultant-workload', [ConsultantWorkloadController::class, 'index'])->name('consultant-workload')->middleware('menu:ticket.consultant-workload');
         Route::get('/consultant-workload/{id}/export', [ConsultantWorkloadController::class, 'exportTickets'])->name('consultant-workload.export')->middleware('menu:ticket.consultant-workload');
@@ -781,10 +772,6 @@ Route::get('/', function () {
     }
     return redirect()->route('login');
 });
-
-// ==================== DELIVERY PLANNING ROUTES ====================
-// Include delivery planning module routes
-require __DIR__ . '/delivery.php';
 
 // ==================== DELIVERY SUPPORT ROUTES ====================
 // Include delivery support module routes

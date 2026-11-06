@@ -31,6 +31,9 @@ class DeliveryDynamicPhaseController extends Controller
             }
         ]);
 
+        // View membaca accessor progress per group/activity; preload sekali (bukan per baris).
+        DeliveryProject::preloadProgressRelations([$project]);
+
         $phases = $project->phases;
 
         $verticalPhases = $phases->where('orientation', 'vertical');

@@ -67,6 +67,17 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Deteksi N+1 saat development: lazy-load relasi dicatat ke log (tidak melempar
+        // exception, jadi halaman tetap jalan). Hanya aktif di local.
+        if ($this->app->environment('local')) {
+            \Illuminate\Database\Eloquent\Model::preventLazyLoading();
+            \Illuminate\Database\Eloquent\Model::handleLazyLoadingViolationUsing(function ($model, $relation) {
+                \Illuminate\Support\Facades\Log::channel('single')->warning(
+                    'N+1 lazy load: ' . get_class($model) . '::' . $relation
+                );
+            });
+        }
+
         // Scheme URL dipaksa ke https HANYA bila APP_URL memang https (produksi).
         //
         // Mengandalkan trustProxies + header X-Forwarded-Proto saja tidak cukup:

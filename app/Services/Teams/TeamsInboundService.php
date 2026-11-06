@@ -75,7 +75,7 @@ class TeamsInboundService
         return TicketTeamsChat::query()
             ->where('sync_enabled', true)
             ->whereIn('ticket_id', function ($q) use ($closed) {
-                $q->select('ticket_id')->from('ticket')->whereNotIn('status', $closed);
+                $q->select('ticket_id')->from('ticket')->whereNotIn('status', $closed)->whereNull('deleted_at');
             })
             ->orderByRaw('last_polled_at is null desc')
             ->orderBy('last_polled_at')
