@@ -166,11 +166,11 @@
         <table class="w-full" id="wcTicketTable">
             <thead>
                 <tr>
-                    <th class="wc-th text-left" data-filter-key="last_update" style="min-width:150px;">Last Update</th>
+                    <th class="wc-th text-left" data-filter-key="last_update" style="width:100px;min-width:100px;">Last Update</th>
                     <th class="wc-th text-left" data-filter-key="ticket_number" style="min-width:130px;">Ticket</th>
                     <th class="wc-th text-left" data-filter-key="customer_name" style="min-width:160px;">Customer</th>
                     <th class="wc-th text-left" data-filter-key="description" style="min-width:220px;">Description</th>
-                    <th class="wc-th text-left" data-filter-key="start_date" style="min-width:150px;">Start Date</th>
+                    <th class="wc-th text-left" data-filter-key="start_date" style="width:100px;min-width:100px;">Start Date</th>
                     <th class="wc-th text-left" data-filter-key="ticket_type" style="min-width:120px;">Type</th>
                     <th class="wc-th text-left" data-filter-key="status" style="min-width:140px;">Status</th>
                     <th class="wc-th text-left" data-filter-key="module_name" style="min-width:110px;">Module</th>
@@ -827,9 +827,8 @@ async function wcDeleteBatch() {
     if (!result.isConfirmed) return;
 
     try {
-        // POST (bukan DELETE): WAF production memblokir method DELETE.
-        const res = await fetch(`/api/reporting/weekly-consolidation/${wcCurrentBatchId}/delete`, {
-            method: 'POST',
+        const res = await fetch(`/api/reporting/weekly-consolidation/${wcCurrentBatchId}`, {
+            method: 'DELETE',
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
@@ -865,6 +864,13 @@ function wcLoadRowsIntoState(rows, editable) {
     wcApplyColumnFilters();
 }
 
+// Date on the first line, time below it, so the date columns stay narrow.
+function wcDateCell(v) {
+    if (!v) return '—';
+    const d = new Date(v);
+    return `<span class="whitespace-nowrap">${d.toLocaleDateString('en-US')}</span><br><span class="whitespace-nowrap text-gray-400">${d.toLocaleTimeString('en-US')}</span>`;
+}
+
 function wcRenderRows(rows, editable) {
     const body = document.getElementById('wcTableBody');
 
@@ -876,13 +882,13 @@ function wcRenderRows(rows, editable) {
 
     body.innerHTML = rows.map(r => `
         <tr>
-            <td class="wc-td text-xs text-gray-500 whitespace-nowrap">${r.last_update ? new Date(r.last_update).toLocaleString('en-US') : '—'}</td>
+            <td class="wc-td text-xs text-gray-500">${wcDateCell(r.last_update)}</td>
             <td class="wc-td">
                 <a href="/ticket/${r.ticket_id}" onclick="return wcTicketClick(event, ${r.ticket_id})" class="font-semibold text-red-800 hover:underline">${escHtml(r.ticket_number)}</a>
             </td>
             <td class="wc-td">${r.customer_name ? escHtml(r.customer_name) : '<span class="text-gray-300 italic">—</span>'}</td>
             <td class="wc-td wc-td-desc">${r.description ? escHtml(r.description) : '<span class="text-gray-300 italic">—</span>'}</td>
-            <td class="wc-td text-xs text-gray-500 whitespace-nowrap">${r.start_date ? new Date(r.start_date).toLocaleString('en-US') : '—'}</td>
+            <td class="wc-td text-xs text-gray-500">${wcDateCell(r.start_date)}</td>
             <td class="wc-td">${r.ticket_type ? escHtml(r.ticket_type) : '<span class="text-gray-300 italic">—</span>'}</td>
             <td class="wc-td">${wcStatusBadge(r.status, r.status_label)}</td>
             <td class="wc-td">${r.module_name ? escHtml(r.module_name) : '<span class="text-gray-300 italic">—</span>'}</td>
@@ -1211,9 +1217,8 @@ async function wcForceDeleteBatch(id) {
     if (!result.isConfirmed) return;
 
     try {
-        // POST (bukan DELETE): WAF production memblokir method DELETE.
-        const res = await fetch(`/api/reporting/weekly-consolidation/${id}/force/delete`, {
-            method: 'POST',
+        const res = await fetch(`/api/reporting/weekly-consolidation/${id}/force`, {
+            method: 'DELETE',
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' },
             credentials: 'same-origin'
         });
