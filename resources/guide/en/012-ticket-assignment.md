@@ -71,7 +71,7 @@ A ticket belongs to **one** Delivery Support. If it was linked wrongly, remove t
 
 ## What happens next
 
-The ticket appears in the `My Tickets` tab of its ticket lead and team members, and in `My Tasks`. Mandays proposals use the skills of the ticket lead and members, so keep the team accurate.
+The ticket appears in the `My Tickets` tab of its ticket lead and team members, and in `My Tasks`. A Delivery Support Manager also sees the tickets of the Delivery Support they manage. Mandays proposals use the skills of the ticket lead and members, so keep the team accurate.
 
 ## Common questions
 

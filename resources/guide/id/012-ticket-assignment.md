@@ -71,7 +71,7 @@ Sebuah ticket hanya milik **satu** Delivery Support. Jika salah kaitan, lepas du
 
 ## Apa yang terjadi selanjutnya
 
-Ticket muncul di tab `My Tickets` milik ticket lead dan anggota timnya, serta di `My Tasks`. Usulan mandays memakai keahlian ticket lead dan anggota, jadi jaga tim tetap akurat.
+Ticket muncul di tab `My Tickets` milik ticket lead dan anggota timnya, serta di `My Tasks`. Delivery Support Manager juga melihat ticket dari Delivery Support yang dikelolanya. Usulan mandays memakai keahlian ticket lead dan anggota, jadi jaga tim tetap akurat.
 
 ## Pertanyaan umum
 
