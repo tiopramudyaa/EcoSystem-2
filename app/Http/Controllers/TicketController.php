@@ -1196,6 +1196,18 @@ class TicketController extends Controller
                     }
                 }
 
+                // Group chat Teams + kartu flow 5 — sama seperti tiket yang
+                // divalidasi dari staging. Dipanggil SETELAH attachment tersimpan
+                // supaya pesan pertama yang diteruskan ke grup membawa berkasnya.
+                // Non-fatal: tiket sudah tersimpan apa pun hasilnya.
+                app(\App\Services\Teams\TicketTeamsOnboardingService::class)->onboard(
+                    $ticket,
+                    $user,
+                    $message,
+                    \App\Services\Teams\TicketTeamsOnboardingService::FIRST_MESSAGE_AGENT,
+                    'TicketController@store (admin)'
+                );
+
                 return response()->json([
                     'success'    => true,
                     'message'    => 'Ticket created successfully',
@@ -1405,6 +1417,22 @@ class TicketController extends Controller
                     ]);
                 }
             }
+
+            // Group chat Teams + kartu flow 5 — sama seperti tiket yang
+            // divalidasi dari staging. Dipanggil SETELAH attachment tersimpan
+            // supaya pesan pertama yang diteruskan ke grup membawa berkasnya.
+            // Non-fatal: tiket sudah tersimpan apa pun hasilnya.
+            $firstMessage = !empty($validated['body'])
+                ? TicketMessage::where('ticket_id', $ticket->ticket_id)->orderBy('id')->first()
+                : null;
+
+            app(\App\Services\Teams\TicketTeamsOnboardingService::class)->onboard(
+                $ticket,
+                $user,
+                $firstMessage,
+                \App\Services\Teams\TicketTeamsOnboardingService::FIRST_MESSAGE_AGENT,
+                'TicketController@storeFromHelpdesk'
+            );
 
             return response()->json([
                 'success'        => true,
