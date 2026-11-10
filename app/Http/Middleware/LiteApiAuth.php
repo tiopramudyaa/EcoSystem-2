@@ -97,6 +97,11 @@ class LiteApiAuth
             // Bangun user data pakai helper yang sama dengan login
             $sessionData = AuthController::buildEmployeeSessionData($employee->employee_id);
 
+            // System lock: a still-valid Bearer token must not get a non-admin in.
+            if ($sessionData && \App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
+                return null;
+            }
+
             return $sessionData ? $sessionData['userData'] : null;
 
         } catch (\Throwable $e) {

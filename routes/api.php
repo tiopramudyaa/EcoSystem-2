@@ -738,6 +738,9 @@ Route::middleware(['web'])->group(function () {
 
         // Session Management
         Route::get('/sessions', [AdminSessionController::class, 'index']);
+        Route::get('/sessions/lock', [AdminSessionController::class, 'lockStatus']);
+        Route::post('/sessions/lock', [AdminSessionController::class, 'lock']);
+        Route::post('/sessions/unlock', [AdminSessionController::class, 'unlock']);
         Route::delete('/sessions/{sessionId}', [AdminSessionController::class, 'destroy']);
         Route::post('/sessions/{sessionId}/delete', [AdminSessionController::class, 'destroy']);
         Route::delete('/sessions', [AdminSessionController::class, 'destroyAll']);
