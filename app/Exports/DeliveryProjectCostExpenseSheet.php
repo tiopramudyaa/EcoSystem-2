@@ -22,7 +22,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 class DeliveryProjectCostExpenseSheet implements WithTitle, WithEvents
 {
     private const HEADINGS = [
-        'No', 'Cost Type', 'Cost Code', 'Cost Item', 'Period',
+        'No', 'Cost Type', 'Cost Code', 'Cost Item', 'Period', 'Expense Date',
         'Expense Name', 'Amount', 'Supporting Document', 'Input Date',
     ];
 
@@ -46,20 +46,20 @@ class DeliveryProjectCostExpenseSheet implements WithTitle, WithEvents
                 foreach (self::HEADINGS as $i => $label) {
                     $text(chr(65 + $i) . '1', $label);
                 }
-                $sheet->getStyle('A1:I1')->applyFromArray([
+                $sheet->getStyle('A1:J1')->applyFromArray([
                     'font'      => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFCC0000']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                 ]);
                 $sheet->freezePane('A2');
 
-                foreach (['A' => 6, 'B' => 16, 'C' => 12, 'D' => 34, 'E' => 12, 'F' => 46, 'G' => 20, 'H' => 40, 'I' => 14] as $col => $width) {
+                foreach (['A' => 6, 'B' => 16, 'C' => 12, 'D' => 34, 'E' => 12, 'F' => 14, 'G' => 46, 'H' => 20, 'I' => 40, 'J' => 14] as $col => $width) {
                     $sheet->getColumnDimension($col)->setWidth($width);
                 }
 
                 if (!$this->expenses) {
                     $text('A2', 'No expense records.');
-                    $sheet->mergeCells('A2:I2');
+                    $sheet->mergeCells('A2:J2');
                     $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                     return;
                 }
@@ -83,20 +83,31 @@ class DeliveryProjectCostExpenseSheet implements WithTitle, WithEvents
                         $text("E{$row}", '-');
                     }
 
-                    $text("F{$row}", $e['description']);
-                    $sheet->setCellValueExplicit("G{$row}", (float) $e['amount'], DataType::TYPE_NUMERIC);
+                    // Expense lama (sebelum input kalender) tidak punya tanggal.
+                    if ($e['expense_date']) {
+                        $sheet->setCellValueExplicit(
+                            "F{$row}",
+                            Date::PHPToExcel($e['expense_date']->copy()->startOfDay()),
+                            DataType::TYPE_NUMERIC
+                        );
+                    } else {
+                        $text("F{$row}", '-');
+                    }
+
+                    $text("G{$row}", $e['description']);
+                    $sheet->setCellValueExplicit("H{$row}", (float) $e['amount'], DataType::TYPE_NUMERIC);
 
                     if ($e['document_url']) {
-                        $text("H{$row}", $e['document_name'] ?: 'View');
-                        $sheet->getCell("H{$row}")->getHyperlink()->setUrl($e['document_url']);
-                        $sheet->getStyle("H{$row}")->getFont()->setUnderline(true)->getColor()->setARGB('FF2563EB');
+                        $text("I{$row}", $e['document_name'] ?: 'View');
+                        $sheet->getCell("I{$row}")->getHyperlink()->setUrl($e['document_url']);
+                        $sheet->getStyle("I{$row}")->getFont()->setUnderline(true)->getColor()->setARGB('FF2563EB');
                     } else {
-                        $text("H{$row}", '-');
+                        $text("I{$row}", '-');
                     }
 
                     if ($e['created_at']) {
                         $sheet->setCellValueExplicit(
-                            "I{$row}",
+                            "J{$row}",
                             Date::PHPToExcel($e['created_at']->copy()->startOfDay()),
                             DataType::TYPE_NUMERIC
                         );
@@ -105,30 +116,31 @@ class DeliveryProjectCostExpenseSheet implements WithTitle, WithEvents
                 }
                 $lastData = $row - 1;
 
-                $sheet->setAutoFilter("A1:I{$lastData}");
+                $sheet->setAutoFilter("A1:J{$lastData}");
 
                 // Total di luar range AutoFilter; SUBTOTAL(109) hanya menjumlah
                 // baris yang lolos filter.
-                $text("F{$row}", 'Total');
-                $sheet->setCellValue("G{$row}", "=SUBTOTAL(109,G2:G{$lastData})");
-                $sheet->getStyle("A{$row}:I{$row}")->applyFromArray([
+                $text("G{$row}", 'Total');
+                $sheet->setCellValue("H{$row}", "=SUBTOTAL(109,H2:H{$lastData})");
+                $sheet->getStyle("A{$row}:J{$row}")->applyFromArray([
                     'font'    => ['bold' => true],
                     'fill'    => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFE5E7EB']],
                     'borders' => ['top' => ['borderStyle' => Border::BORDER_MEDIUM]],
                 ]);
-                $sheet->getStyle("F{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                $sheet->getStyle("G{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
-                $sheet->getStyle("G2:G{$row}")->getNumberFormat()->setFormatCode('#,##0');
+                $sheet->getStyle("H2:H{$row}")->getNumberFormat()->setFormatCode('#,##0');
                 $sheet->getStyle("E2:E{$lastData}")->getNumberFormat()->setFormatCode('mmm yyyy');
-                $sheet->getStyle("I2:I{$lastData}")->getNumberFormat()->setFormatCode('dd mmm yyyy');
-                foreach (['A', 'B', 'C', 'E', 'I'] as $col) {
+                $sheet->getStyle("F2:F{$lastData}")->getNumberFormat()->setFormatCode('dd mmm yyyy');
+                $sheet->getStyle("J2:J{$lastData}")->getNumberFormat()->setFormatCode('dd mmm yyyy');
+                foreach (['A', 'B', 'C', 'E', 'F', 'J'] as $col) {
                     $sheet->getStyle("{$col}2:{$col}{$lastData}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 }
-                foreach (['D', 'F', 'H'] as $col) {
+                foreach (['D', 'G', 'I'] as $col) {
                     $sheet->getStyle("{$col}2:{$col}{$lastData}")->getAlignment()->setWrapText(true);
                 }
-                $sheet->getStyle("A2:I{$lastData}")->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
-                $sheet->getStyle("A1:I{$row}")
+                $sheet->getStyle("A2:J{$lastData}")->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+                $sheet->getStyle("A1:J{$row}")
                     ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FFD1D5DB');
             },
         ];

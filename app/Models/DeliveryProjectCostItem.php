@@ -18,6 +18,7 @@ class DeliveryProjectCostItem extends Model
         'delivery_project_cost_id',
         'description',
         'amount',
+        'expense_date',
         'period',
         'document_name',
         'document_file_id',
@@ -25,7 +26,8 @@ class DeliveryProjectCostItem extends Model
     ];
 
     protected $casts = [
-        'amount' => 'float',
+        'amount'       => 'float',
+        'expense_date' => 'date',
     ];
 
     public function costItem()

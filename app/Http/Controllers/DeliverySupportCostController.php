@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\DeliveryProjectCostExport;
 use App\Models\DeliverySupport;
 use App\Models\DeliverySupportCost;
 use App\Models\DeliverySupportCostItem;
+use App\Models\DeliverySupportCostReleaseSchedule;
 use App\Services\OneDriveService;
 use App\Services\PlanCostDocumentLink;
+use App\Services\ProjectMonthlyCostReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 /**
  * Plan Cost untuk Delivery Support — mirror dari DeliveryProjectCostController.
@@ -31,6 +35,48 @@ class DeliverySupportCostController extends Controller
             'costs'   => $costs->map(fn($c) => $this->formatCost($c)),
             'summary' => $this->buildSummary($costs),
         ]);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // GET /delivery/support/{support}/costs/export
+    // Export Plan Cost ke Excel — 4 sheet yang sama dengan Delivery Project
+    // ──────────────────────────────────────────────────────────────
+    public function export(DeliverySupport $support)
+    {
+        $support->load('client.basicData');
+
+        $costs = DeliverySupportCost::where('delivery_support_id', $support->id)
+            ->whereNull('parent_id')
+            ->with(['items', 'children.items'])
+            ->orderBy('order_sequence')
+            ->get();
+
+        $filename = 'Plan_Cost_'
+            . trim(preg_replace('/[^A-Za-z0-9-]+/', '_', $support->io_number ?: $support->name), '_')
+            . '_' . now()->format('Ymd_His') . '.xlsx';
+
+        $report = new ProjectMonthlyCostReport($support);
+
+        return Excel::download(
+            new DeliveryProjectCostExport(
+                $support,
+                $costs->map(fn($c) => $this->formatCost($c))->all(),
+                $this->buildSummary($costs),
+                $this->expenseRows($costs),
+                $report->build(),
+                $report->releaseSchedules()
+            ),
+            $filename
+        );
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // GET /delivery/support/{support}/costs/monthly
+    // Report Monthly Cost vs TOP Invoiced (lihat ProjectMonthlyCostReport)
+    // ──────────────────────────────────────────────────────────────
+    public function monthly(DeliverySupport $support)
+    {
+        return response()->json((new ProjectMonthlyCostReport($support))->build());
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -179,7 +225,9 @@ class DeliverySupportCostController extends Controller
         $validated = $request->validate([
             'description' => 'required|string|max:200',
             'amount'      => 'required|numeric|min:0',
-            'document'    => 'nullable|file|max:102400',
+            // Tanggal dari kalender; period ("YYYY-MM") diturunkan darinya.
+            'expense_date' => 'required|date_format:Y-m-d',
+            'document'     => 'nullable|file|max:102400',
         ]);
 
         $docName = null;
@@ -210,6 +258,8 @@ class DeliverySupportCostController extends Controller
             'delivery_support_cost_id' => $cost->id,
             'description'              => $validated['description'],
             'amount'                   => $validated['amount'],
+            'expense_date'             => $validated['expense_date'],
+            'period'                   => substr($validated['expense_date'], 0, 7),
             'document_name'            => $docName,
             'document_file_id'         => $docFile,
             'document_url'             => $docUrl,
@@ -242,6 +292,7 @@ class DeliverySupportCostController extends Controller
         $validated = $request->validate([
             'description'     => 'required|string|max:200',
             'amount'          => 'required|numeric|min:0',
+            'expense_date'    => 'required|date_format:Y-m-d',
             'document'        => 'nullable|file|max:102400',
             'remove_document' => 'nullable|boolean',
         ]);
@@ -284,6 +335,8 @@ class DeliverySupportCostController extends Controller
         $item->update([
             'description'      => $validated['description'],
             'amount'           => $validated['amount'],
+            'expense_date'     => $validated['expense_date'],
+            'period'           => substr($validated['expense_date'], 0, 7),
             'document_name'    => $docName,
             'document_file_id' => $docFile,
             'document_url'     => $docUrl,
@@ -323,6 +376,137 @@ class DeliverySupportCostController extends Controller
             'message' => 'Expense item deleted.',
             'total'   => $total,
         ]);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // GET /delivery/support/{support}/costs/{cost}/releases
+    // Total release + jadwal release bulanan sebuah cost item
+    // ──────────────────────────────────────────────────────────────
+    public function indexReleases(DeliverySupport $support, DeliverySupportCost $cost)
+    {
+        if ($error = $this->rejectNonLeaf($support, $cost)) {
+            return $error;
+        }
+
+        return response()->json($this->releasePayload($cost));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // PUT /delivery/support/{support}/costs/{cost}/release
+    // Langkah 1 "Atur Release Cost": simpan total release item
+    // ──────────────────────────────────────────────────────────────
+    public function updateRelease(Request $request, DeliverySupport $support, DeliverySupportCost $cost)
+    {
+        if ($error = $this->rejectNonLeaf($support, $cost)) {
+            return $error;
+        }
+
+        $validated = $request->validate([
+            'release_amount' => 'nullable|numeric|min:0',
+        ]);
+
+        $cost->update(['release_amount' => $validated['release_amount']]);
+
+        return response()->json(array_merge(
+            ['message' => 'Total release saved.'],
+            $this->releasePayload($cost)
+        ));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // POST /delivery/support/{support}/costs/{cost}/releases
+    // Langkah 2: tambah satu jadwal release bulanan.
+    // Total jadwal boleh melebihi total release (Belum dijadwalkan jadi minus).
+    // ──────────────────────────────────────────────────────────────
+    public function storeRelease(Request $request, DeliverySupport $support, DeliverySupportCost $cost)
+    {
+        if ($error = $this->rejectNonLeaf($support, $cost)) {
+            return $error;
+        }
+
+        $validated = $request->validate([
+            'schedule_date' => 'required|date_format:Y-m-d',
+            'amount'        => 'required|numeric|gt:0',
+            'notes'         => 'nullable|string|max:255',
+        ]);
+
+        DeliverySupportCostReleaseSchedule::create([
+            'delivery_support_cost_id' => $cost->id,
+            'schedule_date'            => $validated['schedule_date'],
+            'period'                   => substr($validated['schedule_date'], 0, 7),
+            'amount'                   => $validated['amount'],
+            'notes'                    => $validated['notes'] ?? null,
+        ]);
+
+        return response()->json(array_merge(
+            ['message' => 'Release schedule added.'],
+            $this->releasePayload($cost)
+        ), 201);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // DELETE /delivery/support/{support}/costs/{cost}/releases/{schedule}
+    // ──────────────────────────────────────────────────────────────
+    public function destroyRelease(
+        DeliverySupport $support,
+        DeliverySupportCost $cost,
+        DeliverySupportCostReleaseSchedule $schedule
+    ) {
+        if ($cost->delivery_support_id !== $support->id
+            || $schedule->delivery_support_cost_id !== $cost->id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        $schedule->delete();
+
+        return response()->json(array_merge(
+            ['message' => 'Release schedule deleted.'],
+            $this->releasePayload($cost)
+        ));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Helper: release hanya diatur di cost leaf (sub-item, atau parent tanpa
+    // sub-item). Release parent ber-sub-item adalah agregat anaknya.
+    // ──────────────────────────────────────────────────────────────
+    private function rejectNonLeaf(DeliverySupport $support, DeliverySupportCost $cost)
+    {
+        if ($cost->delivery_support_id !== $support->id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        if ($cost->children()->exists()) {
+            return response()->json([
+                'message' => 'Release of this item is the total of its sub-items. Set the release on each sub-item instead.',
+            ], 422);
+        }
+
+        return null;
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Helper: payload modal "Atur Release Cost"
+    // ──────────────────────────────────────────────────────────────
+    private function releasePayload(DeliverySupportCost $cost): array
+    {
+        $cost->refresh();
+        $schedules = $cost->releaseSchedules()->get();
+        $total     = $cost->release_amount;
+        $scheduled = (float) $schedules->sum('amount');
+
+        return [
+            'release_amount' => $total,
+            'scheduled'      => $scheduled,
+            // Boleh minus bila jadwal melebihi total release.
+            'unscheduled'    => (float) ($total ?? 0) - $scheduled,
+            'schedules'      => $schedules->map(fn($s) => [
+                'id'            => $s->id,
+                'schedule_date' => $s->schedule_date?->format('Y-m-d'),
+                'period'        => $s->period,
+                'amount'        => (float) $s->amount,
+                'notes'         => $s->notes,
+            ])->values(),
+        ];
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -455,10 +639,46 @@ class DeliverySupportCostController extends Controller
             'id'            => $item->id,
             'description'   => $item->description,
             'amount'        => $item->amount,
+            // "Y-m-d" / "YYYY-MM"; null untuk expense lama sebelum ada kalender.
+            'expense_date'  => $item->expense_date?->format('Y-m-d'),
+            'period'        => $item->period,
             'document_name' => $item->document_name,
             'document_url'  => $item->document_url,
             'created_at'    => $item->created_at?->format('d M Y'),
         ];
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Helper: seluruh expense detail support, satu baris per expense,
+    // mengikuti urutan cost item di tabel rekap (dipakai export Excel).
+    // ──────────────────────────────────────────────────────────────
+    private function expenseRows($costs): array
+    {
+        $rows = [];
+
+        foreach ($costs as $parent) {
+            // Leaf = sub-item; parent tanpa sub-item bisa punya expense sendiri.
+            $leaves = $parent->children->isNotEmpty() ? $parent->children : collect([$parent]);
+
+            foreach ($leaves as $leaf) {
+                foreach ($leaf->items as $item) {
+                    $rows[] = [
+                        'cost_type'     => $leaf->cost_type,
+                        'cost_code'     => $leaf->code,
+                        'cost_name'     => $leaf->name,
+                        'period'        => $item->period,
+                        'expense_date'  => $item->expense_date,
+                        'description'   => $item->description,
+                        'amount'        => (float) $item->amount,
+                        'document_name' => $item->document_name,
+                        'document_url'  => $item->document_url,
+                        'created_at'    => $item->created_at,
+                    ];
+                }
+            }
+        }
+
+        return $rows;
     }
 
     // ──────────────────────────────────────────────────────────────

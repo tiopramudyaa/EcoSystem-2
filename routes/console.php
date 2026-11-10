@@ -30,6 +30,16 @@ Schedule::command('tickets:open-reminders')
     ->withoutOverlapping()
     ->name('tickets-open-reminders');
 
+// Reminder harian (flow 8) ke group chat Teams tiket Closed yang dokumen
+// deliverable mandatory-nya belum lengkap, dengan @mention PIC. Tiap jam, bukan
+// dailyAt: command-nya sendiri yang menjaga jendela jam kirim dan "sekali per
+// hari per tiket", sehingga tiket yang tidak kebagian batch_limit tetap terkirim
+// di jam berikutnya. Keluar tanpa efek kalau flow-nya belum dikonfigurasi.
+Schedule::command('tickets:deliverable-reminders')
+    ->hourly()
+    ->withoutOverlapping()
+    ->name('tickets-deliverable-reminders');
+
 // Recompute delivery activity statuses tiap hari 00:05 (untuk transisi delayed berbasis tanggal)
 Schedule::command('activities:recompute-status')
     ->dailyAt('00:05')

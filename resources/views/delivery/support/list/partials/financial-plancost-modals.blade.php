@@ -192,6 +192,12 @@
                            placeholder="e.g. Transportation, Accommodation…">
                 </div>
                 <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Period <span class="text-red-500">*</span></label>
+                    <input type="date" id="aeDateInput"
+                           class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400">
+                    <p id="aeDateHint" class="hidden text-[11px] text-amber-600 mt-1">This expense has no exact date yet — pick the expense date.</p>
+                </div>
+                <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Amount (Rp) <span class="text-red-500">*</span></label>
                     <input type="text" id="aeAmountInput" inputmode="numeric"
                            class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
@@ -255,8 +261,8 @@
         <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col" style="max-height:90vh;">
             <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
                 <div>
-                    <h3 class="text-base font-semibold text-gray-900">Actual Expense Details</h3>
-                    <p class="text-xs text-gray-500 mt-0.5" id="actualDetailSubtitle"></p>
+                    <h3 class="text-base font-semibold text-gray-900">Actual Expense Details: <span id="actualDetailSubtitle"></span></h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Actual is calculated automatically from the expense list. Period follows the expense date.</p>
                 </div>
                 <button type="button" onclick="SupportPlanCost.closeActualDetailModal()" class="text-gray-400 hover:text-gray-600 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,13 +271,28 @@
                 </button>
             </div>
             <div class="overflow-y-auto flex-1 p-6 space-y-5">
-                <div id="actualDetailSummary" class="flex justify-center">
-                    <div class="bg-orange-50 border border-orange-200 rounded-lg px-6 py-4 text-center w-full max-w-xs">
-                        <p class="text-xs text-orange-600 font-medium uppercase tracking-wide mb-1">Actual Amount</p>
-                        <p class="text-lg font-bold text-orange-700 font-mono" id="adTotalItems">Rp 0</p>
-                        <p class="text-xs text-orange-400 mt-0.5">Auto-calculated from the expense total below</p>
+                {{-- Kartu ringkasan: Actual = total seluruh expense detail di bawah --}}
+                <div id="actualDetailSummary" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Release</p>
+                        <p class="text-lg font-bold text-blue-700 font-mono" id="adReleaseCard">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Actual</p>
+                        <p class="text-lg font-bold text-orange-600 font-mono" id="adTotalItems">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Avail. Release</p>
+                        <p class="text-lg font-bold text-gray-800 font-mono" id="adAvailReleaseCard">Rp 0</p>
                     </div>
                 </div>
+
+                {{-- Subtotal per bulan --}}
+                <div id="adMonthlyWrap" class="hidden">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">Monthly Subtotal</h4>
+                    <div id="adMonthlyList" class="divide-y divide-gray-100 border-y border-gray-100 text-sm"></div>
+                </div>
+
                 <div>
                     <h4 class="text-sm font-semibold text-gray-700 mb-2">Expense List</h4>
                     <div class="overflow-x-auto rounded-lg border border-gray-200">
@@ -280,6 +301,7 @@
                                 <tr>
                                     <th class="px-4 py-2.5 text-left font-medium">#</th>
                                     <th class="px-4 py-2.5 text-left font-medium">Expense Name</th>
+                                    <th class="px-4 py-2.5 text-center font-medium w-24">Period</th>
                                     <th class="px-4 py-2.5 text-right font-medium">Amount</th>
                                     <th class="px-4 py-2.5 text-center font-medium">Document</th>
                                     <th class="px-4 py-2.5 text-center font-medium w-24">Action</th>
@@ -287,7 +309,7 @@
                             </thead>
                             <tbody id="actualDetailTableBody" class="divide-y divide-gray-100">
                                 <tr>
-                                    <td colspan="5" class="text-center py-8 text-gray-400 text-sm">
+                                    <td colspan="6" class="text-center py-8 text-gray-400 text-sm">
                                         <svg class="animate-spin h-5 w-5 primary-text mx-auto mb-2" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -298,7 +320,7 @@
                             </tbody>
                             <tfoot id="actualDetailTableFoot" class="hidden bg-gray-50 border-t-2 border-gray-300">
                                 <tr>
-                                    <td colspan="2" class="px-4 py-2.5 text-sm font-bold text-gray-700 text-right">Total:</td>
+                                    <td colspan="3" class="px-4 py-2.5 text-sm font-bold text-gray-700 text-right">Total:</td>
                                     <td class="px-4 py-2.5 text-right font-bold text-blue-700 font-mono text-sm" id="adFooterTotal">Rp 0</td>
                                     <td colspan="2"></td>
                                 </tr>
@@ -314,11 +336,17 @@
                         Add Expense
                     </h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
+                        <div class="sm:col-span-2">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Expense Name <span class="text-red-500">*</span></label>
                             <input type="text" id="adDescInput" maxlength="200"
                                    class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
                                    placeholder="e.g. Transportation, Accommodation…">
+                        </div>
+                        {{-- Tanggal expense (kalender); yang ditampilkan hanya bulan + tahun --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Period <span class="text-red-500">*</span></label>
+                            <input type="date" id="adDateInput"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Amount (Rp) <span class="text-red-500">*</span></label>
@@ -359,6 +387,121 @@
             </div>
             <div class="px-6 py-4 border-t border-gray-100 flex justify-end flex-shrink-0">
                 <button type="button" onclick="SupportPlanCost.closeActualDetailModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════ --}}
+{{-- PLAN COST — ATUR RELEASE COST MODAL                           --}}
+{{-- Langkah 1: total release per item. Langkah 2: jadwal bulanan.  --}}
+{{-- ══════════════════════════════════════════════════════════════ --}}
+<div id="releaseModal" class="fixed inset-0 z-50 hidden">
+    <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="SupportPlanCost.closeReleaseModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:90vh;">
+
+            {{-- Header --}}
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-900">Set Release Cost</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Step 1: set the item's total release. Step 2: split it into a monthly schedule.</p>
+                </div>
+                <button type="button" onclick="SupportPlanCost.closeReleaseModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Scrollable body --}}
+            <div class="overflow-y-auto flex-1 p-6 space-y-5">
+
+                {{-- Cost item (hanya leaf). Pindah item = membaca → tetap aktif. --}}
+                <div data-lock-exempt>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Cost Item</label>
+                    <select id="rlCostSelect" onchange="SupportPlanCost.openReleaseModal(Number(this.value))"
+                            class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm bg-gray-50"></select>
+                </div>
+
+                {{-- Kartu ringkasan --}}
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Total Release</p>
+                        <p class="text-lg font-bold text-blue-700 font-mono" id="rlTotalCard">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Scheduled</p>
+                        <p class="text-lg font-bold text-gray-800 font-mono" id="rlScheduledCard">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Unscheduled</p>
+                        <p class="text-lg font-bold text-red-600 font-mono" id="rlUnscheduledCard">Rp 0</p>
+                    </div>
+                </div>
+
+                {{-- Subtotal per bulan --}}
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">Monthly Subtotal</h4>
+                    <div id="rlMonthlyList" class="divide-y divide-gray-100 border-y border-gray-100 text-sm"></div>
+                </div>
+
+                {{-- 1. Total release --}}
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700">1. Item Total Release (Rp)</h4>
+                    <label class="block text-xs font-medium text-gray-600 mt-1 mb-1">Total Release</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="rlTotalInput" inputmode="numeric"
+                               class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                               placeholder="0">
+                        <button type="button" id="rlSaveTotalBtn" data-closed-hide data-perm-action="edit"
+                                onclick="SupportPlanCost.saveReleaseTotal()"
+                                class="flex-shrink-0 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50">
+                            Save Total
+                        </button>
+                    </div>
+                </div>
+
+                {{-- 2. Jadwal bulanan --}}
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">2. Monthly Schedule</h4>
+                    <div id="rlScheduleList" class="divide-y divide-gray-100 border-y border-gray-100 text-sm"></div>
+
+                    <div id="rlAddForm" data-closed-hide class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end mt-3">
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                            <input type="date" id="rlDateInput"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Amount (Rp)</label>
+                            <input type="text" id="rlAmountInput" inputmode="numeric"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                                   placeholder="0">
+                        </div>
+                        <div class="sm:col-span-4">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                            <input type="text" id="rlNotesInput" maxlength="255"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                                   placeholder="Optional">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button type="button" id="rlAddBtn" data-perm-action="manage"
+                                    onclick="SupportPlanCost.addReleaseSchedule()"
+                                    class="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50">
+                                Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end flex-shrink-0">
+                <button type="button" onclick="SupportPlanCost.closeReleaseModal()"
                         class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                     Close
                 </button>
