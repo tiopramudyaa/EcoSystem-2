@@ -830,6 +830,13 @@ class AuthController extends Controller
                     ], 403);
                 }
 
+                // ── System lock: only the protected admin may sign in ───────
+                // Checked before the 2FA prompt so a locked-out user is not
+                // asked for a code first. Also re-checked in finalizeEmployeeLogin().
+                if (\App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
+                    return $this->systemLockedResponse();
+                }
+
                 // ── Two-factor authentication gate ──────────────────────────
                 // Every other gate (customer block, is_already_cp, system-access
                 // role) has already run by this point, so verifyTwoFactor() below
@@ -908,6 +915,15 @@ class AuthController extends Controller
         }
     }
 
+    private function systemLockedResponse()
+    {
+        return response()->json([
+            'success' => false,
+            'locked'  => true,
+            'message' => \App\Services\SystemLockService::message(),
+        ], 423);
+    }
+
     /**
      * Finishes an employee login after every gate (password, customer-block,
      * is_already_cp, system-access role, and — if enabled — 2FA) has passed:
@@ -929,6 +945,11 @@ class AuthController extends Controller
      */
     private function finalizeEmployeeLogin(object $authUser, array $sessionData, bool $remember, Request $request, string $requestId, bool $justVerified2fa = false)
     {
+        // System lock: also covers the 2FA-verify and trusted-device paths.
+        if (\App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
+            return $this->systemLockedResponse();
+        }
+
         $token    = $sessionData['token'];
         $userData = $sessionData['userData'];
 

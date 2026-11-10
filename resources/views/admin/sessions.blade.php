@@ -9,6 +9,22 @@
 
 <div class="space-y-6">
 
+    <!-- System Lock -->
+    <div id="lockCard" class="hidden rounded-xl border p-4 shadow-sm">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div class="min-w-0">
+                <p class="text-sm font-semibold" id="lockTitle">System Lock</p>
+                <p class="text-xs mt-1" id="lockDesc"></p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap" id="lockActions">
+                <input type="text" id="lockMessage" maxlength="255" placeholder="Message shown on the login page (optional)"
+                    class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs w-72 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400">
+                <button id="btnLock" class="primary-solid px-3 py-1.5 rounded-lg text-xs font-medium text-white hover:opacity-90 transition">Lock System</button>
+                <button id="btnUnlock" class="primary-solid hidden px-3 py-1.5 rounded-lg text-xs font-medium text-white hover:opacity-90 transition">Unlock System</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Stats Row -->
     <div class="grid grid-cols-2 gap-4">
         <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
@@ -128,6 +144,10 @@ async function loadSessions() {
         renderTable(getFilteredSortedSessions());
     } catch (e) {
         console.error(e);
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('tableWrapper').classList.add('hidden');
+        document.getElementById('emptyStateText').textContent = 'Failed to load sessions. Reload the page to try again.';
+        document.getElementById('emptyState').classList.remove('hidden');
     }
 }
 
@@ -194,6 +214,7 @@ function renderTable(data) {
     document.getElementById('tableInfo').textContent = sessions.length ? `${data.length} of ${sessions.length} shown` : '';
 
     if (!sessions.length) {
+        document.getElementById('emptyStateText').textContent = 'No active sessions found';
         document.getElementById('emptyState').classList.remove('hidden');
         document.getElementById('tableWrapper').classList.add('hidden');
         return;
@@ -248,10 +269,13 @@ function renderTable(data) {
 
 function parseAgent(ua) {
     if (!ua) return '-';
-    if (ua.includes('Chrome')) return 'Chrome';
+    // Order matters: Edge and Opera user agents also contain "Chrome",
+    // and Chrome's also contains "Safari".
+    if (/Edg(e|A|iOS)?\//.test(ua)) return 'Edge';
+    if (/OPR\/|Opera/.test(ua)) return 'Opera';
     if (ua.includes('Firefox')) return 'Firefox';
+    if (ua.includes('Chrome') || ua.includes('CriOS')) return 'Chrome';
     if (ua.includes('Safari')) return 'Safari';
-    if (ua.includes('Edge')) return 'Edge';
     return ua.substring(0, 40);
 }
 
@@ -334,7 +358,77 @@ function showToast(msg, type) {
     setTimeout(() => t.remove(), 3000);
 }
 
+let lockState = { is_locked: false };
+let canChangeLock = false;
+
+async function loadLock() {
+    try {
+        const res = await fetch('/api/admin/sessions/lock', { credentials: 'same-origin' });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message);
+        lockState = json.data;
+        canChangeLock = !!json.can_change;
+        renderLock();
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function renderLock() {
+    const card = document.getElementById('lockCard');
+    const locked = !!lockState.is_locked;
+    card.classList.remove('hidden', 'bg-red-50', 'border-red-200', 'bg-white', 'border-gray-200');
+    card.classList.add(...(locked ? ['bg-red-50', 'border-red-200'] : ['bg-white', 'border-gray-200']));
+
+    document.getElementById('lockTitle').textContent = locked ? 'System is LOCKED' : 'System Lock';
+    document.getElementById('lockTitle').className = 'text-sm font-semibold ' + (locked ? 'text-red-700' : 'text-gray-700');
+
+    let desc;
+    if (locked) {
+        desc = 'Only the protected administrator can sign in or use the system. Everyone else is turned away.';
+        if (lockState.locked_by) desc += ` Locked by ${lockState.locked_by}` + (lockState.locked_at ? ` at ${lockState.locked_at}.` : '.');
+        if (lockState.message) desc += ` Message: "${lockState.message}"`;
+    } else {
+        desc = 'Lock the system during a deployment so nobody signs in or changes data. Everyone except the protected administrator is signed out and blocked until you unlock.';
+    }
+    if (!canChangeLock) desc += ' Only the protected administrator can change this.';
+    document.getElementById('lockDesc').textContent = desc;
+    document.getElementById('lockDesc').className = 'text-xs mt-1 ' + (locked ? 'text-red-600' : 'text-gray-500');
+
+    document.getElementById('lockActions').classList.toggle('hidden', !canChangeLock);
+    document.getElementById('lockMessage').classList.toggle('hidden', locked);
+    document.getElementById('btnLock').classList.toggle('hidden', locked);
+    document.getElementById('btnUnlock').classList.toggle('hidden', !locked);
+}
+
+async function postLock(url, body) {
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(body || {}),
+        });
+        const json = await res.json();
+        showToast(json.message || (json.success ? 'Done' : 'Request failed'), json.success ? 'success' : 'error');
+        if (json.success) { lockState = json.data; renderLock(); loadSessions(); }
+    } catch (e) {
+        showToast('Request failed', 'error');
+    }
+}
+
+document.getElementById('btnLock').addEventListener('click', async () => {
+    if (!await showConfirm('Lock the system? Everyone except the protected administrator is signed out now and cannot sign in until you unlock.', 'Lock System', 'danger')) return;
+    await postLock('/api/admin/sessions/lock', { message: document.getElementById('lockMessage').value.trim() });
+});
+
+document.getElementById('btnUnlock').addEventListener('click', async () => {
+    if (!await showConfirm('Unlock the system? Users can sign in again.', 'Unlock System', 'primary')) return;
+    await postLock('/api/admin/sessions/unlock');
+});
+
 updateSortIndicators();
 loadSessions();
+loadLock();
 </script>
 @endsection
