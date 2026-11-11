@@ -332,6 +332,13 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50 sticky top-0 z-10">
                         <tr class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {{-- Last Update: direct sort toggle --}}
+                            <th class="proj-th bg-gray-50 border-b">
+                                <button type="button" class="proj-th-btn" onclick="projToggleSort('updated')" title="Sort by Last Update">
+                                    <span>Last Update</span>
+                                    <span id="proj-sort-updated" class="proj-sort-icon">⇅</span>
+                                </button>
+                            </th>
                             {{-- IO Number: sort + keyword filter --}}
                             <th class="proj-th relative bg-gray-50 border-b">
                                 <button type="button" class="proj-th-btn" onclick="toggleProjPanel('proj-panel-io', this)">
@@ -467,13 +474,6 @@
                                     @include('delivery.project.projects.partials.proj-clear', ['key' => 'status'])
                                 </div>
                             </th>
-                            {{-- Last Update Date: direct sort toggle --}}
-                            <th class="proj-th bg-gray-50 border-b">
-                                <button type="button" class="proj-th-btn" onclick="projToggleSort('updated')" title="Sort by Last Update">
-                                    <span>Last Update Date</span>
-                                    <span id="proj-sort-updated" class="proj-sort-icon">⇅</span>
-                                </button>
-                            </th>
                         </tr>
                     </thead>
                         <tbody id="desktop-project-table-body" class="bg-white divide-y divide-gray-200">
@@ -493,6 +493,9 @@
                                     data-customer="{{ strtolower($project->client->basicData->name_1 ?? '') }}"
                                     data-updated="{{ optional($project->last_update_date)->timestamp ?? 0 }}"
                                     data-searchable-content="{{ strtolower(($project->io_number ?? '') . ' ' . ($project->client->basicData->name_1 ?? '') . ' ' . $project->project_type . ' ' . $project->name . ' ' . ($project->ae_name ?? '') . ' ' . $project->project_owner . ' ' . $project->status . ' ' . $project->category) }}">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ optional($project->last_update_date)->format('d M Y') ?? '-' }}
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {{ $project->io_number ?? 'N/A' }}
                                     </td>
@@ -530,9 +533,6 @@
                                                ($project->status === 'At Critical' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800')) }}">
                                             {{ $project->status ?? 'N/A' }}
                                         </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ optional($project->last_update_date)->format('d M Y') ?? '-' }}
                                     </td>
                                 </tr>
                             @empty

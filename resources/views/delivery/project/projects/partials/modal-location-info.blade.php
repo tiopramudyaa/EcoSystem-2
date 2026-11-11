@@ -98,6 +98,7 @@
                     <textarea name="location_street" rows="2"
                               class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus">{{ $project->location_street }}</textarea>
                 </div>
+                @include('delivery.project.projects.partials.location-coordinates-fields', ['prefix' => 'edit_loc', 'lat' => $project->location_latitude, 'lng' => $project->location_longitude])
             </div>
                 </div>
                 <div class="p-6 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">

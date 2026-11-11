@@ -28,7 +28,7 @@ Project heads, project administrators, RPMO and management, and any role given t
 
 1. Open `Delivery` › `Project`. The three tabs on top are `Project`, `Issues` and `Planning`. `Project` is the list.
 2. Read the `SUMMARY` cards: `Total Projects`, `Open`, `In Process`, `Closed`, `On Track`, `At Risk`, `At Critical` and `Ending ≤ 30 days`. Click a card to filter the list to it.
-3. In the table, each project shows its `IO Number`, `Customer`, `Project Type`, `Project Name`, `AE`, `Project Owner`, `Category`, `Project Status` and `Last Update Date`. Use the arrows in a column title to sort and the funnel icon to filter.
+3. In the table, each project shows its `Last Update`, `IO Number`, `Customer`, `Project Type`, `Project Name`, `AE`, `Project Owner`, `Category` and `Project Status`. The most recently updated project is on top. Use the arrows in a column title to sort and the funnel icon to filter.
 4. Click a project to open its detail page (see the topic about the project detail).
 5. Choose `Export Excel` to download the list.
 

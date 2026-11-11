@@ -136,12 +136,54 @@ const SUPPORT_THEAD_HTML = `<tr>
     <th class="${TH_PLAIN}" style="min-width:90px;">MD Consumed</th>
     <th class="${TH_PLAIN}" style="min-width:70px;">On Site</th>
 </tr>`;
+// ── Project tab thead ─────────────────────────────────────────────────────
+// Columns follow the Project timesheet input form: Submit Date, Time, Duration,
+// Project, Activity, Presence, Location, Activity Detail (+ Employee for approvers, Status).
+let projectLayoutActive = false;
+let projectLayoutType = 'project';   // 'project' | 'non_project': Non Project drops the Project and Activity columns
+
+const _PROJ_TEXT_PANEL = `<div id="tsTextPanel_Project" class="hidden absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] p-3" style="min-width:220px;">
+    <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Search project</label>
+    <input type="text" id="colFilterTsProject" placeholder="Type project name…" oninput="applyColFilter()" onclick="event.stopPropagation()"
+           class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400">
+    <div class="flex justify-end gap-2 mt-2">
+        <button type="button" onclick="clearTsTextPanel('Project')" class="px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50">Clear</button>
+    </div>
+</div>`;
+
+// Reuse a <th> already defined in the support thead (Employee / Date: sort + filter panels).
+function _thPick(html, needle) {
+    return (html.match(/<th[\s\S]*?<\/th>/g) || []).find(x => x.includes(needle)) || '';
+}
+
+function projectTheadHtml(approval, kind) {
+    const nonProject = kind === 'non_project';
+    const dateTh = _thPick(SUPPORT_THEAD_HTML, 'toggleTsDatePanel').replace(/(<span[^>]*>)[^<]*(<\/span>)/, '$1Submit Date$2');
+    // The support thead labels this column "Name"; the other layouts call it "Employee".
+    const empTh  = _thPick(SUPPORT_THEAD_HTML, "toggleTsTextPanel(event,'Employee')").replace(/>\s*Name\s*</, '>Employee<');
+    const projTh = `<th class="${TH_FILT}" style="min-width:170px; position:relative;"><button type="button" onclick="toggleTsTextPanel(event,'Project')" class="w-full flex items-center gap-1.5 px-3 py-2.5 cursor-pointer hover:bg-gray-100 transition-colors"><span class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">Project</span>${CHEVRON_SVG}${FUNNEL_SVG('tsTextIcon_Project')}</button>${_PROJ_TEXT_PANEL}</th>`;
+
+    return `<tr>
+    <th class="${TH_PLAIN}" style="min-width:36px;"><input type="checkbox" id="selectAll" class="w-4 h-4 rounded border-gray-300"></th>
+    ${approval ? empTh : ''}
+    ${dateTh}
+    <th class="${TH_PLAIN}" style="min-width:120px;">Time</th>
+    <th class="${TH_PLAIN}" style="min-width:80px;">Duration</th>
+    ${nonProject ? '' : projTh}
+    ${nonProject ? '' : `<th class="${TH_PLAIN}" style="min-width:150px;">Activity</th>`}
+    <th class="${TH_PLAIN}" style="min-width:90px;">Presence</th>
+    <th class="${TH_PLAIN}" style="min-width:200px;">Location</th>
+    <th class="${TH_PLAIN}" style="min-width:200px;">Activity Detail</th>
+    <th class="${TH_FILT}" style="min-width:120px;">${_mkStatusDd()}</th>
+</tr>`;
+}
+
 let currentFilters = {
     start_date: null,
     end_date: null,
     status: '',
     activity_type: '',
-    type_filter: ''   // '' | 'project' | 'support' | 'office'
+    type_filter: ''   // '' | 'project' | 'non_project' | 'support' | 'office'
 };
 let tsSortKey = 'date';
 let tsSortDir = 'desc';
@@ -245,6 +287,17 @@ document.addEventListener('DOMContentLoaded', function() {
         currentFilters.type_filter = window.lockedType;
     }
 
+    // Roles locked to Project or Non Project have no tabs: use that column layout straight away.
+    if ((window.lockedType === 'project' || window.lockedType === 'non_project') && thead) {
+        projectLayoutActive = true;
+        projectLayoutType = window.lockedType;
+        thead.innerHTML = projectTheadHtml(!!(window.isApprovalMode || window.isHoSMode), window.lockedType);
+        const projTable = document.getElementById('timesheetTable');
+        if (projTable) projTable.style.minWidth = window.lockedType === 'project' ? '1200px' : '1000px';
+        attachSelectAll();
+        if (typeof initCustomDropdowns === 'function') initCustomDropdowns(thead);
+    }
+
     // Force support spreadsheet layout for support-locked roles (HoS role_id=5 AND Delivery Support User role_id=2)
     if (window.isHoSMode || window.lockedType === 'support') {
         currentFilters.type_filter = 'support';
@@ -282,6 +335,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         attachSelectAll();
+    }
+
+    // Roles whose types are only Project / Non Project start on the Project tab.
+    const _allowedAtInit = window.allowedTypes || [];
+    if (!window.lockedType && _allowedAtInit.length && _allowedAtInit.every(t => t === 'project' || t === 'non_project')) {
+        filterByType('project');
     }
 });
 
@@ -811,7 +870,7 @@ function handleTimesheetTypeChange() {
         <button type="button" class="custom-dd-item w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50" data-value="remote">Remote</button>
         <button type="button" class="custom-dd-item w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50" data-value="hybrid">Hybrid</button>`;
 
-    if (selectedType === 'project') {
+    if (selectedType === 'project' || selectedType === 'non_project') {
         fieldsHTML = `
             <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">
@@ -883,6 +942,11 @@ function handleTimesheetTypeChange() {
 
             <div id="projectGpsStatus" class="text-xs"></div>
         `;
+
+        // Non Project: the same inputs minus Project / Activity (everything from the Presence row on).
+        if (selectedType === 'non_project') {
+            fieldsHTML = fieldsHTML.slice(fieldsHTML.indexOf('<div class="grid grid-cols-2 gap-3">'));
+        }
 
     } else if (selectedType === 'support') {
         fieldsHTML = `
@@ -979,6 +1043,8 @@ function handleTimesheetTypeChange() {
 
     // Inject HTML and init custom dropdowns
     dynamicFieldsContainer.innerHTML = fieldsHTML;
+    // On-site shows the project's location as the Location choice (see updateLocationSuggestions).
+    document.getElementById('timesheetPresence')?.closest('.custom-dd')?.setAttribute('data-onchange', 'onTimesheetPresenceChange');
     if (typeof initCustomDropdowns === 'function') {
         initCustomDropdowns(dynamicFieldsContainer);
     }
@@ -986,7 +1052,7 @@ function handleTimesheetTypeChange() {
     // Update description label and placeholder based on type
     const descLabel = document.querySelector('label[for="timesheetDescription"]');
     if (descLabel) {
-        const labelText = { support: 'Activity', project: 'Activity Detail' }[selectedType] || 'Description';
+        const labelText = { support: 'Activity', project: 'Activity Detail', non_project: 'Activity Detail' }[selectedType] || 'Description';
         descLabel.innerHTML = `${labelText} <span class="text-red-500">*</span>`;
     }
     const timesheetDescEl = document.getElementById('timesheetDescription');
@@ -994,11 +1060,12 @@ function handleTimesheetTypeChange() {
         timesheetDescEl.placeholder = {
             support: 'Describe what you did in this session',
             project: 'Describe the work you did (logging for an earlier day? mention the date here)',
+            non_project: 'Describe the work you did (logging for an earlier day? mention the date here)',
         }[selectedType] || 'What did you work on?';
     }
 
     // Now load data based on type (after DOM is updated)
-    if (selectedType === 'project') {
+    if (selectedType === 'project' || selectedType === 'non_project') {
         initProjectForm();
     } else {
         resetProjectFormState();
@@ -1030,7 +1097,12 @@ function _tsCsrf() {
 // Project mode needs a fresh device location unless we're editing a timesheet
 // that already is a project one (its original location is kept).
 function _tsNeedsGps() {
-    return !(_tsEditing && _tsEditing.delivery_projects_id);
+    return !_tsEditingProjectLike();
+}
+
+// Editing a Project or Non Project entry: its captured date and GPS fix are kept.
+function _tsEditingProjectLike() {
+    return !!(_tsEditing && (_tsEditing.delivery_projects_id || _tsEditing.is_non_project));
 }
 
 function _tsDdPanel(hiddenId) {
@@ -1047,13 +1119,13 @@ function _tsDdPlaceholder(hiddenId, text, cls = 'text-gray-500') {
 // Called by handleTimesheetTypeChange when the Project type is active.
 function initProjectForm() {
     const dateField = document.getElementById('timesheetDate');
-    const date = _tsEditing?.delivery_projects_id ? _tsEditing.date : formatDate(new Date());
+    const date = _tsEditingProjectLike() ? _tsEditing.date : formatDate(new Date());
     if (dateField) {
         dateField.value = date;
         dateField.readOnly = true;
         dateField.classList.add('cursor-not-allowed', 'text-gray-500');
     }
-    document.getElementById('timesheetDateHint')?.classList.toggle('hidden', !!_tsEditing?.delivery_projects_id);
+    document.getElementById('timesheetDateHint')?.classList.toggle('hidden', _tsEditingProjectLike());
 
     // A late-exception period choice would move the date — not for project.
     const periodSel = document.getElementById('timesheetPeriodSelect');
@@ -1148,6 +1220,8 @@ async function loadMyProjectsForTimesheet() {
             return;
         }
 
+        _tsProjectsById = Object.fromEntries(projects.map(p => [String(p.id), p]));
+
         panel.innerHTML = '<button type="button" class="custom-dd-item w-full px-3 py-2 text-left text-sm text-gray-500 hover:bg-gray-50" data-value="">Select a Project</button>'
             + projects.map(p => {
                 const client = p.client?.basic_data?.name_1 || '';
@@ -1168,6 +1242,7 @@ async function loadMyProjectsForTimesheet() {
 // public holiday) offer "Log without activity".
 async function onProjectSelected() {
     const projectId = document.getElementById('timesheetProjectId')?.value;
+    updateLocationSuggestions();
     const actField  = document.getElementById('projectActivityField');
     const nwBox     = document.getElementById('projectNonWorkingBox');
     const actHint   = document.getElementById('projectActivityHint');
@@ -1251,6 +1326,63 @@ async function onProjectSelected() {
     } catch (err) {
         console.error('Failed to load activities', err);
         _tsDdPlaceholder('timesheetActivity', 'Failed to load activities', 'text-red-500');
+    }
+}
+
+// ── On-site location = the project's location ─────────────────────────────
+// With Presence "On-site" and a project chosen, the Location field offers that project's
+// location (Project > Location Information) as a suggestion and fills it in when the
+// field is still empty. The user can always type another place.
+let _tsProjectsById = {};   // projects of the current user, keyed by id (from my-projects)
+let _tsAutoLocation = '';   // the last Location value we filled in ourselves
+
+function onTimesheetPresenceChange() {
+    updateLocationSuggestions();
+}
+
+function _tsProjectLocationOptions() {
+    const type = document.querySelector('input[name="timesheetType"]:checked')?.value;
+    if (type !== 'project') return [];
+    const project = _tsProjectsById[String(document.getElementById('timesheetProjectId')?.value || '')];
+    if (!project) return [];
+    return [project.location_name, project.location_street]
+        .map(v => (v || '').trim())
+        .filter((v, i, a) => v && a.indexOf(v) === i);
+}
+
+function updateLocationSuggestions() {
+    const input = document.getElementById('timesheetLocation');
+    if (!input) return;
+
+    const onsite = document.getElementById('timesheetPresence')?.value === 'onsite';
+    const opts   = onsite ? _tsProjectLocationOptions() : [];
+
+    let list = document.getElementById('timesheetLocationOptions');
+    if (!list) {
+        list = document.createElement('datalist');
+        list.id = 'timesheetLocationOptions';
+        input.insertAdjacentElement('afterend', list);
+        input.setAttribute('list', 'timesheetLocationOptions');
+    }
+    list.innerHTML = opts.map(o => `<option value="${escapeHtml(o)}"></option>`).join('');
+
+    let hint = document.getElementById('timesheetLocationHint');
+    if (!hint) {
+        hint = document.createElement('p');
+        hint.id = 'timesheetLocationHint';
+        hint.className = 'mt-1 text-xs text-gray-400';
+        list.insertAdjacentElement('afterend', hint);
+    }
+    hint.textContent = opts.length ? `Project location: ${opts[0]}. Edit it to use another place.` : '';
+
+    // Default: fill the project location while the field is empty or still holds our own fill.
+    const cur = input.value.trim();
+    if (opts.length && (cur === '' || cur === _tsAutoLocation)) {
+        input.value = opts[0];
+        _tsAutoLocation = opts[0];
+    } else if (!opts.length && cur !== '' && cur === _tsAutoLocation) {
+        input.value = '';
+        _tsAutoLocation = '';
     }
 }
 
@@ -1553,9 +1685,9 @@ function onPeriodSelected(select) {
     if (!dateField || !endDate) return;
 
     // Project timesheets are always dated today — a late period doesn't apply.
-    if (document.querySelector('input[name="timesheetType"]:checked')?.value === 'project') {
+    if (['project', 'non_project'].includes(document.querySelector('input[name="timesheetType"]:checked')?.value)) {
         select.value = '';
-        showNotification('Project timesheets are always logged on today\'s date.', 'info');
+        showNotification('Project and Non Project timesheets are always logged on today\'s date.', 'info');
         return;
     }
 
@@ -1659,10 +1791,12 @@ function applyStatusFilter() {
     const activeType = currentFilters.type_filter || window.lockedType || '';
     if (activeType === 'project') {
         result = result.filter(t => !!t.delivery_projects_id);
+    } else if (activeType === 'non_project') {
+        result = result.filter(t => !!t.is_non_project);
     } else if (activeType === 'support') {
         result = result.filter(t => !t.delivery_projects_id && !!t.ticket_id);
     } else if (activeType === 'office') {
-        result = result.filter(t => !t.delivery_projects_id && !t.ticket_id);
+        result = result.filter(t => !t.delivery_projects_id && !t.ticket_id && !t.is_non_project);
     }
 
     // 2. Stat card status filter (overridden by column Status filter when set)
@@ -1675,6 +1809,7 @@ function applyStatusFilter() {
     const colStatus   =  document.getElementById('colFilterTsStatus')?.value      || '';
     const colActType  = (document.getElementById('colFilterTsActivityType')?.value || '').toLowerCase().trim();
     const colTicket   = (document.getElementById('colFilterTsTicket')?.value      || '').toLowerCase().trim();
+    const colProject  = (document.getElementById('colFilterTsProject')?.value     || '').toLowerCase().trim();
     const colCustomer = (document.getElementById('colFilterTsCustomer')?.value    || '').toLowerCase().trim();
     const colMonth    =  document.getElementById('colFilterTsMonth')?.value        || '';
     const colYear     =  document.getElementById('colFilterTsYear')?.value         || '';
@@ -1684,6 +1819,7 @@ function applyStatusFilter() {
     if (colStatus)   result = result.filter(t => t.status === colStatus);
     if (colActType)  result = result.filter(t => (t.activity_type || '').toLowerCase().includes(colActType));
     if (colTicket)   result = result.filter(t => (t.ticket_number || '').toLowerCase().includes(colTicket));
+    if (colProject)  result = result.filter(t => (t.project_name || '').toLowerCase().includes(colProject));
     if (colCustomer) result = result.filter(t => (t.customer_name || '').toLowerCase().includes(colCustomer));
     if (colMonth)    result = result.filter(t => String(t.period_month) === colMonth);
     if (colYear)     result = result.filter(t => String(t.period_year) === colYear);
@@ -1819,7 +1955,7 @@ function _updateTsSortVisuals() {
 }
 
 function _updateTsFilterIcons() {
-    [['Employee', 'colFilterTsEmployee'], ['Ticket', 'colFilterTsTicket'], ['Customer', 'colFilterTsCustomer'], ['ActivityType', 'colFilterTsActivityType']].forEach(([key, id]) => {
+    [['Employee', 'colFilterTsEmployee'], ['Ticket', 'colFilterTsTicket'], ['Customer', 'colFilterTsCustomer'], ['ActivityType', 'colFilterTsActivityType'], ['Project', 'colFilterTsProject']].forEach(([key, id]) => {
         const icon  = document.getElementById('tsTextIcon_' + key);
         const input = document.getElementById(id);
         if (!icon) return;
@@ -1903,6 +2039,7 @@ function filterByType(type) {
     const tabs = {
         '':        { id: 'typeTabAll',     active: 'border-red-600 bg-red-600 text-white',       inactive: 'border-gray-200 bg-white text-gray-600 hover:border-red-400 hover:text-red-600' },
         'project': { id: 'typeTabProject', active: 'border-blue-600 bg-blue-600 text-white',     inactive: 'border-gray-200 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-600' },
+        'non_project': { id: 'typeTabNonProject', active: 'ts-np-tab-active', inactive: 'border-gray-200 bg-white text-gray-600 ts-np-tab-inactive' },
         'support': { id: 'typeTabSupport', active: 'border-purple-600 bg-purple-600 text-white', inactive: 'border-gray-200 bg-white text-gray-600 hover:border-purple-400 hover:text-purple-600' },
         'office':  { id: 'typeTabOffice',  active: 'border-gray-600 bg-gray-600 text-white',     inactive: 'border-gray-200 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-700' },
     };
@@ -1923,10 +2060,18 @@ function filterByType(type) {
     if (thead) {
         if (type === 'support') {
             supportLayoutActive = true;                                // ← definitive flag ON
+            projectLayoutActive = false;
             thead.innerHTML = SUPPORT_THEAD_HTML;
             if (table) table.style.minWidth = '1320px';
+        } else if (type === 'project' || type === 'non_project') {
+            supportLayoutActive = false;
+            projectLayoutActive = true;
+            projectLayoutType = type;
+            thead.innerHTML = projectTheadHtml(!!(window.isApprovalMode || window.isHoSMode), type);
+            if (table) table.style.minWidth = type === 'project' ? '1200px' : '1000px';
         } else {
             supportLayoutActive = false;                               // ← definitive flag OFF
+            projectLayoutActive = false;
             thead.innerHTML = defaultTheadHTML;
             if (table) table.style.minWidth = '900px';
         }
@@ -1992,7 +2137,7 @@ function resetFilters() {
     }
 
     // 3. Clear text search inputs
-    ['Employee', 'Ticket', 'Customer', 'ActivityType'].forEach(k => {
+    ['Employee', 'Ticket', 'Customer', 'ActivityType', 'Project'].forEach(k => {
         const inp = document.getElementById(k === 'ActivityType' ? 'colFilterTsActivityType' : 'colFilterTs' + k);
         if (inp) inp.value = '';
     });
@@ -2018,6 +2163,7 @@ function resetFilters() {
         if (thead) thead.innerHTML = defaultTheadHTML;
         if (table) table.style.minWidth = '900px';
         supportLayoutActive = false;
+        projectLayoutActive = false;
 
         // Re-attach selectAll listener after thead swap
         const selectAllCb = document.getElementById('selectAll');
@@ -2035,6 +2181,7 @@ function resetFilters() {
         const tabs = {
             '':        { id: 'typeTabAll',     active: 'border-red-600 bg-red-600 text-white',       inactive: 'border-gray-200 bg-white text-gray-600 hover:border-red-400 hover:text-red-600' },
             'project': { id: 'typeTabProject', active: 'border-blue-600 bg-blue-600 text-white',     inactive: 'border-gray-200 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-600' },
+            'non_project': { id: 'typeTabNonProject', active: 'ts-np-tab-active', inactive: 'border-gray-200 bg-white text-gray-600 ts-np-tab-inactive' },
             'support': { id: 'typeTabSupport', active: 'border-purple-600 bg-purple-600 text-white', inactive: 'border-gray-200 bg-white text-gray-600 hover:border-purple-400 hover:text-purple-600' },
             'office':  { id: 'typeTabOffice',  active: 'border-gray-600 bg-gray-600 text-white',     inactive: 'border-gray-200 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-700' },
         };
@@ -2074,7 +2221,7 @@ function resetFilters() {
 // "no result" — kalau ada filter, user butuh tombol Clear Filters, bukan ajakan
 // membuat timesheet baru.
 function tsHasActiveFilters() {
-    const ids = ['colFilterTsEmployee', 'colFilterTsTicket', 'colFilterTsCustomer', 'colFilterTsActivityType',
+    const ids = ['colFilterTsEmployee', 'colFilterTsTicket', 'colFilterTsCustomer', 'colFilterTsActivityType', 'colFilterTsProject',
                  'colFilterTsStatus', 'colFilterTsMonth', 'colFilterTsYear', 'colFilterTsType', 'tsDateFrom', 'tsDateTo'];
     if (ids.some(id => !!(document.getElementById(id)?.value))) return true;
     return !!(currentFilters.status || currentFilters.activity_type);
@@ -2236,7 +2383,7 @@ function renderTimesheetRows() {
                 + '</span>' + rejIcon + approverNote;
 
             var rowClass = 'hover:bg-purple-50/30 transition-colors' + ((approvalMode && isSubmitted) ? ' cursor-pointer' : ((!approvalMode && canAct) ? ' cursor-pointer' : ''));
-            rows += '<tr class="' + rowClass + '" ' + trClick + '>'
+            rows += '<tr class="' + rowClass + '" ' + trClick + ' oncontextmenu="openTsContextMenu(event, ' + ts.id + ')">'
                 + '<td class="px-3 py-2 border-b border-gray-100">' + firstTd + '</td>'
                 + '<td class="px-3 py-2 border-b border-gray-100 whitespace-nowrap text-xs text-gray-700">' + dFmt + '</td>'
                 + '<td class="px-3 py-2 border-b border-gray-100 whitespace-nowrap text-xs text-gray-700">' + adFmt + '</td>'
@@ -2260,6 +2407,71 @@ function renderTimesheetRows() {
         return;
     }
 
+    // ── Project tab: one column per Project timesheet input field ─────────
+    if (projectLayoutActive) {
+        const approvalMode = !!(window.isApprovalMode || window.isHoSMode);
+        const nonProject   = projectLayoutType === 'non_project';
+        tbody.innerHTML = pageItems.map(timesheet => {
+            const statusColor = statusColors[timesheet.status] || statusColors.draft;
+            const duration = (timesheet.duration_minutes / 60).toFixed(2);
+            const canEdit   = ['draft', 'rejected'].includes(timesheet.status);
+            const canDelete = timesheet.status === 'draft';
+            const canSelect = approvalMode ? timesheet.status === 'submitted' : canEdit;
+            const hasBox    = approvalMode ? canSelect : (canEdit || canDelete);
+            const lockTitle = approvalMode ? timesheet.status : `Cannot edit (${timesheet.status})`;
+
+            const presence = timesheet.presence ? timesheet.presence.charAt(0).toUpperCase() + timesheet.presence.slice(1) : '';
+            const actName  = timesheet.activity?.name || timesheet.activity_name || '';
+            const activity = timesheet.is_without_activity
+                ? '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-semibold" title="Logged without a project activity (weekend / public holiday, or not assigned to any activity of the project)"><i class="fas fa-calendar-times"></i>No activity</span>'
+                : (actName ? `<div class="text-sm text-gray-700">${escapeHtml(actName)}</div>` : '<span class="text-sm text-gray-400">-</span>');
+            const gps = _tsGpsHtml(timesheet);
+            const location = (timesheet.location || gps)
+                ? `${timesheet.location ? `<div class="text-sm text-gray-700">${escapeHtml(timesheet.location)}</div>` : ''}${gps}`
+                : '<span class="text-sm text-gray-400">-</span>';
+
+            return `
+                <tr class="hover:bg-gray-50 transition-colors ${canSelect ? 'cursor-pointer' : ''}" ${canSelect ? `onclick="toggleRowSelection(event, ${timesheet.id})"` : ''} oncontextmenu="openTsContextMenu(event, ${timesheet.id})">
+                    <td class="px-3 py-2.5">
+                        ${hasBox ? `<input type="checkbox" class="timesheet-checkbox w-4 h-4 rounded border-gray-300" data-id="${timesheet.id}" data-status="${timesheet.status}" onchange="updateBulkActionButtons()" onclick="event.stopPropagation()">` : `<span class="text-gray-300"><i class="fas fa-lock text-xs" title="${lockTitle}"></i></span>`}
+                    </td>
+                    ${approvalMode ? `<td class="px-3 py-2.5 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${escapeHtml(timesheet.employee_name || 'Unknown')}</div></td>` : ''}
+                    <td class="px-3 py-2.5 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${formatDisplayDate(timesheet.date)}</div>
+                    </td>
+                    <td class="px-3 py-2.5 whitespace-nowrap">
+                        <div class="text-sm text-gray-600">${tsTimeRange(timesheet)}</div>
+                    </td>
+                    <td class="px-3 py-2.5 whitespace-nowrap">
+                        <div class="text-sm font-semibold text-gray-900">${duration}h</div>
+                    </td>
+                    ${nonProject ? '' : `<td class="px-3 py-2.5">
+                        <div class="text-sm text-gray-900"><i class="fas fa-project-diagram mr-1 text-blue-500"></i>${escapeHtml(timesheet.project_name || ('Project #' + timesheet.delivery_projects_id))}</div>
+                    </td>
+                    <td class="px-3 py-2.5">${activity}</td>`}
+                    <td class="px-3 py-2.5 whitespace-nowrap">
+                        <span class="text-sm text-gray-700">${presence ? escapeHtml(presence) : '<span class="text-gray-400">-</span>'}</span>
+                    </td>
+                    <td class="px-3 py-2.5">${location}</td>
+                    <td class="px-3 py-2.5">
+                        <div class="text-sm text-gray-900 truncate max-w-xs" title="${escapeHtml(timesheet.description || '')}">
+                            ${escapeHtml(timesheet.description || '-')}
+                        </div>
+                    </td>
+                    <td class="px-3 py-2.5 whitespace-nowrap">
+                        <span class="px-2 py-0.5 inline-flex text-xs font-semibold rounded-full ${statusColor.bg} ${statusColor.text}">
+                            ${timesheet.status.charAt(0).toUpperCase() + timesheet.status.slice(1)}
+                        </span>
+                        ${approvalMode && timesheet.status === 'approved' && timesheet.approver_name ? `<div class="text-xs text-gray-500 mt-0.5">by ${escapeHtml(timesheet.approver_name)}</div>` : ''}
+                        ${timesheet.status === 'rejected' && timesheet.rejection_reason ? `<i class="fas fa-info-circle text-yellow-500 ml-1 cursor-pointer text-xs" title="${escapeHtml(timesheet.rejection_reason)}" onclick="event.stopPropagation(); showRejectionReason(${timesheet.id})"></i>` : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        updateBulkActionButtons();
+        return;
+    }
+
     // ── Approval mode: All / Project / Office tabs ────────────────────────
     if (window.isApprovalMode && activeType !== 'support') {
         tbody.innerHTML = pageItems.map(timesheet => {
@@ -2267,11 +2479,14 @@ function renderTimesheetRows() {
             const duration = (timesheet.duration_minutes / 60).toFixed(2);
             const canSelect = timesheet.status === 'submitted';
 
-            const isProject = !!timesheet.delivery_projects_id;
+            const isNonProject = !!timesheet.is_non_project;
+
+            const isProject = !!timesheet.delivery_projects_id || isNonProject;
             const isSupport = !isProject && !!timesheet.ticket_id;
 
             let typeInfo;
-            if (isProject)      typeInfo = '<span class="text-blue-600 text-xs font-medium">Project</span>';
+            if (isNonProject) typeInfo = '<span class="text-xs font-medium" style="color:#0d9488">Non Project</span>';
+            else if (isProject) typeInfo = '<span class="text-blue-600 text-xs font-medium">Project</span>';
             else if (isSupport) typeInfo = '<span class="text-purple-600 text-xs font-medium">Support</span>';
             else                typeInfo = '<span class="text-gray-500 text-xs font-medium">Office</span>';
 
@@ -2309,7 +2524,7 @@ function renderTimesheetRows() {
             }
 
             return `
-                <tr class="hover:bg-gray-50 transition-colors ${canSelect ? 'cursor-pointer' : ''}" ${canSelect ? `onclick="toggleRowSelection(event, ${timesheet.id})"` : ''}>
+                <tr class="hover:bg-gray-50 transition-colors ${canSelect ? 'cursor-pointer' : ''}" ${canSelect ? `onclick="toggleRowSelection(event, ${timesheet.id})"` : ''} oncontextmenu="openTsContextMenu(event, ${timesheet.id})">
                     <td class="px-3 py-2.5">
                         ${canSelect ? `<input type="checkbox" class="timesheet-checkbox w-4 h-4 rounded border-gray-300" data-id="${timesheet.id}" data-status="${timesheet.status}" onchange="updateBulkActionButtons()" onclick="event.stopPropagation()">` : `<span class="text-gray-300"><i class="fas fa-lock text-xs" title="${timesheet.status}"></i></span>`}
                     </td>
@@ -2355,13 +2570,15 @@ function renderTimesheetRows() {
         const canDelete = timesheet.status === 'draft';
 
         // ── Determine type ──────────────────────────────────────────
-        const isProject = !!timesheet.delivery_projects_id;
+        const isNonProject = !!timesheet.is_non_project;
+        const isProject = !!timesheet.delivery_projects_id || isNonProject;
         const isSupport = !isProject && !!timesheet.ticket_id;
         const isOffice  = !isProject && !isSupport;
 
         // ── Date cell type badge ─────────────────────────────────────
         let typeInfo;
-        if (isProject)      typeInfo = '<span class="text-blue-600 text-xs font-medium">Project</span>';
+        if (isNonProject) typeInfo = '<span class="text-xs font-medium" style="color:#0d9488">Non Project</span>';
+        else if (isProject) typeInfo = '<span class="text-blue-600 text-xs font-medium">Project</span>';
         else if (isSupport) typeInfo = '<span class="text-purple-600 text-xs font-medium">Support</span>';
         else                typeInfo = '<span class="text-gray-500 text-xs font-medium">Office</span>';
 
@@ -2408,7 +2625,7 @@ function renderTimesheetRows() {
         }
 
         return `
-            <tr class="hover:bg-gray-50 transition-colors ${canEdit ? 'cursor-pointer' : ''}" ${canEdit ? `onclick="toggleRowSelection(event, ${timesheet.id})"` : ''}>
+            <tr class="hover:bg-gray-50 transition-colors ${canEdit ? 'cursor-pointer' : ''}" ${canEdit ? `onclick="toggleRowSelection(event, ${timesheet.id})"` : ''} oncontextmenu="openTsContextMenu(event, ${timesheet.id})">
                 <td class="px-3 py-2.5">
                     ${(canEdit || canDelete) ? `<input type="checkbox" class="timesheet-checkbox w-4 h-4 rounded border-gray-300" data-id="${timesheet.id}" data-status="${timesheet.status}" onchange="updateBulkActionButtons()" onclick="event.stopPropagation()">` : `<span class="text-gray-300"><i class="fas fa-lock text-xs" title="Cannot edit (${timesheet.status})"></i></span>`}
                 </td>
@@ -2441,35 +2658,52 @@ function renderTimesheetRows() {
     updateBulkActionButtons();
 }
 
-// Project row cells (employee + approval tables):
-//  - project cell: project name + activity, or a "No activity" badge for a
-//    timesheet logged on a weekend / public holiday;
-//  - activity cell: presence, free-text location and the device GPS location
-//    (reverse-geocoded address, or coordinates) linking to Google Maps.
-function _tsProjectCells(ts) {
-    const projectName = ts.project_name || `Project #${ts.delivery_projects_id}`;
-    const actName     = ts.activity?.name || ts.activity_name || '';
-    const actLine = ts.is_without_activity
-        ? '<div class="mt-0.5"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-semibold" title="Logged without a project activity (weekend / public holiday, or not assigned to any activity of the project)"><i class="fas fa-calendar-times"></i>No activity</span></div>'
-        : (actName ? `<div class="text-xs text-gray-500 mt-0.5"><i class="fas fa-tasks mr-1"></i>${escapeHtml(actName)}</div>` : '');
-
-    const projectCell = `
-        <div class="text-sm text-gray-900"><i class="fas fa-project-diagram mr-1 text-blue-500"></i>${escapeHtml(projectName)}</div>
-        ${actLine}`;
-
-    const presence = ts.presence ? ts.presence.charAt(0).toUpperCase() + ts.presence.slice(1) : '';
-    const place    = [presence, ts.location].filter(Boolean).join(' · ');
-
+// Device GPS of a project timesheet: reverse-geocoded address (or coordinates) linking to
+// Google Maps, plus the distance from the project's mapped location when it is set.
+function _tsGpsHtml(ts) {
     let gps = '';
     if (ts.gps_latitude != null && ts.gps_longitude != null) {
+        // Distance between the captured GPS and the project's delivery location
+        // (set in Project > Location Information), to cross-check where the work was done.
+        let dist = '';
+        if (ts.project_latitude != null && ts.project_longitude != null) {
+            const m = _tsDistanceMeters(Number(ts.gps_latitude), Number(ts.gps_longitude),
+                                        Number(ts.project_latitude), Number(ts.project_longitude));
+            const label = m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
+            dist = `<div class="text-[11px] text-gray-500" title="Distance from the project location set in Location Information"><i class="fas fa-ruler-horizontal mr-1"></i>${label} from project location</div>`;
+        }
         const lat = Number(ts.gps_latitude), lng = Number(ts.gps_longitude);
         const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
         const text    = ts.gps_address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
         const acc     = ts.gps_accuracy != null ? ` (±${Math.round(ts.gps_accuracy)} m)` : '';
         gps = `<a href="${mapsUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
                   class="mt-0.5 flex items-start gap-1 text-xs text-blue-600 hover:underline max-w-xs" title="${escapeHtml(text + acc)}">
-                  <i class="fas fa-map-marker-alt mt-0.5 flex-shrink-0"></i><span class="line-clamp-2">${escapeHtml(text)}</span></a>`;
+                  <i class="fas fa-map-marker-alt mt-0.5 flex-shrink-0"></i><span class="line-clamp-2">${escapeHtml(text)}</span></a>${dist}`;
     }
+    return gps;
+}
+
+// Project row cells (employee + approval tables):
+//  - project cell: project name + activity, or a "No activity" badge for a
+//    timesheet logged on a weekend / public holiday;
+//  - activity cell: presence, free-text location and the device GPS location
+//    (reverse-geocoded address, or coordinates) linking to Google Maps.
+function _tsProjectCells(ts) {
+    const isNp        = !!ts.is_non_project;
+    const projectName = isNp ? 'Non Project' : (ts.project_name || `Project #${ts.delivery_projects_id}`);
+    const actName     = ts.activity?.name || ts.activity_name || '';
+    const actLine = isNp ? '' : ts.is_without_activity
+        ? '<div class="mt-0.5"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-semibold" title="Logged without a project activity (weekend / public holiday, or not assigned to any activity of the project)"><i class="fas fa-calendar-times"></i>No activity</span></div>'
+        : (actName ? `<div class="text-xs text-gray-500 mt-0.5"><i class="fas fa-tasks mr-1"></i>${escapeHtml(actName)}</div>` : '');
+
+    const projectCell = `
+        <div class="text-sm text-gray-900">${isNp ? '<i class="fas fa-briefcase mr-1" style="color:#0d9488"></i>' : '<i class="fas fa-project-diagram mr-1 text-blue-500"></i>'}${escapeHtml(projectName)}</div>
+        ${actLine}`;
+
+    const presence = ts.presence ? ts.presence.charAt(0).toUpperCase() + ts.presence.slice(1) : '';
+    const place    = [presence, ts.location].filter(Boolean).join(' · ');
+
+    const gps = _tsGpsHtml(ts);
 
     const activityCell = `
         ${place ? `<div class="text-sm text-gray-700">${escapeHtml(place)}</div>` : ''}
@@ -2477,6 +2711,14 @@ function _tsProjectCells(ts) {
         ${!place && !gps ? '<span class="text-sm text-gray-400">-</span>' : ''}`;
 
     return { projectCell, activityCell };
+}
+
+// Great-circle distance in metres between two lat/lng points (haversine).
+function _tsDistanceMeters(lat1, lng1, lat2, lng2) {
+    const R = 6371000, rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad, dLng = (lng2 - lng1) * rad;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
 }
 
 function escapeHtml(str) {
@@ -2680,7 +2922,8 @@ function editTimesheet(id) {
     setTimePicker('End', timesheet.end_time);
     
     const timesheetType = timesheet.delivery_projects_id ? 'project' :
-                         (timesheet.ticket_id ? 'support' : 'office');
+                         (timesheet.is_non_project ? 'non_project' :
+                         (timesheet.ticket_id ? 'support' : 'office'));
     const typeRadio = document.querySelector(`input[name="timesheetType"][value="${timesheetType}"]`);
     if (typeRadio) {
         typeRadio.checked = true;
@@ -3249,6 +3492,36 @@ async function handleFormSubmit(e) {
 
         if (!timesheetData.presence) return fail('Please select a presence.');
 
+    } else if (selectedType === 'non_project') {
+        const fail = msg => {
+            showNotification(msg, 'error');
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Timesheet'; }
+        };
+
+        if (!_tsValidateTimeOrder()) return fail(document.getElementById('timesheetTimeError')?.textContent || 'Invalid time range.');
+
+        if (_tsNeedsGps() && !_tsGps) {
+            if (_tsGpsState !== 'pending') requestTimesheetGps();
+            return fail(_tsGpsState === 'pending'
+                ? 'Still getting your device location, please wait a moment and save again.'
+                : 'Your device location is required. Please enable location access for this site.');
+        }
+
+        timesheetData.date = _tsProjectCtx?.date || timesheetData.date;
+        timesheetData.is_non_project = true;
+        timesheetData.delivery_projects_id = null;
+        timesheetData.activity_id = null;
+        timesheetData.ticket_id = null;
+        timesheetData.presence = document.getElementById('timesheetPresence')?.value || null;
+        timesheetData.location = document.getElementById('timesheetLocation')?.value || null;
+        if (_tsNeedsGps() && _tsGps) {
+            timesheetData.gps_latitude  = _tsGps.lat;
+            timesheetData.gps_longitude = _tsGps.lng;
+            timesheetData.gps_accuracy  = _tsGps.accuracy;
+        }
+
+        if (!timesheetData.presence) return fail('Please select a presence.');
+
     } else if (selectedType === 'support') {
         const onSite = document.getElementById('supportOnSite')?.checked;
         const mdConsumedVal = document.getElementById('supportMdConsumed')?.value;
@@ -3309,7 +3582,7 @@ async function handleFormSubmit(e) {
             showNotification('Failed to save timesheet: ' + (data.message || 'Unknown error'), 'error');
             if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Timesheet'; }
             // Another save may have taken the slot meanwhile — refresh the used times.
-            if (selectedType === 'project' && timesheetData.date) loadProjectFormContext(timesheetData.date);
+            if ((selectedType === 'project' || selectedType === 'non_project') && timesheetData.date) loadProjectFormContext(timesheetData.date);
         }
     } catch (error) {
         console.error('Error:', error);

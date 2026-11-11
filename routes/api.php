@@ -711,6 +711,9 @@ Route::middleware(['web'])->group(function () {
         Route::get('/exception-requests',      [\App\Http\Controllers\PeriodManagementController::class, 'listExceptionRequests']);
         Route::patch('/exception-requests/{exRequest}/head-decide', [\App\Http\Controllers\PeriodManagementController::class, 'headDecideRequest']);
         Route::patch('/exception-requests/{exRequest}/rpmo-decide', [\App\Http\Controllers\PeriodManagementController::class, 'rpmoDecideRequest']);
+        // Varian POST untuk UI: WAF edge di production dapat menolak method selain GET/POST.
+        Route::post('/exception-requests/{exRequest}/head-decide', [\App\Http\Controllers\PeriodManagementController::class, 'headDecideRequest']);
+        Route::post('/exception-requests/{exRequest}/rpmo-decide', [\App\Http\Controllers\PeriodManagementController::class, 'rpmoDecideRequest']);
 
         Route::prefix('/{period}')->group(function () {
             // RPMO: global lifecycle

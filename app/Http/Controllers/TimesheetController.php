@@ -7,8 +7,10 @@ use App\Exports\TimesheetApprovalExport;
 use App\Exports\TimesheetSupportExport;
 use App\Exports\TimesheetProjectExport;
 use App\Exports\TimesheetOfficeExport;
+use App\Exports\TimesheetNonProjectExport;
 use App\Models\Timesheet;
 use App\Support\SessionUser;
+use App\Support\TimesheetApproval;
 use App\Models\ConsultantMandays;
 use App\Models\ConsultantMandaysDetail;
 use App\Models\CustomerMandays;
@@ -39,11 +41,10 @@ class TimesheetController extends Controller
     public function submittedForApproval(Request $request)
     {
         try {
-            $user = SessionUser::fromSession(session('user'));
-
-            // Admin, Head of Project, Head of Support, and RPMO can access this
-            $approvalRoles = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
-            if (!$user->hasAnyRole($approvalRoles)) {
+            // Approval is granted per timesheet type in Menu Access (timesheet.approve.*);
+            // the list only contains the types this user may approve or reject.
+            $approvable = TimesheetApproval::approvableTypes();
+            if (empty($approvable)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access'
@@ -52,6 +53,7 @@ class TimesheetController extends Controller
 
             $query = Timesheet::with(['employee.basicData', 'activity.delivery_project', 'delivery_project', 'approver.basicData', 'ticket.customer.basicData', 'ticket'])
                 ->whereIn('status', ['draft', 'submitted', 'approved', 'rejected']);
+            TimesheetApproval::constrain($query, $approvable);
 
             // Filter by date range if provided
             if ($request->has('start_date') && $request->has('end_date')) {
@@ -70,8 +72,10 @@ class TimesheetController extends Controller
                     $query->whereNotNull('ticket_id');
                 } elseif ($type === 'project') {
                     $query->whereNotNull('delivery_projects_id');
+                } elseif ($type === 'non_project') {
+                    $query->where('is_non_project', true);
                 } elseif ($type === 'office') {
-                    $query->whereNull('ticket_id')->whereNull('delivery_projects_id');
+                    $query->whereNull('ticket_id')->whereNull('delivery_projects_id')->where('is_non_project', false);
                 }
             }
 
@@ -98,6 +102,7 @@ class TimesheetController extends Controller
                                         'duration_minutes' => $timesheet->duration_minutes,
                                         'duration_hours' => round($timesheet->duration_minutes / 60, 2),
                                         'description' => $timesheet->description,
+                                        'notes' => $timesheet->notes,
                                         'activity_type' => $timesheet->activity_type,
                                         'ticket_id' => $timesheet->ticket_id,
                                         'ticket_number' => $timesheet->ticket?->ticket_number,
@@ -113,10 +118,13 @@ class TimesheetController extends Controller
                                         'gps_accuracy' => $timesheet->gps_accuracy,
                                         'gps_address' => $timesheet->gps_address,
                                         'is_without_activity' => (bool) $timesheet->is_without_activity,
+                                        'is_non_project' => (bool) $timesheet->is_non_project,
                                         'delivery_projects_id' => $timesheet->delivery_projects_id,
                                         'activity_id' => $timesheet->activity_id,
                                         'activity_name' => $timesheet->activity?->name,
                                         'project_name' => $timesheet->activity?->delivery_project?->name ?? $timesheet->delivery_project?->name,
+                                        'project_latitude' => $timesheet->delivery_project?->location_latitude,
+                                        'project_longitude' => $timesheet->delivery_project?->location_longitude,
                                         'status' => $timesheet->status,
                                         'is_billable' => $timesheet->is_billable,
                                         'rejection_reason' => $timesheet->rejection_reason,
@@ -158,10 +166,9 @@ class TimesheetController extends Controller
      */
     public function exportToExcel(Request $request)
     {
-        $sessionUser = SessionUser::fromSession(session('user'));
-        // Checked against ALL assigned roles, not just whichever role is "primary"
-        $allowed = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
-        if (!$sessionUser || !$sessionUser->hasAnyRole($allowed)) {
+        // Same permission as the approval list: only types the user may approve are exported.
+        $approvable = TimesheetApproval::approvableTypes();
+        if (empty($approvable)) {
             abort(403);
         }
 
@@ -172,10 +179,10 @@ class TimesheetController extends Controller
 
         $type = $request->input('type_filter', '');
 
-        $rows = Timesheet::with(['employee.basicData', 'ticket.customer.basicData', 'activity.delivery_project', 'delivery_project', 'approver.basicData'])
+        $rowsQuery = Timesheet::with(['employee.basicData', 'ticket.customer.basicData', 'activity.delivery_project', 'delivery_project', 'approver.basicData'])
             ->whereIn('id', $ids)
-            ->whereNull('deleted_at')
-            ->get();
+            ->whereNull('deleted_at');
+        $rows = TimesheetApproval::constrain($rowsQuery, $approvable)->get();
 
         // whereIn() doesn't preserve order — reorder to match the on-screen
         // sort/order the frontend sent.
@@ -212,6 +219,10 @@ class TimesheetController extends Controller
 
         if ($type === 'project') {
             return Excel::download(new TimesheetProjectExport($rows), $filename);
+        }
+
+        if ($type === 'non_project') {
+            return Excel::download(new TimesheetNonProjectExport($rows), $filename);
         }
 
         if ($type === 'office') {
@@ -392,7 +403,7 @@ class TimesheetController extends Controller
             $roleIds           = $sessionUser->role_ids;
 
             // Load employee, activity, and ticket (with customer) relationships
-            $query = Timesheet::with(['employee.basicData', 'activity', 'delivery_project:id,name', 'ticket.customer.basicData']);
+            $query = Timesheet::with(['employee.basicData', 'activity', 'delivery_project:id,name,location_latitude,location_longitude', 'ticket.customer.basicData']);
 
             // ── Visibility filter ─────────────────────────────────────────────
             // Admin sees everything. Others see own timesheets + additional scope per role:
@@ -404,16 +415,10 @@ class TimesheetController extends Controller
                 $query->where(function ($q) use ($currentEmployeeId, $roleIds) {
                     $q->where('employee_id', $currentEmployeeId);
 
-                    if (in_array(RoleId::DELIVERY_SUPPORT_HEAD->value, $roleIds, true)) {
-                        $q->orWhereNotNull('ticket_id');
-                    }
-                    if (in_array(RoleId::DELIVERY_PROJECT_HEAD->value, $roleIds, true)) {
-                        $q->orWhereNotNull('delivery_projects_id');
-                    }
-                    if (in_array(RoleId::DELIVERY_RPMO_HEAD->value, $roleIds, true)) {
-                        $q->orWhere(function ($inner) {
-                            $inner->whereNull('ticket_id')->whereNull('delivery_projects_id');
-                        });
+                    // Also every row of the types this user may approve (Menu Access: timesheet.approve.*)
+                    $approvable = TimesheetApproval::approvableTypes();
+                    if (!empty($approvable)) {
+                        $q->orWhere(fn ($inner) => TimesheetApproval::constrain($inner, $approvable));
                     }
                 });
             }
@@ -481,7 +486,10 @@ class TimesheetController extends Controller
                     'gps_accuracy'         => $t->gps_accuracy,
                     'gps_address'          => $t->gps_address,
                     'is_without_activity'  => (bool) $t->is_without_activity,
+                    'is_non_project'       => (bool) $t->is_non_project,
                     'project_name'         => $t->delivery_project?->name,
+                    'project_latitude'     => $t->delivery_project?->location_latitude,
+                    'project_longitude'    => $t->delivery_project?->location_longitude,
                     'md_consumed'          => $t->md_consumed,
                     'approved_by'          => $t->approved_by,
                     'approved_at'          => $t->approved_at?->format('Y-m-d H:i:s'),
@@ -574,7 +582,8 @@ class TimesheetController extends Controller
                 'description' => 'required|string',
                 'notes' => 'nullable|string',
                 // Project timesheets no longer ask for an activity type (stored null)
-                'activity_type' => 'required_without:delivery_projects_id|nullable|in:development,meeting,documentation,testing,support,training,other',
+                'activity_type' => (($request->filled('delivery_projects_id') || $request->boolean('is_non_project')) ? 'nullable' : 'required')
+                    . '|in:development,meeting,documentation,testing,support,training,other',
                 'is_billable' => 'sometimes|boolean',
                 'presence' => 'nullable|string',
                 'location' => 'nullable|string',
@@ -593,6 +602,16 @@ class TimesheetController extends Controller
                 $rules['gps_latitude']  = 'required|numeric|between:-90,90';
                 $rules['gps_longitude'] = 'required|numeric|between:-180,180';
                 $rules['gps_accuracy']  = 'nullable|numeric|min:0';
+            } elseif ($request->boolean('is_non_project')) {
+                // Non Project: same inputs as Project, without project / activity.
+                $rules['ticket_id'] = 'nullable';
+                $rules['delivery_projects_id'] = 'nullable';
+                $rules['presence'] = 'required|string';
+                $rules['location'] = 'required|string';
+                // Device GPS is mandatory, like for project timesheets.
+                $rules['gps_latitude']  = 'required|numeric|between:-90,90';
+                $rules['gps_longitude'] = 'required|numeric|between:-180,180';
+                $rules['gps_accuracy']  = 'nullable|numeric|min:0';
             } elseif ($request->filled('ticket_id')) {
                 $rules['ticket_id'] = 'nullable|integer';
                 $rules['delivery_projects_id'] = 'nullable';
@@ -603,6 +622,9 @@ class TimesheetController extends Controller
 
             $validated = $request->validate($rules);
             $isProject = !empty($validated['delivery_projects_id']);
+            $isNonProject = !$isProject && $request->boolean('is_non_project') && empty($validated['ticket_id'] ?? null);
+            $isProjectLike = $isProject || $isNonProject;
+            $validated['is_non_project'] = $isNonProject;
 
             // Only the owner may create an entry for themselves; privileged roles
             // (same set that may edit others' entries) may create on someone's behalf.
@@ -652,6 +674,13 @@ class TimesheetController extends Controller
                     return response()->json(['success' => false, 'message' => $projectError], 422);
                 }
             }
+
+            // ── Non Project rules: same as Project (date = today, GPS) minus project / activity ─
+            if ($isNonProject) {
+                $this->applyNonProjectDefaults($validated);
+                $validated['date'] = today()->toDateString();
+                $validated['gps_captured_at'] = now();
+            }
             // ─────────────────────────────────────────────────────────────────
 
             // ── Resolution Days quota guard ───────────────────────────────────
@@ -698,7 +727,7 @@ class TimesheetController extends Controller
             // Assign period year/month
             $this->assignPeriod($validated);
 
-            if ($isProject) {
+            if ($isProjectLike) {
                 // Overlap check + insert under a per-employee lock so two parallel
                 // saves (e.g. two tabs) can't both claim the same time slot.
                 $overlapError = null;
@@ -786,7 +815,8 @@ class TimesheetController extends Controller
                 'end_time' => 'required|after:start_time',
                 'description' => 'required|string',
                 'notes' => 'nullable|string',
-                'activity_type' => 'required_without:delivery_projects_id|nullable|in:development,meeting,documentation,testing,support,training,other',
+                'activity_type' => (($request->filled('delivery_projects_id') || $request->boolean('is_non_project')) ? 'nullable' : 'required')
+                    . '|in:development,meeting,documentation,testing,support,training,other',
                 'is_billable' => 'sometimes|boolean',
                 'presence' => 'nullable|string',
                 'location' => 'nullable|string',
@@ -800,6 +830,11 @@ class TimesheetController extends Controller
                 $rules['presence'] = 'required|string';
                 $rules['location'] = 'required|string';
                 $rules['is_without_activity'] = 'sometimes|boolean';
+            } elseif ($request->boolean('is_non_project')) {
+                $rules['ticket_id'] = 'nullable';
+                $rules['delivery_projects_id'] = 'nullable';
+                $rules['presence'] = 'required|string';
+                $rules['location'] = 'required|string';
             } elseif ($request->filled('ticket_id')) {
                 $rules['ticket_id'] = 'nullable|integer';
                 $rules['delivery_projects_id'] = 'nullable';
@@ -830,8 +865,12 @@ class TimesheetController extends Controller
             // timesheet converted from another type starts fresh on today's date
             // (it then has no GPS fix yet, so the device location is required).
             $isProject = !empty($validated['delivery_projects_id']);
+            $isNonProject = !$isProject && $request->boolean('is_non_project') && empty($validated['ticket_id'] ?? null);
+            $validated['is_non_project'] = $isNonProject;
+            // An entry that already has a captured GPS fix / date (Project or Non Project) keeps them.
+            $wasProjectLike = !empty($timesheet->delivery_projects_id) || (bool) $timesheet->is_non_project;
             if ($isProject) {
-                $wasProject = !empty($timesheet->delivery_projects_id);
+                $wasProject = $wasProjectLike;
                 if ($wasProject) {
                     $validated['date'] = $timesheet->date->toDateString();
                 } else {
@@ -850,6 +889,21 @@ class TimesheetController extends Controller
                 );
                 if ($projectError) {
                     return response()->json(['success' => false, 'message' => $projectError], 422);
+                }
+            }
+
+            if ($isNonProject) {
+                $this->applyNonProjectDefaults($validated);
+                if ($wasProjectLike) {
+                    $validated['date'] = $timesheet->date->toDateString();
+                } else {
+                    $gps = $request->validate([
+                        'gps_latitude'  => 'required|numeric|between:-90,90',
+                        'gps_longitude' => 'required|numeric|between:-180,180',
+                        'gps_accuracy'  => 'nullable|numeric|min:0',
+                    ]);
+                    $validated = array_merge($validated, $gps, ['gps_captured_at' => now(), 'gps_address' => null]);
+                    $validated['date'] = today()->toDateString();
                 }
             }
             // ─────────────────────────────────────────────────────────────────
@@ -899,7 +953,7 @@ class TimesheetController extends Controller
                 $validated['rejection_reason'] = null;
             }
 
-            if ($isProject) {
+            if ($isProject || $isNonProject) {
                 $overlapError = null;
                 DB::transaction(function () use ($timesheet, $validated, &$overlapError) {
                     Employee::where('employee_id', $timesheet->employee_id)->lockForUpdate()->first();
@@ -1096,15 +1150,10 @@ class TimesheetController extends Controller
     {
         try {
             $isSupport = !$timesheet->delivery_projects_id && $timesheet->ticket_id;
+            $isNonProject = (bool) $timesheet->is_non_project;
             $isProject = (bool) $timesheet->delivery_projects_id;
 
-            if ($isSupport) {
-                $targetRole = RoleId::DELIVERY_SUPPORT_HEAD->value;
-            } elseif ($isProject) {
-                $targetRole = RoleId::DELIVERY_PROJECT_HEAD->value;
-            } else {
-                $targetRole = RoleId::DELIVERY_RPMO_HEAD->value;
-            }
+            $type = TimesheetApproval::typeOf($timesheet);
 
             // Submitter name — use session if available, else query
             $submitter = Employee::where('employee_id', $timesheet->employee_id)->first();
@@ -1122,12 +1171,15 @@ class TimesheetController extends Controller
                 $preview = "Ticket #{$ticketNumber} — {$fromName} submitted a timesheet for validation";
             } elseif ($isProject) {
                 $preview = "{$fromName} submitted a project timesheet for approval";
+            } elseif ($isNonProject) {
+                $preview = "{$fromName} submitted a non project timesheet for approval";
             } else {
                 $preview = "{$fromName} submitted an office timesheet for approval";
             }
 
             // Create notification for every active Head with the target role
-            $heads = Employee::withRole($targetRole)->where('is_active', true)->get();
+            // Everyone whose role may approve this type (Menu Access: timesheet.approve.*)
+            $heads = TimesheetApproval::approversFor($type);
 
             foreach ($heads as $head) {
                 Notification::create([
@@ -1152,19 +1204,16 @@ class TimesheetController extends Controller
     {
         try {
             $user = session('user');
-            $sessionUser = SessionUser::fromSession($user);
+            $timesheet = Timesheet::findOrFail($id);
 
-            // Admin, Head of Project, Head of Support, and RPMO can approve (checked
-            // against ALL assigned roles, not just whichever role is "primary")
-            $approvalRoles = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
-            if (!$sessionUser || !$sessionUser->hasAnyRole($approvalRoles)) {
+            // One permission per timesheet type in Menu Access (timesheet.approve.*)
+            $type = TimesheetApproval::typeOf($timesheet);
+            if (!TimesheetApproval::canApprove($type)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized: Only managers can approve timesheets'
+                    'message' => 'Unauthorized: you are not allowed to approve ' . TimesheetApproval::LABELS[$type] . ' timesheets'
                 ], 403);
             }
-
-            $timesheet = Timesheet::findOrFail($id);
 
             if ($timesheet->status !== 'submitted') {
                 return response()->json([
@@ -1214,20 +1263,16 @@ class TimesheetController extends Controller
     public function reject(Request $request, $id)
     {
         try {
-            $user = session('user');
-            $sessionUser = SessionUser::fromSession($user);
-
-            // Admin, Head of Project, Head of Support, and RPMO can reject (checked
-            // against ALL assigned roles, not just whichever role is "primary")
-            $approvalRoles = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
-            if (!$sessionUser || !$sessionUser->hasAnyRole($approvalRoles)) {
+            // One permission per timesheet type in Menu Access (timesheet.approve.*);
+            // the same permission covers approve and reject.
+            $timesheet = Timesheet::findOrFail($id);
+            $type = TimesheetApproval::typeOf($timesheet);
+            if (!TimesheetApproval::canApprove($type)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized: Only managers can reject timesheets'
+                    'message' => 'Unauthorized: you are not allowed to reject ' . TimesheetApproval::LABELS[$type] . ' timesheets'
                 ], 403);
             }
-
-            $timesheet = Timesheet::findOrFail($id);
 
             if ($timesheet->status !== 'submitted') {
                 return response()->json([
@@ -1316,10 +1361,15 @@ class TimesheetController extends Controller
                         ->when($employeeId, fn($q) => $q->forEmployee($employeeId))
                         ->whereNotNull('ticket_id')
                         ->sum('duration_minutes') / 60,
+                    'non_project' => Timesheet::dateRange($startDate, $endDate)
+                        ->when($employeeId, fn($q) => $q->forEmployee($employeeId))
+                        ->where('is_non_project', true)
+                        ->sum('duration_minutes') / 60,
                     'office' => Timesheet::dateRange($startDate, $endDate)
                         ->when($employeeId, fn($q) => $q->forEmployee($employeeId))
                         ->whereNull('delivery_projects_id')
                         ->whereNull('ticket_id')
+                        ->where('is_non_project', false)
                         ->sum('duration_minutes') / 60,
                 ]
             ];
@@ -1376,7 +1426,8 @@ class TimesheetController extends Controller
                 }
             })
             ->with(['client.basicData'])
-            ->select('id', 'name', 'client_id', 'status', 'phase')
+            ->select('id', 'name', 'client_id', 'status', 'phase',
+                     'location_name', 'location_street', 'location_city')
             ->orderBy('name')
             ->get();
 
@@ -1474,7 +1525,7 @@ class TimesheetController extends Controller
                 'id'            => $t->id,
                 'start'         => substr((string) $t->start_time, 0, 5),
                 'end'           => substr((string) $t->end_time, 0, 5),
-                'project_name'  => $t->delivery_project?->name,
+                'project_name'  => $t->delivery_project?->name ?? ($t->is_non_project ? 'Non Project' : null),
                 'activity_name' => $t->activity?->name,
             ]);
 
@@ -1601,9 +1652,24 @@ class TimesheetController extends Controller
     {
         return Timesheet::where('employee_id', $employeeId)
             ->whereDate('date', $date)
-            ->whereNotNull('delivery_projects_id')
+            // Project and Non Project entries share one pool of time slots.
+            ->where(fn ($q) => $q->whereNotNull('delivery_projects_id')->orWhere('is_non_project', true))
             ->where('status', '!=', 'rejected')
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId));
+    }
+
+    /**
+     * Fields a Non Project entry never has: project, activity, ticket, activity type.
+     * Billable is always true, like for Project entries.
+     */
+    private function applyNonProjectDefaults(array &$validated): void
+    {
+        $validated['delivery_projects_id'] = null;
+        $validated['ticket_id']            = null;
+        $validated['activity_id']          = null;
+        $validated['activity_type']        = null;
+        $validated['is_billable']          = true;
+        $validated['is_without_activity']  = false;
     }
 
     /**
@@ -1630,7 +1696,7 @@ class TimesheetController extends Controller
         return sprintf(
             'Time %s–%s overlaps your other project timesheet (%s, %s–%s). Please choose a free time slot.',
             substr($start, 0, 5), substr($end, 0, 5),
-            $clash->delivery_project?->name ?? 'Project #' . $clash->delivery_projects_id,
+            $clash->delivery_project?->name ?? ($clash->is_non_project ? 'Non Project' : 'Project #' . $clash->delivery_projects_id),
             substr((string) $clash->start_time, 0, 5), substr((string) $clash->end_time, 0, 5)
         );
     }
