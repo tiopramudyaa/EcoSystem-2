@@ -2163,7 +2163,7 @@ function renderTimesheetRows() {
             var sc = statusColors[ts.status] || statusColors.draft;
             var isSubmitted = ts.status === 'submitted';
             var canAct    = approvalMode ? isSubmitted : (['draft','rejected'].indexOf(ts.status) !== -1);
-            var canDelete = !approvalMode && (['draft','rejected','submitted'].indexOf(ts.status) !== -1);
+            var canDelete = !approvalMode && ts.status === 'draft';
 
             var dObj  = ts.date ? new Date(ts.date + 'T00:00:00') : null;
             var dFmt  = dObj ? dObj.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric' }).replace(/\//g, '/') : '-';
@@ -2210,7 +2210,7 @@ function renderTimesheetRows() {
                     firstTd = '<span class="text-gray-300"><i class="fas fa-lock text-xs" title="' + ts.status + '"></i></span>';
                 }
             } else {
-                // Employee mode: draft/rejected rows are editable; submitted rows can only be deleted
+                // Employee mode: draft/rejected rows are editable; only drafts can be deleted
                 if (canAct) {
                     trClick = 'onclick="editTimesheet(' + ts.id + ')"';
                     firstTd = '<input type="checkbox" class="timesheet-checkbox w-4 h-4 rounded border-gray-300" data-id="' + ts.id + '" data-status="' + ts.status + '" onchange="updateBulkActionButtons()" onclick="event.stopPropagation()">';
@@ -2352,7 +2352,7 @@ function renderTimesheetRows() {
         const statusColor = statusColors[timesheet.status] || statusColors.draft;
         const duration = (timesheet.duration_minutes / 60).toFixed(2);
         const canEdit   = ['draft', 'rejected'].includes(timesheet.status);
-        const canDelete = ['draft', 'rejected', 'submitted'].includes(timesheet.status);
+        const canDelete = timesheet.status === 'draft';
 
         // ── Determine type ──────────────────────────────────────────
         const isProject = !!timesheet.delivery_projects_id;
@@ -2410,7 +2410,7 @@ function renderTimesheetRows() {
         return `
             <tr class="hover:bg-gray-50 transition-colors ${canEdit ? 'cursor-pointer' : ''}" ${canEdit ? `onclick="toggleRowSelection(event, ${timesheet.id})"` : ''}>
                 <td class="px-3 py-2.5">
-                    ${canDelete ? `<input type="checkbox" class="timesheet-checkbox w-4 h-4 rounded border-gray-300" data-id="${timesheet.id}" data-status="${timesheet.status}" onchange="updateBulkActionButtons()" onclick="event.stopPropagation()">` : `<span class="text-gray-300"><i class="fas fa-lock text-xs" title="Cannot edit (${timesheet.status})"></i></span>`}
+                    ${(canEdit || canDelete) ? `<input type="checkbox" class="timesheet-checkbox w-4 h-4 rounded border-gray-300" data-id="${timesheet.id}" data-status="${timesheet.status}" onchange="updateBulkActionButtons()" onclick="event.stopPropagation()">` : `<span class="text-gray-300"><i class="fas fa-lock text-xs" title="Cannot edit (${timesheet.status})"></i></span>`}
                 </td>
                 <td class="px-3 py-2.5 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900">${formatDisplayDate(timesheet.date)}</div>
@@ -2722,7 +2722,7 @@ function editTimesheet(id) {
                 const onSiteEl = document.getElementById('supportOnSite');
                 if (onSiteEl) onSiteEl.checked = timesheet.presence === 'onsite';
                 const mdEl = document.getElementById('supportMdConsumed');
-                if (mdEl) mdEl.value = timesheet.md_consumed != null ? timesheet.md_consumed : '';
+                if (mdEl) mdEl.value = timesheet.md_consumed != null ? formatMdTrim(timesheet.md_consumed) : '';
                 const activityDateEl = document.getElementById('supportActivityDate');
                 if (activityDateEl) activityDateEl.value = timesheet.activity_date || '';
             }, 400);
@@ -2900,7 +2900,7 @@ function updateBulkActionButtons() {
 
             if (btnEdit)   btnEdit.classList.toggle('hidden', checkboxes.length !== 1 || !hasEditable);
             if (btnSubmit) btnSubmit.classList.toggle('hidden', !hasDraft);
-            if (btnDelete) btnDelete.classList.remove('hidden');
+            if (btnDelete) btnDelete.classList.toggle('hidden', !hasDraft); // only drafts can be deleted
         }
     } else {
         bulkActions.classList.add('hidden');
@@ -2919,7 +2919,7 @@ function updateBulkActionButtons() {
 }
 
 function openBulkDeleteModal() {
-    const checkboxes = document.querySelectorAll('.timesheet-checkbox:checked');
+    const checkboxes = document.querySelectorAll('.timesheet-checkbox[data-status="draft"]:checked');
     
     if (checkboxes.length === 0) {
         showNotification('Please select timesheets to delete', 'error');
@@ -2945,7 +2945,7 @@ function closeBulkDeleteModal() {
 }
 
 async function confirmBulkDelete() {
-    const checkboxes = document.querySelectorAll('.timesheet-checkbox:checked');
+    const checkboxes = document.querySelectorAll('.timesheet-checkbox[data-status="draft"]:checked');
     
     let successCount = 0;
     let failCount = 0;

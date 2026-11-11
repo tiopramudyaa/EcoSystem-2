@@ -484,12 +484,12 @@
                             </td>
                             <td class="px-4 py-2 text-gray-500">${d.module !== '—' ? d.module : '<span class="text-gray-300">—</span>'}</td>
                             <td class="px-4 py-2 text-right font-semibold text-gray-700">${d.is_approved
-                                ? d.mandays + ' md'
-                                : `<span class="text-amber-600 italic font-normal" title="Proposed, awaiting approval">${d.mandays} md</span>`}</td>
-                            <td class="px-4 py-2 text-right font-semibold ${d.approved_additional > 0 ? (d.is_approved ? 'text-indigo-600' : 'text-amber-600 italic') : 'text-gray-300'}"${d.approved_additional > 0 && !d.is_approved ? ` title="Proposed additional, awaiting approval"` : ''}>${d.approved_additional > 0 ? d.approved_additional + ' md' : '—'}</td>
+                                ? formatMd(d.mandays) + ' md'
+                                : `<span class="text-amber-600 italic font-normal" title="Proposed, awaiting approval">${formatMd(d.mandays)} md</span>`}</td>
+                            <td class="px-4 py-2 text-right font-semibold ${d.approved_additional > 0 ? (d.is_approved ? 'text-indigo-600' : 'text-amber-600 italic') : 'text-gray-300'}"${d.approved_additional > 0 && !d.is_approved ? ` title="Proposed additional, awaiting approval"` : ''}>${d.approved_additional > 0 ? formatMd(d.approved_additional) + ' md' : '—'}</td>
                             <td class="px-4 py-2 text-right">
                                 ${d.remain_md !== null && d.remain_md !== undefined
-                                    ? `<span class="font-bold ${d.remain_md > 0 ? 'text-orange-600' : 'text-emerald-600'}">${d.remain_md} d</span>`
+                                    ? `<span class="font-bold ${d.remain_md > 0 ? 'text-orange-600' : 'text-emerald-600'}">${formatMd(d.remain_md)} d</span>`
                                     : '<span class="text-gray-300">—</span>'}
                             </td>
                             <td class="px-4 py-2 text-right">
@@ -514,9 +514,9 @@
                         <tr class="border-t-2 border-indigo-200 bg-indigo-50/80 font-bold">
                             <td class="px-4 py-2 text-indigo-700">Total · ${details.length} consultant${details.length > 1 ? 's' : ''}</td>
                             <td class="px-4 py-2"></td>
-                            <td class="px-4 py-2 text-right text-gray-700">${details.reduce((s,d)=>s+(parseFloat(d.mandays)||0),0).toFixed(2)} md</td>
-                            <td class="px-4 py-2 text-right text-indigo-600">${details.reduce((s,d)=>s+(parseFloat(d.approved_additional)||0),0).toFixed(2)} md</td>
-                            <td class="px-4 py-2 text-right text-orange-600">${details.reduce((s,d)=>s+(parseFloat(d.remain_md)||0),0).toFixed(2)} d</td>
+                            <td class="px-4 py-2 text-right text-gray-700">${formatMd(details.reduce((s,d)=>s+(parseFloat(d.mandays)||0),0))} md</td>
+                            <td class="px-4 py-2 text-right text-indigo-600">${formatMd(details.reduce((s,d)=>s+(parseFloat(d.approved_additional)||0),0))} md</td>
+                            <td class="px-4 py-2 text-right text-orange-600">${formatMd(details.reduce((s,d)=>s+(parseFloat(d.remain_md)||0),0))} d</td>
                             <td class="px-4 py-2"></td>
                             <td class="px-4 py-2"></td>
                         </tr>
@@ -565,7 +565,7 @@
                     </div>
                     <span class="text-xs font-bold ${workloadTextColor(myWorkloadPct)} w-10 text-right shrink-0">${myWorkloadPct}%</span>
                 </div>
-                <div class="text-[10px] text-gray-400">${myRemainMd.toFixed(2)} / ${myEffectiveMd.toFixed(2)} md</div>
+                <div class="text-[10px] text-gray-400">${formatMd(myRemainMd)} / ${formatMd(myEffectiveMd)} md</div>
             </div>` : '<span class="text-gray-300 text-xs">—</span>'}
         </td>
         <td class="px-4 py-3 text-right text-xs text-gray-500">${endDate}</td>
@@ -630,7 +630,7 @@
                 <tr class="border-t border-gray-100" data-detail-id="${d.detail_id ?? 'null'}" data-mandays="${d.mandays ?? ''}">
                     <td class="py-3 pr-4">
                         <p class="font-semibold text-gray-800 text-sm">${d.emp_name}</p>
-                        <p class="text-gray-400 text-xs font-mono">${d.mandays != null ? d.mandays + ' md' : 'Belum ada proposal Resolution Days'}</p>
+                        <p class="text-gray-400 text-xs font-mono">${d.mandays != null ? formatMd(d.mandays) + ' md' : 'Belum ada proposal Resolution Days'}</p>
                     </td>
                     <td class="py-3 pr-2 w-52">
                         <div class="flex items-center gap-2">

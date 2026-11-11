@@ -944,7 +944,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Total Mandays</label>
                         <input type="number" name="total_mandays" id="edit-total_mandays" min="0"
-                               value="{{ $support->total_mandays }}"
+                               value="{{ \App\Support\Md::format($support->total_mandays, '') }}"
                                class="block w-full border-gray-300 rounded-md shadow-sm primary-focus text-sm">
                     </div>
                     <div>

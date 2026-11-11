@@ -97,7 +97,7 @@ class TicketExport implements
                 'module'                   => $t['module'] ?? '-',
                 'assign_delivery'          => $t['assign_delivery'] ?? 'Unassigned',
                 'customer_mandays'         => $t['customer_mandays'] !== null
-                    ? number_format((float) $t['customer_mandays'], 1)
+                    ? \App\Support\Md::format($t['customer_mandays'])
                     : '-',
                 'activity_date'            => self::date($t['activity_date'] ?? null),
                 'progress'                 => $t['all_consultant_progress'] > 0

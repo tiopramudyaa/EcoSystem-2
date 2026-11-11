@@ -9047,7 +9047,7 @@ window.WricefLog = (function () {
         if (v === null || v === undefined || v === '') return '—';
         const num = Number(v);
         if (isNaN(num)) return '—';
-        return Number.isInteger(num) ? String(num) : num.toFixed(2).replace('.', ',');
+        return formatMd(num).replace('.', ',');
     }
 
     // Capability boleh multi-baris (lihat contoh CSV) — pertahankan barisnya.
@@ -9094,9 +9094,7 @@ window.WricefLog = (function () {
             return sum + (isNaN(num) ? 0 : num);
         }, 0);
 
-        cell.textContent = Number.isInteger(total)
-            ? String(total)
-            : total.toFixed(2).replace('.', ',');
+        cell.textContent = formatMd(total).replace('.', ',');
     }
 
     function rowHtml(w) {

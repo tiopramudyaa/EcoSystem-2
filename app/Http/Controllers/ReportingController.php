@@ -181,24 +181,7 @@ class ReportingController extends Controller
             $ticketIds = $rows->pluck('ticket_id')->unique()->values();
             $jatahMap  = []; // keyed as "ticketId_employeeId"
             if ($ticketIds->isNotEmpty()) {
-                $latestCMs = ConsultantMandays::whereIn('ticket_id', $ticketIds)
-                    ->where('status', 'approved')
-                    ->orderBy('approved_at', 'desc')
-                    ->get()
-                    ->groupBy('ticket_id')
-                    ->map(fn($g) => $g->first());
-
-                $cmIdToTicketId = $latestCMs->mapWithKeys(fn($cm) => [$cm->id => $cm->ticket_id]);
-
-                ConsultantMandaysDetail::whereIn('consultant_mandays_id', $cmIdToTicketId->keys())
-                    ->get()
-                    ->each(function ($detail) use (&$jatahMap, $cmIdToTicketId) {
-                        $ticketId = $cmIdToTicketId[$detail->consultant_mandays_id] ?? null;
-                        if ($ticketId) {
-                            $jatahMap[$ticketId . '_' . $detail->employee_id] =
-                                round((float)($detail->approved_mandays ?? 0) + (float)($detail->approved_additional ?? 0), 2);
-                        }
-                    });
+                $jatahMap = ConsultantMandaysDetail::approvedQuotas($ticketIds);
             }
 
             // Pre-load consumed from BEFORE the date range so the running total carries over
@@ -335,24 +318,7 @@ class ReportingController extends Controller
             $ticketIds = $rows->pluck('ticket_id')->unique()->values();
             $jatahMap  = []; // keyed as "ticketId_employeeId"
             if ($ticketIds->isNotEmpty()) {
-                $latestCMs = ConsultantMandays::whereIn('ticket_id', $ticketIds)
-                    ->where('status', 'approved')
-                    ->orderBy('approved_at', 'desc')
-                    ->get()
-                    ->groupBy('ticket_id')
-                    ->map(fn($g) => $g->first());
-
-                $cmIdToTicketId = $latestCMs->mapWithKeys(fn($cm) => [$cm->id => $cm->ticket_id]);
-
-                ConsultantMandaysDetail::whereIn('consultant_mandays_id', $cmIdToTicketId->keys())
-                    ->get()
-                    ->each(function ($detail) use (&$jatahMap, $cmIdToTicketId) {
-                        $ticketId = $cmIdToTicketId[$detail->consultant_mandays_id] ?? null;
-                        if ($ticketId) {
-                            $jatahMap[$ticketId . '_' . $detail->employee_id] =
-                                round((float)($detail->approved_mandays ?? 0) + (float)($detail->approved_additional ?? 0), 2);
-                        }
-                    });
+                $jatahMap = ConsultantMandaysDetail::approvedQuotas($ticketIds);
             }
 
             // Calculate running totals ASC (chronological), then reverse to newest-first

@@ -40,7 +40,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Total Mandays</label>
-                    <input type="number" name="total_mandays" value="{{ $project->total_mandays }}"
+                    <input type="number" name="total_mandays" value="{{ \App\Support\Md::format($project->total_mandays, '') }}"
                            class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus">
                 </div>
             </div>

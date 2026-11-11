@@ -770,6 +770,16 @@
         }
     </style>
     @stack('styles')
+    <script>
+        // Man days / Resolution Days / quota display: 5 -> "5", 1.5 -> "1.5", 0.25 -> "0.25".
+        // Rounds to 2 decimals first (kills float noise), then drops trailing zeros.
+        window.formatMd = function (value, empty) {
+            if (value === null || value === undefined || value === '' || isNaN(Number(value))) {
+                return empty === undefined ? '—' : empty;
+            }
+            return String(parseFloat(Number(value).toFixed(2)));
+        };
+    </script>
 </head>
 <body class="text-gray-900 min-h-screen" style="background-color: var(--bg-color);">
     <div id="toast-container"></div>

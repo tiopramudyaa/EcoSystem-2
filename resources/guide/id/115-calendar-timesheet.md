@@ -5,7 +5,7 @@ order: 115
 title: Calendar dan Timesheets
 summary: Lihat event di kalender, catat jam kerja pada sebuah ticket, kirim untuk persetujuan, dan minta akses terlambat.
 requires: [calendar.events, calendar.timesheets]
-updated: 2026-10-28
+updated: 2026-11-11
 ---
 `Calendar` menampilkan event yang boleh Anda lihat. `Timesheets` adalah tempat Anda mencatat jam kerja dan mengirimnya untuk persetujuan.
 
@@ -89,16 +89,18 @@ Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar,
 
 - Membuat timesheet memerlukan fungsi `Create Timesheet` dan membuat event kalender memerlukan fungsi `Create Event` di `Menu Access`. Tanpa fungsi itu permintaan ditolak, meskipun dikirim langsung.
 - Tanggal tidak boleh di masa depan.
+- Anda hanya bisa membuat entri untuk diri sendiri, kecuali EC Administrator, RPMO Head, serta Head of Project dan Head of Support.
+- Memindahkan entri yang sudah ada ke tanggal lain memeriksa lagi batas periode untuk tanggal baru.
 - Jam selesai harus lebih lambat dari jam mulai, dan deskripsi aktivitas wajib diisi.
 - Bila role Anda termasuk domain Project atau Support, Anda hanya dapat mencatat waktu di periode berjalan atau periode sebelumnya, dan hanya selama periode itu terbuka. Periode terbuka bila RPMO sudah membukanya dan Head domain Anda sudah membuka domain Anda. Bila tertutup, minta akses terlambat. Role yang tidak termasuk domain mana pun tidak dibatasi oleh aturan periode ini.
-- Anda dapat mengubah entri sendiri selama berstatus `Draft` atau `Rejected`. Hanya EC Administrator, RPMO Head, serta Head of Project dan Head of Support yang juga dapat mengubah entri orang lain. Entri `Submitted` tidak bisa diubah, hanya bisa dihapus. Entri `Approved` tidak bisa diubah maupun dihapus.
+- Anda dapat mengubah entri sendiri selama berstatus `Draft` atau `Rejected`. Hanya EC Administrator, RPMO Head, serta Head of Project dan Head of Support yang juga dapat mengubah entri orang lain. Entri `Submitted` dan `Approved` tidak bisa diubah maupun dihapus. Hanya `Draft` yang bisa dihapus.
 
 ### Entri support (dengan ticket)
 
 - Pilih ticket yang Anda kerjakan dan isi `Activity Date`.
-- Daftar `Ticket` menampilkan ticket tempat Anda menjadi lead, anggota, atau Co-PM (ditambah ticket Delivery Support yang Anda kelola), tetapi hanya jika usulan yang approved mencantumkan Anda dan kuota masih tersisa. Draft yang sedang diedit tetap bisa memilih ticketnya sendiri.
-- `MD Consumed` tidak boleh melebihi sisa kuota Anda pada ticket itu. Kuota adalah jatah dari proposal mandays yang disetujui, dan draft, entri submitted, dan approved Anda semuanya dihitung. Bila perlu tambahan, minta Head Anda menaikkan kuota.
-- Anda dapat menyimpan draft sebelum proposal mandays disetujui, tetapi tidak dapat mengirimnya: EcoSystem menyatakan belum ada proposal yang disetujui untuk ticket itu, atau Anda tidak tercantum di dalamnya. Untuk Change Request, Customer Mandays harus disetujui dulu.
+- Daftar `Ticket` menampilkan ticket tempat Anda menjadi lead, anggota, atau Co-PM (ditambah ticket Delivery Support yang Anda kelola), tetapi hanya jika Head sudah menyetujui hari untuk Anda dan kuota masih tersisa. Draft yang sedang diedit tetap bisa memilih ticketnya sendiri.
+- `MD Consumed` tidak boleh melebihi sisa kuota Anda pada ticket itu. Kuota adalah hari yang disetujui Head untuk Anda (`Approved Days` ditambah additional yang disetujui). Kuota tetap berlaku selagi proposal direvisi, dan draft, entri submitted, dan approved Anda semuanya dihitung. Bila perlu tambahan, minta Head Anda menaikkan kuota.
+- Anda dapat menyimpan draft sebelum proposal mandays disetujui, tetapi tidak dapat mengirimnya: EcoSystem menyatakan Head belum menyetujui hari untuk Anda pada ticket itu. Untuk Change Request, Customer Mandays harus disetujui dulu.
 - Bila personnel subarea Anda `Project`, satu entri support paling banyak 1 MD. Pecah pekerjaan yang lebih besar menjadi beberapa entri.
 
 ### Entri project
@@ -115,7 +117,7 @@ Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar,
 ### Mengirim dan menyetujui
 
 - Anda hanya dapat mengirim entri `Draft` milik sendiri. Pengiriman memberi notifikasi ke penyetuju yang tepat: Head of Support untuk entri support, Head of Project untuk entri project, dan RPMO untuk entri office.
-- Menyetujui dan menolak dilakukan oleh EC Administrator, RPMO Head, Head of Project, dan Head of Support. Hanya entri `Submitted` yang dapat disetujui atau ditolak, satu per satu atau sekaligus.
+- Menyetujui dan menolak dilakukan oleh EC Administrator, RPMO Head, Head of Project, dan Head of Support. Hanya entri `Submitted` yang dapat disetujui atau ditolak, satu per satu atau sekaligus. Menyetujui entri support memeriksa kuota lagi: jika `MD Consumed` tidak lagi muat dalam kuota yang disetujui, persetujuan ditolak.
 - Penolakan memerlukan alasan tertulis. Karyawan melihatnya, dapat memperbaiki entri (kembali ke `Draft`), dan mengirimnya lagi.
 - Entri yang sudah disetujui bersifat final: tidak dapat dibuka kembali, diubah, atau dihapus dari halaman ini.
 
@@ -127,7 +129,7 @@ Entri yang ditolak menampilkan alasannya: perbaiki (entri kembali ke `Draft`) la
 
 **Saya tidak dapat membuat timesheet untuk periode yang sudah lewat.** Periodenya sudah ditutup. Bila Anda memang harus mengisinya, gunakan `Request Late Access`, termasuk untuk bulan lalu.
 
-**Bisakah saya mengubah timesheet yang sudah dikirim?** Tidak, hanya bisa dihapus. Minta orang yang menyetujuinya untuk menolak, lalu perbaiki dan kirim ulang.
+**Bisakah saya mengubah timesheet yang sudah dikirim?** Tidak, dan juga tidak bisa dihapus. Minta orang yang menyetujuinya untuk menolak, lalu perbaiki dan kirim ulang.
 
 **Mengapa `Quota MD` dan `Remaining` kosong?** Keduanya terisi setelah Anda memilih ticket.
 

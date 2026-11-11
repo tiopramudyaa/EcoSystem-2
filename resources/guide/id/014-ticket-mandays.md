@@ -68,7 +68,7 @@ Ticket lead dan konsultan yang mengusulkan, Helpdesk yang meninjau Customer Mand
 
 ### Dampak pada timesheet
 
-- Hari yang disetujui menjadi kuota tiap orang pada ticket. Konsultan tidak dapat mencatat MD melebihi sisa kuota, dan tidak dapat mengirim timesheet pada ticket yang belum punya proposal yang disetujui. Lihat topik timesheet untuk rinciannya.
+- Hari yang disetujui menjadi kuota tiap orang pada ticket. Konsultan tidak dapat mencatat MD melebihi sisa kuota, dan tidak dapat mengirim timesheet pada ticket yang belum ada hari yang disetujui untuknya. Jika proposal diedit lalu kembali ke `Draft`, hari yang sudah disetujui tetap menjadi kuota sampai Head menyetujui lagi. Lihat topik timesheet untuk rinciannya.
 
 ## Apa yang terjadi selanjutnya
 

@@ -287,7 +287,7 @@ window.ReconsForm = (function () {
     }
 
     function fmtMd(v) {
-        return (v === null || v === undefined || v === '') ? '-' : Number(v).toFixed(2);
+        return (v === null || v === undefined || v === '') ? '-' : formatMd(v);
     }
 
     // ── filter tanggal ───────────────────────────────────────────────────
@@ -539,7 +539,7 @@ window.ReconsForm = (function () {
         const totalMd = chosen.reduce((sum, t) => sum + Number(t.man_days || 0), 0);
 
         document.getElementById('selectedCount').textContent = chosen.length;
-        document.getElementById('selectedMd').textContent    = totalMd.toFixed(2);
+        document.getElementById('selectedMd').textContent    = formatMd(totalMd);
 
         const visible  = rows || visibleTickets();
         const checkAll = document.getElementById('checkAll');
@@ -639,7 +639,7 @@ window.ReconsForm = (function () {
             const totalMd = chosen.reduce((sum, t) => sum + Number(t.man_days || 0), 0);
 
             const ok = await showConfirm(
-                `Submit this recons with ${chosen.length} ticket(s) and ${totalMd.toFixed(2)} MD?\n\n`
+                `Submit this recons with ${chosen.length} ticket(s) and ${formatMd(totalMd)} MD?\n\n`
                 + 'After submitting, its header and ticket list are locked. You can still cancel it later to return it to draft.',
                 'Submit Recons',
                 'primary',

@@ -83,24 +83,7 @@ class TimesheetController extends Controller
             $ticketIds = $rows->pluck('ticket_id')->filter()->unique()->values();
             $jatahMap  = []; // keyed as "ticketId_employeeId"
             if ($ticketIds->isNotEmpty()) {
-                $latestCMs = ConsultantMandays::whereIn('ticket_id', $ticketIds)
-                    ->where('status', 'approved')
-                    ->orderBy('approved_at', 'desc')
-                    ->get()
-                    ->groupBy('ticket_id')
-                    ->map(fn($g) => $g->first());
-
-                $cmIdToTicketId = $latestCMs->mapWithKeys(fn($cm) => [$cm->id => $cm->ticket_id]);
-
-                ConsultantMandaysDetail::whereIn('consultant_mandays_id', $cmIdToTicketId->keys())
-                    ->get()
-                    ->each(function ($detail) use (&$jatahMap, $cmIdToTicketId) {
-                        $ticketId = $cmIdToTicketId[$detail->consultant_mandays_id] ?? null;
-                        if ($ticketId) {
-                            $key = $ticketId . '_' . $detail->employee_id;
-                            $jatahMap[$key] = round((float)($detail->approved_mandays ?? 0) + (float)($detail->approved_additional ?? 0), 2);
-                        }
-                    });
+                $jatahMap = ConsultantMandaysDetail::approvedQuotas($ticketIds);
             }
 
             $timesheets = $rows->map(function ($timesheet) use ($jatahMap) {
@@ -207,24 +190,7 @@ class TimesheetController extends Controller
             // Per-employee quota MD — same batch lookup used by index()/submittedForApproval().
             $jatahMap = [];
             if ($ticketIds->isNotEmpty()) {
-                $latestCMs = ConsultantMandays::whereIn('ticket_id', $ticketIds)
-                    ->where('status', 'approved')
-                    ->orderBy('approved_at', 'desc')
-                    ->get()
-                    ->groupBy('ticket_id')
-                    ->map(fn ($g) => $g->first());
-
-                $cmIdToTicketId = $latestCMs->mapWithKeys(fn ($cm) => [$cm->id => $cm->ticket_id]);
-
-                ConsultantMandaysDetail::whereIn('consultant_mandays_id', $cmIdToTicketId->keys())
-                    ->get()
-                    ->each(function ($detail) use (&$jatahMap, $cmIdToTicketId) {
-                        $ticketId = $cmIdToTicketId[$detail->consultant_mandays_id] ?? null;
-                        if ($ticketId) {
-                            $key = $ticketId . '_' . $detail->employee_id;
-                            $jatahMap[$key] = round((float) ($detail->approved_mandays ?? 0) + (float) ($detail->approved_additional ?? 0), 2);
-                        }
-                    });
+                $jatahMap = ConsultantMandaysDetail::approvedQuotas($ticketIds);
             }
 
             $deliveryMap = DeliverySupportActivity::with(['deliverySupport.client.basicData'])
@@ -270,23 +236,10 @@ class TimesheetController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        // Step 1: find the latest approved ConsultantMandays for this ticket.
-        $latestApproved = ConsultantMandays::where('ticket_id', $ticketId)
-            ->where('status', 'approved')
-            ->orderBy('approved_at', 'desc')
-            ->first();
-
-        // Step 2: find this employee's detail row in that approved proposal.
-        $quotaDetail = $latestApproved
-            ? ConsultantMandaysDetail::where('consultant_mandays_id', $latestApproved->id)
-                ->where('employee_id', $employeeId)
-                ->first()
-            : null;
-
-        // Quota = employee's Head-approved days + any approved additional granted by Head.
-        $quota = $quotaDetail
-            ? round((float) ($quotaDetail->approved_mandays ?? 0) + (float) ($quotaDetail->approved_additional ?? 0), 2)
-            : null;
+        // Quota = this employee's approved_mandays + approved_additional on the ticket,
+        // read from the approved columns regardless of the proposal's current status
+        // (a proposal sent back to draft keeps what Head already approved).
+        $quota = ConsultantMandaysDetail::approvedQuotas([$ticketId], (int) $employeeId)[$ticketId . '_' . $employeeId] ?? null;
 
         // Total MD consumed by this employee for this ticket.
         // Draft timesheets count — they represent planned/in-progress work.
@@ -493,24 +446,7 @@ class TimesheetController extends Controller
             $ticketIds = $rows->whereNotNull('ticket_id')->pluck('ticket_id')->unique()->values();
             $approvedMandaysMap = []; // keyed as "ticketId_employeeId"
             if ($ticketIds->isNotEmpty()) {
-                $latestCMs = ConsultantMandays::whereIn('ticket_id', $ticketIds)
-                    ->where('status', 'approved')
-                    ->orderBy('approved_at', 'desc')
-                    ->get()
-                    ->groupBy('ticket_id')
-                    ->map(fn($g) => $g->first());
-
-                $cmIdToTicketId = $latestCMs->mapWithKeys(fn($cm) => [$cm->id => $cm->ticket_id]);
-
-                ConsultantMandaysDetail::whereIn('consultant_mandays_id', $cmIdToTicketId->keys())
-                    ->get()
-                    ->each(function ($detail) use (&$approvedMandaysMap, $cmIdToTicketId) {
-                        $ticketId = $cmIdToTicketId[$detail->consultant_mandays_id] ?? null;
-                        if ($ticketId) {
-                            $key = $ticketId . '_' . $detail->employee_id;
-                            $approvedMandaysMap[$key] = round((float)($detail->approved_mandays ?? 0) + (float)($detail->approved_additional ?? 0), 2);
-                        }
-                    });
+                $approvedMandaysMap = ConsultantMandaysDetail::approvedQuotas($ticketIds);
             }
 
             $timesheets = $rows->map(function ($t) use ($approvedMandaysMap) {
@@ -626,7 +562,7 @@ class TimesheetController extends Controller
         }
 
         try {
-            Log::info('Creating timesheet with data:', $request->all());
+            Log::info('Creating timesheet', $request->only(['employee_id', 'date', 'delivery_projects_id', 'ticket_id']));
             
             // Base validation
             $rules = [
@@ -667,6 +603,18 @@ class TimesheetController extends Controller
 
             $validated = $request->validate($rules);
             $isProject = !empty($validated['delivery_projects_id']);
+
+            // Only the owner may create an entry for themselves; privileged roles
+            // (same set that may edit others' entries) may create on someone's behalf.
+            $sessionUser = SessionUser::fromSession(session('user'));
+            $privilegedRoles = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
+            if (!$sessionUser
+                || (!$sessionUser->hasAnyRole($privilegedRoles) && (int) $validated['employee_id'] !== (int) $sessionUser->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Forbidden: you can only create timesheets for yourself',
+                ], 403);
+            }
 
             $validated['status'] = 'draft';
 
@@ -729,8 +677,7 @@ class TimesheetController extends Controller
 
             // ── Period access gate ────────────────────────────────────────────
             // Bypass for Admin and RPMO (they can always submit)
-            $sessionRoleId = (int) (session('user')['role']['id'] ?? 0);
-            $bypass = in_array($sessionRoleId, [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value]);
+            $bypass = $this->bypassesPeriodGate();
 
             if (!$bypass) {
                 /** @var PeriodService $periodSvc */
@@ -929,6 +876,19 @@ class TimesheetController extends Controller
             }
             // ─────────────────────────────────────────────────────────────────
 
+            // Period gate: same rule as create, applied when the entry moves to another
+            // date (editing an existing entry in place must not be blocked by a later close).
+            if (!$this->bypassesPeriodGate()
+                && Carbon::parse($validated['date'])->toDateString() !== $timesheet->date->toDateString()) {
+                $check = app(PeriodService::class)->canSubmitTimesheet(
+                    (int) $timesheet->employee_id,
+                    Carbon::parse($validated['date'])
+                );
+                if (!$check['allowed']) {
+                    return response()->json(['success' => false, 'message' => $check['reason']], 422);
+                }
+            }
+
             // Auto-assign period if date changed or period not yet set
             $this->assignPeriod($validated);
 
@@ -1009,10 +969,10 @@ class TimesheetController extends Controller
                 ], 403);
             }
 
-            if ($timesheet->status === 'approved') {
+            if ($timesheet->status !== 'draft') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cannot delete approved timesheet'
+                    'message' => 'Only draft timesheets can be deleted'
                 ], 403);
             }
 
@@ -1084,30 +1044,15 @@ class TimesheetController extends Controller
                     }
                 }
 
-                $latestApproved = ConsultantMandays::where('ticket_id', $ticketId)
-                    ->where('status', 'approved')
-                    ->orderBy('approved_at', 'desc')
-                    ->first();
+                $quota = ConsultantMandaysDetail::approvedQuotas([$ticketId], (int) $empId)[$ticketId . '_' . $empId] ?? null;
 
-                if (!$latestApproved) {
+                if ($quota === null) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Cannot submit: no approved mandays proposal found for this ticket. Contact your Head.',
+                        'message' => 'Cannot submit: no approved mandays found for you on this ticket. Contact your Head.',
                     ], 422);
                 }
 
-                $quotaDetail = ConsultantMandaysDetail::where('consultant_mandays_id', $latestApproved->id)
-                    ->where('employee_id', $empId)
-                    ->first();
-
-                if (!$quotaDetail) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Cannot submit: you are not listed in the approved mandays proposal for this ticket. Contact your Head.',
-                    ], 422);
-                }
-
-                $quota    = round((float) ($quotaDetail->approved_mandays ?? 0) + (float) ($quotaDetail->approved_additional ?? 0), 2);
                 $consumed = (float) Timesheet::where('ticket_id', $ticketId)
                     ->where('employee_id', $empId)
                     ->whereIn('status', ['draft', 'submitted', 'approved'])
@@ -1226,6 +1171,20 @@ class TimesheetController extends Controller
                     'success' => false,
                     'message' => 'Only submitted timesheets can be approved'
                 ], 400);
+            }
+
+            // Quota guard at approval: the entry must still fit the approved quota
+            // (the quota may have been lowered since it was submitted).
+            if ($timesheet->ticket_id) {
+                $quotaError = $this->checkResolutionQuota(
+                    (int) $timesheet->ticket_id,
+                    (int) $timesheet->employee_id,
+                    (float) ($timesheet->md_consumed ?? 0),
+                    (int) $timesheet->id
+                );
+                if ($quotaError) {
+                    return response()->json(['success' => false, 'message' => $quotaError], 422);
+                }
             }
 
             $timesheet->update([
@@ -1540,24 +1499,11 @@ class TimesheetController extends Controller
      */
     private function checkResolutionQuota(int $ticketId, int $employeeId, float $newMdConsumed, ?int $excludeTimesheetId = null): ?string
     {
-        $latestApproved = ConsultantMandays::where('ticket_id', $ticketId)
-            ->where('status', 'approved')
-            ->orderBy('approved_at', 'desc')
-            ->first();
+        $quota = ConsultantMandaysDetail::approvedQuotas([$ticketId], $employeeId)[$ticketId . '_' . $employeeId] ?? null;
 
-        if (!$latestApproved) {
+        if ($quota === null) {
             return null;
         }
-
-        $quotaDetail = ConsultantMandaysDetail::where('consultant_mandays_id', $latestApproved->id)
-            ->where('employee_id', $employeeId)
-            ->first();
-
-        if (!$quotaDetail) {
-            return null;
-        }
-
-        $quota = round((float) ($quotaDetail->approved_mandays ?? 0) + (float) ($quotaDetail->approved_additional ?? 0), 2);
 
         $consumed = (float) Timesheet::where('ticket_id', $ticketId)
             ->where('employee_id', $employeeId)
@@ -1597,6 +1543,18 @@ class TimesheetController extends Controller
     }
 
     // ── Period helper ─────────────────────────────────────────────────────
+
+    /**
+     * Admin and RPMO Head skip the period gate. Checked against ALL assigned
+     * roles, not just the primary one.
+     */
+    private function bypassesPeriodGate(): bool
+    {
+        $user = SessionUser::fromSession(session('user'));
+
+        return $user !== null
+            && $user->hasAnyRole([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value]);
+    }
 
     /**
      * Compute the period for the timesheet date.
