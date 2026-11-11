@@ -1625,7 +1625,7 @@
         const typeLabel = ticket.ticket_type || '—';
         const typeCls = typeColors[ticket.ticket_type] || 'bg-gray-100 text-gray-500';
 
-        const mandays = ticket.customer_mandays != null ? parseFloat(ticket.customer_mandays).toFixed(1) : '—';
+        const mandays = ticket.customer_mandays != null ? formatMd(parseFloat(ticket.customer_mandays)) : '—';
 
         // ── Priority dots ──
         const prioDots = {

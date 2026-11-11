@@ -154,8 +154,17 @@
         $tabProject   = in_array('project', $allowedTypes);
         $tabSupport   = in_array('support', $allowedTypes);
         $tabOffice    = in_array('office',  $allowedTypes);
-        $showTabs     = !$lockedType && ($tabProject + $tabSupport + $tabOffice) > 1;
+        $tabNonProject = in_array('non_project', $allowedTypes);
+        $showTabs     = !$lockedType && ($tabProject + $tabSupport + $tabOffice + $tabNonProject) > 1;
     @endphp
+    {{-- Non Project colours are inline: Tailwind's compiled CSS has no teal peer-checked / hover variants. --}}
+    <style>
+        .ts-np-tab-active   { background:#0d9488 !important; border-color:#0d9488 !important; color:#fff !important; }
+        .ts-np-tab-inactive:hover { border-color:#2dd4bf !important; color:#0f766e !important; }
+        .ts-np-radio:checked + .ts-np-card { border-color:#14b8a6; background:#f0fdfa; }
+        .ts-np-radio:checked + .ts-np-card .ts-np-label { color:#0f766e; }
+        .ts-np-card:hover { border-color:#5eead4; }
+    </style>
     @if($showTabs)
     <div class="flex flex-wrap items-center gap-2 mb-4">
         <button id="typeTabAll"
@@ -168,6 +177,13 @@
             onclick="filterByType('project')"
             class="type-tab-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border-2 border-gray-200 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-all duration-150">
             <i class="fas fa-project-diagram text-xs"></i> Project
+        </button>
+        @endif
+        @if($tabNonProject)
+        <button id="typeTabNonProject"
+            onclick="filterByType('non_project')"
+            class="type-tab-btn ts-np-tab-inactive inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border-2 border-gray-200 bg-white text-gray-600 transition-all duration-150">
+            <i class="fas fa-briefcase text-xs"></i> Non Project
         </button>
         @endif
         @if($tabSupport)
@@ -852,8 +868,9 @@
                 $visProject   = in_array('project', $allowedTypes);
                 $visSupport   = in_array('support', $allowedTypes);
                 $visOffice    = in_array('office',  $allowedTypes);
-                $typeCount    = (int)$visProject + (int)$visSupport + (int)$visOffice;
-                $typeGrid     = match($typeCount) { 1 => 'grid-cols-1', 2 => 'grid-cols-2', default => 'grid-cols-3' };
+                $visNonProject = in_array('non_project', $allowedTypes);
+                $typeCount    = (int)$visProject + (int)$visSupport + (int)$visOffice + (int)$visNonProject;
+                $typeGrid     = match($typeCount) { 1 => 'grid-cols-1', 2, 4 => 'grid-cols-2', default => 'grid-cols-3' };
                 $defType      = $lockedType ?? ($allowedTypes[0] ?? 'support');
             @endphp
 
@@ -877,6 +894,17 @@
                                         <i class="fas fa-project-diagram text-xs text-blue-600"></i>
                                     </div>
                                     <span class="text-xs font-semibold text-gray-700 peer-checked:text-blue-700">Project</span>
+                                </div>
+                            </label>
+                            @endif
+                            @if($visNonProject)
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="timesheetType" value="non_project" class="peer sr-only ts-np-radio" {{ $defType === 'non_project' ? 'checked' : '' }} onchange="handleTimesheetTypeChange()">
+                                <div class="ts-np-card flex items-center gap-2.5 px-3 py-2.5 rounded-lg border-2 border-gray-200 transition-all">
+                                    <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#ccfbf1;">
+                                        <i class="fas fa-briefcase text-xs" style="color:#0d9488;"></i>
+                                    </div>
+                                    <span class="ts-np-label text-xs font-semibold text-gray-700">Non Project</span>
                                 </div>
                             </label>
                             @endif
@@ -913,7 +941,7 @@
                         <input type="date" id="timesheetDate" required
                             class="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-red-700 focus:border-transparent bg-gray-50 hover:bg-white transition-colors">
                         {{-- Project: the date is locked to today (toggled by handleTimesheetTypeChange) --}}
-                        <p id="timesheetDateHint" class="hidden mt-1 text-xs text-gray-400">Project timesheets are always logged on today's date. For work on an earlier day, mention it in Activity Detail.</p>
+                        <p id="timesheetDateHint" class="hidden mt-1 text-xs text-gray-400">Project and Non Project timesheets are always logged on today's date. For work on an earlier day, mention it in Activity Detail.</p>
                     </div>
 
                     {{-- Period Selector (populated by JS — shown only when late exception exists) --}}
@@ -1423,5 +1451,8 @@ async function runTsExportNow() {
 </script>
 @endpush
 @endif
+
+{{-- Right-click > Detail on a Project row opens this side panel. --}}
+@include('calendar.partials.timesheet-detail-panel')
 
 @endsection

@@ -28,7 +28,7 @@ Project head, project administrator, RPMO, dan manajemen, serta role mana pun ya
 
 1. Buka `Delivery` › `Project`. Tiga tab di atas adalah `Project`, `Issues`, dan `Planning`. `Project` adalah daftarnya.
 2. Baca kartu `SUMMARY`: `Total Projects`, `Open`, `In Process`, `Closed`, `On Track`, `At Risk`, `At Critical`, dan `Ending ≤ 30 days`. Klik kartu untuk menyaring daftar.
-3. Di tabel, setiap project menampilkan `IO Number`, `Customer`, `Project Type`, `Project Name`, `AE`, `Project Owner`, `Category`, `Project Status`, dan `Last Update Date`. Pakai panah di judul kolom untuk mengurutkan dan ikon corong untuk menyaring.
+3. Di tabel, setiap project menampilkan `Last Update`, `IO Number`, `Customer`, `Project Type`, `Project Name`, `AE`, `Project Owner`, `Category`, dan `Project Status`. Project yang paling baru diperbarui ada di atas. Pakai panah di judul kolom untuk mengurutkan dan ikon corong untuk menyaring.
 4. Klik sebuah project untuk membuka halaman detailnya (lihat topik detail project).
 5. Pilih `Export Excel` untuk mengunduh daftar.
 

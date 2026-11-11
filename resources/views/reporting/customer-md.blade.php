@@ -538,7 +538,7 @@ function cmdRow(r) {
     const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
     const sInfo = CMD_STATUS_MAP[r.md_status] || { label: r.md_status_label || r.md_status || '—', cls: 'bg-gray-100 text-gray-500' };
     const mdStr = (r.customer_mandays !== null && r.customer_mandays !== undefined)
-        ? Number(r.customer_mandays).toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
+        ? formatMd(r.customer_mandays)
         : '—';
 
     return `

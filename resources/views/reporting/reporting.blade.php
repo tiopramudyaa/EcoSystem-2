@@ -612,7 +612,7 @@ function renderRptTable() {
         return `<span class="text-xs text-gray-400">—</span>`;
     };
 
-    const fmt     = (v) => v != null ? Number(v).toFixed(1) : '—';
+    const fmt     = (v) => v != null ? formatMd(v) : '—';
     const fmtDate = (d) => {
         if (!d) return '—';
         const [y, m, day] = String(d).split('-');

@@ -123,6 +123,10 @@ class MenuSeeder extends Seeder
             ['slug' => 'calendar.events.create',       'name' => 'Create Event',            'type' => 'function', 'parent_slug' => 'calendar.events', 'route_name' => null,                      'icon' => null,                   'order_seq' => 1],
             ['slug' => 'calendar.timesheets',          'name' => 'Timesheets',              'type' => 'page',     'parent_slug' => 'calendar',    'route_name' => 'calendar.timesheets',          'icon' => null,                   'order_seq' => 2],
             ['slug' => 'timesheet.create',             'name' => 'Create Timesheet',        'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null,                  'icon' => null,                   'order_seq' => 1],
+            ['slug' => 'timesheet.approve.project',      'name' => 'Approve or Reject Project Timesheet', 'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 2],
+            ['slug' => 'timesheet.approve.non-project',  'name' => 'Approve or Reject Non Project Timesheet', 'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 3],
+            ['slug' => 'timesheet.approve.support',      'name' => 'Approve or Reject Support Timesheet', 'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 4],
+            ['slug' => 'timesheet.approve.office',       'name' => 'Approve or Reject Office Timesheet', 'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 5],
 
             // ── Reporting ─────────────────────────────────────────────────────────
             ['slug' => 'reporting',                    'name' => 'Reporting',               'type' => 'group',    'parent_slug' => null,          'route_name' => null,                           'icon' => 'fa-chart-bar',         'order_seq' => 3],
@@ -342,6 +346,11 @@ class MenuSeeder extends Seeder
             'calendar.events.create'      => [self::ADMIN=>$v],
             'calendar.timesheets'         => [self::ADMIN=>$vced, self::EMPLOYEE=>$vce, self::INTERN=>$vc,  self::HOP=>$vce,  self::HOS=>$vce],
             'timesheet.create'            => [self::ADMIN=>$v,    self::EMPLOYEE=>$v,   self::HOP=>$v,      self::HOS=>$v],
+            // Approve / reject timesheet: satu izin per tipe, awalnya mengikuti pembagian yang berjalan.
+            'timesheet.approve.project'     => [self::ADMIN=>$v, self::HOP=>$v],
+            'timesheet.approve.non-project' => [self::ADMIN=>$v, self::HOP=>$v],
+            'timesheet.approve.support'     => [self::ADMIN=>$v, self::HOS=>$v],
+            'timesheet.approve.office'      => [self::ADMIN=>$v, self::RPMO=>$v],
             // Reporting
             'reporting'                   => [self::ADMIN=>$v,    self::EMPLOYEE=>$v,   self::HOP=>$v,      self::HOS=>$v,    self::HELPDESK=>$v,   self::RPMO=>$v],
             'reporting.validation'        => [self::ADMIN=>$vced, self::EMPLOYEE=>$v,   self::HOP=>$v,      self::HOS=>$vce,  self::HELPDESK=>$v,   self::RPMO=>$v],

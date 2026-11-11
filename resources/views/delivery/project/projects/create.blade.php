@@ -575,6 +575,8 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
                     <textarea name="location_street" id="location_street" rows="3"
                               class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm primary-focus text-sm px-4 py-2.5">{{ old('location_street') }}</textarea>
                 </div>
+
+                @include('delivery.project.projects.partials.location-coordinates-fields', ['prefix' => 'create_loc', 'lat' => null, 'lng' => null])
             </div>
         </div>
     </div>

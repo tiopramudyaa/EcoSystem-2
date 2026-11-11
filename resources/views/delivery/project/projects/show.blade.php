@@ -1530,6 +1530,29 @@
                     <label class="block text-sm font-medium text-gray-900 mb-1">Street Address</label>
                     <div class="display-box whitespace-pre-line">{{ $project->location_street ?: '—' }}</div>
                 </div>
+                @php
+                    $hasCoords = $project->location_latitude !== null && $project->location_longitude !== null;
+                    $fmtCoord  = fn ($v) => rtrim(rtrim(number_format((float) $v, 7, '.', ''), '0'), '.');
+                    $coordText = $hasCoords ? $fmtCoord($project->location_latitude) . ', ' . $fmtCoord($project->location_longitude) : null;
+                @endphp
+                <div class="md:col-span-2 lg:col-span-3">
+                    <label class="block text-sm font-medium text-gray-900 mb-1">Coordinates (Maps)</label>
+                    @if($hasCoords)
+                        <div class="display-box flex flex-wrap items-center justify-between gap-2">
+                            <span class="font-mono text-sm" id="projectLocationCoords">{{ $coordText }}</span>
+                            <a href="https://www.google.com/maps?q={{ $project->location_latitude }},{{ $project->location_longitude }}" target="_blank" rel="noopener"
+                               class="text-sm text-blue-600 hover:underline">Open in Google Maps</a>
+                        </div>
+                        <div class="mt-3 rounded-lg overflow-hidden border border-gray-200">
+                            <iframe title="Project location map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                                    class="w-full" style="height: 260px; border: 0;"
+                                    src="https://maps.google.com/maps?q={{ $project->location_latitude }},{{ $project->location_longitude }}&z=16&output=embed"></iframe>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Project timesheets show their distance from this point, so the GPS on a timesheet can be cross-checked.</p>
+                    @else
+                        <div class="display-box">-</div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
@@ -9564,7 +9587,7 @@ window.WricefLog = (function () {
         if (v === null || v === undefined || v === '') return '—';
         const num = Number(v);
         if (isNaN(num)) return '—';
-        return Number.isInteger(num) ? String(num) : num.toFixed(2).replace('.', ',');
+        return formatMd(num).replace('.', ',');
     }
 
     // Capability boleh multi-baris (lihat contoh CSV) — pertahankan barisnya.
@@ -9611,9 +9634,7 @@ window.WricefLog = (function () {
             return sum + (isNaN(num) ? 0 : num);
         }, 0);
 
-        cell.textContent = Number.isInteger(total)
-            ? String(total)
-            : total.toFixed(2).replace('.', ',');
+        cell.textContent = formatMd(total).replace('.', ',');
     }
 
     function rowHtml(w) {

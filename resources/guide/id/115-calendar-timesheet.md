@@ -2,46 +2,23 @@
 key: calendar-timesheet
 chapter: my-workspace
 order: 115
-title: Calendar dan Timesheets
-summary: Lihat event di kalender, catat jam kerja pada sebuah ticket, kirim untuk persetujuan, dan minta akses terlambat.
-requires: [calendar.events, calendar.timesheets]
-updated: 2026-10-28
+title: Timesheets
+summary: Catat jam kerja pada project, ticket, atau pekerjaan kantor, kirim untuk persetujuan, dan minta akses terlambat.
+requires: [calendar.timesheets]
+updated: 2026-11-11
 ---
-`Calendar` menampilkan event yang boleh Anda lihat. `Timesheets` adalah tempat Anda mencatat jam kerja dan mengirimnya untuk persetujuan.
+`Calendar` › `Timesheets` adalah tempat Anda mencatat jam kerja dan mengirimnya untuk persetujuan.
 
 ## Siapa yang menggunakan
 
-Employee yang memiliki `Events` atau `Timesheets` di bawah `Calendar`. Head dan approver memakai halaman timesheet yang sama untuk memeriksa timnya.
+Employee yang memiliki `Timesheets` di bawah `Calendar`. Head dan approver memakai halaman yang sama untuk memeriksa timnya.
 
 ## Sebelum Anda mulai
 
-- Ketahui ticket yang Anda kerjakan, tanggalnya, jam mulai dan selesai, serta apa yang Anda lakukan.
-- Tombol hanya tampil bila role Anda mengizinkan. Jika `Create Event` atau `Create Timesheet` tidak ada, hubungi administrator.
+- Ketahui project atau ticket yang Anda kerjakan, tanggalnya, jam mulai dan selesai, serta apa yang Anda lakukan.
+- Tombol `Create Timesheet` hanya tampil bila role Anda mengizinkan. Jika tidak ada, hubungi administrator.
 
 ## Langkah demi langkah
-
-### Membaca kalender
-
-![Halaman Events Calendar bulan Oktober dengan Today, navigasi bulan, dan tampilan Month, Week, dan Day](images/guide/calendar-events.png)
-
-*Tangkapan layar dengan data contoh.*
-
-1. Buka `Calendar` › `Events`. Halamannya berjudul `Events Calendar`.
-2. Gunakan tombol panah untuk berpindah bulan, atau pilih `Today` untuk kembali ke tanggal sekarang.
-3. Pindah antara tampilan `Month`, `Week`, dan `Day`.
-4. Pilih sebuah event untuk membaca rinciannya.
-
-### Membuat event
-
-![Formulir Create New Event dengan judul, jenis, deskripsi, tanggal, jam, dan lokasi](images/guide/calendar-create-event.png)
-
-*Tangkapan layar dengan data contoh.*
-
-1. Pilih `Create Event`. Formulirnya berjudul `Create New Event`.
-2. Isi `Event Title` dan pilih `Event Type`: `Meeting`, `Task`, `Deadline`, `Urgent`, atau `Reminder`.
-3. Isi `Start Date` dan `Start Time`. Tambahkan `End Date` dan `End Time` bila perlu, atau centang `All day event`.
-4. Tambahkan `Description` dan `Location` bila berguna.
-5. Pilih `Save Event`.
 
 ### Mencatat jam kerja
 
@@ -56,7 +33,7 @@ Employee yang memiliki `Events` atau `Timesheets` di bawah `Calendar`. Head dan 
 
 *Tangkapan layar dengan data contoh.*
 
-3. Pilih `Type`, lalu periksa `Submit Date`. `Reporting Period` terisi otomatis.
+3. Pilih `Type`: `Project`, `Non Project`, `Support`, atau `Office`. Lalu periksa `Submit Date`. `Reporting Period` terisi otomatis.
 4. Pilih `Time` mulai dan selesai. Formulir menampilkan `Duration`. Jam selesai harus lebih besar dari jam mulai.
 5. Pilih `Ticket`. Kotak `Customer`, `Quota MD`, dan `Remaining` terisi dari ticket itu.
 6. Atur `Activity Date`, yaitu kapan pekerjaan itu benar-benar terjadi.
@@ -64,13 +41,15 @@ Employee yang memiliki `Events` atau `Timesheets` di bawah `Calendar`. Head dan 
 8. Jelaskan pekerjaan di `Activity`. `Notes` bersifat opsional.
 9. Pilih `Save Timesheet`. Entri dimulai sebagai `Draft`, dan masih dapat Anda ubah atau hapus.
 
+Langkah 5 sampai 7 untuk `Support`. Untuk `Project`, pilih `Project` dan `Activity`, lalu `Presence` dan `Location`, dan jelaskan pekerjaan di `Activity Detail`. `Non Project` memiliki isian yang sama tanpa `Project` dan `Activity`. Bila `Presence` diatur ke `On-site`, `Location` menawarkan lokasi project.
+
 ### Mengirim untuk persetujuan
 
 1. Pilih entri yang masih draft di daftar.
 2. Pilih `Submit Timesheets` lalu konfirmasi.
 3. Status berubah menjadi `Submitted`. Setelah itu Anda tidak dapat mengubahnya sendiri.
 
-Kartu di atas daftar menghitung entri Anda sebagai `Draft`, `Submitted`, `Approved`, dan `Rejected`, serta menampilkan `Total Quota MD` dan `Total MD Consumed`.
+Kartu di atas daftar menghitung entri Anda sebagai `Draft`, `Submitted`, `Approved`, dan `Rejected`, serta menampilkan `Total Quota MD` dan `Total MD Consumed`. Klik kanan baris mana pun lalu pilih `Detail` untuk membuka entri lengkap (baris Project juga menampilkan peta GPS), di panel samping. Tab `Project` memakai urutan kolom yang sama dengan form entri Project.
 
 ### Meminta akses terlambat
 
@@ -87,26 +66,35 @@ Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar,
 
 ### Untuk setiap entri
 
-- Membuat timesheet memerlukan fungsi `Create Timesheet` dan membuat event kalender memerlukan fungsi `Create Event` di `Menu Access`. Tanpa fungsi itu permintaan ditolak, meskipun dikirim langsung.
+- Membuat timesheet memerlukan fungsi `Create Timesheet` di `Menu Access`. Tanpa fungsi itu permintaan ditolak, meskipun dikirim langsung.
 - Tanggal tidak boleh di masa depan.
+- Anda hanya bisa membuat entri untuk diri sendiri, kecuali EC Administrator, RPMO Head, serta Head of Project dan Head of Support.
+- Memindahkan entri yang sudah ada ke tanggal lain memeriksa lagi batas periode untuk tanggal baru.
 - Jam selesai harus lebih lambat dari jam mulai, dan deskripsi aktivitas wajib diisi.
 - Bila role Anda termasuk domain Project atau Support, Anda hanya dapat mencatat waktu di periode berjalan atau periode sebelumnya, dan hanya selama periode itu terbuka. Periode terbuka bila RPMO sudah membukanya dan Head domain Anda sudah membuka domain Anda. Bila tertutup, minta akses terlambat. Role yang tidak termasuk domain mana pun tidak dibatasi oleh aturan periode ini.
-- Anda dapat mengubah entri sendiri selama berstatus `Draft` atau `Rejected`. Hanya EC Administrator, RPMO Head, serta Head of Project dan Head of Support yang juga dapat mengubah entri orang lain. Entri `Submitted` tidak bisa diubah, hanya bisa dihapus. Entri `Approved` tidak bisa diubah maupun dihapus.
+- Anda dapat mengubah entri sendiri selama berstatus `Draft` atau `Rejected`. Hanya EC Administrator, RPMO Head, serta Head of Project dan Head of Support yang juga dapat mengubah entri orang lain. Entri `Submitted` dan `Approved` tidak bisa diubah maupun dihapus. Hanya `Draft` yang bisa dihapus.
 
 ### Entri support (dengan ticket)
 
 - Pilih ticket yang Anda kerjakan dan isi `Activity Date`.
-- Daftar `Ticket` menampilkan ticket tempat Anda menjadi lead, anggota, atau Co-PM (ditambah ticket Delivery Support yang Anda kelola), tetapi hanya jika usulan yang approved mencantumkan Anda dan kuota masih tersisa. Draft yang sedang diedit tetap bisa memilih ticketnya sendiri.
-- `MD Consumed` tidak boleh melebihi sisa kuota Anda pada ticket itu. Kuota adalah jatah dari proposal mandays yang disetujui, dan draft, entri submitted, dan approved Anda semuanya dihitung. Bila perlu tambahan, minta Head Anda menaikkan kuota.
-- Anda dapat menyimpan draft sebelum proposal mandays disetujui, tetapi tidak dapat mengirimnya: EcoSystem menyatakan belum ada proposal yang disetujui untuk ticket itu, atau Anda tidak tercantum di dalamnya. Untuk Change Request, Customer Mandays harus disetujui dulu.
+- Daftar `Ticket` menampilkan ticket tempat Anda menjadi lead, anggota, atau Co-PM (ditambah ticket Delivery Support yang Anda kelola), tetapi hanya jika Head sudah menyetujui hari untuk Anda dan kuota masih tersisa. Draft yang sedang diedit tetap bisa memilih ticketnya sendiri.
+- `MD Consumed` tidak boleh melebihi sisa kuota Anda pada ticket itu. Kuota adalah hari yang disetujui Head untuk Anda (`Approved Days` ditambah additional yang disetujui). Kuota tetap berlaku selagi proposal direvisi, dan draft, entri submitted, dan approved Anda semuanya dihitung. Bila perlu tambahan, minta Head Anda menaikkan kuota.
+- Anda dapat menyimpan draft sebelum proposal mandays disetujui, tetapi tidak dapat mengirimnya: EcoSystem menyatakan Head belum menyetujui hari untuk Anda pada ticket itu. Untuk Change Request, Customer Mandays harus disetujui dulu.
 - Bila personnel subarea Anda `Project`, satu entri support paling banyak 1 MD. Pecah pekerjaan yang lebih besar menjadi beberapa entri.
 
 ### Entri project
 
 - Anda hanya dapat mencatat waktu di project yang timnya Anda ikuti, dan project tidak boleh sudah ditutup.
-- Tanggal selalu hari ini dan lokasi direkam saat Anda membuat entri. Entri project tidak bisa diberi tanggal mundur, dan mengubahnya kemudian tidak mengubah tanggal maupun lokasi.
+- Tanggal selalu hari ini dan lokasi direkam saat Anda membuat entri. Entri project tidak bisa diberi tanggal mundur, dan mengubahnya kemudian tidak mengubah tanggal maupun lokasi. Daftar menampilkan jarak GPS dari lokasi project di peta, jika sudah diisi.
 - Waktunya tidak boleh bertumpuk dengan entri project Anda yang lain di hari yang sama. Entri yang ditolak membebaskan slotnya lagi.
 - Pilih aktivitas yang ditugaskan kepada Anda dan sedang berjalan pada hari itu. Pada hari non-kerja, atau bila Anda tidak punya aktivitas yang ditugaskan, centang opsi untuk mencatat tanpa aktivitas.
+- `Presence` dan `Location` wajib diisi. Bila `Presence` adalah `On-site`, `Location` terisi dengan lokasi project dari `Location Information`-nya. Anda dapat mengetik tempat lain.
+
+### Entri non project
+
+- Aturan yang sama dengan entri Project berlaku: tanggal selalu hari ini, lokasi perangkat wajib, dan waktunya tidak boleh bertumpuk dengan entri Project atau Non Project Anda yang lain di hari itu.
+- Tidak ada project dan tidak ada aktivitas. `Presence`, `Location`, dan `Activity Detail` wajib diisi.
+- Persetujuannya adalah fungsi `Approve or Reject Non Project Timesheet`, yang secara bawaan dipegang Head of Project.
 
 ### Entri office
 
@@ -114,8 +102,8 @@ Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar,
 
 ### Mengirim dan menyetujui
 
-- Anda hanya dapat mengirim entri `Draft` milik sendiri. Pengiriman memberi notifikasi ke penyetuju yang tepat: Head of Support untuk entri support, Head of Project untuk entri project, dan RPMO untuk entri office.
-- Menyetujui dan menolak dilakukan oleh EC Administrator, RPMO Head, Head of Project, dan Head of Support. Hanya entri `Submitted` yang dapat disetujui atau ditolak, satu per satu atau sekaligus.
+- Anda hanya dapat mengirim entri `Draft` milik sendiri. Pengiriman memberi notifikasi ke semua orang yang rolenya boleh menyetujui tipe itu (lihat poin berikutnya).
+- Menyetujui dan menolak diatur per tipe di `Menu Access`, di bawah `Timesheets`: `Approve or Reject Project Timesheet`, `Approve or Reject Non Project Timesheet`, `Approve or Reject Support Timesheet`, dan `Approve or Reject Office Timesheet`. Masing-masing mencakup menyetujui dan menolak, dan Anda hanya melihat dan memproses tipe yang Anda pegang. Secara bawaan Head of Project memegang Project dan Non Project, Head of Support memegang Support, RPMO Head memegang Office, dan EC Administrator memegang keempatnya. Hanya entri `Submitted` yang dapat disetujui atau ditolak, satu per satu atau sekaligus. Menyetujui entri support memeriksa kuota lagi: jika `MD Consumed` tidak lagi muat dalam kuota yang disetujui, persetujuan ditolak.
 - Penolakan memerlukan alasan tertulis. Karyawan melihatnya, dapat memperbaiki entri (kembali ke `Draft`), dan mengirimnya lagi.
 - Entri yang sudah disetujui bersifat final: tidak dapat dibuka kembali, diubah, atau dihapus dari halaman ini.
 
@@ -127,8 +115,8 @@ Entri yang ditolak menampilkan alasannya: perbaiki (entri kembali ke `Draft`) la
 
 **Saya tidak dapat membuat timesheet untuk periode yang sudah lewat.** Periodenya sudah ditutup. Bila Anda memang harus mengisinya, gunakan `Request Late Access`, termasuk untuk bulan lalu.
 
-**Bisakah saya mengubah timesheet yang sudah dikirim?** Tidak, hanya bisa dihapus. Minta orang yang menyetujuinya untuk menolak, lalu perbaiki dan kirim ulang.
+**Bisakah saya mengubah timesheet yang sudah dikirim?** Tidak, dan juga tidak bisa dihapus. Minta orang yang menyetujuinya untuk menolak, lalu perbaiki dan kirim ulang.
 
 **Mengapa `Quota MD` dan `Remaining` kosong?** Keduanya terisi setelah Anda memilih ticket.
 
-<!-- sources: routes/web.php, app/Http/Controllers/CalendarController.php, resources/views/calendar/events.blade.php, resources/views/calendar/timesheets.blade.php -->
+<!-- sources: routes/web.php, app/Http/Controllers/CalendarController.php, app/Http/Controllers/TimesheetController.php, resources/views/calendar/timesheets.blade.php -->

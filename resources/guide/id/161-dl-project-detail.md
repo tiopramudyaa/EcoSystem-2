@@ -45,7 +45,7 @@ Project head, project administrator, dan tim project. Setiap bagian punya izin `
 
 ## Apa yang terjadi selanjutnya
 
-Menyimpan sebuah bagian langsung memperbarui project dan `Last Update Date`. Angka keuangan mengalir ke laporan seperti `Collection Outlook`.
+Menyimpan sebuah bagian langsung memperbarui project dan `Last Update`. Angka keuangan mengalir ke laporan seperti `Collection Outlook`.
 
 ## Pertanyaan umum
 
