@@ -48,8 +48,20 @@ class AttachmentController extends Controller
      * default-nya tanpa batas. Karena itu aksesnya DICATAT — satu-satunya jejak
      * yang tersisa kalau tautannya bocor.
      */
-    public function showForTeams(int $id)
+    public function showForTeams(\Illuminate\Http\Request $request, int $id)
     {
+        // Pengganti middleware `signed`. Tautan baru ditandatangani atas path saja
+        // (TeamsOutboxService::teamsAttachmentUrl). Tautan lama — sudah terlanjur
+        // ada di riwayat chat Teams — ditandatangani atas URL https:// absolut,
+        // sementara di belakang proxy produksi request terbaca http://; jadi
+        // tanda tangan lama dicek ulang terhadap versi https://-nya.
+        $valid = \Illuminate\Support\Facades\URL::hasValidRelativeSignature($request)
+            || \Illuminate\Support\Facades\URL::hasValidSignature(
+                \Illuminate\Http\Request::create(preg_replace('#^http://#i', 'https://', $request->fullUrl()))
+            );
+
+        abort_unless($valid, 403, 'Invalid signature.');
+
         Log::info('AttachmentController: akses lewat tautan Teams bertanda tangan', [
             'attachment_id' => $id,
             'ip'            => request()->ip(),

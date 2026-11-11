@@ -767,8 +767,11 @@ Route::middleware(CheckAuthToken::class)->group(function () {
 // Tanda tangan = kapabilitas: siapa pun yang memegang tautannya bisa membuka
 // berkasnya. Konsekuensi yang diterima sadar (23 Sep 2026) supaya gambar tetap
 // tampil di riwayat chat. Aksesnya dicatat di AttachmentController.
+// Tanda tangan divalidasi di AttachmentController::showForTeams, bukan lewat
+// middleware `signed`: di belakang proxy produksi request terbaca http://
+// walau tautannya https://, sehingga `signed` menolak semua tautan (gambar
+// rusak di Teams, 11 Nov 2026). Lihat TeamsOutboxService::teamsAttachmentUrl.
 Route::get('/teams/attachments/{id}', [AttachmentController::class, 'showForTeams'])
-    ->middleware('signed')
     ->name('attachments.teams')
     ->where('id', '[0-9]+');
 
