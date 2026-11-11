@@ -33,6 +33,12 @@ return [
             'frequency_label'     => 'Every minute',
             'stale_after_minutes' => 5,
         ],
+        'tickets-deliverable-reminders' => [
+            'label'               => 'Ticket Deliverable Document Reminders',
+            'command'             => 'tickets:deliverable-reminders',
+            'frequency_label'     => 'Hourly (sends 09:00–17:00, once/day per ticket)',
+            'stale_after_minutes' => 90,
+        ],
         'activities-recompute-status' => [
             'label'               => 'Recompute Delivery Activity Status',
             'command'             => 'activities:recompute-status',

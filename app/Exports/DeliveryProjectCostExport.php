@@ -3,27 +3,32 @@
 namespace App\Exports;
 
 use App\Models\DeliveryProject;
+use App\Models\DeliverySupport;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithPreCalculateFormulas;
 
 /**
  * Export Plan Cost satu Delivery Project:
- *   1. "Plan Cost"       — rekap Budget / Release / Actual per cost item,
- *                          sama dengan tabel di section Plan Cost.
- *   2. "Expense Details" — seluruh actual expense detail (termasuk period),
- *                          satu baris per expense.
+ *   1. "Plan Cost"        — rekap Budget / Release / Actual per cost item,
+ *                           sama dengan tabel di section Plan Cost.
+ *   2. "Expense Details"  — seluruh actual expense detail (termasuk period),
+ *                           satu baris per expense.
+ *   3. "Monthly Cost"     — report Monthly Cost vs TOP Invoiced per bulan.
+ *   4. "Release Schedule" — jadwal release bulanan per cost item.
  *
  * Datanya disiapkan DeliveryProjectCostController::export() dengan helper yang
- * sama dengan tampilan (formatCost/buildSummary), supaya angka di file tidak
- * pernah berbeda dari angka di layar.
+ * sama dengan tampilan (formatCost/buildSummary, ProjectMonthlyCostReport),
+ * supaya angka di file tidak pernah berbeda dari angka di layar.
  */
 class DeliveryProjectCostExport implements WithMultipleSheets, WithPreCalculateFormulas
 {
     public function __construct(
-        private DeliveryProject $project,
+        private DeliveryProject|DeliverySupport $project,
         private array $costs,
         private array $summary,
         private array $expenses,
+        private array $monthly,
+        private array $releaseSchedules,
     ) {
     }
 
@@ -32,6 +37,8 @@ class DeliveryProjectCostExport implements WithMultipleSheets, WithPreCalculateF
         return [
             new DeliveryProjectCostRecapSheet($this->project, $this->costs, $this->summary),
             new DeliveryProjectCostExpenseSheet($this->expenses),
+            new DeliveryProjectMonthlyCostSheet($this->project, $this->monthly),
+            new DeliveryProjectReleaseScheduleSheet($this->releaseSchedules),
         ];
     }
 }

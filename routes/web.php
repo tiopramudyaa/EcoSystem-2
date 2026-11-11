@@ -430,11 +430,15 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     Route::middleware('menu:delivery-project.plan-cost.view')->group(function () {
         Route::get('/projects/{project}/costs',                                  [DeliveryProjectCostController::class, 'index'])->name('projects.costs.index');
         Route::get('/projects/{project}/costs/export',                           [DeliveryProjectCostController::class, 'export'])->name('projects.costs.export');
+        Route::get('/projects/{project}/costs/monthly',                          [DeliveryProjectCostController::class, 'monthly'])->name('projects.costs.monthly');
         Route::get('/projects/{project}/costs/{cost}/items',                     [DeliveryProjectCostController::class, 'indexItems'])->name('projects.costs.items.index');
+        Route::get('/projects/{project}/costs/{cost}/releases',                  [DeliveryProjectCostController::class, 'indexReleases'])->name('projects.costs.releases.index');
     });
     Route::middleware(['menu:delivery-project.plan-cost.edit', 'project.editable'])->group(function () {
         Route::put('/projects/{project}/costs/{cost}',                           [DeliveryProjectCostController::class, 'update'])->name('projects.costs.update');
         Route::put('/projects/{project}/costs/{cost}/items/{item}',              [DeliveryProjectCostController::class, 'updateItem'])->name('projects.costs.items.update');
+        // Total release item (langkah 1 modal "Atur Release Cost")
+        Route::put('/projects/{project}/costs/{cost}/release',                   [DeliveryProjectCostController::class, 'updateRelease'])->name('projects.costs.release.update');
     });
     Route::middleware(['menu:delivery-project.plan-cost.manage', 'project.editable'])->group(function () {
         Route::post('/projects/{project}/costs',                                 [DeliveryProjectCostController::class, 'store'])->name('projects.costs.store');
@@ -445,6 +449,10 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::post('/projects/{project}/costs/{cost}/items',                    [DeliveryProjectCostController::class, 'storeItem'])->name('projects.costs.items.store');
         Route::delete('/projects/{project}/costs/{cost}/items/{item}',           [DeliveryProjectCostController::class, 'destroyItem'])->name('projects.costs.items.destroy');
         Route::post('/projects/{project}/costs/{cost}/items/{item}/delete',       [DeliveryProjectCostController::class, 'destroyItem'])->name('projects.costs.items.destroy.post');
+        // Jadwal release bulanan (langkah 2 modal "Atur Release Cost")
+        Route::post('/projects/{project}/costs/{cost}/releases',                 [DeliveryProjectCostController::class, 'storeRelease'])->name('projects.costs.releases.store');
+        Route::delete('/projects/{project}/costs/{cost}/releases/{schedule}',    [DeliveryProjectCostController::class, 'destroyRelease'])->name('projects.costs.releases.destroy');
+        Route::post('/projects/{project}/costs/{cost}/releases/{schedule}/delete', [DeliveryProjectCostController::class, 'destroyRelease'])->name('projects.costs.releases.destroy.post');
     });
 
     // Document management routes

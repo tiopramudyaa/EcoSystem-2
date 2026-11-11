@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\DeliveryProject;
+use App\Models\DeliverySupport;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
@@ -26,7 +27,7 @@ class DeliveryProjectCostRecapSheet implements WithTitle, WithEvents
     private const MONEY_COLS = ['C', 'D', 'E', 'F', 'G'];
 
     public function __construct(
-        private DeliveryProject $project,
+        private DeliveryProject|DeliverySupport $project,
         private array $costs,
         private array $summary,
     ) {
@@ -50,7 +51,7 @@ class DeliveryProjectCostRecapSheet implements WithTitle, WithEvents
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
 
                 $info = [
-                    'Project'     => $this->project->name,
+                    ($this->project instanceof DeliverySupport ? 'Support' : 'Project') => $this->project->name,
                     'IO Number'   => $this->project->io_number ?: '-',
                     'Customer'    => $this->project->client->basicData->name_1 ?? '-',
                     'Exported At' => now()->format('d M Y H:i'),

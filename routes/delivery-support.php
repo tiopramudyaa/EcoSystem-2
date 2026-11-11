@@ -261,11 +261,17 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         Route::middleware('menu:delivery-support.plan-cost.view')->group(function () {
             Route::get('/costs',                          [DeliverySupportCostController::class, 'index'])->name('costs.index');
             Route::get('/costs/{cost}/items',             [DeliverySupportCostController::class, 'indexItems'])->name('costs.items.index');
+            // Export Excel (rekap, expense, monthly cost, release schedule) & report Monthly Cost vs TOP Invoiced
+            Route::get('/costs/export',                   [DeliverySupportCostController::class, 'export'])->name('costs.export');
+            Route::get('/costs/monthly',                  [DeliverySupportCostController::class, 'monthly'])->name('costs.monthly');
+            Route::get('/costs/{cost}/releases',          [DeliverySupportCostController::class, 'indexReleases'])->name('costs.releases.index');
         });
 
         Route::middleware('menu:delivery-support.plan-cost.edit')->group(function () {
             Route::put('/costs/{cost}',                   [DeliverySupportCostController::class, 'update'])->name('costs.update');
             Route::put('/costs/{cost}/items/{item}',      [DeliverySupportCostController::class, 'updateItem'])->name('costs.items.update');
+            // "Atur Release Cost" langkah 1: total release item
+            Route::put('/costs/{cost}/release',           [DeliverySupportCostController::class, 'updateRelease'])->name('costs.release.update');
         });
 
         // =====================================================================
@@ -319,6 +325,10 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
             Route::post('/costs/{cost}/items',                [DeliverySupportCostController::class, 'storeItem'])->name('costs.items.store');
             Route::delete('/costs/{cost}/items/{item}',       [DeliverySupportCostController::class, 'destroyItem'])->name('costs.items.destroy');
             Route::post('/costs/{cost}/items/{item}/delete',  [DeliverySupportCostController::class, 'destroyItem'])->name('costs.items.destroy-post');
+            // "Atur Release Cost" langkah 2: jadwal release bulanan
+            Route::post('/costs/{cost}/releases',                       [DeliverySupportCostController::class, 'storeRelease'])->name('costs.releases.store');
+            Route::delete('/costs/{cost}/releases/{schedule}',          [DeliverySupportCostController::class, 'destroyRelease'])->name('costs.releases.destroy');
+            Route::post('/costs/{cost}/releases/{schedule}/delete',     [DeliverySupportCostController::class, 'destroyRelease'])->name('costs.releases.destroy-post');
         });
     });
 });
