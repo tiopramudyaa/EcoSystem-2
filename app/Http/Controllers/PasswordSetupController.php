@@ -86,6 +86,12 @@ class PasswordSetupController extends Controller
             'updated_at'          => now(),
         ]);
 
+        // Password berubah (mungkin karena akun dibobol): akhiri semua sesi lain, token "Keep me signed in",
+        // dan kepercayaan perangkat 2FA, supaya sesi yang sudah dicuri tidak ikut hidup.
+        DB::table('sessions')->where('user_id', $authUser->id)->delete();
+        DB::table('auth_users')->where('id', $authUser->id)->update(['remember_token' => null]);
+        \App\Services\TwoFactorAuthService::clearTrust($authUser->id);
+
         Log::info('PasswordSetupController: password berhasil diubah', [
             'auth_user_id' => $authUser->id,
         ]);
@@ -98,7 +104,7 @@ class PasswordSetupController extends Controller
             recordLabel: $authUser->email ?: "Auth User #{$authUser->id}",
             description: $isInitialSetup
                 ? 'completed initial password setup via emailed link'
-                : 'reset their password via the forgot-password emailed link',
+                : 'reset their password via the forgot-password emailed link (other sessions ended)',
             old: null,
             new: null,
         );
@@ -154,7 +160,20 @@ class PasswordSetupController extends Controller
             ]);
         }
 
-        self::generateAndSendToken($authUser, 'reset');
+        // Jeda per akun: token baru berlaku 24 jam, jadi token yang diterbitkan kurang dari 1 menit
+        // lalu masih "segar". Permintaan ulang secepat itu tidak mengirim email lagi, sehingga satu
+        // korban tidak bisa dibanjiri dari banyak IP. Pesan ke pengguna tetap sama.
+        $issuedRecently = !empty($authUser->cp_token)
+            && !empty($authUser->cp_token_expires_at)
+            && \Illuminate\Support\Carbon::parse($authUser->cp_token_expires_at)->subHours(24)->gt(now()->subMinute());
+
+        if ($issuedRecently) {
+            Log::info('PasswordSetupController: forgot password diabaikan, link baru saja dikirim', [
+                'auth_user_id' => $authUser->id,
+            ]);
+        } else {
+            self::generateAndSendToken($authUser, 'reset');
+        }
 
         [$local, $domain] = explode('@', $authUser->email, 2);
         $maskedEmail = substr($local, 0, 2) . str_repeat('*', max(strlen($local) - 2, 3)) . '@' . $domain;
@@ -251,7 +270,7 @@ HTML;
             $sender     = config('services.microsoft_graph.sender_email');
             $graphToken = self::getGraphToken();
 
-            Http::withToken($graphToken)->post(
+            $response = Http::withToken($graphToken)->timeout(15)->post(
                 rtrim(config('services.microsoft_graph.base_url', 'https://graph.microsoft.com/v1.0'), '/') . "/users/{$sender}/sendMail",
                 [
                     'message' => [
@@ -264,6 +283,18 @@ HTML;
                     'saveToSentItems' => true,
                 ]
             );
+
+            // Graph membalas 202 bila email diterima. Selain itu emailnya TIDAK terkirim, walau
+            // pengguna tetap melihat halaman "cek email" (sengaja sama demi keamanan akun).
+            if (!$response->successful()) {
+                Log::error('PasswordSetupController: Graph menolak email', [
+                    'auth_user_id' => $authUser->id,
+                    'type'         => $type,
+                    'status'       => $response->status(),
+                    'graph_error'  => Str::limit((string) $response->json('error.code') . ': ' . (string) $response->json('error.message'), 300),
+                ]);
+                return;
+            }
 
             Log::info('PasswordSetupController: email terkirim', [
                 'auth_user_id' => $authUser->id,
@@ -294,7 +325,7 @@ HTML;
      * (client_credentials token Graph biasanya berlaku 3600s) supaya tiap kirim
      * email set-password/reset tidak selalu round-trip OAuth baru.
      */
-    private static function getGraphToken(): string
+    public static function getGraphToken(): string
     {
         return \Illuminate\Support\Facades\Cache::remember(
             'password_setup.ms_graph_token',

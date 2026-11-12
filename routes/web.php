@@ -70,6 +70,9 @@ Route::prefix('api/auth')->group(function () {
 // Login page
 Route::get('/auth/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/2fa/verify', [AuthController::class, 'showTwoFactorChallenge'])->name('2fa.verify');
+// Login dengan Microsoft (opsi tambahan; diaktifkan EC Administrator di Settings > Security).
+Route::get('/auth/microsoft', [\App\Http\Controllers\MicrosoftAuthController::class, 'redirect'])->name('microsoft.redirect')->middleware('throttle:20,1');
+Route::get('/auth/microsoft/callback', [\App\Http\Controllers\MicrosoftAuthController::class, 'callback'])->name('microsoft.callback')->middleware('throttle:30,1');
 
 // ==================== PASSWORD SETUP & RESET (public — tidak perlu auth) ====================
 // Halaman "Cek email Anda" — tampil setelah setup akun baru atau forgot password
@@ -81,7 +84,8 @@ Route::post('/change-password', [PasswordSetupController::class, 'submitChangePa
 // Forgot password — halaman form input email
 Route::get('/forgot-password', [PasswordSetupController::class, 'showForgotPassword'])->name('password-setup.forgot');
 // Forgot password — proses kirim email reset
-Route::post('/forgot-password', [PasswordSetupController::class, 'submitForgotPassword'])->name('password-setup.forgot.submit');
+// throttle: tanpa batas, siapa pun bisa membanjiri satu karyawan dengan email reset dan menghabiskan kuota mailbox pengirim.
+Route::post('/forgot-password', [PasswordSetupController::class, 'submitForgotPassword'])->name('password-setup.forgot.submit')->middleware('throttle:5,1');
 
 // NOTE: /auth/login (POST) sudah didefinisikan di prefix group 'api/auth' di atas.
 // Route standalone ini dihapus untuk menghindari duplikasi.
@@ -310,6 +314,11 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');
         Route::post('/preferences', [SettingsController::class, 'updatePreferences'])->name('preferences');
         Route::post('/reset', [SettingsController::class, 'resetPreferences'])->name('reset');
+
+        // Akun Microsoft (Security). Hapus/lepas memakai POST, bukan DELETE: verb DELETE diblokir WAF di production.
+        Route::get('/microsoft/connect', [\App\Http\Controllers\MicrosoftAuthController::class, 'connect'])->name('microsoft.connect')->middleware('throttle:20,1');
+        Route::post('/microsoft/disconnect', [\App\Http\Controllers\MicrosoftAuthController::class, 'disconnect'])->name('microsoft.disconnect')->middleware('throttle:10,1');
+        Route::post('/microsoft/config', [\App\Http\Controllers\MicrosoftAuthController::class, 'saveConfig'])->name('microsoft.config')->middleware('throttle:10,1');
 
         Route::prefix('2fa')->name('2fa.')->group(function () {
             Route::post('/enable', [\App\Http\Controllers\TwoFactorController::class, 'enable'])->name('enable');
