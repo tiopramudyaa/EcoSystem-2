@@ -402,7 +402,7 @@
         sEl.textContent = score;
         sEl.className = `text-3xl font-bold leading-none ${sColor}`;
 
-        document.getElementById('summaryText').textContent = `${summary.ticket_count ?? 0} active ticket(s) as Lead`;
+        document.getElementById('summaryText').textContent = `${summary.ticket_count ?? 0} active ticket(s)`;
     }
 
     // ── Render ─────────────────────────────────────────────────────────

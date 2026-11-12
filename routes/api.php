@@ -109,6 +109,8 @@ Route::middleware(['web'])->group(function () {
         Route::patch('/{id}/change-password', [EmployeeController::class, 'changePassword'])->middleware('menu:master.employee.action');
         Route::patch('/{id}/change-eci', [EmployeeController::class, 'changeEci'])->middleware('menu:master.employee.action');
         Route::patch('/{id}/change-role', [EmployeeController::class, 'changeRole'])->middleware('menu:master.employee.action');
+        // POST (WAF production memblokir verb DELETE). Izin sendiri + kode 2FA baru dari admin.
+        Route::post('/{id}/reset-two-factor', [EmployeeController::class, 'resetTwoFactor'])->middleware(['menu:master.employee.reset-two-factor', 'throttle:10,1']);
     });
 
     // Employee Basic Data endpoints

@@ -89,6 +89,7 @@ class SettingsController extends Controller
                 'user'              => $user,
                 'preferences'       => $userPreferences,
                 'twoFactorEnabled'  => $twoFactorEnabled,
+                'microsoft'         => $this->microsoftSettingsData($authUser),
             ]);
 
         } catch (\Exception $e) {
@@ -101,6 +102,27 @@ class SettingsController extends Controller
                 'message' => 'An error occurred while loading settings.'
             ]);
         }
+    }
+
+    /**
+     * Data kartu "Microsoft account" di Settings > Security. Client secret
+     * sengaja TIDAK ikut: browser hanya tahu ada atau tidaknya secret tersimpan.
+     */
+    private function microsoftSettingsData(?object $authUser): array
+    {
+        return [
+            'available'    => \App\Support\MicrosoftLoginSettings::loginAvailable(),
+            'can_manage'   => \App\Support\MicrosoftLoginSettings::canManage(),
+            'enabled'      => \App\Support\MicrosoftLoginSettings::enabled(),
+            'tenant_id'    => \App\Support\MicrosoftLoginSettings::storedTenantId(),
+            'client_id'    => \App\Support\MicrosoftLoginSettings::storedClientId(),
+            'has_secret'   => \App\Support\MicrosoftLoginSettings::hasStoredSecret(),
+            'env_fallback' => \App\Support\MicrosoftLoginSettings::usesEnvFallback(),
+            'redirect_uri' => \App\Support\MicrosoftLoginSettings::redirectUri(),
+            'linked'       => !empty($authUser?->microsoft_oid),
+            'linked_email' => $authUser->microsoft_email ?? null,
+            'has_account'  => $authUser !== null,
+        ];
     }
 
     public function updatePreferences(Request $request)

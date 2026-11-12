@@ -16,7 +16,7 @@ class UserGuideMenuCoverageTest extends TestCase
     /** Izin tombol (edit, tambah, hapus) di dalam satu bagian halaman tidak perlu topik sendiri: topik halamannya yang menjelaskan. */
     private const ACTION_SUFFIXES = ['.edit', '.manage', '.delete'];
 
-    private const COVERED_GROUPS = ['control-center.', 'management.', 'delivery.', 'delivery-project.', 'delivery-support.', 'master.', 'sla.', 'rpmo.'];
+    private const COVERED_GROUPS = ['control-center.', 'management.', 'delivery.', 'delivery-project.', 'delivery-support.', 'master.', 'sla.', 'rpmo.', 'ticket.my-tasks', 'ticket.consultant-workload'];
 
     public function test_every_menu_page_of_a_covered_group_has_a_guide_topic(): void
     {

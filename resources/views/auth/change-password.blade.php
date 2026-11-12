@@ -193,7 +193,7 @@
                 </div>
 
                 <button type="submit" id="submitBtn" class="cp-btn" disabled>
-                    Save Password &amp; Sign In
+                    Save Password
                 </button>
             </form>
 
