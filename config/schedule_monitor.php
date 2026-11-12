@@ -24,7 +24,7 @@ return [
         'email-process-inbox' => [
             'label'               => 'Process Incoming Email',
             'command'             => 'email:process-inbox',
-            'frequency_label'     => 'Every minute',
+            'frequency_label'     => 'Every 30 seconds',
             'stale_after_minutes' => 5,
         ],
         'tickets-open-reminders' => [
