@@ -69,12 +69,18 @@ class ExplainWorkflowTool implements AiTool
 
                 1. The ticket's PIC (or a team member) fills a line-item grid plus a required description, and saves
                    as a draft. For "Change Request" type tickets, only the ticket's team lead may do this.
-                2. PIC submits the draft to Helpdesk (status becomes "pending_helpdesk").
-                3. Helpdesk reviews, can edit line items/description/notes depending on their permissions, then either:
-                   - Sends it to the customer (posts into the ticket chat and emails the customer), or
-                   - Approves it directly on Helpdesk's own authority — sending to the customer first is NOT required.
+                2. PIC submits the draft for internal approval (status becomes "pending_approval"). It goes through
+                   two levels in order. Who approves each level is configured by an administrator in
+                   Management > Flow > Customer Mandays Approval (by default Level 1 = EC Administrator,
+                   Level 2 = Helpdesk). Approvers may adjust the mandays numbers before approving. A rejection at
+                   either level (reason required) closes that version as "rejected"; the PIC revises it as a new
+                   version and submits again.
+                3. After both levels approve, the status becomes "pending_helpdesk" (ready to send). Helpdesk can still
+                   edit line items/description/notes depending on their permissions, then sends it to the customer
+                   (posts into the ticket chat and emails the customer). Helpdesk can no longer approve directly.
                 4. The customer approves or rejects via the Jarvies portal. Approval sets the ticket's `man_days` to
-                   this proposal's total. Rejection sends it back to Helpdesk with the customer's reason attached.
+                   this proposal's total and is the only way to reach "approved". Rejection sends it back to Helpdesk
+                   with the customer's reason attached.
                 5. A pending/sent/approved proposal can be cancelled (cancelling an already-approved one needs an
                    extra permission).
 

@@ -86,6 +86,11 @@ class RoleAccessEnforcementTest extends TestCase
         $source = file_get_contents(app_path('Http/Controllers/MandaysController.php'));
 
         $this->assertStringNotContainsString('RoleId::DELIVERY_HELPDESK->value]', $source);
-        $this->assertStringContainsString("['ticket.review-mandays']", $source);
+
+        // Approval bertingkat: notifikasi "siap dikirim ke customer" kini dikirim oleh
+        // CustomerMandaysApprovalService, tetap lewat slug Role Access (bukan role ID).
+        $service = file_get_contents(app_path('Services/CustomerMandaysApprovalService.php'));
+        $this->assertStringContainsString("'ticket.review-mandays'", $service);
+        $this->assertStringNotContainsString('RoleId::', $service);
     }
 }

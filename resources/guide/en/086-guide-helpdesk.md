@@ -5,7 +5,7 @@ order: 86
 title: Guide for Delivery Support Service Helpdesk
 summary: The helpdesk routine: validate incoming tickets, route them, review customer mandays, tidy the ticket list and prepare shift and weekly reports.
 requires: ["@role:Delivery Support Service Helpdesk"]
-updated: 2026-10-28
+updated: 2026-11-13
 ---
 This guide is for the Delivery Support Service Helpdesk role. You are the front door for customer requests: you check what comes in, send it to the right people and keep the ticket list in order.
 
@@ -38,7 +38,7 @@ New requests from customers wait in `Ticket Validation` until you decide. The nu
 
 1. Open `Ticket`, pick the ticket and assign a lead or team members. See [[ticket-assignment]].
 2. Open `Consultant Workload` first to see who has room.
-3. When a consultant proposes Customer Mandays, review and send it to the customer. See [[ticket-mandays]].
+3. When a Customer Mandays proposal reaches your approval level, approve or reject it. After both levels approve, review it and send it to the customer. See [[ticket-mandays]].
 
 ### Keep the ticket list tidy
 

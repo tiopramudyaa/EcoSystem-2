@@ -5,7 +5,7 @@ order: 80
 title: Panduan Delivery Support User
 summary: Rutinitas harian konsultan support: ambil ticket, kerjakan, usulkan mandays, dan catat waktu.
 requires: ["@role:Delivery Support User"]
-updated: 2026-10-28
+updated: 2026-11-13
 ---
 Panduan ini untuk role Delivery Support User, yaitu konsultan yang mengerjakan ticket customer. Isinya rutinitas harian yang sederhana dan tautan ke topik rinci.
 
@@ -49,7 +49,7 @@ Konsultan dengan role Delivery Support User. Yang dapat Anda lakukan bergantung 
 
 1. Buka bagian `Mandays` lalu pilih `Propose Mandays` atau `Propose Resolution Days`.
 2. Simpan `Draft`, periksa, lalu kirim.
-3. Helpdesk meninjau Customer Mandays dan kepala menyetujui Resolution Days. Lihat [[ticket-mandays]].
+3. Customer Mandays melewati dua level persetujuan, lalu Helpdesk mengirimnya ke customer. Kepala menyetujui Resolution Days. Lihat [[ticket-mandays]].
 
 ## Apa yang terjadi selanjutnya
 

@@ -5,7 +5,7 @@ order: 121
 title: Laporan Customer MD
 summary: Lihat semua Change Request dan semua tiket dengan usulan Customer Mandays dalam satu daftar, lalu ekspor.
 requires: [reporting.customer-md]
-updated: 2026-10-28
+updated: 2026-11-13
 ---
 Customer MD menampilkan tiket yang membawa mandays customer: semua tiket bertipe Change Request dan semua tiket dengan usulan Customer Mandays yang aktif.
 
@@ -41,5 +41,7 @@ Hasil ekspor berisi tampilan yang tersaring pada saat itu. Tidak ada yang beruba
 **`Customer MD Status` menampilkan `None`.** Tiket itu Change Request yang belum punya usulan Customer Mandays.
 
 **Tiket yang saya harapkan tidak ada.** Tiket harus berupa Change Request atau punya usulan Customer Mandays yang aktif. Periksa juga filternya.
+
+**Apa arti `Waiting Internal Approval` dan `Rejected`?** `Waiting Internal Approval` berarti usulan sedang menunggu salah satu dari dua level persetujuan internal. `Rejected` berarti sebuah level menolaknya dan PIC harus mengirim versi baru.
 
 <!-- sources: routes/web.php, app/Http/Controllers/ReportingController.php, resources/views/reporting/customer-md.blade.php -->

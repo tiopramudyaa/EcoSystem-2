@@ -1591,6 +1591,25 @@
                             </div>
                         </div>
                         @endif
+                        @if($can('management.flow'))
+                        <div class="mt-1">
+                            <button onclick="toggleMasterFlowDropdown()" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg w-full text-left {{ Request::is('management/flow*') ? 'bg-white/15 text-white font-medium' : 'text-white/70 hover:bg-white/10 hover:text-white' }} transition-all">
+                                <span class="w-4 h-4 flex items-center justify-center">
+                                    <i class="fas fa-sitemap text-xs"></i>
+                                </span>
+                                <span class="nav-text text-sm flex-1">Flow</span>
+                                <i class="fas fa-chevron-down text-xs nav-text transition-transform {{ Request::is('management/flow*') ? 'rotate-180' : '' }}" id="masterFlowChevron"></i>
+                            </button>
+                            <div id="masterFlowDropdown" class="nav-text {{ Request::is('management/flow*') ? '' : 'hidden' }} mt-1 ml-4 space-y-1">
+                                @if($can('management.flow.customer-mandays'))
+                                <a href="{{ route('management.flow.customer-mandays.index') }}" class="nav-link flex items-center gap-3 px-4 py-2 rounded-lg {{ Request::is('management/flow/customer-mandays*') ? 'bg-white/15 text-white font-medium' : 'text-white/70 hover:bg-white/10 hover:text-white' }} transition-all">
+                                    <span class="w-3 h-3 flex items-center justify-center"><i class="fas fa-user-check text-xs"></i></span>
+                                    <span class="nav-text text-xs">Customer Mandays Approval</span>
+                                </a>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
                 @endif
@@ -2106,6 +2125,14 @@
             if (chevron) chevron.classList.toggle('rotate-180', !isOpen);
         }
 
+        function toggleMasterFlowDropdown() {
+            const submenu = document.getElementById('masterFlowDropdown');
+            const chevron = document.getElementById('masterFlowChevron');
+            if (!submenu) return;
+            const isOpen = !submenu.classList.contains('hidden');
+            submenu.classList.toggle('hidden', isOpen);
+            if (chevron) chevron.classList.toggle('rotate-180', !isOpen);
+        }
         function toggleMasterDeliveryDropdown() {
             const submenu = document.getElementById('masterDeliveryDropdown');
             const chevron = document.getElementById('masterDeliveryChevron');
@@ -2567,6 +2594,8 @@
             late_exception_rejected:      { bg: '#fee2e2', color: '#dc2626', fa: 'fa-ban' },
             customer_mandays_canceled:    { bg: '#ffedd5', color: '#ea580c', fa: 'fa-times-circle' },
             customer_mandays_proposed:    { bg: '#dbeafe', color: '#2563eb', fa: 'fa-file-invoice' },
+            customer_mandays_pending_approval: { bg: '#fef3c7', color: '#d97706', fa: 'fa-user-check' },
+            customer_mandays_rejected:    { bg: '#fee2e2', color: '#dc2626', fa: 'fa-times-circle' },
             resolution_days_proposed:     { bg: '#e0e7ff', color: '#4f46e5', fa: 'fa-users' },
             contract_end_reminder:        { bg: '#fef9c3', color: '#ca8a04', fa: 'fa-file-contract' },
             top_invoice_reminder:         { bg: '#dbeafe', color: '#2563eb', fa: 'fa-file-invoice-dollar' },
@@ -2592,6 +2621,8 @@
                 case 'late_exception_rejected':      return 'Late Access Request rejected by RPMO';
                 case 'customer_mandays_canceled':    return 'Customer Mandays Proposal canceled';
                 case 'customer_mandays_proposed':    return 'Customer Mandays — needs review';
+                case 'customer_mandays_pending_approval': return 'Customer Mandays waiting for your approval';
+                case 'customer_mandays_rejected':    return 'Customer Mandays Proposal rejected';
                 case 'resolution_days_proposed':     return 'Resolution Days — needs review';
                 case 'contract_end_reminder':        return 'Contract deadline reminder';
                 case 'top_invoice_reminder':         return 'Invoice submission due';

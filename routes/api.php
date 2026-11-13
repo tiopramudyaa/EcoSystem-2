@@ -547,7 +547,13 @@ Route::middleware(['web'])->group(function () {
         Route::get('/{ticketId}/mandays/hd-draft', [MandaysController::class, 'getHelpdeskDraft']);
         Route::put('/{ticketId}/mandays/hd-draft', [MandaysController::class, 'saveHelpdeskDraft']);
         Route::post('/{ticketId}/mandays/hd-draft/submit-chat', [MandaysController::class, 'submitToChat']);
-        Route::post('/{ticketId}/mandays/hd-draft/approve', [MandaysController::class, 'approveCustomerMandays']);
+        // Jalan pintas "Helpdesk approve" dihapus: status approved hanya lewat customer.
+
+        // Customer Mandays — approval bertingkat (Level 1 → Level 2). Kewenangan
+        // diputuskan CustomerMandaysApprovalService::canAct(), bukan slug menu.
+        Route::get('/{ticketId}/mandays/approval', [MandaysController::class, 'getApproval']);
+        Route::post('/{ticketId}/mandays/approval/approve', [MandaysController::class, 'approveLevel']);
+        Route::post('/{ticketId}/mandays/approval/reject', [MandaysController::class, 'rejectLevel']);
         Route::post('/{ticketId}/mandays/hd-draft/cancel', [MandaysController::class, 'cancelCustomerMandays']);
 
         // Resolution Days — PIC + Head of Support

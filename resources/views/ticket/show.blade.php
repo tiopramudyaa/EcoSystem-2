@@ -442,15 +442,22 @@
         $hdCanEditNotes       = $isHelpdesk && $can('ticket.review-mandays.edit-proposal-notes');
         $hdCanSaveDraft       = $isHelpdesk && $can('ticket.review-mandays.save-draft');
         $hdCanSendToCustomer  = $isHelpdesk && $can('ticket.review-mandays.send-to-customer');
-        $hdCanApprove         = $isHelpdesk && $can('ticket.review-mandays.approve');
         $hdCanCancel          = $isHelpdesk && $can('ticket.review-mandays.cancel');
         $hdCanCancelApproved  = $isHelpdesk && $can('ticket.review-mandays.cancel-approved');
+        // Approval bertingkat Customer Mandays: siapa yang boleh bertindak diputuskan
+        // CustomerMandaysApprovalService::canAct() — di sini hanya untuk menampilkan panel.
+        $cmApprovalService = app(\App\Services\CustomerMandaysApprovalService::class);
+        $cmLatest          = \App\Models\CustomerMandays::where('ticket_id', $ticket->ticket_id)->latestVersion()->first();
+        $cmWaitingStep     = $cmLatest ? $cmApprovalService->currentStepName($cmLatest) : null;
+        $isMandaysApprover = $cmLatest ? $cmApprovalService->canAct($cmLatest, (int) $user->id)['allowed'] : false;
         $mandaysBadge    = [
             'none'            => ['bg-gray-100 text-gray-500',   'None'],
             'pic_draft'       => ['bg-yellow-100 text-yellow-700','Draft'],
-            'pending_helpdesk'=> ['bg-blue-100 text-blue-700',   'Pending Review'],
+            'pending_approval'=> ['bg-amber-100 text-amber-700', $cmLatest?->current_step_order ? 'Level ' . $cmLatest->current_step_order : 'Approval'],
+            'pending_helpdesk'=> ['bg-blue-100 text-blue-700',   'Ready to Send'],
             'sent_to_chat'    => ['bg-purple-100 text-purple-700','Sent to Chat'],
             'approved'        => ['bg-green-100 text-green-700', 'Approved'],
+            'rejected'        => ['bg-red-100 text-red-700',     'Rejected'],
             'canceled'        => ['bg-red-100 text-red-700',     'Canceled'],
         ];
         $resolutionBadge   = [
@@ -491,7 +498,9 @@
         // Tampilkan Head "View Mandays Proposal" hanya jika user tidak punya akses Helpdesk review
         // (jika punya keduanya, Helpdesk block sudah cukup — hindari duplikasi Customer Mandays di sidebar)
         $isHeadCustomerMandays  = $isHead && !$isHelpdesk && $ticketAssigned;
+        $isMandaysApproverPanel = $isMandaysApprover && $ticketAssigned;
         $hasMandaysSection = $isPicCustomerMandays || $isPicResolutionDays || $isHelpdeskMandays || $isHeadMandays || $isHeadCustomerMandays
+                           || $isMandaysApproverPanel
                            || $canTakeTicket || $canAssignTicketLead || $canAssignDelivery;
     @endphp
 
@@ -569,12 +578,17 @@
                     </button>
                 </div>
                 @endif
-                {{-- Helpdesk: Customer Mandays Review --}}
-                @if($isHelpdeskMandays)
+                {{-- Helpdesk + approver level aktif (Management > Flow): Customer Mandays Review.
+                     Approve/Reject Level 1 & 2 ada di modal Review Mandays Proposal. --}}
+                @if($isHelpdeskMandays || $isMandaysApproverPanel)
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label class="text-xs font-semibold text-gray-500">Mandays Review</label>
-                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold {{ $mBadgeClass }}">{{ $mBadgeLabel }}</span>
+                        @if($isMandaysApproverPanel)
+                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap bg-amber-100 text-amber-700" title="{{ $cmWaitingStep }}">Your turn</span>
+                        @else
+                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap {{ $mBadgeClass }}">{{ $mBadgeLabel }}</span>
+                        @endif
                     </div>
                     <button onclick="openMandaysVersionList('hd')" class="w-full inline-flex items-center justify-center px-3 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">
                         Review Mandays Proposal
@@ -582,7 +596,7 @@
                 </div>
                 @endif
                 {{-- Delivery Support Head: Customer Mandays (view only) --}}
-                @if($isHeadCustomerMandays)
+                @if($isHeadCustomerMandays && !$isMandaysApproverPanel)
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label class="text-xs font-semibold text-gray-500">Customer Mandays</label>
@@ -2252,7 +2266,7 @@
             <div class="flex gap-2">
                 <button id="picBtnDeleteDraft" onclick="picDeleteDraft()" class="hidden inline-flex items-center px-4 py-2 bg-white text-red-600 text-xs font-semibold rounded-lg border border-red-300 hover:bg-red-50 transition-all duration-200">Delete Draft</button>
                 <button id="picBtnSaveDraft" onclick="picSaveDraft()" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-xs font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all duration-200">Save Draft</button>
-                <button id="picBtnSubmit" onclick="picSubmitDraft()" class="inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Submit to Helpdesk</button>
+                <button id="picBtnSubmit" onclick="picSubmitDraft()" class="inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Submit for Approval</button>
             </div>
         </div>
     </div>
@@ -2310,7 +2324,7 @@
         <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center flex-shrink-0 gap-3">
             <div class="text-xs text-gray-500">Total: <strong id="resolutionTotalDisplay">0</strong> days</div>
             <div class="flex flex-col items-end gap-1">
-                <p id="resolutionSubmitGateNote" class="hidden text-xs text-amber-600 text-right max-w-xs">Must fill &amp; submit Customer Mandays proposal (approved by Helpdesk) before submitting Resolution Days.</p>
+                <p id="resolutionSubmitGateNote" class="hidden text-xs text-amber-600 text-right max-w-xs">The Customer Mandays proposal must be approved before submitting Resolution Days.</p>
                 <div class="flex gap-2">
                     <button id="resolutionBtnSave" onclick="resolutionPicSaveDraft()" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-xs font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all duration-200">Save</button>
                     <button id="resolutionBtnSubmit" onclick="resolutionPicSubmit()" class="inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">Submit to Head</button>
@@ -2482,8 +2496,8 @@
     </div>
 </div>
 
-{{-- Helpdesk: Customer Mandays Review Modal --}}
-@if(isset($isHelpdesk) && $isHelpdesk)
+{{-- Helpdesk: Customer Mandays Review Modal (juga dipakai approver Level 1/2) --}}
+@if((isset($isHelpdesk) && $isHelpdesk) || !empty($isMandaysApproverPanel))
 <div id="hdMandaysModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[90vh]">
         <div class="flex justify-between items-center px-6 py-5 border-b border-gray-200 flex-shrink-0">
@@ -2536,6 +2550,19 @@
                         <tfoot id="hdMandaysFoot"></tfoot>
                     </table>
                 </div>
+                {{-- Approval bertingkat: jejak Level 1/2 + catatan keputusan --}}
+                <div id="hdApprovalTrailWrap" class="hidden mb-4">
+                    <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Approval Trail</p>
+                    <div id="hdApprovalTrail"></div>
+                </div>
+                <div id="hdApprovalNotesWrap" class="hidden mb-2">
+                    <label class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Approval Notes <span class="normal-case font-normal text-gray-400">(optional to approve, required to reject)</span>
+                    </label>
+                    <textarea id="hdApprovalNotes" rows="2" maxlength="1000"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-800 resize-none"
+                        placeholder="Write a note for the PIC..."></textarea>
+                </div>
                 {{-- Cancel confirm section (shown when clicking "Cancel Proposal") --}}
                 <div id="hdCancelConfirmWrap" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p class="text-xs font-semibold text-red-700 mb-2">Cancel Proposal — Confirmation</p>
@@ -2557,7 +2584,8 @@
                 <button id="hdBtnSaveDraft"     onclick="hdSaveDraft()"         class="hidden inline-flex items-center px-4 py-2 bg-white text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 border border-gray-300 transition-all duration-200">Save Draft</button>
                 <button id="hdBtnSendToChat"    onclick="hdSubmitToChat()"      class="hidden inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Send to Customer</button>
                 <button id="hdBtnReviseResend"  onclick="hdReviseResend()"      class="hidden inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Revise &amp; Resend</button>
-                <button id="hdBtnApprove"       onclick="hdApprove()"           class="hidden inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Approve</button>
+                <button id="hdBtnLevelReject"   onclick="hdLevelReject()"       class="hidden inline-flex items-center px-4 py-2 bg-red-100 text-red-700 text-xs font-semibold rounded-lg hover:bg-red-200 border border-red-300">Reject</button>
+                <button id="hdBtnLevelApprove"  onclick="hdLevelApprove()"      class="hidden inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Approve</button>
                 <button id="hdBtnNewProposal"   onclick="hdCreateNewProposal()" class="hidden inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Create New Proposal</button>
             </div>
         </div>
@@ -2667,6 +2695,11 @@
                     </table>
                 </div>
                 <div class="mt-3 text-xs text-gray-500 text-right">Total: <strong id="mvdTotal">0</strong> mandays</div>
+                {{-- Approval Trail (approval bertingkat Level 1 → Level 2) --}}
+                <div id="mvdTrailWrap" class="hidden mt-4">
+                    <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Approval Trail</p>
+                    <div id="mvdTrail"></div>
+                </div>
                 {{-- Cancel confirm section (shown when clicking "Cancel This Version") --}}
                 <div id="mvdCancelConfirmWrap" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p class="text-xs font-semibold text-red-700 mb-2">Cancel This Version — Confirmation</p>
@@ -2689,11 +2722,13 @@
                 Edit Draft
             </button>
             @endif
-            {{-- Only Helpdesk: button to open review modal if this is the pending version --}}
-            @if($isHelpdeskMandays)
+            {{-- Helpdesk / approver level aktif: buka modal review untuk versi yang sedang berjalan --}}
+            @if($isHelpdeskMandays || $isMandaysApproverPanel)
             <button id="mvdBtnHdReview" onclick="mvdOpenHdReview()" class="hidden inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">
                 Review This Version
             </button>
+            @endif
+            @if($isHelpdeskMandays)
             {{-- Cancel this specific version — including an older one already superseded
                  by a newer version, which is always already-approved (gated by
                  ticket.review-mandays.cancel-approved on top of the base cancel permission). --}}
@@ -7073,6 +7108,7 @@
                     : null;
                 const canNew = !latestStatus
                     || latestStatus === 'approved'
+                    || latestStatus === 'rejected'
                     || latestStatus === 'canceled';
                 btnNew.classList.toggle('hidden', !canNew);
             }
@@ -7093,13 +7129,17 @@
 
     const MANDAYS_STATUS_LABELS = {
         draft:            'Draft',
-        pending_helpdesk: 'Pending Review',
+        pending_approval: 'Waiting Approval',
+        pending_helpdesk: 'Ready to Send',
         sent_to_chat:     'Waiting Customer',
         approved:         'Approved',
+        rejected:         'Rejected',
         canceled:         'Canceled',
     };
     const MANDAYS_STATUS_BADGE = {
         draft:            'bg-yellow-100 text-yellow-700',
+        pending_approval: 'bg-amber-100 text-amber-700',
+        rejected:         'bg-red-100 text-red-700',
         pending_helpdesk: 'bg-blue-100 text-blue-700',
         sent_to_chat:     'bg-purple-100 text-purple-700',
         approved:         'bg-green-100 text-green-700',
@@ -7215,7 +7255,9 @@
 
     function renderMandaysVersionDetail(p) {
         document.getElementById('mvdVersionLabel').textContent = 'Version ' + p.version;
-        document.getElementById('mvdStatusLabel').textContent  = MANDAYS_STATUS_LABELS[p.status] || p.status;
+        document.getElementById('mvdStatusLabel').textContent  = (p.status === 'pending_approval' && p.current_step_name)
+            ? 'Waiting ' + p.current_step_name
+            : (MANDAYS_STATUS_LABELS[p.status] || p.status);
         document.getElementById('mvdProposedBy').textContent   = p.proposed_by_name || '—';
         document.getElementById('mvdDescription').textContent  = p.description || '—';
         document.getElementById('mvdNotes').textContent        = p.proposal_notes || '—';
@@ -7226,6 +7268,13 @@
             banner.className = 'mb-4 p-3 rounded-lg text-xs bg-gray-100 border border-gray-300 text-gray-700';
             banner.innerHTML = '<strong>Canceled by Helpdesk:</strong> ' + escHtml(p.cancel_notes) + (p.canceled_by_name ? ' — ' + escHtml(p.canceled_by_name) : '');
             banner.classList.remove('hidden');
+        } else if (p.status === 'rejected') {
+            const rej = (p.approvals || []).find(a => a.status === 'rejected');
+            banner.className = 'mb-4 p-3 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700';
+            banner.innerHTML = '<strong>Rejected at ' + escHtml(rej?.step_name || 'approval') + ':</strong> ' + escHtml(rej?.notes || '')
+                + (rej?.acted_by_name ? ' (' + escHtml(rej.acted_by_name) + ')' : '')
+                + '<br><span class="text-red-600">Create a new version to revise it.</span>';
+            banner.classList.remove('hidden');
         } else if (p.rejection_reason) {
             banner.className = 'mb-4 p-3 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700';
             banner.innerHTML = '<strong>Customer Rejection:</strong> ' + escHtml(p.rejection_reason);
@@ -7233,6 +7282,11 @@
         } else {
             banner.classList.add('hidden');
         }
+
+        // Approval Trail
+        const trailHtml = cmTrailHtml(p.approvals);
+        document.getElementById('mvdTrail').innerHTML = trailHtml;
+        document.getElementById('mvdTrailWrap').classList.toggle('hidden', !trailHtml);
 
         // Build matrix
         const detailMap = {};
@@ -7275,13 +7329,13 @@
         if (btnEdit) btnEdit.classList.toggle('hidden', p.status !== 'draft');
 
         const btnHd = document.getElementById('mvdBtnHdReview');
-        if (btnHd) btnHd.classList.toggle('hidden', !['pending_helpdesk', 'sent_to_chat'].includes(p.status));
+        if (btnHd) btnHd.classList.toggle('hidden', !['pending_approval', 'pending_helpdesk', 'sent_to_chat'].includes(p.status));
 
         // Cancel this specific version — a non-latest (superseded) version is always
         // already 'approved', so both cases need the same permission check here.
         const btnCancel = document.getElementById('mvdBtnCancel');
         if (btnCancel) {
-            const cancelableStatuses = ['pending_helpdesk', 'sent_to_chat', 'approved'];
+            const cancelableStatuses = ['pending_approval', 'pending_helpdesk', 'sent_to_chat', 'approved'];
             const needsApprovedPerm  = p.status === 'approved';
             const canCancel = HD_CAN_CANCEL && cancelableStatuses.includes(p.status) && (!needsApprovedPerm || HD_CAN_CANCEL_APPROVED);
             btnCancel.classList.toggle('hidden', !canCancel);
@@ -7369,16 +7423,19 @@
             picDraftData      = draftData.data;
             const status      = draftData.ticket_mandays_status || 'none';
             // Read-only when submitted/reviewed by helpdesk (PIC can't edit after submission unless canceled)
-            picReadOnly = ['pending_helpdesk', 'sent_to_chat', 'approved', 'canceled'].includes(status);
+            picReadOnly = ['pending_approval', 'pending_helpdesk', 'sent_to_chat', 'approved', 'rejected', 'canceled'].includes(status);
 
             const picStatusLabels = {
-                none: 'None', pic_draft: 'Draft', pending_helpdesk: 'Submitted to Helpdesk',
-                sent_to_chat: 'Sent to Customer', approved: 'Approved', canceled: 'Canceled by Helpdesk'
+                none: 'None', pic_draft: 'Draft',
+                pending_approval: picDraftData?.current_step_name ? 'Waiting ' + picDraftData.current_step_name : 'Waiting Approval',
+                pending_helpdesk: 'Approved internally, waiting for Helpdesk to send',
+                sent_to_chat: 'Sent to Customer', approved: 'Approved', rejected: 'Rejected',
+                canceled: 'Canceled by Helpdesk'
             };
             document.getElementById('picMandaysVersion').textContent      = picDraftData?.version ?? 'New';
             document.getElementById('picMandaysStatusLabel').textContent  = picStatusLabels[status] || status;
             // Show "New Version" when proposal is canceled, approved, or sent back (customer rejected)
-            const canStartNew = picDraftData && (status === 'canceled' || status === 'approved' || (status === 'pending_helpdesk' && picDraftData?.rejection_reason));
+            const canStartNew = picDraftData && (status === 'canceled' || status === 'approved' || status === 'rejected' || (status === 'pending_helpdesk' && picDraftData?.rejection_reason));
             document.getElementById('picBtnNewVersion').classList.toggle('hidden', !canStartNew);
 
             const picInfoEl = document.getElementById('picRejectionInfo');
@@ -7396,6 +7453,18 @@
                     cancelHtml += '<p class="text-xs text-gray-500 mt-1">— ' + canceledByName.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>';
                 }
                 picInfoEl.innerHTML = cancelHtml;
+                picInfoEl.classList.remove('hidden');
+            } else if (status === 'rejected') {
+                const rej = (picDraftData?.approvals || []).find(a => a.status === 'rejected');
+                picInfoEl.className = 'mb-4 p-3 rounded-lg text-sm bg-red-50 border border-red-200 text-red-700';
+                picInfoEl.innerHTML = '<p class="font-semibold mb-1">Rejected at ' + escHtml(rej?.step_name || 'approval') + '</p>'
+                    + '<p class="text-xs">' + escHtml(rej?.notes || '') + '</p>'
+                    + (rej?.acted_by_name ? '<p class="text-xs text-red-600 mt-1">' + escHtml(rej.acted_by_name) + '</p>' : '')
+                    + '<p class="text-xs mt-2">Select New Version to revise the proposal and submit it again.</p>';
+                picInfoEl.classList.remove('hidden');
+            } else if (status === 'pending_approval') {
+                picInfoEl.className = 'mb-4 p-3 rounded-lg text-sm bg-amber-50 border border-amber-200 text-amber-800';
+                picInfoEl.innerHTML = '<p class="font-semibold mb-1">Waiting for approval</p>' + cmTrailHtml(picDraftData?.approvals);
                 picInfoEl.classList.remove('hidden');
             } else if (picDraftData?.rejection_reason) {
                 picInfoEl.className = 'mb-4 p-3 rounded-lg text-sm bg-red-50 border border-red-200 text-red-700';
@@ -7659,14 +7728,14 @@
             });
             const data = await res.json();
             if (data.success) {
-                showNotification('Proposal submitted to Helpdesk!', 'success');
+                showNotification(data.message || 'Proposal submitted for approval.', 'success');
                 picMandaysUpdateSidebarBadge(data.ticket_mandays_status);
                 closePicMandaysModal();
             } else {
                 showNotification(data.message || 'Failed', 'error');
             }
         } catch(e) { showNotification('Error: ' + e.message, 'error'); }
-        finally { btn.disabled = false; btn.textContent = 'Submit to Helpdesk'; }
+        finally { btn.disabled = false; btn.textContent = 'Submit for Approval'; }
     }
 
     // Baca respons API modal Propose Mandays. Bila server mengirim sesuatu yang bukan JSON
@@ -7709,9 +7778,11 @@
         const badges = {
             'none':             ['bg-gray-100 text-gray-500',   'None'],
             'pic_draft':        ['bg-yellow-100 text-yellow-700','Draft'],
-            'pending_helpdesk': ['bg-blue-100 text-blue-700',   'Pending Review'],
+            'pending_approval': ['bg-amber-100 text-amber-700', 'Waiting Approval'],
+            'pending_helpdesk': ['bg-blue-100 text-blue-700',   'Ready to Send'],
             'sent_to_chat':     ['bg-purple-100 text-purple-700','Sent to Chat'],
             'approved':         ['bg-green-100 text-green-700', 'Approved'],
+            'rejected':         ['bg-red-100 text-red-700',     'Rejected'],
             'canceled':         ['bg-red-100 text-red-700',     'Canceled'],
         };
         const el = document.getElementById('mandaysBadge');
@@ -8028,7 +8099,6 @@
     const HD_CAN_EDIT_NOTES      = {{ ($hdCanEditNotes      ?? false) ? 'true' : 'false' }};
     const HD_CAN_SAVE_DRAFT      = {{ ($hdCanSaveDraft      ?? false) ? 'true' : 'false' }};
     const HD_CAN_SEND_TO_CUSTOMER= {{ ($hdCanSendToCustomer ?? false) ? 'true' : 'false' }};
-    const HD_CAN_APPROVE         = {{ ($hdCanApprove        ?? false) ? 'true' : 'false' }};
     const HD_CAN_CANCEL          = {{ ($hdCanCancel         ?? false) ? 'true' : 'false' }};
     const HD_CAN_CANCEL_APPROVED = {{ ($hdCanCancelApproved ?? false) ? 'true' : 'false' }};
 
@@ -8057,8 +8127,9 @@
 
             // Human-readable status label
             const statusLabels = {
-                none: 'None', pic_draft: 'PIC Draft', pending_helpdesk: 'Pending Helpdesk',
-                sent_to_chat: 'Awaiting Customer Response', approved: 'Approved', canceled: 'Canceled'
+                none: 'None', pic_draft: 'PIC Draft', pending_approval: 'Waiting Internal Approval',
+                pending_helpdesk: 'Ready to Send', sent_to_chat: 'Awaiting Customer Response',
+                approved: 'Approved', rejected: 'Rejected', canceled: 'Canceled'
             };
             document.getElementById('hdMandaysStatusLabel').textContent = statusLabels[status] || status;
 
@@ -8080,6 +8151,12 @@
             const isSentToChat       = status === 'sent_to_chat';
             const isApproved         = status === 'approved';
             const isCanceled         = status === 'canceled';
+            // Approval bertingkat: hanya approver level aktif (dicek server) yang boleh bertindak.
+            const isInApproval       = status === 'pending_approval';
+            const canActLevel        = isInApproval && !!draftData.can_act;
+            if (isInApproval && proposal.current_step_name) {
+                document.getElementById('hdMandaysStatusLabel').textContent = 'Waiting ' + proposal.current_step_name;
+            }
 
             if (isCanceled) {
                 let cancelHtml = `<span class="text-gray-600 text-base mt-0.5">&#10005;</span>
@@ -8133,12 +8210,21 @@
             document.getElementById('hdMandaysHead').innerHTML = headHtml;
 
             // Table is editable only when Helpdesk can still make changes
-            const isEditable = isPicSubmitted || isCustomerRejected;
+            // Approver level aktif juga boleh mengubah angka MD sebelum approve.
+            const isEditable = isPicSubmitted || isCustomerRejected || canActLevel;
+
+            // Approval Trail + catatan keputusan
+            const trailHtml = cmTrailHtml(proposal.approvals);
+            document.getElementById('hdApprovalTrail').innerHTML = trailHtml;
+            document.getElementById('hdApprovalTrailWrap').classList.toggle('hidden', !trailHtml);
+            document.getElementById('hdApprovalNotesWrap').classList.toggle('hidden', !canActLevel);
+            document.getElementById('hdApprovalNotes').value = '';
 
             // Populate description/notes edit fields if editable & permitted
+            // (saat approval internal hanya angka MD yang boleh diubah)
             const metaWrap = document.getElementById('hdMetaFieldsWrap');
             if (metaWrap) {
-                if (isEditable) {
+                if (isEditable && !isInApproval) {
                     metaWrap.classList.remove('hidden');
                     const descEl = document.getElementById('hdDescriptionInput');
                     if (descEl) { descEl.value = proposal.description || ''; descEl.style.height='auto'; descEl.style.height=descEl.scrollHeight+'px'; }
@@ -8173,18 +8259,33 @@
             document.getElementById('hdMandaysFoot').innerHTML = footHtml;
 
             // Show/hide buttons per state
-            ['hdBtnSaveDraft','hdBtnSendToChat','hdBtnReviseResend','hdBtnApprove','hdBtnCancel','hdBtnNewProposal'].forEach(id => {
+            ['hdBtnSaveDraft','hdBtnSendToChat','hdBtnReviseResend','hdBtnLevelApprove','hdBtnLevelReject','hdBtnCancel','hdBtnNewProposal'].forEach(id => {
                 document.getElementById(id)?.classList.add('hidden');
             });
-            if (isPicSubmitted) {
+            if (isInApproval) {
+                const step = proposal.current_step_name || 'approval';
+                if (canActLevel) {
+                    document.getElementById('hdBtnLevelApprove').classList.remove('hidden');
+                    document.getElementById('hdBtnLevelReject').classList.remove('hidden');
+                    banner.innerHTML = `<i class="fas fa-user-check text-amber-600 text-sm mt-0.5 flex-shrink-0"></i>
+                        <div><p class="font-semibold text-amber-800">Waiting ${escHtml(step)}: your decision</p>
+                        <p class="text-xs font-normal text-amber-700 mt-0.5">You can adjust the mandays, then approve. To reject, write the reason in Approval Notes.</p></div>`;
+                } else {
+                    banner.innerHTML = `<i class="fas fa-hourglass-half text-amber-600 text-sm mt-0.5 flex-shrink-0"></i>
+                        <div><p class="font-semibold text-amber-800">Waiting ${escHtml(step)}</p>
+                        <p class="text-xs font-normal text-amber-700 mt-0.5">${escHtml(draftData.can_act_reason || 'Another approver must decide this level.')}</p></div>`;
+                }
+                banner.classList.remove('hidden');
+                banner.classList.add('flex', 'bg-amber-50', 'border', 'border-amber-200', 'text-amber-800');
+                if (HD_CAN_CANCEL) document.getElementById('hdBtnCancel')?.classList.remove('hidden');
+            } else if (isPicSubmitted) {
                 if (HD_CAN_SAVE_DRAFT)       document.getElementById('hdBtnSaveDraft')?.classList.remove('hidden');
                 if (HD_CAN_SEND_TO_CUSTOMER) document.getElementById('hdBtnSendToChat')?.classList.remove('hidden');
-                if (HD_CAN_APPROVE)          document.getElementById('hdBtnApprove')?.classList.remove('hidden');
                 if (HD_CAN_CANCEL)           document.getElementById('hdBtnCancel')?.classList.remove('hidden');
-                // Sending to chat is optional here, not required — approve/cancel work directly.
+                // Lolos approval internal Level 1 & 2. Approved hanya lewat customer (tanpa jalan pintas).
                 banner.innerHTML = `<i class="fas fa-info-circle text-blue-500 text-sm mt-0.5 flex-shrink-0"></i>
-                    <div><p class="font-semibold text-blue-800">Awaiting Review</p>
-                    <p class="text-xs font-normal text-blue-700 mt-0.5">You can approve or cancel this proposal directly, or send it to the customer chat first if you'd like their confirmation.</p></div>`;
+                    <div><p class="font-semibold text-blue-800">Ready to Send</p>
+                    <p class="text-xs font-normal text-blue-700 mt-0.5">This proposal passed both approval levels. Check it, then send it to the customer. It becomes Approved when the customer approves it.</p></div>`;
                 banner.classList.remove('hidden');
                 banner.classList.add('flex', 'bg-blue-50', 'border', 'border-blue-200', 'text-blue-800');
             } else if (isCustomerRejected) {
@@ -8192,7 +8293,6 @@
                 if (HD_CAN_SEND_TO_CUSTOMER) document.getElementById('hdBtnReviseResend')?.classList.remove('hidden');
                 if (HD_CAN_CANCEL)           document.getElementById('hdBtnCancel')?.classList.remove('hidden');
             } else if (isSentToChat) {
-                if (HD_CAN_APPROVE) document.getElementById('hdBtnApprove')?.classList.remove('hidden');
                 if (HD_CAN_CANCEL)  document.getElementById('hdBtnCancel')?.classList.remove('hidden');
             } else if (isCanceled) {
                 document.getElementById('hdBtnNewProposal')?.classList.remove('hidden');
@@ -8360,19 +8460,103 @@
             if (btn) { btn.disabled = false; btn.textContent = 'Revise & Resend'; }
         }
     }
-    async function hdApprove() {
+    // ==================== CUSTOMER MANDAYS: APPROVAL BERTINGKAT ====================
+    // Tidak ada lagi "Helpdesk Approve" langsung: status Approved hanya lewat customer.
+
+    /** HTML jejak approval (Level 1 → Level 2) untuk modal detail versi & modal approval. */
+    function cmTrailHtml(approvals) {
+        if (!approvals || !approvals.length) return '';
+        const dot = { approved: 'bg-green-500', rejected: 'bg-red-500', skipped: 'bg-gray-300', waiting: 'bg-amber-400' };
+        const word = { approved: 'Approved', rejected: 'Rejected', skipped: 'Skipped', waiting: 'Waiting' };
+        const fmt = iso => iso ? new Date(iso).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12: false }) + ' WIB' : '';
+        return '<ol class="space-y-2">' + approvals.map(a => `
+            <li class="flex items-start gap-3 text-xs">
+                <span class="mt-1 w-2.5 h-2.5 rounded-full flex-shrink-0 ${dot[a.status] || 'bg-gray-300'}"></span>
+                <div class="flex-1 min-w-0">
+                    <p class="font-semibold text-gray-800">Level ${a.order_seq}: ${escHtml(a.step_name)}
+                        <span class="font-normal text-gray-500">(${word[a.status] || escHtml(a.status)})</span></p>
+                    <p class="text-gray-500">${a.acted_by_name ? escHtml(a.acted_by_name) + (a.acted_at ? ' &middot; ' + fmt(a.acted_at) : '') : 'Approver: ' + escHtml(a.approver_label)}</p>
+                    ${a.notes ? `<p class="mt-0.5 text-gray-700 whitespace-pre-line break-words">${escHtml(a.notes)}</p>` : ''}
+                </div>
+            </li>`).join('') + '</ol>';
+    }
+
+    /** Approve level aktif dari modal Review Mandays Proposal (angka boleh diubah). */
+    async function hdLevelApprove() {
+        const details = hdCollectDetails();
+        if (details.length === 0) { showNotification('Total mandays must be greater than 0.', 'warning'); return; }
+        const btn = document.getElementById('hdBtnLevelApprove');
+        btn.disabled = true; btn.textContent = 'Approving...';
         try {
-            const data = await hdSaveAndAction('hd-draft/approve');
+            const res = await fetch(MANDAYS_API('approval/approve'), {
+                method: 'POST', headers: getHeaders(), credentials: 'same-origin',
+                body: JSON.stringify({ details, notes: document.getElementById('hdApprovalNotes').value.trim() || null }),
+            });
+            const data = await res.json();
             if (data.success) {
-                showNotification('Customer mandays approved!', 'success');
+                showNotification(data.message || 'Approved.', 'success');
                 closeHdMandaysModal();
                 setTimeout(() => location.reload(), 800);
-            } else showNotification(data.message || 'Failed', 'error');
-        } catch(e) { showNotification('Error: '+e.message,'error'); }
+            } else {
+                showNotification(data.message || 'Failed to approve.', 'error');
+            }
+        } catch (e) {
+            showNotification('Error: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Approve';
+        }
     }
+
+    /** Reject level aktif: alasan wajib, proposal kembali ke PIC. */
+    async function hdLevelReject() {
+        const notesEl = document.getElementById('hdApprovalNotes');
+        const notes = notesEl.value.trim();
+        if (notes.length < 5) {
+            showNotification('Please write the reason for rejecting (at least 5 characters).', 'warning');
+            notesEl.focus();
+            return;
+        }
+        if (!await showConfirm('Reject this proposal? It goes back to the PIC, who must submit a new version.', 'Reject', 'danger')) return;
+        const btn = document.getElementById('hdBtnLevelReject');
+        btn.disabled = true; btn.textContent = 'Rejecting...';
+        try {
+            const res = await fetch(MANDAYS_API('approval/reject'), {
+                method: 'POST', headers: getHeaders(), credentials: 'same-origin',
+                body: JSON.stringify({ notes }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                showNotification(data.message || 'Rejected.', 'success');
+                closeHdMandaysModal();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showNotification(data.message || (data.errors?.notes?.[0]) || 'Failed to reject.', 'error');
+            }
+        } catch (e) {
+            showNotification('Error: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Reject';
+        }
+    }
+
+    /** Baca angka dari grid modal review (sama seperti hdSaveAndAction). */
+    function hdCollectDetails() {
+        const details = [];
+        document.querySelectorAll('.hd-cell:not([readonly])').forEach(inp => {
+            const v = parseFloat(inp.value) || 0;
+            if (v > 0) {
+                const row = inp.closest('tr');
+                const actInput = row?.querySelector('.hd-activity-input');
+                const act = actInput ? (actInput.value.trim() || inp.dataset.activity) : inp.dataset.activity;
+                details.push({ activity: act, module: inp.dataset.module, mandays: v });
+            }
+        });
+        return details;
+    }
+
     function hdShowCancelConfirm() {
         // Hide action buttons and show cancel confirmation form
-        ['hdBtnSaveDraft','hdBtnSendToChat','hdBtnReviseResend','hdBtnApprove','hdBtnCancel','hdBtnNewProposal'].forEach(id => {
+        ['hdBtnSaveDraft','hdBtnSendToChat','hdBtnReviseResend','hdBtnLevelApprove','hdBtnLevelReject','hdBtnCancel','hdBtnNewProposal'].forEach(id => {
             document.getElementById(id)?.classList.add('hidden');
         });
         document.getElementById('hdCancelConfirmWrap').classList.remove('hidden');
@@ -8653,8 +8837,9 @@
             const status   = data.ticket_mandays_status || 'none';
 
             const statusLabels = {
-                'none': 'None', 'pic_draft': 'Draft', 'pending_helpdesk': 'Pending Review',
-                'sent_to_chat': 'Sent to Customer', 'approved': 'Approved', 'canceled': 'Canceled',
+                'none': 'None', 'pic_draft': 'Draft', 'pending_approval': 'Waiting Approval',
+                'pending_helpdesk': 'Ready to Send', 'sent_to_chat': 'Sent to Customer',
+                'approved': 'Approved', 'rejected': 'Rejected', 'canceled': 'Canceled',
             };
             document.getElementById('headCustMandaysStatus').textContent = statusLabels[status] || status;
 

@@ -737,6 +737,16 @@ Route::middleware(CheckAuthToken::class)->group(function () {
                 ->name('document-type.index');
         });
 
+        // Flow: pengaturan alur approval. Customer Mandays = flow pertama.
+        Route::prefix('flow')->name('flow.')->group(function () {
+            Route::get('/customer-mandays', [\App\Http\Controllers\CustomerMandaysFlowController::class, 'page'])
+                ->middleware('menu:management.flow.customer-mandays')
+                ->name('customer-mandays.index');
+            Route::post('/customer-mandays', [\App\Http\Controllers\CustomerMandaysFlowController::class, 'sync'])
+                ->middleware('menu:management.flow.customer-mandays')
+                ->name('customer-mandays.sync');
+        });
+
         Route::prefix('delivery')->name('delivery.')->group(function () {
             Route::get('/project', [\App\Http\Controllers\DeliveryProjectTypeController::class, 'page'])
                 ->middleware('menu:management.delivery.project')

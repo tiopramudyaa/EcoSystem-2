@@ -31,6 +31,8 @@
             'customer_mandays_proposed'   => ['icon' => 'fa-file-invoice',        'color' => 'blue',   'title' => 'Customer Mandays Proposal — needs review'],
             'resolution_days_proposed'    => ['icon' => 'fa-users',               'color' => 'indigo', 'title' => 'Resolution Days Proposal — needs review'],
             'customer_mandays_canceled'   => ['icon' => 'fa-times-circle',        'color' => 'orange', 'title' => 'Customer Mandays Proposal canceled'],
+            'customer_mandays_pending_approval' => ['icon' => 'fa-user-check',    'color' => 'yellow', 'title' => 'Customer Mandays Proposal waiting for your approval'],
+            'customer_mandays_rejected'   => ['icon' => 'fa-times-circle',        'color' => 'red',    'title' => 'Customer Mandays Proposal rejected'],
             'contract_end_reminder'       => ['icon' => 'fa-file-contract',       'color' => 'yellow', 'title' => 'Contract deadline reminder'],
             'top_invoice_reminder'        => ['icon' => 'fa-file-invoice-dollar', 'color' => 'blue',   'title' => 'Invoice submission due'],
             'timesheet_reminder'          => ['icon' => 'fa-user-clock',          'color' => 'orange', 'title' => 'Timesheet reminder'],

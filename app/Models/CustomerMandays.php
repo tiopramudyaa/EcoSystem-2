@@ -24,6 +24,7 @@ class CustomerMandays extends Model
         'submitted_to_customer_at',
         'sent_to_chat_at',
         'status',
+        'current_step_order',
         'customer_notes',
         'rejection_reason',
         'notes',
@@ -40,7 +41,37 @@ class CustomerMandays extends Model
         'customer_response_at'     => 'datetime',
         'canceled_at'              => 'datetime',
         'total_mandays'            => 'decimal:2',
+        'current_step_order'       => 'integer',
     ];
+
+    public const STATUS_DRAFT            = 'draft';
+    public const STATUS_PENDING_APPROVAL = 'pending_approval';
+    public const STATUS_PENDING_HELPDESK = 'pending_helpdesk'; // lolos 2 level, siap dikirim ke customer
+    public const STATUS_SENT_TO_CHAT     = 'sent_to_chat';
+    public const STATUS_APPROVED         = 'approved';
+    public const STATUS_REJECTED         = 'rejected';         // ditolak di approval internal
+    public const STATUS_CANCELED         = 'canceled';
+
+    /** Snapshot approval internal (Level 1 & 2) milik versi ini. */
+    public function approvals()
+    {
+        return $this->hasMany(CustomerMandaysApproval::class, 'customer_mandays_id')->orderBy('order_seq');
+    }
+
+    public function isInApproval(): bool
+    {
+        return $this->status === self::STATUS_PENDING_APPROVAL && $this->current_step_order !== null;
+    }
+
+    /** Langkah yang sedang menunggu, atau null bila proposal tidak sedang di approval internal. */
+    public function currentApproval(): ?CustomerMandaysApproval
+    {
+        if (!$this->isInApproval()) {
+            return null;
+        }
+
+        return $this->approvals->firstWhere('order_seq', $this->current_step_order);
+    }
 
     public function ticket()
     {
