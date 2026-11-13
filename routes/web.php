@@ -70,6 +70,9 @@ Route::prefix('api/auth')->group(function () {
 // Login page
 Route::get('/auth/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/2fa/verify', [AuthController::class, 'showTwoFactorChallenge'])->name('2fa.verify');
+// Login dengan Microsoft (opsi tambahan; diaktifkan EC Administrator di Settings > Security).
+Route::get('/auth/microsoft', [\App\Http\Controllers\MicrosoftAuthController::class, 'redirect'])->name('microsoft.redirect')->middleware('throttle:20,1');
+Route::get('/auth/microsoft/callback', [\App\Http\Controllers\MicrosoftAuthController::class, 'callback'])->name('microsoft.callback')->middleware('throttle:30,1');
 
 // ==================== PASSWORD SETUP & RESET (public — tidak perlu auth) ====================
 // Halaman "Cek email Anda" — tampil setelah setup akun baru atau forgot password
@@ -81,7 +84,8 @@ Route::post('/change-password', [PasswordSetupController::class, 'submitChangePa
 // Forgot password — halaman form input email
 Route::get('/forgot-password', [PasswordSetupController::class, 'showForgotPassword'])->name('password-setup.forgot');
 // Forgot password — proses kirim email reset
-Route::post('/forgot-password', [PasswordSetupController::class, 'submitForgotPassword'])->name('password-setup.forgot.submit');
+// throttle: tanpa batas, siapa pun bisa membanjiri satu karyawan dengan email reset dan menghabiskan kuota mailbox pengirim.
+Route::post('/forgot-password', [PasswordSetupController::class, 'submitForgotPassword'])->name('password-setup.forgot.submit')->middleware('throttle:5,1');
 
 // NOTE: /auth/login (POST) sudah didefinisikan di prefix group 'api/auth' di atas.
 // Route standalone ini dihapus untuk menghindari duplikasi.
@@ -311,6 +315,11 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::post('/preferences', [SettingsController::class, 'updatePreferences'])->name('preferences');
         Route::post('/reset', [SettingsController::class, 'resetPreferences'])->name('reset');
 
+        // Akun Microsoft (Security). Hapus/lepas memakai POST, bukan DELETE: verb DELETE diblokir WAF di production.
+        Route::get('/microsoft/connect', [\App\Http\Controllers\MicrosoftAuthController::class, 'connect'])->name('microsoft.connect')->middleware('throttle:20,1');
+        Route::post('/microsoft/disconnect', [\App\Http\Controllers\MicrosoftAuthController::class, 'disconnect'])->name('microsoft.disconnect')->middleware('throttle:10,1');
+        Route::post('/microsoft/config', [\App\Http\Controllers\MicrosoftAuthController::class, 'saveConfig'])->name('microsoft.config')->middleware('throttle:10,1');
+
         Route::prefix('2fa')->name('2fa.')->group(function () {
             Route::post('/enable', [\App\Http\Controllers\TwoFactorController::class, 'enable'])->name('enable');
             Route::post('/confirm', [\App\Http\Controllers\TwoFactorController::class, 'confirm'])->name('confirm')->middleware('throttle:5,1');
@@ -430,11 +439,15 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     Route::middleware('menu:delivery-project.plan-cost.view')->group(function () {
         Route::get('/projects/{project}/costs',                                  [DeliveryProjectCostController::class, 'index'])->name('projects.costs.index');
         Route::get('/projects/{project}/costs/export',                           [DeliveryProjectCostController::class, 'export'])->name('projects.costs.export');
+        Route::get('/projects/{project}/costs/monthly',                          [DeliveryProjectCostController::class, 'monthly'])->name('projects.costs.monthly');
         Route::get('/projects/{project}/costs/{cost}/items',                     [DeliveryProjectCostController::class, 'indexItems'])->name('projects.costs.items.index');
+        Route::get('/projects/{project}/costs/{cost}/releases',                  [DeliveryProjectCostController::class, 'indexReleases'])->name('projects.costs.releases.index');
     });
     Route::middleware(['menu:delivery-project.plan-cost.edit', 'project.editable'])->group(function () {
         Route::put('/projects/{project}/costs/{cost}',                           [DeliveryProjectCostController::class, 'update'])->name('projects.costs.update');
         Route::put('/projects/{project}/costs/{cost}/items/{item}',              [DeliveryProjectCostController::class, 'updateItem'])->name('projects.costs.items.update');
+        // Total release item (langkah 1 modal "Atur Release Cost")
+        Route::put('/projects/{project}/costs/{cost}/release',                   [DeliveryProjectCostController::class, 'updateRelease'])->name('projects.costs.release.update');
     });
     Route::middleware(['menu:delivery-project.plan-cost.manage', 'project.editable'])->group(function () {
         Route::post('/projects/{project}/costs',                                 [DeliveryProjectCostController::class, 'store'])->name('projects.costs.store');
@@ -445,6 +458,10 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::post('/projects/{project}/costs/{cost}/items',                    [DeliveryProjectCostController::class, 'storeItem'])->name('projects.costs.items.store');
         Route::delete('/projects/{project}/costs/{cost}/items/{item}',           [DeliveryProjectCostController::class, 'destroyItem'])->name('projects.costs.items.destroy');
         Route::post('/projects/{project}/costs/{cost}/items/{item}/delete',       [DeliveryProjectCostController::class, 'destroyItem'])->name('projects.costs.items.destroy.post');
+        // Jadwal release bulanan (langkah 2 modal "Atur Release Cost")
+        Route::post('/projects/{project}/costs/{cost}/releases',                 [DeliveryProjectCostController::class, 'storeRelease'])->name('projects.costs.releases.store');
+        Route::delete('/projects/{project}/costs/{cost}/releases/{schedule}',    [DeliveryProjectCostController::class, 'destroyRelease'])->name('projects.costs.releases.destroy');
+        Route::post('/projects/{project}/costs/{cost}/releases/{schedule}/delete', [DeliveryProjectCostController::class, 'destroyRelease'])->name('projects.costs.releases.destroy.post');
     });
 
     // Document management routes
@@ -759,8 +776,11 @@ Route::middleware(CheckAuthToken::class)->group(function () {
 // Tanda tangan = kapabilitas: siapa pun yang memegang tautannya bisa membuka
 // berkasnya. Konsekuensi yang diterima sadar (23 Sep 2026) supaya gambar tetap
 // tampil di riwayat chat. Aksesnya dicatat di AttachmentController.
+// Tanda tangan divalidasi di AttachmentController::showForTeams, bukan lewat
+// middleware `signed`: di belakang proxy produksi request terbaca http://
+// walau tautannya https://, sehingga `signed` menolak semua tautan (gambar
+// rusak di Teams, 11 Nov 2026). Lihat TeamsOutboxService::teamsAttachmentUrl.
 Route::get('/teams/attachments/{id}', [AttachmentController::class, 'showForTeams'])
-    ->middleware('signed')
     ->name('attachments.teams')
     ->where('id', '[0-9]+');
 

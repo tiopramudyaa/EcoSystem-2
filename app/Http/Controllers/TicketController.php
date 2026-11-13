@@ -1226,6 +1226,18 @@ class TicketController extends Controller
                     }
                 }
 
+                // Group chat Teams + kartu flow 5 — sama seperti tiket yang
+                // divalidasi dari staging. Dipanggil SETELAH attachment tersimpan
+                // supaya pesan pertama yang diteruskan ke grup membawa berkasnya.
+                // Non-fatal: tiket sudah tersimpan apa pun hasilnya.
+                app(\App\Services\Teams\TicketTeamsOnboardingService::class)->onboard(
+                    $ticket,
+                    $user,
+                    $message,
+                    \App\Services\Teams\TicketTeamsOnboardingService::FIRST_MESSAGE_AGENT,
+                    'TicketController@store (admin)'
+                );
+
                 return response()->json([
                     'success'    => true,
                     'message'    => 'Ticket created successfully',
@@ -1435,6 +1447,22 @@ class TicketController extends Controller
                     ]);
                 }
             }
+
+            // Group chat Teams + kartu flow 5 — sama seperti tiket yang
+            // divalidasi dari staging. Dipanggil SETELAH attachment tersimpan
+            // supaya pesan pertama yang diteruskan ke grup membawa berkasnya.
+            // Non-fatal: tiket sudah tersimpan apa pun hasilnya.
+            $firstMessage = !empty($validated['body'])
+                ? TicketMessage::where('ticket_id', $ticket->ticket_id)->orderBy('id')->first()
+                : null;
+
+            app(\App\Services\Teams\TicketTeamsOnboardingService::class)->onboard(
+                $ticket,
+                $user,
+                $firstMessage,
+                \App\Services\Teams\TicketTeamsOnboardingService::FIRST_MESSAGE_AGENT,
+                'TicketController@storeFromHelpdesk'
+            );
 
             return response()->json([
                 'success'        => true,
@@ -1928,27 +1956,12 @@ class TicketController extends Controller
 
             $ticketIds = $tickets->pluck('ticket_id');
 
-            // Latest approved mandays proposal per ticket
-            $latestApprovedByTicket = ConsultantMandays::whereIn('ticket_id', $ticketIds)
-                ->where('status', 'approved')
-                ->orderBy('approved_at', 'desc')
-                ->get()
-                ->groupBy('ticket_id')
-                ->map(fn ($g) => $g->first());
-
-            $cmIdToTicketId = $latestApprovedByTicket->mapWithKeys(fn ($cm) => [$cm->id => $cm->ticket_id]);
-
-            // This employee's quota (approved_mandays + approved_additional) per ticket
-            $quotaByTicket = ConsultantMandaysDetail::whereIn('consultant_mandays_id', $cmIdToTicketId->keys())
-                ->where('employee_id', $employeeId)
-                ->get()
-                ->reduce(function ($carry, $detail) use ($cmIdToTicketId) {
-                    $ticketId = $cmIdToTicketId[$detail->consultant_mandays_id] ?? null;
-                    if ($ticketId) {
-                        $carry[$ticketId] = round((float) ($detail->approved_mandays ?? 0) + (float) ($detail->approved_additional ?? 0), 2);
-                    }
-                    return $carry;
-                }, []);
+            // This employee's quota (approved_mandays + approved_additional) per ticket, read
+            // from the approved columns regardless of the proposal's current status.
+            $quotaByTicket = [];
+            foreach (ConsultantMandaysDetail::approvedQuotas($ticketIds, (int) $employeeId) as $key => $q) {
+                $quotaByTicket[(int) explode('_', $key)[0]] = $q;
+            }
 
             // MD already consumed by this employee per ticket (draft/submitted/approved count against quota)
             $consumedByTicket = Timesheet::whereIn('ticket_id', $ticketIds)
@@ -1963,7 +1976,7 @@ class TicketController extends Controller
                     if ($includeTicketId !== null && $ticket->ticket_id === $includeTicketId) {
                         return true;
                     }
-                    // No approved proposal for this employee on this ticket → no quota to fill, exclude.
+                    // No approved days for this employee on this ticket → no quota to fill, exclude.
                     if (!array_key_exists($ticket->ticket_id, $quotaByTicket)) {
                         return false;
                     }

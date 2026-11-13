@@ -15,9 +15,13 @@ Schedule::command('schedule-monitor:heartbeat')
     ->everyMinute()
     ->name('scheduler-heartbeat');
 
-// Proses email masuk setiap menit → buat tiket / tambah pesan ke tiket
+// Proses email masuk tiap 30 detik → buat tiket / tambah pesan ke tiket.
+// Sub-menit butuh `schedule:work` (supervisord) — dengan cron `schedule:run`
+// Laravel menahan prosesnya sepanjang menit itu untuk tick detik ke-30.
+// Run yang tumpang tindih sudah dijaga lock internal processInbox()
+// ("already_running").
 Schedule::command('email:process-inbox')
-    ->everyMinute()
+    ->everyThirtySeconds()
     ->name('email-process-inbox');
 
 // Reminder Microsoft Teams (lewat Power Automate) untuk tiket yang masih berstatus
@@ -29,6 +33,16 @@ Schedule::command('tickets:open-reminders')
     ->everyMinute()
     ->withoutOverlapping()
     ->name('tickets-open-reminders');
+
+// Reminder harian (flow 8) ke group chat Teams tiket Closed yang dokumen
+// deliverable mandatory-nya belum lengkap, dengan @mention PIC. Tiap jam, bukan
+// dailyAt: command-nya sendiri yang menjaga jendela jam kirim dan "sekali per
+// hari per tiket", sehingga tiket yang tidak kebagian batch_limit tetap terkirim
+// di jam berikutnya. Keluar tanpa efek kalau flow-nya belum dikonfigurasi.
+Schedule::command('tickets:deliverable-reminders')
+    ->hourly()
+    ->withoutOverlapping()
+    ->name('tickets-deliverable-reminders');
 
 // Recompute delivery activity statuses tiap hari 00:05 (untuk transisi delayed berbasis tanggal)
 Schedule::command('activities:recompute-status')
@@ -125,11 +139,12 @@ Schedule::command('schedule-monitor:check-disk-usage')
 // seketika kalau TEAMS_SYNC_ENABLED / TEAMS_SYNC_INBOUND masih false, jadi
 // menjadwalkannya tiap menit aman walau fiturnya belum dinyalakan.
 //
-// Tiap menit, bukan lebih jarang: internal note dari Teams baru berguna kalau
-// muncul di tiket selagi diskusinya berlangsung. UI tiket sendiri sudah polling
-// tiap 15 detik, jadi jeda terburuk yang dirasakan orang ~1 menit.
+// Tiap 30 detik: internal note dari Teams baru berguna kalau muncul di tiket
+// selagi diskusinya berlangsung. UI tiket sendiri sudah polling tiap 15 detik,
+// jadi jeda terburuk yang dirasakan orang ~45 detik. Biayanya: panggilan Graph
+// per chat aktif jadi dua kali lipat (dibatasi TEAMS_SYNC_CHAT_BATCH).
 Schedule::command('teams:sync-chat-messages')
-    ->everyMinute()
+    ->everyThirtySeconds()
     ->withoutOverlapping();
 
 // Kirim internal note yang mengantre ke group chat Teams (flow 7). Keluar
@@ -139,7 +154,7 @@ Schedule::command('teams:sync-chat-messages')
 // dimatikan sendiri-sendiri, dan arah yang bermasalah tidak boleh ikut
 // menghentikan arah yang sehat.
 Schedule::command('teams:flush-outbox')
-    ->everyMinute()
+    ->everyThirtySeconds()
     ->withoutOverlapping();
 
 // Masukkan guest (consultant eksternal) yang baru diundang ke group chat

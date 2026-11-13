@@ -755,7 +755,7 @@
                 ${ticketCount}
             </span>
         </td>
-        <td class="px-4 py-3 text-right font-semibold text-gray-800 tabular-nums">${totalAllocMdMain.toFixed(2)} days</td>
+        <td class="px-4 py-3 text-right font-semibold text-gray-800 tabular-nums">${formatMd(totalAllocMdMain)} days</td>
         <td class="px-4 py-3 text-right font-semibold text-orange-600 tabular-nums">
             ${wDays} d
             <span class="ml-1 text-xs font-bold bg-orange-100 text-orange-700 rounded px-1 py-0.5">↑${Math.ceil(wDays)} d</span>
@@ -770,7 +770,7 @@
                         <span class="text-xs font-bold ${workloadTextColor(wPct)}">${wPct}%</span>
                         <span class="text-xs text-gray-400 ml-1">${wDays} d</span>
                     </div>
-                    <div class="text-[10px] text-gray-400">${wDays.toFixed(2)} / ${totalEffectiveMdMain.toFixed(2)} md</div>
+                    <div class="text-[10px] text-gray-400">${formatMd(wDays)} / ${formatMd(totalEffectiveMdMain)} md</div>
                 </div>
             </div>
         </td>
@@ -834,13 +834,13 @@
                             Total (${visibleTickets.length} ticket${visibleTickets.length > 1 ? 's' : ''})
                         </td>
                         <td class="px-3 py-2.5 text-right text-xs font-bold text-gray-700">
-                            ${totalAllocMdMain.toFixed(1)} days
+                            ${formatMd(totalAllocMdMain)} days
                         </td>
                         <td class="px-3 py-2.5 text-right text-xs font-bold text-indigo-600">
-                            ${totalAddMdMain.toFixed(1)} days
+                            ${formatMd(totalAddMdMain)} days
                         </td>
                         <td class="px-3 py-2.5 text-right text-xs font-bold text-orange-600">
-                            ${totalRemainMain.toFixed(2)} d
+                            ${formatMd(totalRemainMain)} d
                         </td>
                         <td colspan="1"></td>
                     </tr>
@@ -906,7 +906,7 @@
         const dayOnClose = dayOnCloseValue(t);
 
         const remainCell = myAllocMd > 0
-            ? `<span class="font-semibold ${myRemainMd > 0 ? 'text-orange-600' : 'text-green-600'}">${myRemainMd.toFixed(2)} d</span>
+            ? `<span class="font-semibold ${myRemainMd > 0 ? 'text-orange-600' : 'text-green-600'}">${formatMd(myRemainMd)} d</span>
                <span class="ml-1 text-xs font-bold bg-orange-100 text-orange-700 rounded px-1 py-0.5">↑${Math.ceil(myRemainMd)} d</span>`
             : `<span class="text-gray-300">—</span>`;
 
@@ -935,16 +935,16 @@
         <td class="px-3 py-2.5 text-right text-xs font-semibold text-gray-700">${!myDetail
             ? '<span class="text-gray-400 italic font-normal">Not determined</span>'
             : (myApproved
-                ? myAllocMd.toFixed(2) + ' days'
+                ? formatMd(myAllocMd) + ' days'
                 : `<span class="inline-flex items-center gap-1 text-amber-600 italic font-normal" title="Proposed, awaiting approval">
                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m0 3h.008v.008H12v-.008zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                       ${myAllocMd.toFixed(2)} days
+                       ${formatMd(myAllocMd)} days
                    </span>`)}</td>
         <td class="px-3 py-2.5 text-right text-xs text-gray-500">
             ${myAddMd > 0
                 ? (myApproved
-                    ? `<span class="text-indigo-600 font-semibold">${myAddMd.toFixed(2)} days</span>`
-                    : `<span class="text-amber-600 italic font-normal" title="Proposed additional, awaiting approval">${myAddMd.toFixed(2)} days</span>`)
+                    ? `<span class="text-indigo-600 font-semibold">${formatMd(myAddMd)} days</span>`
+                    : `<span class="text-amber-600 italic font-normal" title="Proposed additional, awaiting approval">${formatMd(myAddMd)} days</span>`)
                 : '<span class="text-gray-300">—</span>'}
         </td>
         <td class="px-3 py-2.5 text-right">${remainCell}</td>
@@ -1021,7 +1021,7 @@
                 <tr class="border-t border-gray-100" data-detail-id="${d.detail_id ?? 'null'}" data-mandays="${d.mandays ?? ''}">
                     <td class="py-3 pr-4">
                         <p class="font-semibold text-gray-800 text-sm">${d.emp_name}</p>
-                        <p class="text-gray-400 text-xs font-mono">${d.mandays != null ? d.mandays + ' md' : 'No Resolution Days proposed yet'}</p>
+                        <p class="text-gray-400 text-xs font-mono">${d.mandays != null ? formatMd(d.mandays) + ' md' : 'No Resolution Days proposed yet'}</p>
                     </td>
                     <td class="py-3 pr-2 w-52">
                         <div class="flex items-center gap-2">

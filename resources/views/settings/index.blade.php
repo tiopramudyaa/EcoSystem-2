@@ -401,6 +401,108 @@
                     </div>
                 </div>
 
+                {{-- Microsoft account --}}
+                <div class="px-8 py-6" id="microsoftSection">
+                    <div class="flex items-start gap-8">
+                        <div class="w-48 flex-shrink-0">
+                            <p class="text-sm font-medium text-gray-800">Microsoft account</p>
+                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">Connect your work account to sign in without entering your EcoSystem password</p>
+                        </div>
+                        <div class="flex-1 max-w-xl space-y-4">
+
+                            {{-- Tenant configuration: EC Administrator only. The client secret is never sent to the browser. --}}
+                            @if($microsoft['can_manage'])
+                            <div class="p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <svg class="w-4 h-4" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+                                    <p class="text-xs font-semibold text-gray-800">Microsoft 365 tenant configuration</p>
+                                </div>
+                                <p class="text-[11px] text-gray-500 mb-3">EC Administrator only. The client secret is encrypted and is never displayed again.</p>
+
+                                <form id="msConfigForm" onsubmit="saveMicrosoftConfig(event)" class="space-y-3" autocomplete="off">
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <div>
+                                            <label for="msTenantId" class="block text-[11px] font-medium text-gray-600 mb-1">Directory (tenant) ID</label>
+                                            <input type="text" id="msTenantId" value="{{ $microsoft['tenant_id'] }}" maxlength="64" spellcheck="false"
+                                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 transition">
+                                        </div>
+                                        <div>
+                                            <label for="msClientId" class="block text-[11px] font-medium text-gray-600 mb-1">Application (client) ID</label>
+                                            <input type="text" id="msClientId" value="{{ $microsoft['client_id'] }}" maxlength="64" spellcheck="false"
+                                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 transition">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="msClientSecret" class="block text-[11px] font-medium text-gray-600 mb-1">Client secret value</label>
+                                        <input type="password" id="msClientSecret" maxlength="255" autocomplete="new-password" spellcheck="false"
+                                            placeholder="{{ $microsoft['has_secret'] ? 'An encrypted secret is stored. Leave blank to keep it.' : 'Paste the client secret value' }}"
+                                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 transition">
+                                        <p id="msSecretHint" class="text-[10px] text-gray-400 mt-1">{{ $microsoft['has_secret'] ? 'An encrypted secret is stored. Leave blank to keep it.' : 'No secret is stored yet.' }}</p>
+                                    </div>
+                                    @if($microsoft['env_fallback'])
+                                    <p class="text-[10px] text-gray-400">Empty fields use the shared Microsoft app registration of the server, if one is set.</p>
+                                    @endif
+                                    <div>
+                                        <label class="block text-[11px] font-medium text-gray-600 mb-1">Web redirect URI</label>
+                                        <div class="flex gap-2">
+                                            <input type="text" id="msRedirectUri" readonly value="{{ $microsoft['redirect_uri'] }}"
+                                                class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs bg-gray-100 text-gray-600">
+                                            <button type="button" onclick="copyMicrosoftRedirectUri()"
+                                                class="px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition">Copy</button>
+                                        </div>
+                                        <p class="text-[10px] text-gray-400 mt-1">Add this exact address as a Web redirect URI in the Microsoft Entra app registration.</p>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3 pt-1">
+                                        <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer select-none">
+                                            <input type="checkbox" id="msEnabled" class="rounded border-gray-300 text-blue-600 focus:ring-blue-300" {{ $microsoft['enabled'] ? 'checked' : '' }}>
+                                            Enable Microsoft 365 login
+                                        </label>
+                                        <button type="submit" id="msSaveBtn"
+                                            class="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition">
+                                            Save M365 configuration
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            @endif
+
+                            {{-- This user's own connection --}}
+                            <div id="msConnected" class="{{ $microsoft['linked'] ? '' : 'hidden' }} flex items-center justify-between p-3 bg-blue-50/60 border border-blue-100 rounded-xl">
+                                <div class="flex items-center gap-3">
+                                    <svg class="w-6 h-6" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+                                    <div>
+                                        <p class="text-xs font-semibold text-gray-800">Connected to Microsoft</p>
+                                        <p id="msConnectedEmail" class="text-[11px] text-gray-500">{{ $microsoft['linked_email'] }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="flex items-center gap-1 text-[10px] font-semibold text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Active</span>
+                                    <button type="button" onclick="disconnectMicrosoft()"
+                                        class="px-3 py-1.5 text-[11px] font-medium text-red-600 border border-red-200 rounded-lg bg-white hover:bg-red-50 transition">Disconnect</button>
+                                </div>
+                            </div>
+
+                            <div id="msNotConnected" class="{{ $microsoft['linked'] ? 'hidden' : '' }}">
+                                <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full mb-3">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>Not connected
+                                </span>
+                                @if($microsoft['available'] && $microsoft['has_account'])
+                                <div>
+                                    <a href="{{ route('settings.microsoft.connect') }}" id="msConnectBtn"
+                                        class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-gray-800 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition">
+                                        <svg class="w-4 h-4" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+                                        Connect Microsoft account
+                                    </a>
+                                </div>
+                                @else
+                                <p id="msUnavailable" class="text-[11px] text-gray-400">Sign in with Microsoft is not enabled yet. Ask an EC Administrator to turn it on.</p>
+                                @endif
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
                 {{-- 2FA --}}
                 <div class="px-8 py-6">
                     <div class="flex items-start gap-8">
@@ -1072,6 +1174,77 @@ async function submitPasswordConfirm() {
     });
 @endif
 
+// ── Microsoft account ─────────────────────────────────────────────────────────
+async function saveMicrosoftConfig(e) {
+    e.preventDefault();
+    const btn = document.getElementById('msSaveBtn');
+    btn.disabled = true;
+    try {
+        const r = await fetch('/settings/microsoft/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': _csrf() },
+            body: JSON.stringify({
+                tenant_id:     document.getElementById('msTenantId').value.trim(),
+                client_id:     document.getElementById('msClientId').value.trim(),
+                client_secret: document.getElementById('msClientSecret').value,
+                enabled:       document.getElementById('msEnabled').checked,
+            }),
+        });
+        const d = await r.json();
+        if (!r.ok || !d.success) {
+            const first = d.errors ? Object.values(d.errors)[0]?.[0] : null;
+            showNotification(d.message || first || 'Failed to save the configuration.', 'error');
+            return;
+        }
+        const secretEl = document.getElementById('msClientSecret');
+        secretEl.value = '';
+        if (d.data.has_secret) {
+            secretEl.placeholder = 'An encrypted secret is stored. Leave blank to keep it.';
+            document.getElementById('msSecretHint').textContent = 'An encrypted secret is stored. Leave blank to keep it.';
+        }
+        showNotification(d.message, 'success');
+    } catch (err) {
+        showNotification('Failed to save the configuration.', 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function copyMicrosoftRedirectUri() {
+    const v = document.getElementById('msRedirectUri').value;
+    (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject())
+        .then(() => showNotification('Redirect URI copied.', 'success'))
+        .catch(() => { document.getElementById('msRedirectUri').select(); showNotification('Press Ctrl+C to copy the selected address.', 'info'); });
+}
+
+async function disconnectMicrosoft() {
+    const ok = await showConfirm('You will no longer be able to sign in with this Microsoft account. You can still sign in with your password.', 'Disconnect Microsoft account?', 'danger');
+    if (!ok) return;
+    try {
+        const r = await fetch('/settings/microsoft/disconnect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': _csrf() },
+            body: '{}',
+        });
+        const d = await r.json();
+        if (!d.success) { showNotification(d.message || 'Failed to disconnect.', 'error'); return; }
+        window.location.href = '/settings?tab=security';
+    } catch (err) {
+        showNotification('Failed to disconnect.', 'error');
+    }
+}
+
+@if(session('ms_flash'))
+    // Result of the Microsoft connect flow. Deferred to 'load' for the same
+    // reason as the force_2fa_setup block: showNotification() is defined later in the layout.
+    window.addEventListener('load', function () {
+        switchTab('security');
+        showNotification(@json(session('ms_flash.message')), @json(session('ms_flash.type') === 'success' ? 'success' : 'error'));
+    });
+@elseif(request('tab') === 'security')
+    window.addEventListener('load', function () { switchTab('security'); });
+@endif
+
 // ── Expose ────────────────────────────────────────────────────────────────────
 window.switchTab=switchTab; window.selectTheme=selectTheme; window.selectColor=selectColor;
 window.selectSidebarStyle=selectSidebarStyle; window.selectFontSize=selectFontSize;
@@ -1083,6 +1256,7 @@ window.startEnable2fa=startEnable2fa; window.confirm2fa=confirm2fa; window.cance
 window.promptDisable2fa=promptDisable2fa; window.promptRegenerateRecoveryCodes=promptRegenerateRecoveryCodes;
 window.closeRecoveryCodesModal=closeRecoveryCodesModal; window.closePasswordConfirmModal=closePasswordConfirmModal;
 window.submitPasswordConfirm=submitPasswordConfirm;
+window.saveMicrosoftConfig=saveMicrosoftConfig; window.copyMicrosoftRedirectUri=copyMicrosoftRedirectUri; window.disconnectMicrosoft=disconnectMicrosoft;
 })();
 </script>
 @endsection

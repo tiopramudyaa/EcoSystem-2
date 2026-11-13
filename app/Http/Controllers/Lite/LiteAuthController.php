@@ -184,6 +184,11 @@ class LiteAuthController extends Controller
                 ], 403);
             }
 
+            // System lock: only the protected admin may sign in.
+            if (\App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
+                return $this->systemLockedResponse();
+            }
+
             // ── Two-factor authentication gate ──────────────────────────
             // Same placement/rationale as AuthController::login() — every
             // other gate has already run, and no session/DB mutation
@@ -214,6 +219,15 @@ class LiteAuthController extends Controller
         }
     }
 
+    private function systemLockedResponse()
+    {
+        return response()->json([
+            'success' => false,
+            'locked'  => true,
+            'message' => \App\Services\SystemLockService::message(),
+        ], 423);
+    }
+
     /**
      * Finishes a Lite login after every gate (and, if enabled, 2FA) has
      * passed — same DB/session writes as AuthController::finalizeEmployeeLogin(),
@@ -222,6 +236,11 @@ class LiteAuthController extends Controller
      */
     private function finalizeLiteLogin(object $authUser, array $sessionData, Request $request, string $requestId)
     {
+        // System lock: also covers the 2FA-verify path.
+        if (\App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
+            return $this->systemLockedResponse();
+        }
+
         $token    = $sessionData['token'];
         $userData = $sessionData['userData'];
 

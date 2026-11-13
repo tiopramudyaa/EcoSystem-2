@@ -24,7 +24,7 @@ return [
         'email-process-inbox' => [
             'label'               => 'Process Incoming Email',
             'command'             => 'email:process-inbox',
-            'frequency_label'     => 'Every minute',
+            'frequency_label'     => 'Every 30 seconds',
             'stale_after_minutes' => 5,
         ],
         'tickets-open-reminders' => [
@@ -32,6 +32,12 @@ return [
             'command'             => 'tickets:open-reminders',
             'frequency_label'     => 'Every minute',
             'stale_after_minutes' => 5,
+        ],
+        'tickets-deliverable-reminders' => [
+            'label'               => 'Ticket Deliverable Document Reminders',
+            'command'             => 'tickets:deliverable-reminders',
+            'frequency_label'     => 'Hourly (sends 09:00–17:00, once/day per ticket)',
+            'stale_after_minutes' => 90,
         ],
         'activities-recompute-status' => [
             'label'               => 'Recompute Delivery Activity Status',

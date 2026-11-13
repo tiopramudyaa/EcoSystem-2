@@ -574,126 +574,16 @@ class StagingTicketController extends Controller
      */
     private function notifyTeamsTicketValidated(Ticket $ticket, array $sessionUser, ?TicketMessage $firstMessage = null): void
     {
-        try {
-            $powerAutomate = app(\App\Services\PowerAutomateService::class);
-
-            if (!$powerAutomate->isFlowReady(\App\Services\PowerAutomateService::FLOW_TICKET_VALIDATED)) {
-                return;
-            }
-
-            $payloadTicket = $powerAutomate->ticketPayload($ticket);
-            $leads         = $powerAutomate->moduleLeads($payloadTicket['module_id'], $payloadTicket['module']);
-
-            $leadEmails    = $powerAutomate->leadEmails($leads);
-
-            $chatPayload = $powerAutomate->ticketChatPayload(
-                $payloadTicket,
-                $leadEmails,
-                $sessionUser['email'] ?? null
-            );
-
-            // Group chat dibuat EcoSystem sendiri lewat Graph, bukan oleh flow 5.
-            // Gunanya kita MEMEGANG chat_id: tanpa itu, sinkronisasi pesan masuk
-            // mustahil dan flow 6 terpaksa mencari chatnya lagi dengan mencocokkan
-            // nama grup. Lihat docs/teams-chat-sync-design.md §4.
-            //
-            // try/catch sendiri, terpisah dari dispatch di bawah: Teams yang
-            // bermasalah tidak boleh ikut membatalkan notifikasi Power Automate
-            // yang selama ini sudah jalan.
-            // Guest yang ditunda karena belum dikenal Teams (lihat
-            // TeamsChatService::createForTicket). Mereka belum anggota grup saat
-            // flow 5 memposting kartu, jadi tidak ikut di-@mention.
-            $pendingGuests = [];
-
-            try {
-                $teamsChat = app(\App\Services\Teams\TeamsChatService::class)->createForTicket(
-                    (int) $ticket->ticket_id,
-                    $chatPayload['topic'],
-                    $chatPayload['members']
-                );
-
-                if ($teamsChat) {
-                    $chatPayload['id'] = $teamsChat->chat_id;
-
-                    // Penanda untuk flow 5: chatnya SUDAH ada, jangan bikin lagi.
-                    // Tanpa Condition atas flag ini di sisi Power Automate, satu
-                    // tiket akan punya DUA grup — satu dari sini, satu dari flow.
-                    $chatPayload['created_by_ecosystem'] = true;
-
-                    $pendingGuests = app(\App\Services\Teams\TeamsChatService::class)
-                        ->pendingGuestEmails((int) $ticket->ticket_id);
-
-                    // Email/permintaan pertama customer ikut diteruskan ke grup.
-                    // Hanya bisa di sini: sebelum titik ini tiket belum punya
-                    // group chat, jadi queueCustomerMessage() akan melewatinya.
-                    // Lampirannya sudah diproses di approve() sebelum method ini.
-                    if ($firstMessage) {
-                        try {
-                            app(\App\Services\Teams\TeamsOutboxService::class)->queueCustomerMessage($firstMessage);
-                        } catch (\Throwable $e) {
-                            Log::warning('StagingTicketController@approve: gagal mengantre pesan pertama customer ke Teams (non-fatal)', [
-                                'ticket_id'  => $ticket->ticket_id,
-                                'message_id' => $firstMessage->id,
-                                'error'      => $e->getMessage(),
-                            ]);
-                        }
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::warning('StagingTicketController@approve: gagal membuat group chat Teams lewat Graph (non-fatal)', [
-                    'ticket_id' => $ticket->ticket_id,
-                    'error'     => $e->getMessage(),
-                ]);
-            }
-
-            $powerAutomate->dispatchAfterResponse(
-                \App\Services\PowerAutomateService::FLOW_TICKET_VALIDATED,
-                [
-                    'ticket'       => $payloadTicket,
-                    'module_leads' => $leads,
-                    'lead_emails'  => $leadEmails,
-                    // Rujukan user untuk "Get an @mention token" di flow 5:
-                    // email untuk lead internal, object id untuk lead guest.
-                    // Konektor menolak alamat Gmail guest tetapi menerima object
-                    // id-nya (terbukti 20 Okt 2026). Guest yang tidak bisa
-                    // di-resolve dibuang supaya loop mention tidak berhenti;
-                    // begitu juga guest yang masih ditunda — mereka belum
-                    // anggota grup saat kartu ini diposting.
-                    'lead_teams_ids' => array_values(array_filter(array_map(
-                        static fn ($email) => app(\App\Services\Teams\TeamsGuestService::class)->teamsUserRef((string) $email),
-                        array_filter(
-                            $leadEmails,
-                            static fn ($email) => !in_array(mb_strtolower(trim((string) $email)), $pendingGuests, true)
-                        )
-                    ))),
-                    // Bahan group chat tiket (aksi Teams "Create a chat"):
-                    // `chat.topic` jadi nama grup sekaligus kunci yang dipakai
-                    // flow "ticket member added" untuk menemukan grup ini lagi
-                    // lewat aksi "List chats". `chat.members_csv` berisi lead
-                    // modul PLUS tim Delivery Support tiket ini (Delivery Owner,
-                    // Support Manager, CO PM, Support Admin) PLUS pemegang role
-                    // penjaga (Delivery Support Head dan Delivery Support
-                    // Service Helpdesk).
-                    'chat'         => $chatPayload,
-                    // Identitas delivery support tiket + timnya, untuk baris
-                    // "Delivery Support" di Adaptive Card. Emailnya sendiri
-                    // sudah ikut lewat chat.members_csv di atas.
-                    'delivery_support' => $powerAutomate->deliverySupportPayload(
-                        (int) $ticket->ticket_id
-                    ),
-                    'validated_by' => [
-                        'id'    => $sessionUser['id'] ?? null,
-                        'name'  => $sessionUser['name'] ?? null,
-                        'email' => $sessionUser['email'] ?? null,
-                    ],
-                ]
-            );
-        } catch (\Throwable $e) {
-            Log::warning('StagingTicketController@approve: gagal menyiapkan notifikasi Teams (non-fatal)', [
-                'ticket_id' => $ticket->ticket_id,
-                'error'     => $e->getMessage(),
-            ]);
-        }
+        // Logikanya dipindah ke service bersama supaya tiket yang dibuat
+        // langsung dari EcoSystem (TicketController::store / storeFromHelpdesk)
+        // mendapat group chat Teams dengan cara yang sama persis.
+        app(\App\Services\Teams\TicketTeamsOnboardingService::class)->onboard(
+            $ticket,
+            $sessionUser,
+            $firstMessage,
+            \App\Services\Teams\TicketTeamsOnboardingService::FIRST_MESSAGE_CUSTOMER,
+            'StagingTicketController@approve'
+        );
     }
 
     /**

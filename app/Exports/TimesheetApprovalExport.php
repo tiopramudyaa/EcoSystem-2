@@ -37,6 +37,7 @@ class TimesheetApprovalExport implements
             $type = 'Office';
             if ($ts->ticket_id)            $type = 'Support';
             elseif ($ts->delivery_projects_id) $type = 'Project';
+            elseif ($ts->is_non_project)       $type = 'Non Project';
 
             return [
                 'employee'     => $employeeName ?: '-',

@@ -109,6 +109,8 @@ Route::middleware(['web'])->group(function () {
         Route::patch('/{id}/change-password', [EmployeeController::class, 'changePassword'])->middleware('menu:master.employee.action');
         Route::patch('/{id}/change-eci', [EmployeeController::class, 'changeEci'])->middleware('menu:master.employee.action');
         Route::patch('/{id}/change-role', [EmployeeController::class, 'changeRole'])->middleware('menu:master.employee.action');
+        // POST (WAF production memblokir verb DELETE). Izin sendiri + kode 2FA baru dari admin.
+        Route::post('/{id}/reset-two-factor', [EmployeeController::class, 'resetTwoFactor'])->middleware(['menu:master.employee.reset-two-factor', 'throttle:10,1']);
     });
 
     // Employee Basic Data endpoints
@@ -711,6 +713,9 @@ Route::middleware(['web'])->group(function () {
         Route::get('/exception-requests',      [\App\Http\Controllers\PeriodManagementController::class, 'listExceptionRequests']);
         Route::patch('/exception-requests/{exRequest}/head-decide', [\App\Http\Controllers\PeriodManagementController::class, 'headDecideRequest']);
         Route::patch('/exception-requests/{exRequest}/rpmo-decide', [\App\Http\Controllers\PeriodManagementController::class, 'rpmoDecideRequest']);
+        // Varian POST untuk UI: WAF edge di production dapat menolak method selain GET/POST.
+        Route::post('/exception-requests/{exRequest}/head-decide', [\App\Http\Controllers\PeriodManagementController::class, 'headDecideRequest']);
+        Route::post('/exception-requests/{exRequest}/rpmo-decide', [\App\Http\Controllers\PeriodManagementController::class, 'rpmoDecideRequest']);
 
         Route::prefix('/{period}')->group(function () {
             // RPMO: global lifecycle
@@ -738,6 +743,9 @@ Route::middleware(['web'])->group(function () {
 
         // Session Management
         Route::get('/sessions', [AdminSessionController::class, 'index']);
+        Route::get('/sessions/lock', [AdminSessionController::class, 'lockStatus']);
+        Route::post('/sessions/lock', [AdminSessionController::class, 'lock']);
+        Route::post('/sessions/unlock', [AdminSessionController::class, 'unlock']);
         Route::delete('/sessions/{sessionId}', [AdminSessionController::class, 'destroy']);
         Route::post('/sessions/{sessionId}/delete', [AdminSessionController::class, 'destroy']);
         Route::delete('/sessions', [AdminSessionController::class, 'destroyAll']);

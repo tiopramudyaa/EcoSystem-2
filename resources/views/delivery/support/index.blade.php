@@ -1045,7 +1045,7 @@
         document.getElementById('detailAgent').innerHTML = `<option>${ticket.employee?.employee_name || 'Unassigned'}</option>`;
         document.getElementById('detailCustomer').value = ticket.customer?.customer_name || 'N/A';
         document.getElementById('detailType').value = ticket.type || 'N/A';
-        document.getElementById('detailManDays').value = ticket.man_days ? parseFloat(ticket.man_days).toFixed(1) + ' days' : 'N/A';
+        document.getElementById('detailManDays').value = ticket.man_days ? formatMd(parseFloat(ticket.man_days)) + ' days' : 'N/A';
         document.getElementById('detailCreated').value = new Date(ticket.created_at).toLocaleString('en-GB', {
             timeZone: 'Asia/Jakarta',
             day: '2-digit',

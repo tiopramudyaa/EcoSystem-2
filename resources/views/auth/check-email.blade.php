@@ -47,8 +47,10 @@
 <body>
 
 @include('auth.partials.brand-panel', [
-    'brandHeadline' => 'Almost<br>there.',
-    'brandSub'      => 'We just need to confirm it is really you. Check your inbox to finish setting up your secure access.',
+    'brandHeadline' => $type === 'reset' ? 'Check your<br>inbox.' : 'Almost<br>there.',
+    'brandSub'      => $type === 'reset'
+        ? 'If your email is registered, a link to choose a new password is on its way. Open it within 24 hours.'
+        : 'We just need to confirm it is really you. Check your inbox to finish setting up your secure access.',
 ])
 
 {{-- ════════════════ RIGHT CONTENT PANEL ════════════════ --}}
@@ -75,10 +77,10 @@
             </div>
             @if($type === 'reset')
                 <h2 style="font-size:1.625rem;font-weight:800;color:#0F172A;letter-spacing:-.035em;line-height:1.2;margin-bottom:.625rem;opacity:0;animation:fadeInUp .5s ease forwards;animation-delay:.43s;">
-                    Email Sent
+                    Check Your Email
                 </h2>
                 <p style="font-size:.875rem;color:#475569;line-height:1.7;margin-bottom:.375rem;opacity:0;animation:fadeInUp .5s ease forwards;animation-delay:.51s;">
-                    We have sent a password reset link to
+                    If this address is registered, we have sent a password reset link to
                 </p>
             @else
                 <h2 style="font-size:1.625rem;font-weight:800;color:#0F172A;letter-spacing:-.035em;line-height:1.2;margin-bottom:.625rem;opacity:0;animation:fadeInUp .5s ease forwards;animation-delay:.43s;">

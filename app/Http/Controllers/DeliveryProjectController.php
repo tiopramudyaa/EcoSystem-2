@@ -25,7 +25,7 @@ class DeliveryProjectController extends Controller
 {
     public function index()
     {
-        $projects = DeliveryProject::with('client.basicData')->latest()->get();
+        $projects = DeliveryProject::with('client.basicData')->orderByLastUpdate()->get();
         return view('delivery.project.projects.index', compact('projects'));
     }
 
@@ -50,7 +50,7 @@ class DeliveryProjectController extends Controller
         // memicu query per project per group.
         $projects = DeliveryProject::with(['client.basicData', 'plannings.stages', 'phases'])
             ->when($ids->isNotEmpty(), fn ($q) => $q->whereIn('id', $ids))
-            ->latest()
+            ->orderByLastUpdate()
             ->get();
 
         $projectIds = $projects->pluck('id');
@@ -353,6 +353,8 @@ class DeliveryProjectController extends Controller
             'location_region' => 'nullable|string',
             'location_city' => 'nullable|string',
             'location_street' => 'nullable|string',
+            'location_latitude' => 'nullable|numeric|between:-90,90|required_with:location_longitude',
+            'location_longitude' => 'nullable|numeric|between:-180,180|required_with:location_latitude',
             // Anggota tim punya dua jalur: "employee" (master Employee) dan
             // "vendor" (orang vendor di luar master). Kelengkapan tiap jalur
             // diperiksa saat baris diproses — lihat loop attach di bawah.
@@ -397,8 +399,15 @@ class DeliveryProjectController extends Controller
             'revenue', 'plan_cost', 'gross_profit', 'gross_profit_percentage',
             'delivery_method', 'warranty_period', 'total_mandays',
             'location_name', 'location_type', 'location_country',
-            'location_geographical', 'location_region', 'location_city', 'location_street'
+            'location_geographical', 'location_region', 'location_city', 'location_street',
+            'location_latitude', 'location_longitude'
         ]));
+
+        foreach (['location_latitude', 'location_longitude'] as $coord) {
+            if (($projectData[$coord] ?? null) === '') {
+                $projectData[$coord] = null;
+            }
+        }
 
         try {
             $project = DeliveryProject::create($projectData);
@@ -987,9 +996,18 @@ class DeliveryProjectController extends Controller
             'location_region' => 'nullable|string',
             'location_city' => 'nullable|string',
             'location_street' => 'nullable|string',
+            'location_latitude' => 'nullable|numeric|between:-90,90|required_with:location_longitude',
+            'location_longitude' => 'nullable|numeric|between:-180,180|required_with:location_latitude',
             'location_valid_from' => 'nullable|date',
             'location_valid_to' => 'nullable|date|after_or_equal:location_valid_from',
         ]);
+
+        // Blank coordinates mean "not set"; never write '' into a decimal column.
+        foreach (['location_latitude', 'location_longitude'] as $coord) {
+            if (($validatedData[$coord] ?? null) === '') {
+                $validatedData[$coord] = null;
+            }
+        }
 
         $project->update($validatedData);
 

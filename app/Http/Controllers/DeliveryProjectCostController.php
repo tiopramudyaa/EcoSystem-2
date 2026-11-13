@@ -6,8 +6,10 @@ use App\Exports\DeliveryProjectCostExport;
 use App\Models\DeliveryProject;
 use App\Models\DeliveryProjectCost;
 use App\Models\DeliveryProjectCostItem;
+use App\Models\DeliveryProjectCostReleaseSchedule;
 use App\Services\OneDriveService;
 use App\Services\PlanCostDocumentLink;
+use App\Services\ProjectMonthlyCostReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -51,15 +53,28 @@ class DeliveryProjectCostController extends Controller
             . trim(preg_replace('/[^A-Za-z0-9-]+/', '_', $project->io_number ?: $project->name), '_')
             . '_' . now()->format('Ymd_His') . '.xlsx';
 
+        $report = new ProjectMonthlyCostReport($project);
+
         return Excel::download(
             new DeliveryProjectCostExport(
                 $project,
                 $costs->map(fn($c) => $this->formatCost($c))->all(),
                 $this->buildSummary($costs),
-                $this->expenseRows($costs)
+                $this->expenseRows($costs),
+                $report->build(),
+                $report->releaseSchedules()
             ),
             $filename
         );
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // GET /projects/{project}/costs/monthly
+    // Report Monthly Cost vs TOP Invoiced (lihat ProjectMonthlyCostReport)
+    // ──────────────────────────────────────────────────────────────
+    public function monthly(DeliveryProject $project)
+    {
+        return response()->json((new ProjectMonthlyCostReport($project))->build());
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -224,8 +239,9 @@ class DeliveryProjectCostController extends Controller
         $validated = $request->validate([
             'description' => 'required|string|max:200',
             'amount'      => 'required|numeric|min:0',
-            'period'      => 'required|date_format:Y-m',
-            'document'    => 'nullable|file|max:102400',
+            // Tanggal dari kalender; period ("YYYY-MM") diturunkan darinya.
+            'expense_date' => 'required|date_format:Y-m-d',
+            'document'     => 'nullable|file|max:102400',
         ]);
 
         $docName = null;
@@ -256,7 +272,8 @@ class DeliveryProjectCostController extends Controller
             'delivery_project_cost_id' => $cost->id,
             'description'              => $validated['description'],
             'amount'                   => $validated['amount'],
-            'period'                   => $validated['period'],
+            'expense_date'             => $validated['expense_date'],
+            'period'                   => substr($validated['expense_date'], 0, 7),
             'document_name'            => $docName,
             'document_file_id'         => $docFile,
             'document_url'             => $docUrl,
@@ -293,7 +310,7 @@ class DeliveryProjectCostController extends Controller
         $validated = $request->validate([
             'description'     => 'required|string|max:200',
             'amount'          => 'required|numeric|min:0',
-            'period'          => 'required|date_format:Y-m',
+            'expense_date'    => 'required|date_format:Y-m-d',
             'document'        => 'nullable|file|max:102400',
             // When true (and no new file), the existing document is cleared.
             'remove_document' => 'nullable|boolean',
@@ -339,7 +356,8 @@ class DeliveryProjectCostController extends Controller
         $item->update([
             'description'      => $validated['description'],
             'amount'           => $validated['amount'],
-            'period'           => $validated['period'],
+            'expense_date'     => $validated['expense_date'],
+            'period'           => substr($validated['expense_date'], 0, 7),
             'document_name'    => $docName,
             'document_file_id' => $docFile,
             'document_url'     => $docUrl,
@@ -382,6 +400,137 @@ class DeliveryProjectCostController extends Controller
             'message' => 'Expense item deleted.',
             'total'   => $total,
         ]);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // GET /projects/{project}/costs/{cost}/releases
+    // Total release + jadwal release bulanan sebuah cost item
+    // ──────────────────────────────────────────────────────────────
+    public function indexReleases(DeliveryProject $project, DeliveryProjectCost $cost)
+    {
+        if ($error = $this->rejectNonLeaf($project, $cost)) {
+            return $error;
+        }
+
+        return response()->json($this->releasePayload($cost));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // PUT /projects/{project}/costs/{cost}/release
+    // Langkah 1 "Atur Release Cost": simpan total release item
+    // ──────────────────────────────────────────────────────────────
+    public function updateRelease(Request $request, DeliveryProject $project, DeliveryProjectCost $cost)
+    {
+        if ($error = $this->rejectNonLeaf($project, $cost)) {
+            return $error;
+        }
+
+        $validated = $request->validate([
+            'release_amount' => 'nullable|numeric|min:0',
+        ]);
+
+        $cost->update(['release_amount' => $validated['release_amount']]);
+
+        return response()->json(array_merge(
+            ['message' => 'Total release saved.'],
+            $this->releasePayload($cost)
+        ));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // POST /projects/{project}/costs/{cost}/releases
+    // Langkah 2: tambah satu jadwal release bulanan.
+    // Total jadwal boleh melebihi total release (Belum dijadwalkan jadi minus).
+    // ──────────────────────────────────────────────────────────────
+    public function storeRelease(Request $request, DeliveryProject $project, DeliveryProjectCost $cost)
+    {
+        if ($error = $this->rejectNonLeaf($project, $cost)) {
+            return $error;
+        }
+
+        $validated = $request->validate([
+            'schedule_date' => 'required|date_format:Y-m-d',
+            'amount'        => 'required|numeric|gt:0',
+            'notes'         => 'nullable|string|max:255',
+        ]);
+
+        DeliveryProjectCostReleaseSchedule::create([
+            'delivery_project_cost_id' => $cost->id,
+            'schedule_date'            => $validated['schedule_date'],
+            'period'                   => substr($validated['schedule_date'], 0, 7),
+            'amount'                   => $validated['amount'],
+            'notes'                    => $validated['notes'] ?? null,
+        ]);
+
+        return response()->json(array_merge(
+            ['message' => 'Release schedule added.'],
+            $this->releasePayload($cost)
+        ), 201);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // DELETE /projects/{project}/costs/{cost}/releases/{schedule}
+    // ──────────────────────────────────────────────────────────────
+    public function destroyRelease(
+        DeliveryProject $project,
+        DeliveryProjectCost $cost,
+        DeliveryProjectCostReleaseSchedule $schedule
+    ) {
+        if ($cost->delivery_projects_id !== $project->id
+            || $schedule->delivery_project_cost_id !== $cost->id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        $schedule->delete();
+
+        return response()->json(array_merge(
+            ['message' => 'Release schedule deleted.'],
+            $this->releasePayload($cost)
+        ));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Helper: release hanya diatur di cost leaf (sub-item, atau parent tanpa
+    // sub-item). Release parent ber-sub-item adalah agregat anaknya.
+    // ──────────────────────────────────────────────────────────────
+    private function rejectNonLeaf(DeliveryProject $project, DeliveryProjectCost $cost)
+    {
+        if ($cost->delivery_projects_id !== $project->id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        if ($cost->children()->exists()) {
+            return response()->json([
+                'message' => 'Release of this item is the total of its sub-items. Set the release on each sub-item instead.',
+            ], 422);
+        }
+
+        return null;
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Helper: payload modal "Atur Release Cost"
+    // ──────────────────────────────────────────────────────────────
+    private function releasePayload(DeliveryProjectCost $cost): array
+    {
+        $cost->refresh();
+        $schedules = $cost->releaseSchedules()->get();
+        $total     = $cost->release_amount;
+        $scheduled = (float) $schedules->sum('amount');
+
+        return [
+            'release_amount' => $total,
+            'scheduled'      => $scheduled,
+            // Boleh minus bila jadwal melebihi total release.
+            'unscheduled'    => (float) ($total ?? 0) - $scheduled,
+            'schedules'      => $schedules->map(fn($s) => [
+                'id'            => $s->id,
+                'schedule_date' => $s->schedule_date?->format('Y-m-d'),
+                'period'        => $s->period,
+                'amount'        => (float) $s->amount,
+                'notes'         => $s->notes,
+            ])->values(),
+        ];
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -529,6 +678,8 @@ class DeliveryProjectCostController extends Controller
             'id'            => $item->id,
             'description'   => $item->description,
             'amount'        => $item->amount,
+            // "Y-m-d"; null untuk expense lama yang dibuat sebelum ada kalender.
+            'expense_date'  => $item->expense_date?->format('Y-m-d'),
             // "YYYY-MM"; null untuk expense lama yang dibuat sebelum ada period.
             'period'        => $item->period,
             'document_name' => $item->document_name,
@@ -556,6 +707,7 @@ class DeliveryProjectCostController extends Controller
                         'cost_code'     => $leaf->code,
                         'cost_name'     => $leaf->name,
                         'period'        => $item->period,
+                        'expense_date'  => $item->expense_date,
                         'description'   => $item->description,
                         'amount'        => (float) $item->amount,
                         'document_name' => $item->document_name,

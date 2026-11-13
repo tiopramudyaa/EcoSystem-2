@@ -68,7 +68,7 @@ Ticket leads and consultants who propose, Helpdesk who reviews Customer Mandays,
 
 ### Effect on timesheets
 
-- The approved days are each person's quota on the ticket. A consultant cannot log more MD than the remaining quota, and cannot submit a timesheet on a ticket that has no approved proposal. See the timesheet topic for the details.
+- The approved days are each person's quota on the ticket. A consultant cannot log more MD than the remaining quota, and cannot submit a timesheet on a ticket where no days were approved for them. If the proposal is edited and goes back to `Draft`, the days already approved stay as the quota until Head approves again. See the timesheet topic for the details.
 
 ## What happens next
 

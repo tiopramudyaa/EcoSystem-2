@@ -827,8 +827,9 @@ async function wcDeleteBatch() {
     if (!result.isConfirmed) return;
 
     try {
-        const res = await fetch(`/api/reporting/weekly-consolidation/${wcCurrentBatchId}`, {
-            method: 'DELETE',
+        // POST variant: production WAF blocks the DELETE method.
+        const res = await fetch(`/api/reporting/weekly-consolidation/${wcCurrentBatchId}/delete`, {
+            method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
@@ -1217,8 +1218,9 @@ async function wcForceDeleteBatch(id) {
     if (!result.isConfirmed) return;
 
     try {
-        const res = await fetch(`/api/reporting/weekly-consolidation/${id}/force`, {
-            method: 'DELETE',
+        // POST variant: production WAF blocks the DELETE method.
+        const res = await fetch(`/api/reporting/weekly-consolidation/${id}/force/delete`, {
+            method: 'POST',
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' },
             credentials: 'same-origin'
         });

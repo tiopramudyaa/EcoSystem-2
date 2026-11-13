@@ -107,28 +107,38 @@ class AiTicketAnalyzerServiceTest extends TestCase
         $this->assertNull($this->callPrivate('sanitizeEnum', [null, ['Low', 'Medium', 'High']]));
     }
 
-    // ── sanitizeModuleId() ──────────────────────────────────────────────────
+    // ── sanitizeModuleIds() ─────────────────────────────────────────────────
 
-    public function test_sanitize_module_id_accepts_id_present_in_list(): void
+    public function test_sanitize_module_ids_accepts_ids_present_in_list(): void
     {
         $modules = collect([(object) ['id' => 4, 'name' => 'SD'], (object) ['id' => 6, 'name' => 'FI']]);
 
-        $this->assertSame(4, $this->callPrivate('sanitizeModuleId', [4, $modules]));
-        $this->assertSame(4, $this->callPrivate('sanitizeModuleId', ['4', $modules]));
+        $this->assertSame([4], $this->callPrivate('sanitizeModuleIds', [[4], $modules]));
+        $this->assertSame([4], $this->callPrivate('sanitizeModuleIds', [['4'], $modules]));
     }
 
-    public function test_sanitize_module_id_rejects_id_not_in_list(): void
+    public function test_sanitize_module_ids_keeps_order_and_drops_duplicates(): void
+    {
+        $modules = collect([(object) ['id' => 4, 'name' => 'SD'], (object) ['id' => 6, 'name' => 'FI']]);
+
+        // The first id stays first: it becomes the ticket's main module.
+        $this->assertSame([6, 4], $this->callPrivate('sanitizeModuleIds', [[6, 4, '6'], $modules]));
+    }
+
+    public function test_sanitize_module_ids_rejects_id_not_in_list(): void
     {
         $modules = collect([(object) ['id' => 4, 'name' => 'SD']]);
 
-        $this->assertNull($this->callPrivate('sanitizeModuleId', [99, $modules]));
+        $this->assertSame([], $this->callPrivate('sanitizeModuleIds', [[99], $modules]));
+        $this->assertSame([4], $this->callPrivate('sanitizeModuleIds', [[99, 4], $modules]));
     }
 
-    public function test_sanitize_module_id_rejects_non_numeric(): void
+    public function test_sanitize_module_ids_rejects_non_numeric_and_non_array(): void
     {
         $modules = collect([(object) ['id' => 4, 'name' => 'SD']]);
 
-        $this->assertNull($this->callPrivate('sanitizeModuleId', [null, $modules]));
-        $this->assertNull($this->callPrivate('sanitizeModuleId', ['not a number', $modules]));
+        $this->assertSame([], $this->callPrivate('sanitizeModuleIds', [[null, 'not a number'], $modules]));
+        $this->assertSame([], $this->callPrivate('sanitizeModuleIds', [4, $modules]));
+        $this->assertSame([], $this->callPrivate('sanitizeModuleIds', [null, $modules]));
     }
 }

@@ -56,6 +56,13 @@ class DeliveryProjectCost extends Model
                     ->orderBy('created_at');
     }
 
+    public function releaseSchedules()
+    {
+        return $this->hasMany(DeliveryProjectCostReleaseSchedule::class, 'delivery_project_cost_id')
+                    ->orderBy('schedule_date')
+                    ->orderBy('id');
+    }
+
     // ── Computed helpers ──────────────────────────────────────────
 
     /**

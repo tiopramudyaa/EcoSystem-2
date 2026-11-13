@@ -1,7 +1,8 @@
 @extends('dashboard')
 @section('title', 'Project Detail')
 @section('page-title', 'Project Detail')
-@section('page-subtitle', e($project->name))
+{{-- Nilai inline @section sudah di-escape Blade; e() lagi membuat "&" tampil "&amp;". --}}
+@section('page-subtitle', $project->name)
 @php
     // Project Owner project ini boleh CRUD Risk Register meski role-nya tidak
     // punya slug risk.*. Grant hanya berlaku di project ini (bukan lintas
@@ -1529,6 +1530,29 @@
                     <label class="block text-sm font-medium text-gray-900 mb-1">Street Address</label>
                     <div class="display-box whitespace-pre-line">{{ $project->location_street ?: '—' }}</div>
                 </div>
+                @php
+                    $hasCoords = $project->location_latitude !== null && $project->location_longitude !== null;
+                    $fmtCoord  = fn ($v) => rtrim(rtrim(number_format((float) $v, 7, '.', ''), '0'), '.');
+                    $coordText = $hasCoords ? $fmtCoord($project->location_latitude) . ', ' . $fmtCoord($project->location_longitude) : null;
+                @endphp
+                <div class="md:col-span-2 lg:col-span-3">
+                    <label class="block text-sm font-medium text-gray-900 mb-1">Coordinates (Maps)</label>
+                    @if($hasCoords)
+                        <div class="display-box flex flex-wrap items-center justify-between gap-2">
+                            <span class="font-mono text-sm" id="projectLocationCoords">{{ $coordText }}</span>
+                            <a href="https://www.google.com/maps?q={{ $project->location_latitude }},{{ $project->location_longitude }}" target="_blank" rel="noopener"
+                               class="text-sm text-blue-600 hover:underline">Open in Google Maps</a>
+                        </div>
+                        <div class="mt-3 rounded-lg overflow-hidden border border-gray-200">
+                            <iframe title="Project location map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                                    class="w-full" style="height: 260px; border: 0;"
+                                    src="https://maps.google.com/maps?q={{ $project->location_latitude }},{{ $project->location_longitude }}&z=16&output=embed"></iframe>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Project timesheets show their distance from this point, so the GPS on a timesheet can be cross-checked.</p>
+                    @else
+                        <div class="display-box">-</div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
@@ -1947,20 +1971,33 @@
                         <svg class="w-5 h-5 mr-2 primary-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        Plan Cost
+                        <span id="pcViewTitle">Plan Cost</span>
                     </h2>
-                    <p class="text-xs text-gray-500 mt-1">Project cost recapitulation: Indirect Cost &amp; Direct Cost</p>
+                    <p class="text-xs text-gray-500 mt-1" id="pcViewSubtitle">Project cost recapitulation: Indirect Cost &amp; Direct Cost</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    {{-- Rekap + seluruh expense detail (2 sheet). Hanya membaca,
-                         jadi tersedia untuk semua yang boleh melihat section ini. --}}
+                <div class="flex items-center gap-2 flex-wrap">
+                    {{-- Pindah tampilan: hanya membaca → tetap aktif walau read-only / closed. --}}
+                    <div data-lock-exempt class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+                        <button type="button" id="pcTabPlan" data-lock-exempt data-perm-keep
+                                onclick="PlanCost.switchView('plan')"
+                                class="px-3 py-1.5 text-xs font-semibold rounded-md transition primary-gradient text-white">
+                            Plan Cost
+                        </button>
+                        <button type="button" id="pcTabMonthly" data-lock-exempt data-perm-keep
+                                onclick="PlanCost.switchView('monthly')"
+                                class="px-3 py-1.5 text-xs font-semibold rounded-md transition text-gray-600 hover:bg-white">
+                            Monthly Cost vs TOP Invoiced
+                        </button>
+                    </div>
+                    {{-- Rekap, expense detail, monthly cost & release schedule (4 sheet).
+                         Hanya membaca, jadi tersedia untuk semua yang boleh melihat section ini. --}}
                     <a href="{{ route('projects.costs.export', $project->id) }}"
                        class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition">
                         <i class="fas fa-file-excel text-green-600"></i>
                         Export Excel
                     </a>
                     @if($can('delivery-project.plan-cost.manage'))
-                    <button type="button" onclick="PlanCost.openAddParentModal()"
+                    <button type="button" id="pcAddCostBtn" onclick="PlanCost.openAddParentModal()"
                             class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -1971,6 +2008,9 @@
                 </div>
             </div>
         </div>
+
+        {{-- ══ View 1: Plan Cost (rekap per cost item) ═══════════════ --}}
+        <div id="pcViewPlan">
 
         {{-- ── Summary Cards ────────────────────────────────────────── --}}
         <div id="planCostSummaryCards" class="px-6 pt-5 pb-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -1992,10 +2032,22 @@
                             <th class="px-4 py-3 text-left font-semibold w-16">Code</th>
                             <th class="px-4 py-3 text-left font-semibold">Item Name</th>
                             <th class="px-4 py-3 text-right font-semibold w-36">Budget</th>
-                            <th class="px-4 py-3 text-right font-semibold w-36 bg-blue-700">Release</th>
-                            <th class="px-4 py-3 text-right font-semibold w-36 bg-orange-600">Actual</th>
-                            <th class="px-4 py-3 text-right font-semibold w-36 bg-green-700">Avail. Budget</th>
-                            <th class="px-4 py-3 text-right font-semibold w-36 bg-teal-700">Avail. Release</th>
+                            <th class="px-4 py-3 text-right font-semibold w-36 bg-blue-700">
+                                Release
+                                <span class="block text-[10px] font-normal opacity-80">Total set per item</span>
+                            </th>
+                            <th class="px-4 py-3 text-right font-semibold w-36 bg-orange-600">
+                                Actual
+                                <span class="block text-[10px] font-normal opacity-80">Total expense</span>
+                            </th>
+                            <th class="px-4 py-3 text-right font-semibold w-36 bg-green-700">
+                                Avail. Budget
+                                <span class="block text-[10px] font-normal opacity-80">Budget &minus; Release</span>
+                            </th>
+                            <th class="px-4 py-3 text-right font-semibold w-36 bg-teal-700">
+                                Avail. Release
+                                <span class="block text-[10px] font-normal opacity-80">Release &minus; Actual</span>
+                            </th>
                             <th class="px-4 py-3 text-center font-semibold w-28">Action</th>
                         </tr>
                     </thead>
@@ -2014,7 +2066,56 @@
             </div>
             <p class="text-xs text-gray-400 mt-2">
                 * Avail. Budget = Budget &minus; Release &nbsp;|&nbsp; Avail. Release = Release &minus; Actual
+                &nbsp;|&nbsp; Click a Release / Actual amount to set its monthly schedule / expenses.
             </p>
+        </div>
+
+        </div>{{-- /pcViewPlan --}}
+
+        {{-- ══ View 2: Monthly Cost vs TOP Invoiced ══════════════════ --}}
+        <div id="pcViewMonthly" class="hidden">
+            <div id="monthlyCostSummaryCards" class="px-6 pt-5 pb-2 grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+
+            <div class="px-6 pb-6">
+                <div class="overflow-x-auto rounded-lg border border-gray-200">
+                    <table class="min-w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-700 text-white">
+                                <th class="px-4 py-3 text-left font-semibold">Period</th>
+                                <th class="px-4 py-3 text-right font-semibold w-40">
+                                    Release Cost
+                                    <span class="block text-[10px] font-normal opacity-80">From monthly schedule</span>
+                                </th>
+                                <th class="px-4 py-3 text-right font-semibold w-40">
+                                    Actual Cost
+                                    <span class="block text-[10px] font-normal opacity-80">Dari Expense Details</span>
+                                </th>
+                                <th class="px-4 py-3 text-right font-semibold w-48">
+                                    TOP Invoiced
+                                    <span class="block text-[10px] font-normal opacity-80">Invoiced terms (by Submit Invoice month)</span>
+                                </th>
+                                <th class="px-4 py-3 text-right font-semibold w-40">
+                                    Monthly Difference
+                                    <span class="block text-[10px] font-normal opacity-80">TOP Invoiced &minus; Actual</span>
+                                </th>
+                                <th class="px-4 py-3 text-right font-semibold w-40">
+                                    Cumulative Difference
+                                    <span class="block text-[10px] font-normal opacity-80">Running total to date</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthlyCostTableBody" class="divide-y divide-gray-100">
+                            <tr><td colspan="6" class="text-center py-10 text-gray-400 text-xs">Loading monthly data…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+                    * Difference = TOP Invoiced &minus; Actual. Positive: more has been invoiced to the customer than spent;
+                negative (red): costs exceed what has been invoiced. TOP Invoiced covers all invoiced terms
+                (status Invoiced and Paid), grouped by Submit Invoice Date month. Unscheduled release and expenses without a
+                period are shown in the &ldquo;Unscheduled / no period&rdquo; row.
+                </p>
+            </div>
         </div>
     </div>
 </section>
@@ -2244,7 +2345,9 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Period <span class="text-red-500">*</span></label>
-                    @include('delivery.project.projects.partials.plancost-period-select', ['prefix' => 'ae'])
+                    <input type="date" id="aeDateInput"
+                           class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400">
+                    <p id="aeDateHint" class="hidden text-[11px] text-amber-600 mt-1">This expense has no exact date yet — pick the expense date.</p>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Amount (Rp) <span class="text-red-500">*</span></label>
@@ -2351,8 +2454,8 @@
             {{-- Header --}}
             <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
                 <div>
-                    <h3 class="text-base font-semibold text-gray-900">Actual Expense Details</h3>
-                    <p class="text-xs text-gray-500 mt-0.5" id="actualDetailSubtitle"></p>
+                    <h3 class="text-base font-semibold text-gray-900">Actual Expense Details: <span id="actualDetailSubtitle"></span></h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Actual is calculated automatically from the expense list. Period follows the expense date.</p>
                 </div>
                 <button type="button" onclick="PlanCost.closeActualDetailModal()" class="text-gray-400 hover:text-gray-600 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2364,13 +2467,26 @@
             {{-- Scrollable body --}}
             <div class="overflow-y-auto flex-1 p-6 space-y-5">
 
-                {{-- Summary bar: Actual = total of all expense details --}}
-                <div id="actualDetailSummary" class="flex justify-center">
-                    <div class="bg-orange-50 border border-orange-200 rounded-lg px-6 py-4 text-center w-full max-w-xs">
-                        <p class="text-xs text-orange-600 font-medium uppercase tracking-wide mb-1">Actual Amount</p>
-                        <p class="text-lg font-bold text-orange-700 font-mono" id="adTotalItems">Rp 0</p>
-                        <p class="text-xs text-orange-400 mt-0.5">Auto-calculated from the expense total below</p>
+                {{-- Kartu ringkasan: Actual = total seluruh expense detail di bawah --}}
+                <div id="actualDetailSummary" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Release</p>
+                        <p class="text-lg font-bold text-blue-700 font-mono" id="adReleaseCard">Rp 0</p>
                     </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Actual</p>
+                        <p class="text-lg font-bold text-orange-600 font-mono" id="adTotalItems">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Avail. Release</p>
+                        <p class="text-lg font-bold text-gray-800 font-mono" id="adAvailReleaseCard">Rp 0</p>
+                    </div>
+                </div>
+
+                {{-- Subtotal per bulan (semua expense, tidak ikut filter period) --}}
+                <div id="adMonthlyWrap" class="hidden">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">Monthly Subtotal</h4>
+                    <div id="adMonthlyList" class="divide-y divide-gray-100 border-y border-gray-100 text-sm"></div>
                 </div>
 
                 {{-- Table rincian pengeluaran --}}
@@ -2475,10 +2591,11 @@
                                    class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
                                    placeholder="e.g. Transportation, Accommodation…">
                         </div>
-                        {{-- Period (bulan + tahun) --}}
+                        {{-- Tanggal expense (kalender); yang ditampilkan hanya bulan + tahun --}}
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Period <span class="text-red-500">*</span></label>
-                            @include('delivery.project.projects.partials.plancost-period-select', ['prefix' => 'ad'])
+                            <input type="date" id="adDateInput"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400">
                         </div>
                         {{-- Amount --}}
                         <div>
@@ -2530,6 +2647,121 @@
                 </button>
             </div>
 
+        </div>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════ --}}
+{{-- PLAN COST — ATUR RELEASE COST MODAL                           --}}
+{{-- Langkah 1: total release per item. Langkah 2: jadwal bulanan.  --}}
+{{-- ══════════════════════════════════════════════════════════════ --}}
+<div id="releaseModal" class="fixed inset-0 z-50 hidden">
+    <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PlanCost.closeReleaseModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:90vh;">
+
+            {{-- Header --}}
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-900">Set Release Cost</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Step 1: set the item's total release. Step 2: split it into a monthly schedule.</p>
+                </div>
+                <button type="button" onclick="PlanCost.closeReleaseModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Scrollable body --}}
+            <div class="overflow-y-auto flex-1 p-6 space-y-5">
+
+                {{-- Cost item (hanya leaf). Pindah item = membaca → tetap aktif saat closed. --}}
+                <div data-lock-exempt>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Cost Item</label>
+                    <select id="rlCostSelect" onchange="PlanCost.openReleaseModal(Number(this.value))"
+                            class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm bg-gray-50"></select>
+                </div>
+
+                {{-- Kartu ringkasan --}}
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Total Release</p>
+                        <p class="text-lg font-bold text-blue-700 font-mono" id="rlTotalCard">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Scheduled</p>
+                        <p class="text-lg font-bold text-gray-800 font-mono" id="rlScheduledCard">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Unscheduled</p>
+                        <p class="text-lg font-bold text-red-600 font-mono" id="rlUnscheduledCard">Rp 0</p>
+                    </div>
+                </div>
+
+                {{-- Subtotal per bulan --}}
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">Monthly Subtotal</h4>
+                    <div id="rlMonthlyList" class="divide-y divide-gray-100 border-y border-gray-100 text-sm"></div>
+                </div>
+
+                {{-- 1. Total release --}}
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700">1. Item Total Release (Rp)</h4>
+                    <label class="block text-xs font-medium text-gray-600 mt-1 mb-1">Total Release</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="rlTotalInput" inputmode="numeric"
+                               class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                               placeholder="0">
+                        <button type="button" id="rlSaveTotalBtn" data-closed-hide data-perm-action="edit"
+                                onclick="PlanCost.saveReleaseTotal()"
+                                class="flex-shrink-0 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50">
+                            Save Total
+                        </button>
+                    </div>
+                </div>
+
+                {{-- 2. Jadwal bulanan --}}
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">2. Monthly Schedule</h4>
+                    <div id="rlScheduleList" class="divide-y divide-gray-100 border-y border-gray-100 text-sm"></div>
+
+                    <div id="rlAddForm" data-closed-hide class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end mt-3">
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                            <input type="date" id="rlDateInput"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Amount (Rp)</label>
+                            <input type="text" id="rlAmountInput" inputmode="numeric"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                                   placeholder="0">
+                        </div>
+                        <div class="sm:col-span-4">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                            <input type="text" id="rlNotesInput" maxlength="255"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                                   placeholder="Optional">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button type="button" id="rlAddBtn" data-perm-action="manage"
+                                    onclick="PlanCost.addReleaseSchedule()"
+                                    class="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50">
+                                Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end flex-shrink-0">
+                <button type="button" onclick="PlanCost.closeReleaseModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -3394,6 +3626,23 @@
     // Cost form modal: current actual_amount (derived from expenses, read-only here)
     let _currentActual = 0;
 
+    // Actual detail modal: release item (untuk kartu Release / Avail. Release)
+    let _adRelease = null;
+
+    // Release modal state
+    let _rlCostId = null;   // cost leaf yang sedang diatur
+    let _rlDirty  = false;  // release berubah → tabel & monthly perlu reload
+
+    // Tampilan section: 'plan' | 'monthly'. Monthly di-fetch saat dibuka dan
+    // ditandai basi setiap data Plan Cost berubah.
+    let _view         = 'plan';
+    let _monthlyStale = true;
+
+    // Izin section (UI saja — penegakan di middleware route).
+    const _section   = document.getElementById('plancost');
+    const CAN_EDIT   = _section?.dataset.permEdit === '1';
+    const CAN_MANAGE = _section?.dataset.permManage === '1';
+
     // ── Init ───────────────────────────────────────────────────────
     async function init() {
         await ensureInit();
@@ -3414,6 +3663,8 @@
             _costs = res.data.costs ?? [];
             renderTable(_costs);
             renderSummaryCards(res.data.summary ?? {});
+            _monthlyStale = true;
+            if (_view === 'monthly') loadMonthly();
         } catch (e) {
             console.error('PlanCost: load error', e);
             document.getElementById('planCostTableBody').innerHTML =
@@ -3496,16 +3747,25 @@
             ? `<td class="px-4 py-3 text-right whitespace-nowrap bg-orange-50/40 cursor-pointer hover:bg-orange-100 transition-colors"
                    onclick="PlanCost.openActualDetailModal(${item.id}, '${(item.name ?? '').replace(/'/g, "\\'")}')"
                    title="Click to view / add expense details">
-                   <span class="text-orange-700 font-mono text-xs">${fmtRp(actual)}</span>
+                   <span class="text-orange-700 font-mono text-xs underline decoration-dotted underline-offset-2">${fmtRp(actual)}</span>
                </td>`
             : `<td class="px-4 py-3 text-right whitespace-nowrap text-orange-700 font-mono text-xs bg-orange-50/40">${fmtRp(actual)}</td>`;
+
+        // Release cell: leaf → buka "Atur Release Cost" (total + jadwal bulanan).
+        const releaseCell = !isParent
+            ? `<td class="px-4 py-3 text-right whitespace-nowrap bg-blue-50/40 cursor-pointer hover:bg-blue-100 transition-colors"
+                   onclick="PlanCost.openReleaseModal(${item.id})"
+                   title="Click to set the release total & monthly schedule">
+                   <span class="text-blue-700 font-mono text-xs underline decoration-dotted underline-offset-2">${fmtRp(release)}</span>
+               </td>`
+            : `<td class="px-4 py-3 text-right whitespace-nowrap text-blue-700 font-mono text-xs bg-blue-50/40">${fmtRp(release)}</td>`;
 
         return `
         <tr class="${rowBg} transition-colors">
             <td class="px-4 py-3 whitespace-nowrap">${codeLabel}</td>
             <td class="px-4 py-3 ${nameClass}">${item.name ?? ''}</td>
             <td class="px-4 py-3 text-right whitespace-nowrap text-gray-800 font-mono text-xs">${fmtRp(budget)}</td>
-            <td class="px-4 py-3 text-right whitespace-nowrap text-blue-700 font-mono text-xs bg-blue-50/40">${fmtRp(release)}</td>
+            ${releaseCell}
             ${actualCell}
             <td class="px-4 py-3 text-right whitespace-nowrap font-mono text-xs ${availColor(avBudg)} bg-green-50/40">${fmtRp(avBudg)}</td>
             <td class="px-4 py-3 text-right whitespace-nowrap font-mono text-xs ${availColor(avRel)}  bg-teal-50/40">${fmtRp(avRel)}</td>
@@ -3804,8 +4064,11 @@
             _adCostId = costId;
             _adDirty  = false;
 
-            // Set subtitle
-            document.getElementById('actualDetailSubtitle').textContent = costName;
+            // Judul "<code> <name>" + release item untuk kartu ringkasan.
+            const costItem = findItem(costId, _costs);
+            _adRelease = costItem?.release_amount ?? null;
+            document.getElementById('actualDetailSubtitle').textContent =
+                [costItem?.code, costItem?.name ?? costName].filter(Boolean).join(' ');
 
             // Reset form + period filter + sort
             _adResetForm();
@@ -3837,15 +4100,15 @@
             const rawAmt = document.getElementById('adAmountInput').value.replace(/\./g, '').replace(',', '.');
             const amount = parseFloat(rawAmt);
             const file   = document.getElementById('adFileInput').files[0];
-            const period = _periodValue('ad');
+            const date   = document.getElementById('adDateInput').value;
 
             if (!desc) {
                 showPlanCostToast('Expense name is required.', 'error');
                 document.getElementById('adDescInput').focus();
                 return;
             }
-            if (!period) {
-                showPlanCostToast('Period (month and year) is required.', 'error');
+            if (!date) {
+                showPlanCostToast('Expense date is required.', 'error');
                 return;
             }
             if (!rawAmt || isNaN(amount) || amount <= 0) {
@@ -3861,7 +4124,7 @@
                 const fd = new FormData();
                 fd.append('description', desc);
                 fd.append('amount', amount);
-                fd.append('period', period);
+                fd.append('expense_date', date);
                 fd.append('_token', getCsrf());
                 if (file) fd.append('document', file);
 
@@ -3874,7 +4137,7 @@
                 _adAppendRow(res.data.item, _adGetCurrentCount() + 1);
                 _adUpdateSummary();
                 _adRefreshFilter(res.data.item);
-                // Period dipertahankan: biasanya beberapa expense diinput
+                // Tanggal dipertahankan: biasanya beberapa expense diinput
                 // berturut-turut untuk bulan yang sama.
                 _adResetForm(true);
                 showPlanCostToast('Expense added successfully.', 'success');
@@ -3966,8 +4229,12 @@
             document.getElementById('aeDescInput').value   = desc;
             document.getElementById('aeAmountInput').value = amount
                 ? new Intl.NumberFormat('id-ID').format(amount) : '';
-            // Expense lama belum punya period → kosong, wajib dipilih saat disimpan.
-            _setPeriodValue('ae', rowEl?.dataset.period ?? '');
+            // Expense lama belum punya tanggal: isi tgl 1 bulan period-nya (bila
+            // ada) sebagai titik awal kalender, dan beri tanda agar user memeriksa.
+            const exDate = rowEl?.dataset.expenseDate ?? '';
+            const exPer  = rowEl?.dataset.period ?? '';
+            document.getElementById('aeDateInput').value = exDate || (exPer ? `${exPer}-01` : '');
+            document.getElementById('aeDateHint').classList.toggle('hidden', !!exDate);
 
             // Current document row (only when the item already has one)
             const curRow = document.getElementById('aeCurrentDocRow');
@@ -4034,15 +4301,15 @@
             const rawAmt = document.getElementById('aeAmountInput').value.replace(/\./g, '').replace(',', '.');
             const amount = parseFloat(rawAmt);
             const file   = document.getElementById('aeFileInput').files[0];
-            const period = _periodValue('ae');
+            const date   = document.getElementById('aeDateInput').value;
 
             if (!desc) {
                 showPlanCostToast('Expense name is required.', 'error');
                 document.getElementById('aeDescInput').focus();
                 return;
             }
-            if (!period) {
-                showPlanCostToast('Period (month and year) is required.', 'error');
+            if (!date) {
+                showPlanCostToast('Expense date is required.', 'error');
                 return;
             }
             if (!rawAmt || isNaN(amount) || amount <= 0) {
@@ -4057,7 +4324,7 @@
                 const fd = new FormData();
                 fd.append('description', desc);
                 fd.append('amount', amount);
-                fd.append('period', period);
+                fd.append('expense_date', date);
                 if (file) fd.append('document', file);
                 if (_adEditRemoveDoc) fd.append('remove_document', '1');
 
@@ -4100,6 +4367,254 @@
         _adSort = { default: 'desc', desc: 'asc', asc: 'default' }[_adSort];
         _adApplyFilter();
     };
+
+    // ── Toggle tampilan: Plan Cost ↔ Monthly Cost vs TOP Invoiced ──
+    const VIEW_META = {
+        plan:    ['Plan Cost', 'Project cost recapitulation: Indirect Cost & Direct Cost'],
+        monthly: ['Monthly Cost vs TOP Invoiced', 'Monthly recap: Release, Actual, and terms already invoiced to the customer'],
+    };
+
+    PlanCost.switchView = function (view) {
+        _view = view === 'monthly' ? 'monthly' : 'plan';
+        const monthly = _view === 'monthly';
+
+        document.getElementById('pcViewPlan').classList.toggle('hidden', monthly);
+        document.getElementById('pcViewMonthly').classList.toggle('hidden', !monthly);
+        document.getElementById('pcAddCostBtn')?.classList.toggle('hidden', monthly);
+        document.getElementById('pcViewTitle').textContent    = VIEW_META[_view][0];
+        document.getElementById('pcViewSubtitle').textContent = VIEW_META[_view][1];
+
+        const ACTIVE   = ['primary-gradient', 'text-white'];
+        const INACTIVE = ['text-gray-600', 'hover:bg-white'];
+        [['pcTabPlan', !monthly], ['pcTabMonthly', monthly]].forEach(([id, on]) => {
+            const b = document.getElementById(id);
+            b.classList.remove(...ACTIVE, ...INACTIVE);
+            b.classList.add(...(on ? ACTIVE : INACTIVE));
+        });
+
+        // Selalu muat ulang: termin TOP bisa berubah di section lain tanpa menandai basi.
+        if (monthly) loadMonthly();
+    };
+
+    async function loadMonthly() {
+        _monthlyStale = false;
+        try {
+            const res = await axios.get(`${BASE_URL}/monthly`);
+            renderMonthly(res.data);
+        } catch (e) {
+            _monthlyStale = true;
+            console.error('PlanCost: monthly load error', e);
+            document.getElementById('monthlyCostTableBody').innerHTML =
+                `<tr><td colspan="6" class="text-center py-8 text-red-500 text-sm">Failed to load monthly data. Please try again.</td></tr>`;
+        }
+    }
+
+    function renderMonthly(r) {
+        const t = r.totals ?? {};
+
+        const card = (label, value, cls) => `
+            <div class="bg-white rounded-lg border border-gray-200 p-4 flex flex-col gap-1 shadow-sm">
+                <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">${label}</span>
+                <span class="text-base font-bold font-mono ${cls}">${fmtRp(value ?? 0)}</span>
+            </div>`;
+        document.getElementById('monthlyCostSummaryCards').innerHTML =
+            card('Total Release', t.release, 'text-gray-800') +
+            card('Total Actual', t.actual, 'text-orange-600') +
+            card('Total TOP Invoiced', t.top, 'text-green-700') +
+            card('Cumulative Position (TOP Invoiced − Actual)', t.diff, (t.diff ?? 0) < 0 ? 'text-red-600' : 'text-gray-800');
+
+        // null / 0 → "-" (sama seperti mockup: bulan tanpa data di kolom tsb.)
+        const money = v => (v === null || v === undefined) ? '<span class="text-gray-400">-</span>' : fmtRp(v);
+        const signed = v => `<span class="${v < 0 ? 'text-red-600' : 'text-gray-800'}">${fmtRp(v)}</span>`;
+        const row = (label, d, extra = '') => `
+            <tr class="hover:bg-gray-50 ${extra}">
+                <td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">${label}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${money(d.release)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${money(d.actual)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${money(d.top)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${signed(d.diff)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${signed(d.cumulative)}</td>
+            </tr>`;
+
+        const months = r.months ?? [];
+        let html = months.map(m => row(_fmtPeriod(m.period), m)).join('');
+        if (r.has_unscheduled) {
+            html += row('Unscheduled / no period', r.unscheduled, 'bg-amber-50/40 italic');
+        }
+        if (!html) {
+            html = `<tr><td colspan="6" class="text-center py-10 text-gray-400 text-sm">No monthly data yet. Set release schedules, add expenses, or invoice a TOP term to see the report.</td></tr>`;
+        } else {
+            html += `
+            <tr class="bg-gray-100 font-bold border-t-2 border-gray-300">
+                <td class="px-4 py-3 text-gray-800">Total</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${fmtRp(t.release)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${fmtRp(t.actual)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${fmtRp(t.top)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${signed(t.diff)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${signed(t.diff)}</td>
+            </tr>`;
+        }
+        document.getElementById('monthlyCostTableBody').innerHTML = html;
+    }
+
+    // ── Atur Release Cost modal ──────────────────────────────────
+    /** Cost leaf (sub-item, atau parent tanpa sub-item) berurutan sesuai tabel. */
+    function _leafCosts() {
+        return _costs.flatMap(c => c.has_children ? (c.children ?? []) : [c]);
+    }
+
+    PlanCost.openReleaseModal = async function (costId) {
+        _rlCostId = costId;
+
+        const sel = document.getElementById('rlCostSelect');
+        sel.innerHTML = _leafCosts().map(c =>
+            `<option value="${c.id}">${_esc([c.code, c.name].filter(Boolean).join(' - '))}</option>`).join('');
+        sel.value = String(costId);
+
+        document.getElementById('rlAmountInput').value = '';
+        document.getElementById('rlNotesInput').value  = '';
+        if (!document.getElementById('rlDateInput').value) {
+            document.getElementById('rlDateInput').value = _today();
+        }
+        // UI mengikuti izin section; server tetap menegakkan lewat middleware.
+        document.getElementById('rlSaveTotalBtn').classList.toggle('hidden', !CAN_EDIT);
+        document.getElementById('rlTotalInput').disabled = !CAN_EDIT;
+        document.getElementById('rlAddForm').classList.toggle('hidden', !CAN_MANAGE);
+
+        document.getElementById('rlScheduleList').innerHTML =
+            `<p class="py-3 text-center text-xs text-gray-400">Loading…</p>`;
+        document.getElementById('releaseModal').classList.remove('hidden');
+
+        try {
+            const res = await axios.get(`${BASE_URL}/${costId}/releases`);
+            _rlRender(res.data);
+        } catch (err) {
+            document.getElementById('rlScheduleList').innerHTML =
+                `<p class="py-3 text-center text-xs text-red-500">${_esc(err.response?.data?.message ?? 'Failed to load release data.')}</p>`;
+        }
+    };
+
+    PlanCost.closeReleaseModal = async function () {
+        document.getElementById('releaseModal').classList.add('hidden');
+        _rlCostId = null;
+        if (_rlDirty) {
+            _rlDirty = false;
+            await load();
+        }
+    };
+
+    PlanCost.saveReleaseTotal = async function () {
+        if (!_rlCostId) return;
+        const raw = document.getElementById('rlTotalInput').value.replace(/\./g, '').replace(',', '.');
+        const btn = document.getElementById('rlSaveTotalBtn');
+        btn.disabled = true;
+        try {
+            const res = await axios.post(`${BASE_URL}/${_rlCostId}/release`,
+                { release_amount: raw === '' ? null : parseFloat(raw) },
+                { headers: { 'X-HTTP-Method-Override': 'PUT' } });
+            _rlDirty = true;
+            _rlRender(res.data);
+            showPlanCostToast('Total release saved.', 'success');
+        } catch (err) {
+            showPlanCostToast(_errMsg(err, 'Failed to save total release.'), 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    PlanCost.addReleaseSchedule = async function () {
+        if (!_rlCostId) return;
+        const date   = document.getElementById('rlDateInput').value;
+        const amount = parseFloat(document.getElementById('rlAmountInput').value.replace(/\./g, '').replace(',', '.'));
+        const notes  = document.getElementById('rlNotesInput').value.trim();
+
+        if (!date) {
+            showPlanCostToast('Date is required.', 'error');
+            return;
+        }
+        if (isNaN(amount) || amount <= 0) {
+            showPlanCostToast('Amount must be greater than 0.', 'error');
+            document.getElementById('rlAmountInput').focus();
+            return;
+        }
+
+        const btn = document.getElementById('rlAddBtn');
+        btn.disabled = true;
+        try {
+            const res = await axios.post(`${BASE_URL}/${_rlCostId}/releases`,
+                { schedule_date: date, amount, notes: notes || null });
+            _rlDirty = true;
+            _rlRender(res.data);
+            // Tanggal dipertahankan untuk input berikutnya.
+            document.getElementById('rlAmountInput').value = '';
+            document.getElementById('rlNotesInput').value  = '';
+            showPlanCostToast('Release schedule added.', 'success');
+        } catch (err) {
+            showPlanCostToast(_errMsg(err, 'Failed to add release schedule.'), 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    PlanCost.deleteReleaseSchedule = async function (scheduleId, btn) {
+        if (!_rlCostId) return;
+        if (btn) btn.disabled = true;
+        try {
+            const res = await axios.post(`${BASE_URL}/${_rlCostId}/releases/${scheduleId}/delete`);
+            _rlDirty = true;
+            _rlRender(res.data);
+            showPlanCostToast('Release schedule deleted.', 'success');
+        } catch (err) {
+            if (btn) btn.disabled = false;
+            showPlanCostToast(_errMsg(err, 'Failed to delete release schedule.'), 'error');
+        }
+    };
+
+    function _rlRender(d) {
+        const total = d.release_amount;
+        document.getElementById('rlTotalCard').textContent     = fmtRp(total ?? 0);
+        document.getElementById('rlScheduledCard').textContent = fmtRp(d.scheduled ?? 0);
+        const un = document.getElementById('rlUnscheduledCard');
+        un.textContent = fmtRp(d.unscheduled ?? 0);
+        un.className   = `text-lg font-bold font-mono ${(d.unscheduled ?? 0) === 0 ? 'text-gray-800' : 'text-red-600'}`;
+
+        document.getElementById('rlTotalInput').value =
+            (total !== null && total !== undefined) ? new Intl.NumberFormat('id-ID').format(total) : '';
+
+        const schedules = d.schedules ?? [];
+
+        // Subtotal per bulan + baris "Belum dijadwalkan" (= total − terjadwal).
+        const listEl = document.getElementById('rlMonthlyList');
+        const shown  = _renderMonthlyList(listEl, schedules.map(s => [s.period, s.amount]), '');
+        if (Math.abs(d.unscheduled ?? 0) > 0.004) {
+            listEl.insertAdjacentHTML('beforeend', `
+                <div class="flex justify-between py-1.5">
+                    <span class="text-red-600">Unscheduled</span>
+                    <span class="font-semibold font-mono text-red-600">${fmtRp(d.unscheduled)}</span>
+                </div>`);
+        } else if (!shown) {
+            listEl.innerHTML = `<p class="py-2 text-xs text-gray-400 italic">No release yet.</p>`;
+        }
+
+        document.getElementById('rlScheduleList').innerHTML = schedules.length
+            ? schedules.map(s => `
+                <div class="flex items-center justify-between gap-3 py-2">
+                    <span class="text-gray-700">${_fmtDate(s.schedule_date)} - ${_esc(s.notes || '-')}</span>
+                    <span class="flex items-center gap-3">
+                        <span class="font-semibold font-mono text-gray-800">${fmtRp(s.amount)}</span>
+                        ${CAN_MANAGE ? `<button type="button" data-closed-hide data-perm-action="manage"
+                                onclick="PlanCost.deleteReleaseSchedule(${s.id}, this)"
+                                class="text-xs font-medium text-red-500 hover:text-red-700 disabled:opacity-50">Delete</button>` : ''}
+                    </span>
+                </div>`).join('')
+            : `<p class="py-2 text-xs text-gray-400 italic">No monthly schedule yet.</p>`;
+    }
+
+    function _errMsg(err, fallback) {
+        return err.response?.data?.message
+            ?? (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(' ') : null)
+            ?? fallback;
+    }
 
     // ── Simple toast (reuse existing showToast if available) ──────
     function showPlanCostToast(msg, type) {
@@ -4166,6 +4681,7 @@
         tr.dataset.desc    = item.description ?? '';
         tr.dataset.amount  = item.amount ?? 0;
         tr.dataset.period  = item.period ?? '';
+        tr.dataset.expenseDate = item.expense_date ?? '';
         tr.dataset.docName = item.document_name ?? '';
         tr.dataset.docUrl  = item.document_url ?? '';
         tr.innerHTML = `
@@ -4219,6 +4735,7 @@
         tr.dataset.desc    = item.description ?? '';
         tr.dataset.amount  = item.amount ?? 0;
         tr.dataset.period  = item.period ?? '';
+        tr.dataset.expenseDate = item.expense_date ?? '';
         tr.dataset.docName = item.document_name ?? '';
         tr.dataset.docUrl  = item.document_url ?? '';
         const tds = tr.querySelectorAll('td');
@@ -4231,11 +4748,40 @@
     // ── Period helpers ────────────────────────────────────────────
     const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    /** "2026-10" → "Oct 2026"; kosong (expense lama) → "—". */
+    /** "2026-10" (atau "2026-10-04") → "Okt 2026"; kosong (expense lama) → "—". */
     function _fmtPeriod(period) {
         if (!period) return '—';
         const [y, m] = String(period).split('-');
         return `${MONTHS_SHORT[Number(m) - 1] ?? m} ${y}`;
+    }
+
+    /** "2026-11-04" → "04/11/2026". */
+    function _fmtDate(date) {
+        if (!date) return '—';
+        const [y, m, d] = String(date).split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    function _today() {
+        const n = new Date();
+        return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+    }
+
+    /**
+     * Daftar "Subtotal per bulan": pasangan [period, amount] diurutkan
+     * kronologis; period kosong ditaruh paling bawah dengan label `emptyLabel`.
+     */
+    function _renderMonthlyList(el, pairs, emptyLabel, emptyClass = 'text-gray-500') {
+        const sums = {};
+        pairs.forEach(([p, a]) => { sums[p || ''] = (sums[p || ''] ?? 0) + (parseFloat(a) || 0); });
+        const keys = Object.keys(sums).filter(Boolean).sort();
+        if ('' in sums && Math.abs(sums['']) > 0.004) keys.push('');
+        el.innerHTML = keys.map(p => `
+            <div class="flex justify-between py-1.5">
+                <span class="${p ? 'text-gray-700' : emptyClass}">${p ? _fmtPeriod(p) : emptyLabel}</span>
+                <span class="font-semibold font-mono ${p ? 'text-gray-800' : emptyClass}">${fmtRp(sums[p])}</span>
+            </div>`).join('');
+        return keys.length;
     }
 
     // select-enhance.js merender label tombolnya dari event 'change'.
@@ -4244,24 +4790,6 @@
         if (!el) return;
         el.value = value;
         el.dispatchEvent(new Event('change', { bubbles: false }));
-    }
-
-    /** Baca input period (prefix 'ad' | 'ae') → "YYYY-MM", atau '' bila belum lengkap. */
-    function _periodValue(prefix) {
-        const m = document.getElementById(prefix + 'PeriodMonth').value;
-        const y = document.getElementById(prefix + 'PeriodYear').value;
-        return m && y ? `${y}-${m}` : '';
-    }
-
-    function _setPeriodValue(prefix, period) {
-        const [y = '', m = ''] = String(period || '').split('-');
-        const yearSel = document.getElementById(prefix + 'PeriodYear');
-        // Tahun di luar rentang opsi (data lama) tetap harus bisa ditampilkan.
-        if (y && !Array.from(yearSel.options).some(o => o.value === y)) {
-            yearSel.add(new Option(y, y));
-        }
-        _setSelect(prefix + 'PeriodMonth', m);
-        _setSelect(prefix + 'PeriodYear', y);
     }
 
     function _adRows() {
@@ -4373,12 +4901,24 @@
         // Actual amount = sum of all expense items. Footer total ditulis
         // _adApplyFilter() karena mengikuti filter period.
         document.getElementById('adTotalItems').textContent  = fmtRp(_adTotal);
+        document.getElementById('adReleaseCard').textContent = fmtRp(_adRelease ?? 0);
+        const avail = (_adRelease ?? 0) - _adTotal;
+        const availEl = document.getElementById('adAvailReleaseCard');
+        availEl.textContent = fmtRp(avail);
+        availEl.className   = `text-lg font-bold font-mono ${avail < 0 ? 'text-red-600' : 'text-gray-800'}`;
+
+        // Subtotal per bulan dari seluruh expense (tidak ikut filter period).
+        const shown = _renderMonthlyList(
+            document.getElementById('adMonthlyList'),
+            _adRows().map(tr => [tr.dataset.period, tr.dataset.amount]),
+            'No period'
+        );
+        document.getElementById('adMonthlyWrap').classList.toggle('hidden', !shown);
     }
 
     function _adResetForm(keepPeriod = false) {
         if (!keepPeriod) {
-            const now = new Date();
-            _setPeriodValue('ad', `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+            document.getElementById('adDateInput').value = _today();
         }
         document.getElementById('adDescInput').value  = '';
         document.getElementById('adAmountInput').value = '';
@@ -4397,7 +4937,7 @@
         // Setup axios CSRF header — dilakukan di sini agar axios sudah tersedia
         axios.defaults.headers.common['X-CSRF-TOKEN'] = getCsrf();
 
-        ['costBudgetInput', 'costReleaseInput', 'adAmountInput', 'aeAmountInput'].forEach(id => {
+        ['costBudgetInput', 'costReleaseInput', 'adAmountInput', 'aeAmountInput', 'rlTotalInput', 'rlAmountInput'].forEach(id => {
             const el = document.getElementById(id);
             if (el) formatCurrencyInput(el);
         });
@@ -9047,7 +9587,7 @@ window.WricefLog = (function () {
         if (v === null || v === undefined || v === '') return '—';
         const num = Number(v);
         if (isNaN(num)) return '—';
-        return Number.isInteger(num) ? String(num) : num.toFixed(2).replace('.', ',');
+        return formatMd(num).replace('.', ',');
     }
 
     // Capability boleh multi-baris (lihat contoh CSV) — pertahankan barisnya.
@@ -9094,9 +9634,7 @@ window.WricefLog = (function () {
             return sum + (isNaN(num) ? 0 : num);
         }, 0);
 
-        cell.textContent = Number.isInteger(total)
-            ? String(total)
-            : total.toFixed(2).replace('.', ',');
+        cell.textContent = formatMd(total).replace('.', ',');
     }
 
     function rowHtml(w) {

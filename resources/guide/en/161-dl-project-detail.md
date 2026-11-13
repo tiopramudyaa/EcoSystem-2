@@ -45,7 +45,7 @@ Project heads, project administrators and the team of the project. Each section 
 
 ## What happens next
 
-Saving a section updates the project at once and refreshes `Last Update Date`. The financial figures feed reports such as `Collection Outlook`.
+Saving a section updates the project at once and refreshes `Last Update`. The financial figures feed reports such as `Collection Outlook`.
 
 ## Common questions
 

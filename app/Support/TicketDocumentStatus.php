@@ -28,6 +28,23 @@ final class TicketDocumentStatus
      */
     public static function forTickets(iterable $ticketIds): array
     {
+        return array_map(
+            fn (array $missing) => $missing === [] ? self::COMPLETE : self::INCOMPLETE,
+            self::missingByTicket($ticketIds)
+        );
+    }
+
+    /**
+     * Doc type mandatory yang BELUM punya dokumen, per tiket. Dasar yang sama
+     * dengan forTickets(); dipakai juga reminder Teams tiket closed
+     * (tickets:deliverable-reminders) yang perlu menyebut nama dokumennya.
+     *
+     * @param  iterable<int> $ticketIds
+     * @return array<int, array<int,string>> ticket_id => nama doc type yang kurang
+     *         (array kosong = lengkap; tiket tanpa mandatory tidak ada di array)
+     */
+    public static function missingByTicket(iterable $ticketIds): array
+    {
         $mandatory = array_filter(DeliverableRequirements::mandatoryByTicket($ticketIds));
 
         if (empty($mandatory)) {
@@ -42,8 +59,7 @@ final class TicketDocumentStatus
         $result = [];
         foreach ($mandatory as $ticketId => $names) {
             $have = $uploaded->get($ticketId, []);
-            $missing = collect($names)->contains(fn ($n) => !in_array(self::key($n), $have, true));
-            $result[$ticketId] = $missing ? self::INCOMPLETE : self::COMPLETE;
+            $result[$ticketId] = array_values(array_filter($names, fn ($n) => !in_array(self::key($n), $have, true)));
         }
 
         return $result;

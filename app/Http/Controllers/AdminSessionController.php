@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\RoleId;
 use App\Services\IpLocationService;
 use App\Services\LoginSecurityService;
+use App\Services\SystemLockService;
 use App\Support\SessionPayloadDecoder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,25 @@ class AdminSessionController extends Controller
     private function decodeSessionUser(?string $payload): ?array
     {
         return SessionPayloadDecoder::decode($payload);
+    }
+
+    /** Audit Log entry; never lets an audit failure block the force logout itself. */
+    private function auditForceLogout(int|string $targetId, ?string $label, string $description, array $new): void
+    {
+        try {
+            \App\Models\AuditLog::recordAction(
+                module: 'Session',
+                auditableType: 'session',
+                auditableId: $targetId,
+                event: 'force_logout',
+                recordLabel: $label,
+                description: $description,
+                old: null,
+                new: $new
+            );
+        } catch (\Throwable $e) {
+            Log::warning('AdminSessionController: audit write failed', ['error' => $e->getMessage()]);
+        }
     }
 
     public function index(Request $request)
@@ -115,6 +135,13 @@ class AdminSessionController extends Controller
                 'ip'             => $request->ip(),
             ]);
 
+            $this->auditForceLogout(
+                $user['id'] ?? 0,
+                $user['name'] ?? null,
+                'force-logged-out ' . ($user['name'] ?? 'a session') . ' (' . ($user['eci'] ?? 'unknown') . ')',
+                ['eci' => $user['eci'] ?? null]
+            );
+
             return response()->json(['success' => true, 'message' => 'Session terminated']);
         } catch (\Exception $e) {
             Log::error('AdminSessionController@destroy error', [
@@ -134,8 +161,13 @@ class AdminSessionController extends Controller
         try {
             $currentSessionId = session()->getId();
 
+            $expiredBefore = now()->subMinutes(config('session.lifetime', 120))->timestamp;
+
+            // Same window as index(), so the count in the message matches
+            // the rows the admin actually saw on the page.
             $candidates = DB::table('sessions')
                 ->where('id', '!=', $currentSessionId)
+                ->where('last_activity', '>', $expiredBefore)
                 ->select('id', 'payload')
                 ->get();
 
@@ -156,6 +188,8 @@ class AdminSessionController extends Controller
                 'ip'    => $request->ip(),
             ]);
 
+            $this->auditForceLogout(0, 'All other sessions', "force-logged-out all other sessions ({$count})", ['count' => $count]);
+
             return response()->json([
                 'success' => true,
                 'message' => "Terminated {$count} session(s)",
@@ -167,6 +201,125 @@ class AdminSessionController extends Controller
                 'error_at' => $e->getFile() . ':' . $e->getLine(),
             ]);
             return response()->json(['success' => false, 'message' => 'Failed to terminate sessions'], 500);
+        }
+    }
+
+    private function isProtectedAdmin(): bool
+    {
+        return session('user.eci') === LoginSecurityService::PROTECTED_ECI;
+    }
+
+    /** GET /api/admin/sessions/lock - current system lock state (menu holders can read it). */
+    public function lockStatus()
+    {
+        if (!$this->assertAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json([
+            'success'    => true,
+            'data'       => SystemLockService::state(),
+            'can_change' => $this->isProtectedAdmin(),
+        ]);
+    }
+
+    /**
+     * POST /api/admin/sessions/lock - turn the system lock on and sign out
+     * everyone except the protected admin. Only the protected admin may do
+     * this: any other account would lock itself out the moment it clicked.
+     */
+    public function lock(Request $request)
+    {
+        if (!$this->assertAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        if (!$this->isProtectedAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Only the protected administrator can lock the system'], 403);
+        }
+
+        if (!\Illuminate\Support\Facades\Schema::hasTable('system_lock')) {
+            return response()->json(['success' => false, 'message' => 'System lock is not set up yet. Run the database migrations first.'], 500);
+        }
+
+        $validated = $request->validate(['message' => 'nullable|string|max:255']);
+
+        try {
+            $by = session('user.name') ?? session('user.eci') ?? 'admin';
+            SystemLockService::lock($validated['message'] ?? null, $by);
+
+            // Sign out every identified, non-protected session right now so the
+            // lock takes effect immediately, not on each person's next click.
+            $ids = DB::table('sessions')->select('id', 'payload')->get()
+                ->filter(function ($s) {
+                    $user = $this->decodeSessionUser($s->payload);
+                    return $user !== null && ($user['eci'] ?? null) !== LoginSecurityService::PROTECTED_ECI;
+                })
+                ->pluck('id');
+            $count = $ids->isEmpty() ? 0 : DB::table('sessions')->whereIn('id', $ids)->delete();
+
+            Log::info('AdminSessionController: system LOCKED', ['by' => $by, 'signed_out' => $count, 'ip' => $request->ip()]);
+
+            $this->auditLock('locked', "locked the system ({$count} session(s) signed out)", ['message' => $validated['message'] ?? null, 'signed_out' => $count]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "System locked. {$count} session(s) signed out.",
+                'data'    => SystemLockService::state(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AdminSessionController@lock error', ['error' => $e->getMessage(), 'error_at' => $e->getFile() . ':' . $e->getLine()]);
+            return response()->json(['success' => false, 'message' => 'Failed to lock the system'], 500);
+        }
+    }
+
+    /** POST /api/admin/sessions/unlock - turn the system lock off. Protected admin only. */
+    public function unlock(Request $request)
+    {
+        if (!$this->assertAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        if (!$this->isProtectedAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Only the protected administrator can unlock the system'], 403);
+        }
+
+        try {
+            SystemLockService::unlock();
+
+            Log::info('AdminSessionController: system UNLOCKED', [
+                'by' => session('user.name') ?? session('user.eci') ?? 'admin',
+                'ip' => $request->ip(),
+            ]);
+
+            $this->auditLock('unlocked', 'unlocked the system', []);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'System unlocked. Users can sign in again.',
+                'data'    => SystemLockService::state(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AdminSessionController@unlock error', ['error' => $e->getMessage(), 'error_at' => $e->getFile() . ':' . $e->getLine()]);
+            return response()->json(['success' => false, 'message' => 'Failed to unlock the system'], 500);
+        }
+    }
+
+    private function auditLock(string $event, string $description, array $new): void
+    {
+        try {
+            \App\Models\AuditLog::recordAction(
+                module: 'Session',
+                auditableType: 'system_lock',
+                auditableId: 1,
+                event: $event,
+                recordLabel: 'System lock',
+                description: $description,
+                old: null,
+                new: $new ?: null
+            );
+        } catch (\Throwable $e) {
+            Log::warning('AdminSessionController: audit write failed', ['error' => $e->getMessage()]);
         }
     }
 

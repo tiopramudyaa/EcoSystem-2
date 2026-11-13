@@ -41,7 +41,7 @@ Karyawan dengan role EC User. Menu Anda adalah `Home`, `AI Research` dan `Calend
 
 ### Jaga akun Anda tetap aman
 
-Buka `Settings` lalu tab `Security` untuk mengganti password dan mengatur `Two-factor authentication`. Lihat [[sign-in-and-security]].
+Buka `Settings` lalu tab `Security` untuk mengganti password dan mengatur `Two-factor authentication`. Lihat [[sign-in-and-security]] dan [[two-step-verification]].
 
 ## Apa yang terjadi selanjutnya
 
