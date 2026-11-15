@@ -5,7 +5,7 @@ order: 130
 title: User Guide Editor
 summary: Ubah topik yang dibaca karyawan di User Guide, tambah topik baru, dan kembalikan teks aslinya.
 requires: [control-center.user-guide]
-updated: 2026-10-28
+updated: 2026-11-16
 ---
 User Guide Editor memungkinkan administrator mengubah manual tanpa deployment. Topik bawaan EcoSystem tetap menjadi versi asli, sehingga Anda selalu dapat kembali.
 
@@ -51,7 +51,7 @@ Administrator, dan role mana pun yang diberi menu `Control Center` › `User Gui
 
 ### Kembalikan ke asli
 
-Pada topik yang diubah, pilih `Restore default` dan konfirmasi. Perubahan Anda dihapus dan teks asli kembali. Pada topik custom, tombol yang sama bertuliskan `Delete topic`.
+Pada topik yang diubah, pilih `Restore default`, lalu `OK` di jendela konfirmasi. Perubahan Anda dihapus dan teks asli kembali. Pada topik custom, tombol yang sama bertuliskan `Delete topic`.
 
 ## Apa yang terjadi selanjutnya
 

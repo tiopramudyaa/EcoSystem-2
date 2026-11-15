@@ -153,7 +153,7 @@
                 </div>
                 @if (!$isNew && $topic['state'] !== 'default')
                     <form id="uge-reset" method="POST" action="{{ route('admin.user-guide.destroy', ['key' => $topic['key']]) }}"
-                          style="margin-top:12px" onsubmit="return confirm('{{ $topic['has_file'] ? 'Discard your edits and restore the default version?' : 'Delete this custom topic?' }}')">
+                          style="margin-top:12px" onsubmit="return confirmSubmit(this, '{{ $topic['has_file'] ? 'Discard your edits and restore the default version?' : 'Delete this custom topic?' }}', '{{ $topic['has_file'] ? 'Restore Default' : 'Delete Topic' }}', 'danger')">
                         @csrf @method('DELETE')
                         <input type="hidden" name="locale" value="{{ $locale }}">
                         <button class="uge-btn danger" type="submit">{{ $topic['has_file'] ? 'Restore default' : 'Delete topic' }}</button>

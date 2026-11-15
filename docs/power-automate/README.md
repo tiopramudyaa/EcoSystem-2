@@ -1241,7 +1241,10 @@ dikumpulkan.
 
 `chat.topic` dirakit fungsi yang **sama persis** dengan yang dipakai flow 5 saat
 membuat grup (`PowerAutomateService::ticketChatTopic()`), jadi cocoknya
-exact-match, bukan tebak-tebakan prefix.
+exact-match, bukan tebak-tebakan prefix. Formatnya sejak 16 November 2026:
+`[nomor tiket]-[customer code]-[description]`. Untuk grup yang sudah tercatat di
+`ticket_teams_chat`, `chat.topic` berisi nama yang tersimpan (format lama tetap
+cocok).
 
 > **Kalau subject tiket diedit SETELAH grupnya terbentuk**, topic rakitan tidak
 > lagi sama dengan nama grup yang terlanjur ada. Kunci cadangannya `chat.number`
