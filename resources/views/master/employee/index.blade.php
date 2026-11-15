@@ -2315,6 +2315,61 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         closeEmpMenu();
         openChangeRoleModal(_empMenuId, _empMenuName, _empMenuRoles);
     }
+    // Reset 2FA: izin sendiri (master.employee.reset-two-factor). Server meminta kode 2FA
+    // baru milik admin (HTTP 428), jadi tombol ini mencoba dulu lalu bertanya hanya bila diminta.
+    async function empMenuResetTwoFactor() {
+        closeEmpMenu();
+        const id = _empMenuId, name = _empMenuName;
+        const ok = await showConfirm(
+            `Reset two-factor authentication for ${name}? Their key and recovery codes are removed and they sign in with their password only until they set it up again. They are told by email and in the app.`,
+            'Reset two-factor authentication?',
+            'danger'
+        );
+        if (!ok) return;
+        await submitResetTwoFactor(id, null);
+    }
+
+    async function submitResetTwoFactor(employeeId, twoFactorCode) {
+        try {
+            const body = {};
+            if (twoFactorCode) body.two_factor_code = twoFactorCode;
+
+            const response = await fetch(`/api/employees/${employeeId}/reset-two-factor`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(body),
+            });
+
+            let data;
+            try { data = await response.json(); } catch (_) {
+                showNotification(`Server error (HTTP ${response.status}), please refresh and try again`, 'error');
+                return;
+            }
+
+            if (data.success) {
+                showNotification(data.message, data.data && data.data.email_sent === false ? 'warning' : 'success');
+                return;
+            }
+
+            if (response.status === 428 && data.requires_step_up && !twoFactorCode) {
+                const code = await showPrompt('Enter your own 2FA code to confirm this reset.', 'Verify Identity', { placeholder: '6-digit code or recovery code', maxLength: 20 });
+                if (code === null) return;
+                await submitResetTwoFactor(employeeId, code);
+                return;
+            }
+
+            showApiErrors(data, 'Failed to reset two-factor authentication');
+        } catch (error) {
+            showNotification('Network error, please check your connection and try again', 'error');
+        }
+    }
+
     function empMenuDelete() {
         closeEmpMenu();
         deleteEmployee(_empMenuId);
@@ -2344,6 +2399,14 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         </svg>
         Change Role
     </button>
+    @if($can('master.employee.reset-two-factor'))
+    <button onclick="empMenuResetTwoFactor()" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5 text-orange-500">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
+        </svg>
+        Reset 2FA
+    </button>
+    @endif
     <div class="border-t border-gray-100 my-1"></div>
     <button onclick="empMenuDelete()" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-all">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">

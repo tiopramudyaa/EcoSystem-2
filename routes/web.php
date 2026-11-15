@@ -70,6 +70,9 @@ Route::prefix('api/auth')->group(function () {
 // Login page
 Route::get('/auth/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/2fa/verify', [AuthController::class, 'showTwoFactorChallenge'])->name('2fa.verify');
+// Login dengan Microsoft (opsi tambahan; diaktifkan EC Administrator di Settings > Security).
+Route::get('/auth/microsoft', [\App\Http\Controllers\MicrosoftAuthController::class, 'redirect'])->name('microsoft.redirect')->middleware('throttle:20,1');
+Route::get('/auth/microsoft/callback', [\App\Http\Controllers\MicrosoftAuthController::class, 'callback'])->name('microsoft.callback')->middleware('throttle:30,1');
 
 // ==================== PASSWORD SETUP & RESET (public — tidak perlu auth) ====================
 // Halaman "Cek email Anda" — tampil setelah setup akun baru atau forgot password
@@ -81,7 +84,8 @@ Route::post('/change-password', [PasswordSetupController::class, 'submitChangePa
 // Forgot password — halaman form input email
 Route::get('/forgot-password', [PasswordSetupController::class, 'showForgotPassword'])->name('password-setup.forgot');
 // Forgot password — proses kirim email reset
-Route::post('/forgot-password', [PasswordSetupController::class, 'submitForgotPassword'])->name('password-setup.forgot.submit');
+// throttle: tanpa batas, siapa pun bisa membanjiri satu karyawan dengan email reset dan menghabiskan kuota mailbox pengirim.
+Route::post('/forgot-password', [PasswordSetupController::class, 'submitForgotPassword'])->name('password-setup.forgot.submit')->middleware('throttle:5,1');
 
 // NOTE: /auth/login (POST) sudah didefinisikan di prefix group 'api/auth' di atas.
 // Route standalone ini dihapus untuk menghindari duplikasi.
@@ -311,6 +315,11 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::post('/preferences', [SettingsController::class, 'updatePreferences'])->name('preferences');
         Route::post('/reset', [SettingsController::class, 'resetPreferences'])->name('reset');
 
+        // Akun Microsoft (Security). Hapus/lepas memakai POST, bukan DELETE: verb DELETE diblokir WAF di production.
+        Route::get('/microsoft/connect', [\App\Http\Controllers\MicrosoftAuthController::class, 'connect'])->name('microsoft.connect')->middleware('throttle:20,1');
+        Route::post('/microsoft/disconnect', [\App\Http\Controllers\MicrosoftAuthController::class, 'disconnect'])->name('microsoft.disconnect')->middleware('throttle:10,1');
+        Route::post('/microsoft/config', [\App\Http\Controllers\MicrosoftAuthController::class, 'saveConfig'])->name('microsoft.config')->middleware('throttle:10,1');
+
         Route::prefix('2fa')->name('2fa.')->group(function () {
             Route::post('/enable', [\App\Http\Controllers\TwoFactorController::class, 'enable'])->name('enable');
             Route::post('/confirm', [\App\Http\Controllers\TwoFactorController::class, 'confirm'])->name('confirm')->middleware('throttle:5,1');
@@ -318,12 +327,6 @@ Route::middleware(CheckAuthToken::class)->group(function () {
             Route::post('/regenerate-recovery-codes', [\App\Http\Controllers\TwoFactorController::class, 'regenerateRecoveryCodes'])->name('regenerate-recovery-codes')->middleware('throttle:5,1');
         });
     });
-
-    // ==================== DASHBOARD API ====================
-    Route::get('/dashboard/monthly-trends', [DashboardController::class, 'getMonthlyTrends'])->name('dashboard.trends');
-    Route::get('/dashboard/project-progress', [DashboardController::class, 'getProjectProgress'])->name('dashboard.progress');
-    Route::post('/dashboard/clear-cache', [DashboardController::class, 'clearCache'])->name('dashboard.clear-cache');
-    Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
 
     // ==================== PROJECT DELIVERY ROUTES ====================
 
@@ -574,8 +577,6 @@ Route::middleware(CheckAuthToken::class)->group(function () {
 
         // Main planning page
         Route::get('/', [DeliveryProjectPlanningController::class, 'show'])->name('show');
-        Route::get('/gantt', [DeliveryProjectPlanningController::class, 'gantt'])->name('gantt');
-        Route::get('/scurve', [DeliveryProjectPlanningController::class, 'scurve'])->name('scurve');
         Route::get('/phases-list', [DeliveryProjectPlanningController::class, 'getPhases'])->name('phases-list');
 
         // Phase Management — baca butuh Planning View, tulis dipecah edit vs manage
@@ -680,7 +681,6 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // ==================== TICKET ====================
     Route::prefix('ticket')->name('ticket.')->group(function () {
         Route::get('/', [TicketViewController::class, 'index'])->name('index')->middleware('menu:tickets.inbox');
-        Route::get('/create', [TicketViewController::class, 'create'])->name('create');
         Route::get('/export', [TicketController::class, 'exportToExcel'])->name('export')->middleware('menu:ticket.export');
         Route::get('/consultant-workload', [ConsultantWorkloadController::class, 'index'])->name('consultant-workload')->middleware('menu:ticket.consultant-workload');
         Route::get('/consultant-workload/{id}/export', [ConsultantWorkloadController::class, 'exportTickets'])->name('consultant-workload.export')->middleware('menu:ticket.consultant-workload');
@@ -792,10 +792,6 @@ Route::get('/', function () {
     }
     return redirect()->route('login');
 });
-
-// ==================== DELIVERY PLANNING ROUTES ====================
-// Include delivery planning module routes
-require __DIR__ . '/delivery.php';
 
 // ==================== DELIVERY SUPPORT ROUTES ====================
 // Include delivery support module routes

@@ -698,8 +698,14 @@ class SlaService
      * $force = true bypasses that skip — used when the ticket's priority/scale/type is
      * edited, so the attached policy follows the ticket's current classification.
      */
-    public function syncPolicy(Ticket $ticket, ?int $deliverySupportId = null, ?TicketSla $preloadedSla = null, bool $force = false): void
-    {
+    public function syncPolicy(
+        Ticket $ticket,
+        ?int $deliverySupportId = null,
+        ?TicketSla $preloadedSla = null,
+        bool $force = false,
+        bool $deliverySupportKnown = false,
+        ?array $activePolicies = null
+    ): void {
         $sla = $preloadedSla ?? TicketSla::where('ticket_id', $ticket->ticket_id)->first();
 
         if (!$sla) {
@@ -717,13 +723,15 @@ class SlaService
         $scale    = $ticket->scale ?? 'Simple';
 
         // Use explicitly provided ID, fallback to lookup from delivery_support_activities
-        if ($deliverySupportId === null) {
+        // $deliverySupportKnown = pemanggil sudah memastikan tiket ini memang tidak punya
+        // delivery support (batch), jadi tidak perlu lookup ulang.
+        if ($deliverySupportId === null && !$deliverySupportKnown) {
             $deliverySupportId = \Illuminate\Support\Facades\DB::table('delivery_support_activities')
                 ->where('ticket_id', $ticket->ticket_id)
                 ->value('delivery_support_id');
         }
 
-        $policy = SlaPolicy::findFor($deliverySupportId, $priority, $scale);
+        $policy = SlaPolicy::findFor($deliverySupportId, $priority, $scale, $activePolicies);
 
         if (!$policy) {
             Log::info('SlaService@syncPolicy: still no matching policy after delivery support assignment', [
@@ -920,11 +928,18 @@ class SlaService
      */
     public function ensureTicketsHaveSla(): void
     {
-        $existingIds = TicketSla::whereNotNull('ticket_id')->pluck('ticket_id')->toArray();
-
-        $missing = Ticket::whereNotIn('ticket_id', $existingIds)
+        // Hanya tiket bertipe SLA-eligible yang bisa diberi record SLA. Tipe lain (EWA, RISE,
+        // Internal, Service Request, dst.) tidak pernah mendapatkannya, jadi sebelumnya mereka
+        // dievaluasi ulang tanpa hasil di setiap pemuatan SLA report. Pembersihan record SLA
+        // staging milik tiket tidak-eligible dipindah ke cleanupStagingSlaForIneligibleTickets().
+        $missing = Ticket::whereNotExists(function ($q) {
+                $q->select(\Illuminate\Support\Facades\DB::raw(1))
+                    ->from('ticket_sla')
+                    ->whereColumn('ticket_sla.ticket_id', 'ticket.ticket_id');
+            })
             ->whereNotNull('ticket_type')
             ->whereNotNull('ticket_priority')
+            ->whereIn('ticket_type', self::FULL_SLA_TYPES)
             ->get();
 
         if ($missing->isNotEmpty()) {
@@ -956,7 +971,57 @@ class SlaService
             }
         }
 
+        $this->cleanupStagingSlaForIneligibleTickets();
+
         $this->syncMissingPolicies();
+    }
+
+    /**
+     * Hapus record SLA staging yang tertinggal untuk tiket bertipe tidak-eligible.
+     *
+     * Jalur persetujuan staging sudah melakukannya lewat attachToTicket(); ini jaring
+     * pengaman untuk tiket yang tidak lewat jalur itu. Memakai satu query terarah (hanya
+     * staging yang benar-benar masih punya record SLA staging-saja) alih-alih memeriksa
+     * semua tiket tidak-eligible di setiap pemuatan report.
+     */
+    private function cleanupStagingSlaForIneligibleTickets(): void
+    {
+        $stale = StagingTicket::whereNotNull('ticket_id')
+            ->whereExists(function ($q) {
+                $q->select(\Illuminate\Support\Facades\DB::raw(1))
+                    ->from('ticket_sla')
+                    ->whereColumn('ticket_sla.staging_ticket_id', 'staging_tickets.id')
+                    ->whereNull('ticket_sla.ticket_id');
+            })
+            ->whereExists(function ($q) {
+                $q->select(\Illuminate\Support\Facades\DB::raw(1))
+                    ->from('ticket')
+                    ->whereColumn('ticket.ticket_id', 'staging_tickets.ticket_id')
+                    ->whereNotNull('ticket.ticket_type')
+                    ->whereNotNull('ticket.ticket_priority')
+                    ->whereNotIn('ticket.ticket_type', self::FULL_SLA_TYPES)
+                    ->whereNotExists(function ($q2) {
+                        $q2->select(\Illuminate\Support\Facades\DB::raw(1))
+                            ->from('ticket_sla')
+                            ->whereColumn('ticket_sla.ticket_id', 'ticket.ticket_id');
+                    });
+            })
+            ->get();
+
+        foreach ($stale as $staging) {
+            try {
+                $this->detachFromStaging($staging);
+                Log::info('SlaService@ensureTicketsHaveSla: stale staging SLA removed (ticket_type not SLA-eligible)', [
+                    'ticket_id'  => $staging->ticket_id,
+                    'staging_id' => $staging->id,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('SlaService@ensureTicketsHaveSla: failed to clean staging SLA', [
+                    'ticket_id' => $staging->ticket_id,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**
@@ -984,20 +1049,34 @@ class SlaService
         // map entirely so syncPolicy() falls back to its own lookup for them,
         // leaving that (rare, ambiguous) case byte-for-byte unchanged.
         $ticketIds = $slas->pluck('ticket_id')->filter();
-        $deliverySupportByTicketId = \Illuminate\Support\Facades\DB::table('delivery_support_activities')
+        $activitiesByTicketId = \Illuminate\Support\Facades\DB::table('delivery_support_activities')
             ->whereIn('ticket_id', $ticketIds)
             ->select('ticket_id', 'delivery_support_id')
             ->get()
-            ->groupBy('ticket_id')
+            ->groupBy('ticket_id');
+
+        $deliverySupportByTicketId = $activitiesByTicketId
             ->filter(fn($rows) => $rows->count() === 1)
             ->map(fn($rows) => $rows->first()->delivery_support_id);
+
+        // Semua policy aktif dimuat sekali; tiap tiket dicocokkan di memori, bukan 1 query
+        // per tiket. Tiket tanpa baris delivery support sama sekali ditandai "known"
+        // supaya syncPolicy() tidak mengulang lookup yang pasti kosong.
+        $activePolicies = SlaPolicy::activeIndex();
 
         foreach ($slas as $sla) {
             if (!$sla->ticket) {
                 continue;
             }
             try {
-                $this->syncPolicy($sla->ticket, $deliverySupportByTicketId->get($sla->ticket_id), $sla);
+                $this->syncPolicy(
+                    $sla->ticket,
+                    $deliverySupportByTicketId->get($sla->ticket_id),
+                    $sla,
+                    false,
+                    !$activitiesByTicketId->has($sla->ticket_id),
+                    $activePolicies
+                );
             } catch (\Throwable $e) {
                 Log::warning('SlaService@syncMissingPolicies: failed', [
                     'ticket_id' => $sla->ticket_id,

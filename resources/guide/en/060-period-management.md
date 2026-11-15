@@ -84,6 +84,17 @@ Select `Audit Log` to see each action with the `Action`, `Actor` and `Timestamp`
 
 In `Period History`, open the menu in the `Actions` column of a row and choose `Edit Period Dates` or `Delete Period`. These appear only if your role allows them.
 
+## Rules to know
+
+- Only one period can be globally open at a time. To open another one, close the open period first.
+- A closed period can be opened again, globally or for one team. Opening an already open period is refused.
+- A team's part (`Project Domain` or `Support Domain`) can only be opened while the period is globally open.
+- `Close Period Globally` is refused while the Project or the Support part is still open. `Force Close` closes one team's part even though people may still be working in it, and it works on any period that has been opened globally.
+- A new period is refused if the same year and month already exist, or if its dates overlap another period. Changing the dates follows the same rule, and the end date must be after the start date.
+- `Delete Period` removes the period together with its audit entries and its late access requests. It does not check whether timesheets belong to it, so delete only a period that was created by mistake.
+- Every open, close, force close and date change is written to the period's `Audit Log`.
+- These period limits apply to people whose role belongs to the Project or Support team. Roles that belong to neither team can log timesheets without them.
+
 ## What happens next
 
 The employee is notified of the decision. Once both the Head and RPMO have approved, the employee can fill in the requested period until the access deadline you set. A closed period accepts no new timesheets without an approved late access request.

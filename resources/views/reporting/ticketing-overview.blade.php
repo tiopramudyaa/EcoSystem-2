@@ -245,7 +245,7 @@ function renderTicketingOverview(rows) {
         <tr class="to-row" data-customer-id="${cid}" data-name="${escHtml((r.customer_name || '').toLowerCase())}" onclick="toggleCustomerDetail('${cid}')">
             <td class="to-td text-center"><i class="fas fa-chevron-right to-chevron"></i></td>
             <td class="to-td font-semibold text-gray-800">${escHtml(r.customer_name)}</td>
-            <td class="to-td text-right text-gray-800">${r.total_mandays}</td>
+            <td class="to-td text-right text-gray-800">${formatMd(r.total_mandays)}</td>
             ${countCell(r.open_tickets,       ticketCount, '#ef4444')}
             ${countCell(r.inprocess_tickets,  ticketCount, '#f59e0b')}
             ${countCell(r.close_tickets,      ticketCount, '#22c55e')}

@@ -256,7 +256,8 @@ class TableAccess
      * data yang menempel padanya (SLA, mandays, attachment, message, dst) —
      * bukan cuma baris ticket itu sendiri. Dua kasus:
      *
-     *   - $table === 'ticket' sendiri → whereNull('is_hidden') langsung.
+     *   - $table === 'ticket' sendiri → whereNull('is_hidden') + whereNull('deleted_at') langsung
+     *     (tiket yang dihapus/soft delete diperlakukan sama seperti yang di-hide).
      *   - tabel lain yang punya FOREIGN KEY sungguhan ke ticket.ticket_id
      *     (lihat ticketForeignKeyColumn() — 24 tabel per audit skema saat
      *     ini: ticket_message, ticket_sla, timesheets, dst) → buang baris
@@ -277,7 +278,7 @@ class TableAccess
     public static function excludeHiddenTickets(string $table, Builder $query): void
     {
         if ('ticket' === $table) {
-            $query->whereNull('is_hidden');
+            $query->whereNull('is_hidden')->whereNull('deleted_at');
 
             return;
         }
@@ -296,7 +297,9 @@ class TableAccess
         $query->where(function ($q) use ($column) {
             $q->whereNull($column)
                 ->orWhereNotIn($column, function ($sub) {
-                    $sub->select('ticket_id')->from('ticket')->whereNotNull('is_hidden');
+                    $sub->select('ticket_id')->from('ticket')->where(function ($t) {
+                        $t->whereNotNull('is_hidden')->orWhereNotNull('deleted_at');
+                    });
                 });
         });
     }

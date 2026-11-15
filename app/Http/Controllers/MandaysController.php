@@ -38,6 +38,30 @@ class MandaysController extends Controller
         return (bool) ($employee?->canAccessMenu('ticket.head-mandays') || $employee?->canAccessMenu('ticket.approve-resolution-days'));
     }
 
+    /**
+     * Return 403 unless the session user's roles hold at least one of the given Role Access slugs.
+     * Izin murni dari Role Access; sama dengan tombol yang ditampilkan di ticket/show.blade.php.
+     *
+     * @param string|string[] $slugs
+     */
+    private function denyUnlessPermission(string|array $slugs, string $msg): ?\Illuminate\Http\JsonResponse
+    {
+        $empId = session('user')['id'] ?? null;
+
+        if (!$empId) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $employee = Employee::find($empId);
+        foreach ((array) $slugs as $slug) {
+            if ($employee?->canAccessMenu($slug)) {
+                return null;
+            }
+        }
+
+        return response()->json(['success' => false, 'message' => $msg], 403);
+    }
+
     /** Return 403 if session user is not a PIC or member of $ticket. Head-level permission bypasses this check. */
     private function denyUnlessParticipant(Ticket $ticket, string $msg = 'You are not a participant of this ticket.'): ?\Illuminate\Http\JsonResponse
     {
@@ -173,6 +197,10 @@ class MandaysController extends Controller
     {
         $ticket = Ticket::where('ticket_id', $ticketId)->firstOrFail();
 
+        if ($deny = $this->denyUnlessPermission('ticket.propose-mandays-customer', 'You do not have permission to propose customer mandays.')) {
+            return $deny;
+        }
+
         if ($deny = $this->denyUnlessParticipant($ticket, 'Only the ticket PIC or a member can edit the customer mandays draft.')) {
             return $deny;
         }
@@ -274,6 +302,10 @@ class MandaysController extends Controller
     {
         $ticket   = Ticket::where('ticket_id', $ticketId)->firstOrFail();
 
+        if ($deny = $this->denyUnlessPermission('ticket.propose-mandays-customer', 'You do not have permission to propose customer mandays.')) {
+            return $deny;
+        }
+
         if ($deny = $this->denyUnlessParticipant($ticket, 'Only the ticket PIC or a member can submit the customer mandays proposal.')) {
             return $deny;
         }
@@ -299,7 +331,7 @@ class MandaysController extends Controller
         $fromId      = $sessionUser['id'] ?? null;
         $ticketNum   = $ticket->ticket_number ?? $ticketId;
         $this->notifyRoles(
-            [RoleId::DELIVERY_HELPDESK->value],
+            ['ticket.review-mandays'],
             'customer_mandays_proposed',
             $fromName,
             $fromId,
@@ -321,6 +353,10 @@ class MandaysController extends Controller
     public function deleteCustomerDraft($ticketId)
     {
         $ticket = Ticket::where('ticket_id', $ticketId)->firstOrFail();
+
+        if ($deny = $this->denyUnlessPermission('ticket.propose-mandays-customer', 'You do not have permission to propose customer mandays.')) {
+            return $deny;
+        }
 
         if ($deny = $this->denyUnlessParticipant($ticket, 'Only the ticket PIC or a member can delete the customer mandays draft.')) {
             return $deny;
@@ -395,6 +431,15 @@ class MandaysController extends Controller
         $employee = $sessionUserId ? Employee::find($sessionUserId) : null;
         if (!$employee?->canAccessMenu('ticket.review-mandays')) {
             return response()->json(['success' => false, 'message' => 'You do not have permission to edit the customer mandays proposal.'], 403);
+        }
+
+        // Menyimpan perubahan adalah bagian dari Save Draft, Send to Customer, dan Approve
+        // (UI menyimpan dulu sebelum mengirim/menyetujui), jadi salah satu dari ketiganya cukup.
+        if ($deny = $this->denyUnlessPermission(
+            ['ticket.review-mandays.save-draft', 'ticket.review-mandays.send-to-customer', 'ticket.review-mandays.approve'],
+            'You do not have permission to save the customer mandays proposal.'
+        )) {
+            return $deny;
         }
 
         $request->validate([
@@ -788,6 +833,10 @@ class MandaysController extends Controller
     {
         $ticket = Ticket::where('ticket_id', $ticketId)->firstOrFail();
 
+        if ($deny = $this->denyUnlessPermission('ticket.propose-mandays-resolution', 'You do not have permission to propose resolution days.')) {
+            return $deny;
+        }
+
         if ($deny = $this->denyUnlessParticipant($ticket, 'Only the ticket PIC or a member can save the resolution days proposal.')) {
             return $deny;
         }
@@ -965,6 +1014,10 @@ class MandaysController extends Controller
     {
         $ticket   = Ticket::where('ticket_id', $ticketId)->firstOrFail();
 
+        if ($deny = $this->denyUnlessPermission('ticket.propose-mandays-resolution', 'You do not have permission to propose resolution days.')) {
+            return $deny;
+        }
+
         if ($deny = $this->denyUnlessParticipant($ticket, 'Only the ticket PIC or a member can submit the resolution days proposal.')) {
             return $deny;
         }
@@ -997,7 +1050,7 @@ class MandaysController extends Controller
         $fromId      = $sessionUser['id'] ?? null;
         $ticketNum   = $ticket->ticket_number ?? $ticketId;
         $this->notifyRoles(
-            [RoleId::DELIVERY_SUPPORT_HEAD->value, RoleId::DELIVERY_PROJECT_HEAD->value],
+            ['ticket.head-mandays', 'ticket.approve-resolution-days'],
             'resolution_days_proposed',
             $fromName,
             $fromId,
@@ -1526,7 +1579,7 @@ class MandaysController extends Controller
 
         // PIC
         if ($ticket->ticket_lead_id) {
-            $pic = Employee::with(['basicData', 'qualifications'])->find($ticket->ticket_lead_id);
+            $pic = Employee::with(['basicData', 'qualifications.module'])->find($ticket->ticket_lead_id);
             if ($pic) {
                 $people[$ticket->ticket_lead_id] = [
                     'employee_id' => $ticket->ticket_lead_id,
@@ -1538,7 +1591,7 @@ class MandaysController extends Controller
         }
 
         // Active members
-        $members = $ticket->members()->with(['basicData', 'qualifications'])->get();
+        $members = $ticket->members()->with(['basicData', 'qualifications.module'])->get();
         foreach ($members as $m) {
             if (!isset($people[$m->employee_id])) {
                 $people[$m->employee_id] = [
@@ -1557,7 +1610,7 @@ class MandaysController extends Controller
                 ->unique();
             $missingIds = $pastIds->reject(fn($empId) => isset($people[$empId]));
             if ($missingIds->isNotEmpty()) {
-                $pastEmployees = Employee::with(['basicData', 'qualifications'])
+                $pastEmployees = Employee::with(['basicData', 'qualifications.module'])
                     ->whereIn('employee_id', $missingIds)
                     ->get()
                     ->keyBy('employee_id');
@@ -1578,10 +1631,26 @@ class MandaysController extends Controller
         return array_values($people);
     }
 
-    private function notifyRoles(array $roleIds, string $type, string $fromName, ?int $fromId, string $preview, string $link): void
+    /**
+     * Kirim notifikasi ke semua karyawan aktif yang salah satu role-nya diberi izin
+     * (can_view) atas salah satu slug menu di $menuSlugs (Control Center > Role Access),
+     * bukan daftar role yang di-hardcode. Nama method dipertahankan agar pemanggil tetap sama.
+     *
+     * @param string[] $menuSlugs
+     */
+    private function notifyRoles(array $menuSlugs, string $type, string $fromName, ?int $fromId, string $preview, string $link): void
     {
         try {
-            Employee::withAnyRole($roleIds)
+            Employee::query()
+                ->where(function ($q) use ($menuSlugs) {
+                    foreach ($menuSlugs as $slug) {
+                        $q->orWhereHas('roles.menus', function ($m) use ($slug) {
+                            $m->where('menu.slug', $slug)
+                              ->where('menu.is_active', true)
+                              ->where('role_menu.can_view', true);
+                        });
+                    }
+                })
                 ->where('is_active', true)
                 ->pluck('employee_id')
                 ->each(function ($empId) use ($type, $fromName, $fromId, $preview, $link) {

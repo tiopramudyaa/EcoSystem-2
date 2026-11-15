@@ -406,7 +406,7 @@ function renderRd() {
             <td class="px-3 py-2.5 text-sm text-gray-700">${escHtml(r.pic_name || '-')}</td>
             <td class="px-3 py-2.5 text-center">${statusBadge(r.resolution_days_status)}</td>
             <td class="px-3 py-2.5 text-xs text-gray-600">${escHtml(r.proposed_by || '—')}</td>
-            <td class="px-3 py-2.5 text-center text-sm font-semibold text-gray-700">${r.proposed_total_mandays != null ? Number(r.proposed_total_mandays).toFixed(2) : '—'}</td>
+            <td class="px-3 py-2.5 text-center text-sm font-semibold text-gray-700">${r.proposed_total_mandays != null ? formatMd(Number(r.proposed_total_mandays)) : '—'}</td>
             <td class="px-3 py-2.5 text-center text-xs text-gray-600">${escHtml(r.proposed_at || '—')}</td>
         </tr>
     `).join('');
@@ -494,8 +494,8 @@ async function openRdReviewModal(ticketId, ticketLabel) {
             grandTotal += rowTotal;
             bodyHtml += `<tr>
                 <td class="px-3 py-2 border border-gray-200 text-xs font-medium">${escHtml(emp.name)}</td>
-                <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.mandays > 0 ? emp.mandays.toFixed(1) : '—'}</td>
-                <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.additional_mandays > 0 ? emp.additional_mandays.toFixed(1) : '—'}</td>
+                <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.mandays > 0 ? formatMd(emp.mandays) : '—'}</td>
+                <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.additional_mandays > 0 ? formatMd(emp.additional_mandays) : '—'}</td>
                 <td class="px-3 py-2 border border-gray-200 text-xs text-gray-500">${escHtml(emp.notes || '')}</td>
                 <td class="border border-gray-200 p-0">
                     <input type="number" min="0" step="0.5"
@@ -511,19 +511,19 @@ async function openRdReviewModal(ticketId, ticketLabel) {
                         value="${currentApprAdd > 0 ? currentApprAdd : ''}"
                         oninput="rdUpdateRowTotal(this)">
                 </td>
-                <td class="px-2 py-1.5 border border-gray-200 text-xs text-center font-semibold bg-gray-50" data-rd-total="${eid}">${rowTotal > 0 ? rowTotal.toFixed(1) : '—'}</td>
+                <td class="px-2 py-1.5 border border-gray-200 text-xs text-center font-semibold bg-gray-50" data-rd-total="${eid}">${rowTotal > 0 ? formatMd(rowTotal) : '—'}</td>
             </tr>`;
         });
         document.getElementById('rdReviewBody').innerHTML = bodyHtml;
-        document.getElementById('rdReviewTotal').textContent = grandTotal.toFixed(1);
+        document.getElementById('rdReviewTotal').textContent = formatMd(grandTotal);
 
         const summaryPanel = document.getElementById('rdReviewSummaryPanel');
         if (summaryPanel) {
             const rows = Object.values(empMap);
             document.getElementById('rdSummaryDaysProposed').textContent =
-                rows.reduce((acc, r) => acc + (r.mandays || 0), 0).toFixed(1);
+                formatMd(rows.reduce((acc, r) => acc + (r.mandays || 0), 0));
             document.getElementById('rdSummaryAddProposed').textContent =
-                rows.reduce((acc, r) => acc + (r.additional_mandays || 0), 0).toFixed(1);
+                formatMd(rows.reduce((acc, r) => acc + (r.additional_mandays || 0), 0));
             summaryPanel.classList.toggle('hidden', rows.length === 0);
         }
         rdRecalcApprovedSummary();
@@ -582,10 +582,10 @@ function rdUpdateRowTotal(inp) {
     const total    = apprDays + apprAdd;
     const empId   = inp.dataset.employee;
     const cell    = row.querySelector(`[data-rd-total="${empId}"]`);
-    if (cell) cell.textContent = total > 0 ? total.toFixed(1) : '—';
+    if (cell) cell.textContent = total > 0 ? formatMd(total) : '—';
     let grand = 0;
     document.querySelectorAll('[data-rd-total]').forEach(c => grand += parseFloat(c.textContent) || 0);
-    document.getElementById('rdReviewTotal').textContent = grand.toFixed(1);
+    document.getElementById('rdReviewTotal').textContent = formatMd(grand);
     rdRecalcApprovedSummary();
 }
 
@@ -598,9 +598,9 @@ function rdRecalcApprovedSummary() {
     const daysEl  = document.getElementById('rdSummaryDaysApproved');
     const addEl   = document.getElementById('rdSummaryAddApproved');
     const grandEl = document.getElementById('rdSummaryGrandApproved');
-    if (daysEl)  daysEl.textContent  = daysApproved.toFixed(1);
-    if (addEl)   addEl.textContent   = addApproved.toFixed(1);
-    if (grandEl) grandEl.textContent = (daysApproved + addApproved).toFixed(1);
+    if (daysEl)  daysEl.textContent  = formatMd(daysApproved);
+    if (addEl)   addEl.textContent   = formatMd(addApproved);
+    if (grandEl) grandEl.textContent = formatMd((daysApproved + addApproved));
 }
 
 async function rdReviewApprove(confirmNegative = false) {

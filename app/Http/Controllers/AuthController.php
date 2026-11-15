@@ -150,7 +150,9 @@ class AuthController extends Controller
             }
 
             // Request Client Hints from the browser for better device detection on login
-            return response(view('auth.login'))
+            return response(view('auth.login', [
+                'microsoftLoginAvailable' => \App\Support\MicrosoftLoginSettings::loginAvailable(),
+            ]))
                 ->header('Accept-CH', 'Sec-CH-UA-Model, Sec-CH-UA-Platform, Sec-CH-UA-Mobile')
                 ->header('Permissions-Policy', 'ch-ua-model=(*), ch-ua-platform=(*)');
 
@@ -793,77 +795,7 @@ class AuthController extends Controller
             }
 
             if ($isEmployee) {
-                // Bangun session data via helper (reusable oleh remember-me restore)
-                $sessionData = self::buildEmployeeSessionData($authUser->employee_id);
-
-                if (!$sessionData) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Your account is inactive',
-                    ], 403);
-                }
-
-                // ── Cek akses EcoSystem via role 'User System Registered' ──────
-                $hasSystemAccess = DB::table('employee_role_assignment as era')
-                    ->join('employee_role as er', 'era.role_id', '=', 'er.id')
-                    ->where('era.employee_id', $authUser->employee_id)
-                    ->where('er.name', 'User System Registered')
-                    ->exists();
-
-                if (!$hasSystemAccess) {
-                    // Record failed attempt before returning
-                    self::recordActivity(
-                        userId:     $authUser->employee_id,
-                        roleId:     0,
-                        userName:   $sessionData['userData']['name'] ?? $email,
-                        userType:   'employee',
-                        ip:         $request->ip(),
-                        userAgent:  $request->userAgent() ?? '',
-                        status:     'failed',
-                        chModel:    $request->header('Sec-CH-UA-Model', ''),
-                        chPlatform: $request->header('Sec-CH-UA-Platform', '')
-                    );
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Your account does not have access to EcoSystem. Please contact your administrator.',
-                    ], 403);
-                }
-
-                // ── Two-factor authentication gate ──────────────────────────
-                // Every other gate (customer block, is_already_cp, system-access
-                // role) has already run by this point, so verifyTwoFactor() below
-                // doesn't need to repeat any of them — by construction, only an
-                // employee who already passed every other gate can reach here.
-                // No session/cookie/DB mutation happens yet if 2FA is required.
-                if (TwoFactorAuthService::isEnabled($authUser)) {
-                    // Device-trust grace period: this device already completed a
-                    // fresh TOTP/recovery-code check within the window, so — the
-                    // password above already passed — skip the OTP prompt this time.
-                    if (TwoFactorAuthService::isTrusted($authUser, $request->cookie(self::TWO_FACTOR_TRUST_COOKIE))) {
-                        Log::channel('daily')->info('=== LOGIN 2FA SKIPPED (trusted device within window) ===', [
-                            'request_id'   => $requestId,
-                            'auth_user_id' => $authUser->id,
-                        ]);
-
-                        return $this->finalizeEmployeeLogin($authUser, $sessionData, $remember, $request, $requestId);
-                    }
-
-                    $twoFactorToken = TwoFactorAuthService::issueChallengeToken($authUser->id, $remember);
-
-                    Log::channel('daily')->info('=== LOGIN REQUIRES 2FA ===', [
-                        'request_id'   => $requestId,
-                        'auth_user_id' => $authUser->id,
-                    ]);
-
-                    return response()->json([
-                        'success'          => true,
-                        'requires_2fa'     => true,
-                        'two_factor_token' => $twoFactorToken,
-                    ]);
-                }
-
-                return $this->finalizeEmployeeLogin($authUser, $sessionData, $remember, $request, $requestId);
+                return $this->completeEmployeeLogin($authUser, $remember, $request, $requestId, $email);
             }
 
             // auth_user tanpa employee_id maupun customer_id
@@ -909,6 +841,104 @@ class AuthController extends Controller
     }
 
     /**
+     * Gerbang login karyawan yang berlaku SETELAH identitas terbukti (password
+     * benar, atau akun Microsoft yang sudah tertaut): session data, role
+     * 'User System Registered', system lock, lalu 2FA. Dipakai bersama oleh
+     * login() dan MicrosoftAuthController supaya aturannya tidak bisa berbeda.
+     * Tidak ada perubahan session/cookie/DB sebelum semua gerbang lolos.
+     */
+    public function completeEmployeeLogin(object $authUser, bool $remember, Request $request, string $requestId, string $email = '')
+    {
+        // Bangun session data via helper (reusable oleh remember-me restore)
+        $sessionData = self::buildEmployeeSessionData($authUser->employee_id);
+
+        if (!$sessionData) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account is inactive',
+            ], 403);
+        }
+
+        // ── Cek akses EcoSystem via role 'User System Registered' ──────
+        $hasSystemAccess = DB::table('employee_role_assignment as era')
+            ->join('employee_role as er', 'era.role_id', '=', 'er.id')
+            ->where('era.employee_id', $authUser->employee_id)
+            ->where('er.name', 'User System Registered')
+            ->exists();
+
+        if (!$hasSystemAccess) {
+            // Record failed attempt before returning
+            self::recordActivity(
+                userId:     $authUser->employee_id,
+                roleId:     0,
+                userName:   $sessionData['userData']['name'] ?? $email,
+                userType:   'employee',
+                ip:         $request->ip(),
+                userAgent:  $request->userAgent() ?? '',
+                status:     'failed',
+                chModel:    $request->header('Sec-CH-UA-Model', ''),
+                chPlatform: $request->header('Sec-CH-UA-Platform', '')
+            );
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account does not have access to EcoSystem. Please contact your administrator.',
+            ], 403);
+        }
+
+        // ── System lock: only the protected admin may sign in ───────
+        // Checked before the 2FA prompt so a locked-out user is not
+        // asked for a code first. Also re-checked in finalizeEmployeeLogin().
+        if (\App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
+            return $this->systemLockedResponse();
+        }
+
+        // ── Two-factor authentication gate ──────────────────────────
+        // Every other gate (customer block, is_already_cp, system-access
+        // role) has already run by this point, so verifyTwoFactor() below
+        // doesn't need to repeat any of them: by construction, only an
+        // employee who already passed every other gate can reach here.
+        // No session/cookie/DB mutation happens yet if 2FA is required.
+        if (TwoFactorAuthService::isEnabled($authUser)) {
+            // Device-trust grace period: this device already completed a
+            // fresh TOTP/recovery-code check within the window, so, the
+            // password above already passed, skip the OTP prompt this time.
+            if (TwoFactorAuthService::isTrusted($authUser, $request->cookie(self::TWO_FACTOR_TRUST_COOKIE))) {
+                Log::channel('daily')->info('=== LOGIN 2FA SKIPPED (trusted device within window) ===', [
+                    'request_id'   => $requestId,
+                    'auth_user_id' => $authUser->id,
+                ]);
+
+                return $this->finalizeEmployeeLogin($authUser, $sessionData, $remember, $request, $requestId);
+            }
+
+            $twoFactorToken = TwoFactorAuthService::issueChallengeToken($authUser->id, $remember);
+
+            Log::channel('daily')->info('=== LOGIN REQUIRES 2FA ===', [
+                'request_id'   => $requestId,
+                'auth_user_id' => $authUser->id,
+            ]);
+
+            return response()->json([
+                'success'          => true,
+                'requires_2fa'     => true,
+                'two_factor_token' => $twoFactorToken,
+            ]);
+        }
+
+        return $this->finalizeEmployeeLogin($authUser, $sessionData, $remember, $request, $requestId);
+    }
+
+    private function systemLockedResponse()
+    {
+        return response()->json([
+            'success' => false,
+            'locked'  => true,
+            'message' => \App\Services\SystemLockService::message(),
+        ], 423);
+    }
+
+    /**
      * Finishes an employee login after every gate (password, customer-block,
      * is_already_cp, system-access role, and — if enabled — 2FA) has passed:
      * remember-me cookie, auth_users/sessions table updates, session
@@ -929,6 +959,11 @@ class AuthController extends Controller
      */
     private function finalizeEmployeeLogin(object $authUser, array $sessionData, bool $remember, Request $request, string $requestId, bool $justVerified2fa = false)
     {
+        // System lock: also covers the 2FA-verify and trusted-device paths.
+        if (\App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
+            return $this->systemLockedResponse();
+        }
+
         $token    = $sessionData['token'];
         $userData = $sessionData['userData'];
 

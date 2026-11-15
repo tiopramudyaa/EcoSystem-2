@@ -71,6 +71,8 @@ class DeliveryProject extends Model
         'location_region',
         'location_city',
         'location_street',
+        'location_latitude',
+        'location_longitude',
         'location_valid_from',
         'location_valid_to',
         'onedrive_folder_id',
@@ -88,6 +90,8 @@ class DeliveryProject extends Model
         'closed_at' => 'datetime',
         'location_valid_from' => 'date',
         'location_valid_to' => 'date',
+        'location_latitude' => 'float',
+        'location_longitude' => 'float',
         'contract_start_date' => 'date',
         'contract_end_date' => 'date',
         'last_activity_at' => 'datetime',
@@ -144,6 +148,16 @@ class DeliveryProject extends Model
     public function getLastUpdateDateAttribute(): ?Carbon
     {
         return $this->last_activity_at ?? $this->updated_at;
+    }
+
+    /**
+     * Urutan default list/export: project dengan "Last Update Date" paling baru
+     * di atas (sama dengan nilai kolom getLastUpdateDateAttribute()).
+     */
+    public function scopeOrderByLastUpdate($query)
+    {
+        return $query->orderByRaw('COALESCE(last_activity_at, updated_at) DESC')
+                     ->orderByDesc('id');
     }
 
     /** Versi instance dari markActivity(); ikut menyegarkan nilai in-memory. */
@@ -538,6 +552,31 @@ class DeliveryProject extends Model
     }
 
     /**
+     * Preload massal semua relasi yang dibaca accessor progress (calculated_progress,
+     * planned_progress, calculated_weight) untuk banyak project sekaligus. Tanpa ini
+     * setiap group dan activity memicu query sendiri (N+1). Aman dipanggil berulang.
+     *
+     * @param iterable<self> $projects
+     */
+    public static function preloadProgressRelations(iterable $projects): void
+    {
+        $projects = new \Illuminate\Database\Eloquent\Collection(collect($projects)->all());
+        if ($projects->isEmpty()) {
+            return;
+        }
+
+        $projects->loadMissing('plannings');
+
+        $plannings = new \Illuminate\Database\Eloquent\Collection($projects->flatMap->plannings->all());
+        $plannings->loadMissing('children');
+
+        $groups = new \Illuminate\Database\Eloquent\Collection($plannings->where('is_group', true)->all());
+        $groups->loadMissing(['stages.projectActivities', 'directActivities.activity', 'directActivities.children']);
+
+        \App\Models\ActivityStage::hydrateActivities($groups->flatMap->stages);
+    }
+
+    /**
      * Bobot-tertimbang mentah (belum dibulatkan) untuk progres AKTUAL & RENCANA:
      * Σ(bobot phase × progres phase) ÷ Σbobot phase, dengan progres phase sendiri
      * = Σ(bobot group × progres group) ÷ Σbobot group.
@@ -554,11 +593,9 @@ class DeliveryProject extends Model
     {
         $empty = ['actual' => null, 'planned' => null];
 
-        $groups = $this->plannings->where('is_group', true);
+        self::preloadProgressRelations([$this]);
 
-        foreach ($groups as $group) {
-            $group->loadMissing('stages');
-        }
+        $groups = $this->plannings->where('is_group', true);
 
         $visiblePhases = $this->phases()
             ->where('is_visible', true)

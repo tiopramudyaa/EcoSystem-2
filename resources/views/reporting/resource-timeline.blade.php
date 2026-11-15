@@ -121,7 +121,12 @@
                         class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400">
                     <option value="">Select customer code…</option>
                 </select>
-                <p class="text-[11px] text-gray-400 mt-1">Overlapping dates with another project are kept side by side. Leave blank to clear every customer in the selected date range.</p>
+                <label class="block text-[11px] font-semibold text-gray-500 mt-2 mb-1" for="rtCustomLocation">Or enter a customer that is not in the master list</label>
+                <input type="text" id="rtCustomLocation" maxlength="255" autocomplete="off" placeholder="Customer name or code (not in Business Partner)"
+                       pattern="[\p{L}\p{N} .,&amp;\(\)\/_\-]*" title="Letters, numbers, spaces and . , &amp; ( ) / _ - only"
+                       oninput="rtOnCustomInput()"
+                       class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400">
+                <p class="text-[11px] text-gray-400 mt-1">Choosing from the dropdown clears this field, and typing here clears the dropdown. Overlapping dates with another project are kept side by side. Leave blank to clear every customer in the selected date range.</p>
             </div>
 
             <p id="rtFormError" class="hidden text-xs text-red-600"></p>
@@ -237,7 +242,7 @@
         const opts = { day: '2-digit', month: 'short', year: 'numeric' };
         const s = new Date(start + 'T00:00:00').toLocaleDateString('en-GB', opts);
         const e = new Date(end + 'T00:00:00').toLocaleDateString('en-GB', opts);
-        return start === end ? s : `${s} – ${e}`;
+        return start === end ? s : `${s} to ${e}`;
     }
 
     // ── Grid ──────────────────────────────────────────────────────────────
@@ -418,7 +423,7 @@
                 const inner = lanes.map(lane => `<div class="rt-lane">${lane.map(seg => {
                     const left = (seg.s - 1) / dim * 100;
                     const width = (seg.e - seg.s + 1) / dim * 100;
-                    const range = seg.s === seg.e ? `${seg.s}` : `${seg.s}–${seg.e}`;
+                    const range = seg.s === seg.e ? `${seg.s}` : `${seg.s}-${seg.e}`;
                     return `<div class="rt-seg" style="left:${left}%;width:${width}%;${rtColorStyle(seg.loc)}"
                                  title="${escapeHtml(seg.loc)} · ${range} ${RT_MONTHS[i]}">${escapeHtml(seg.loc)}</div>`;
                 }).join('')}</div>`).join('');
@@ -548,18 +553,27 @@
         if (current) rtSetLocationValue(current);
     }
 
-    // Legacy entries may hold a free-text value that is not a customer code;
-    // keep it selectable so editing/deleting that range still works.
+    // A value that is not in the master list (custom customer, or legacy
+    // free text) goes into the custom input; a master code goes into the dropdown.
     function rtSetLocationValue(value) {
         const select = document.getElementById('rtLocation');
-        if (value && ![...select.options].some(o => o.value === value)) {
-            const opt = document.createElement('option');
-            opt.value = value;
-            opt.textContent = value;
-            select.appendChild(opt);
-        }
-        select.value = value;
+        const custom = document.getElementById('rtCustomLocation');
+        const inMaster = !value || [...select.options].some(o => o.value === value);
+        select.value = inMaster ? value : '';
+        custom.value = inMaster ? '' : value;
     }
+
+    // Custom input wins over the dropdown, so clear the dropdown to avoid confusion.
+    // Picking from the dropdown again drops any custom text, so the last choice wins.
+    document.getElementById('rtLocation').addEventListener('change', function () {
+        if (this.value !== '') document.getElementById('rtCustomLocation').value = '';
+    });
+
+    window.rtOnCustomInput = function () {
+        if (document.getElementById('rtCustomLocation').value.trim() !== '') {
+            document.getElementById('rtLocation').value = '';
+        }
+    };
 
     // Closes only via the header's X button (rtCloseModal) — intentionally no
     // backdrop-click or Escape handler, so an accidental click outside the
@@ -638,6 +652,7 @@
         rtEditingRange = null;
         document.getElementById('rtFormMode').value = 'create';
         document.getElementById('rtLocation').value = '';
+        document.getElementById('rtCustomLocation').value = '';
         document.getElementById('rtStartDate').value = '';
         document.getElementById('rtEndDate').value = '';
         document.getElementById('rtEndDate').removeAttribute('min');
@@ -645,7 +660,7 @@
         document.getElementById('rtFormError').classList.add('hidden');
     };
 
-    window.rtDeleteRange = async function (employeeId, start, end) {
+    window.rtDeleteRange = async function (employeeId, start, end, location) {
         if (!(await showConfirm('Clear this location for the selected date range?', 'Clear Location', 'danger', { okText: 'Clear' }))) return;
 
         const result = await rtFetch('/api/reporting/resource-timeline/entries/delete', {
@@ -671,7 +686,9 @@
         const employeeId = document.getElementById('rtConsultantSelect').value;
         const startDate = document.getElementById('rtStartDate').value;
         const endDate = document.getElementById('rtEndDate').value;
-        const location = document.getElementById('rtLocation').value;
+        const customLocation = document.getElementById('rtCustomLocation').value.trim().replace(/\s+/g, ' ');
+        const isCustom = customLocation !== '';
+        const location = isCustom ? customLocation : document.getElementById('rtLocation').value;
 
         if (!employeeId || !startDate || !endDate) {
             errorEl.textContent = 'Please select a consultant and a full date range.';
@@ -702,6 +719,7 @@
                 start_date: startDate,
                 end_date: endDate,
                 location: location,
+                is_custom: isCustom,
             };
             // Editing an existing range (not creating a fresh one): tell the
             // backend the ORIGINAL range too, so it can clear whatever part of

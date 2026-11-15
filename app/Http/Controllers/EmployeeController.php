@@ -1532,6 +1532,73 @@ public function getRoles()
     }
 
     /**
+     * Reset (matikan) 2FA karyawan yang kehilangan ponsel DAN kode pemulihannya.
+     *
+     * Pengamanan, karena ini membuka pintu ke akun orang lain:
+     *   - izin menu `master.employee.reset-two-factor` (default hanya EC Administrator);
+     *   - admin tidak boleh mereset akunnya sendiri (jalurnya Settings > Security + password);
+     *   - admin yang mereset WAJIB punya 2FA aktif dan memasukkan kode 2FA baru (step-up),
+     *     jadi sesi admin yang dicuri saja tidak cukup;
+     *   - kunci, kode pemulihan, dan kepercayaan perangkat target dihapus;
+     *   - tercatat di Audit Log, dan karyawannya diberi tahu lewat notifikasi dan email
+     *     supaya reset yang tidak ia minta ketahuan.
+     */
+    public function resetTwoFactor(Request $request, $id)
+    {
+        $actorEmployeeId = (int) session('user.id');
+
+        if ((int) $id === $actorEmployeeId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot reset your own two-factor authentication here. Use Settings > Security.',
+            ], 403);
+        }
+
+        $target = DB::table('auth_users')->where('employee_id', $id)->first();
+
+        if (!$target) {
+            return response()->json(['success' => false, 'message' => 'Auth account for this employee not found'], 404);
+        }
+
+        if (!\App\Services\TwoFactorAuthService::isEnabled($target)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Two-factor authentication is not enabled for this account.',
+            ], 422);
+        }
+
+        $actor = DB::table('auth_users')->where('employee_id', $actorEmployeeId)->first();
+
+        if (!$actor || !\App\Services\TwoFactorAuthService::isEnabled($actor)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Turn on your own two-factor authentication first (Settings > Security). It is needed to reset someone else's.",
+            ], 403);
+        }
+
+        if ($stepUpFailure = $this->verifyStepUpOrFail($request)) {
+            return $stepUpFailure;
+        }
+
+        $actorName = (string) (session('user.name') ?? 'An administrator');
+
+        $result = \App\Services\TwoFactorResetService::reset($target, $actorName);
+
+        Log::info('=== API: EMPLOYEE TWO-FACTOR RESET ===', [
+            'employee_id'  => $id,
+            'reset_by_eci' => $this->getCurrentUserECI(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['email_sent']
+                ? "Two-factor authentication reset. {$result['target_name']} was notified by email and in the app."
+                : "Two-factor authentication reset. {$result['target_name']} was notified in the app, but the email could not be sent.",
+            'data'    => ['email_sent' => $result['email_sent']],
+        ]);
+    }
+
+    /**
      * Sync employee roles — replaces all current roles with the given list (API)
      */
     public function changeRole(Request $request, $id)

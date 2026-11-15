@@ -1,6 +1,6 @@
 ---
 key: user-guide-editor
-chapter: administration
+chapter: control-center
 order: 130
 title: User Guide Editor
 summary: Edit the topics employees read in the User Guide, add new ones, and restore the original text.

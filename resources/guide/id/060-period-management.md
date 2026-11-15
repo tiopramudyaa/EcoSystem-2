@@ -84,6 +84,17 @@ Pilih `Audit Log` untuk melihat tiap aksi dengan kolom `Action`, `Actor`, dan `T
 
 Di `Period History`, buka menu pada kolom `Actions` sebuah baris lalu pilih `Edit Period Dates` atau `Delete Period`. Pilihan ini hanya tampil bila role Anda mengizinkan.
 
+## Aturan yang perlu diketahui
+
+- Hanya satu periode yang boleh terbuka secara global pada satu waktu. Untuk membuka yang lain, tutup periode yang terbuka dulu.
+- Periode yang sudah ditutup dapat dibuka lagi, secara global atau untuk satu tim. Membuka periode yang sudah terbuka ditolak.
+- Bagian sebuah tim (`Project Domain` atau `Support Domain`) hanya dapat dibuka selama periode terbuka secara global.
+- `Close Period Globally` ditolak selama bagian Project atau Support masih terbuka. `Force Close` menutup bagian satu tim meskipun orang mungkin masih bekerja di dalamnya, dan berlaku untuk periode mana pun yang sudah dibuka secara global.
+- Periode baru ditolak bila tahun dan bulan yang sama sudah ada, atau bila tanggalnya tumpang tindih dengan periode lain. Mengubah tanggal mengikuti aturan yang sama, dan tanggal selesai harus setelah tanggal mulai.
+- `Delete Period` menghapus periode beserta catatan audit dan permintaan akses terlambatnya. Penghapusan tidak memeriksa apakah ada timesheet yang terkait, jadi hapus hanya periode yang dibuat karena salah.
+- Setiap pembukaan, penutupan, force close, dan perubahan tanggal dicatat di `Audit Log` periode.
+- Batas periode ini berlaku untuk orang yang rolenya termasuk tim Project atau Support. Role yang tidak termasuk keduanya dapat mencatat timesheet tanpa batas itu.
+
 ## Apa yang terjadi selanjutnya
 
 Karyawan diberi tahu keputusan Anda. Setelah Head dan RPMO sama-sama menyetujui, karyawan dapat mengisi periode yang diminta sampai batas akses yang Anda tetapkan. Periode yang sudah ditutup tidak menerima timesheet baru tanpa permintaan akses terlambat yang disetujui.

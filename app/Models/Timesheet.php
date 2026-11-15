@@ -17,6 +17,7 @@ class Timesheet extends Model
     protected $fillable = [
         'employee_id',
         'delivery_projects_id', // Changed from project_id to match database column
+        'is_non_project',
         'activity_id', // Link to assigned activity
         'ticket_id',
         'date',
@@ -52,6 +53,7 @@ class Timesheet extends Model
         'approved_at'  => 'datetime',
         'is_billable'  => 'boolean',
         'is_without_activity' => 'boolean',
+        'is_non_project' => 'boolean',
         'gps_latitude'    => 'float',
         'gps_longitude'   => 'float',
         'gps_accuracy'    => 'float',

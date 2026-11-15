@@ -469,17 +469,17 @@ function renderRecap() {
                     </div>
                     <div class="px-4 py-2 text-xs text-gray-600 truncate" title="${escHtml(delivery)}">${escHtml(delivery)}</div>
                     <div class="px-4 py-2 text-center">${modeBadge(mode)}</div>
-                    <div class="px-4 py-2 text-sm text-center ${valueColor}">${agg.mandays.toFixed(2)}</div>
+                    <div class="px-4 py-2 text-sm text-center ${valueColor}">${formatMd(agg.mandays)}</div>
                 </div>`;
             });
         });
     });
 
     tbody.innerHTML = html;
-    document.getElementById('statTotalMd').textContent   = totalMd.toFixed(2);
+    document.getElementById('statTotalMd').textContent   = formatMd(totalMd);
     document.getElementById('statEmployees').textContent = empCount;
-    document.getElementById('statOnsiteMd').textContent  = totalOnsite.toFixed(2);
-    document.getElementById('statRemoteMd').textContent  = totalRemote.toFixed(2);
+    document.getElementById('statOnsiteMd').textContent  = formatMd(totalOnsite);
+    document.getElementById('statRemoteMd').textContent  = formatMd(totalRemote);
     stats.classList.remove('hidden');
 }
 

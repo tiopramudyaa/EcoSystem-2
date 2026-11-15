@@ -127,6 +127,7 @@ class DeliverySupportReconsController extends Controller
 
         $rows = DB::table('delivery_support_activities as act')
             ->join('ticket as t', 'act.ticket_id', '=', 't.ticket_id')
+            ->whereNull('t.deleted_at')
             // ticket_sla.ticket_id UNIQUE → join 1:1, tidak menggandakan baris.
             ->leftJoin('ticket_sla as sla', 'sla.ticket_id', '=', 't.ticket_id')
             // Customer MD = total proposal mandays yang approved (bukan ticket.man_days).
@@ -530,6 +531,7 @@ class DeliverySupportReconsController extends Controller
 
         return DB::table('delivery_support_activities as act')
             ->join('ticket as t', 'act.ticket_id', '=', 't.ticket_id')
+            ->whereNull('t.deleted_at')
             // Dibutuhkan closeDateOf(); ticket_sla.ticket_id UNIQUE → aman 1:1.
             ->leftJoin('ticket_sla as sla', 'sla.ticket_id', '=', 't.ticket_id')
             // Syarat "ada Customer MD" memakai total proposal mandays yang

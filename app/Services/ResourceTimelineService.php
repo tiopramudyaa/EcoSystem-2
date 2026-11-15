@@ -393,7 +393,7 @@ class ResourceTimelineService
         return ['start' => $startDate, 'end' => $endDate, 'days' => array_sum($locations), 'locations' => $locations];
     }
 
-    /** "IHC (12 days), PJT (3 days) 01 Oct 2026 – 15 Oct 2026" */
+    /** "IHC (12 days), PJT (3 days) 01 Oct 2026 to 15 Oct 2026" */
     private function describeRemoved(array $removed): string
     {
         $what = [];
@@ -409,7 +409,7 @@ class ResourceTimelineService
         $s = Carbon::parse($start)->format('d M Y');
         $e = Carbon::parse($end)->format('d M Y');
 
-        return $start === $end ? $s : "{$s} – {$e}";
+        return $start === $end ? $s : "{$s} to {$e}";
     }
 
     /** One Audit Log row for a Resource Timeline action, attributed to the logged-in employee. */

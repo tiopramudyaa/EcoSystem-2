@@ -571,22 +571,8 @@ class DeliveryProjectPlanningService
      */
     private function loadNestedRelations(Collection $groups): void
     {
-        foreach ($groups as $group) {
-            if ($group->stages) {
-                foreach ($group->stages as $stage) {
-                    if ($stage->activities) {
-                        foreach ($stage->activities as $activity) {
-                            if (method_exists($activity, 'children') && !$activity->relationLoaded('children')) {
-                                $activity->load('children');
-                            }
-
-                            if ($activity->activity_id && method_exists($activity, 'activity') && !$activity->relationLoaded('activity')) {
-                                $activity->load('activity');
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        \App\Models\ActivityStage::hydrateActivities(
+            $groups->flatMap(fn ($g) => $g->stages->concat($g->children->flatMap(fn ($c) => $c->stages)))
+        );
     }
 }

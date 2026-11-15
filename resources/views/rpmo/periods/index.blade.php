@@ -1129,7 +1129,7 @@ async function decideExRequest(reqId, level, decision) {
 
     try {
         const res  = await fetch(url, {
-            method: 'PATCH',
+            method: 'POST',   // POST, bukan PATCH: WAF edge di production menolak method selain GET/POST
             headers: getHeaders(),
             credentials: 'same-origin',
             body: JSON.stringify(body),

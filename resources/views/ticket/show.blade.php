@@ -902,7 +902,7 @@
                 <div>
                     <label class="text-xs font-semibold text-gray-500 mb-1 block">Man Days</label>
                     <p class="text-xs text-gray-700 px-2.5 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
-                        {{ $approvedMandays !== null ? number_format((float)$approvedMandays, 1) : '—' }}
+                        {{ $approvedMandays !== null ? \App\Support\Md::format($approvedMandays) : '—' }}
                     </p>
                 </div>
                 {{-- Start Date --}}
@@ -7128,7 +7128,7 @@
                 <td class="px-3 py-2.5 border border-gray-100 text-center whitespace-nowrap">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${badgeClass}">${statusLabel}</span>
                 </td>
-                <td class="px-3 py-2.5 border border-gray-100 text-center font-semibold text-gray-700 whitespace-nowrap">${v.total_mandays}</td>
+                <td class="px-3 py-2.5 border border-gray-100 text-center font-semibold text-gray-700 whitespace-nowrap">${formatMd(v.total_mandays)}</td>
                 <td class="px-3 py-2.5 border border-gray-100 text-center text-gray-500 whitespace-nowrap">${lastUpdate}</td>
             </tr>`;
         });
@@ -7264,7 +7264,7 @@
         let footHtml = '<tr class="bg-gray-50 font-bold"><td class="px-2 py-1.5 border border-gray-200 text-xs">Total</td>';
         modules.forEach(m => {
             const colTotal = Object.values(detailMap).reduce((s, row) => s + (parseFloat(row[m]) || 0), 0);
-            footHtml += `<td class="px-2 py-1.5 border border-gray-200 text-xs text-center">${colTotal > 0 ? colTotal.toFixed(2) : '—'}</td>`;
+            footHtml += `<td class="px-2 py-1.5 border border-gray-200 text-xs text-center">${colTotal > 0 ? formatMd(colTotal) : '—'}</td>`;
         });
         footHtml += '</tr>';
         document.getElementById('mvdTableFoot').innerHTML = footHtml;
@@ -7446,11 +7446,12 @@
         let headHtml = '<tr class="bg-gray-50">';
         headHtml += '<th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 border border-gray-200">Activity</th>';
         modules.forEach(m => {
-            const mEsc = m.replace(/"/g, '&quot;');
+            // Nama modul masuk lewat atribut data-* yang di-escape (bukan string di dalam onclick),
+            // supaya tanda kutip / apostrof di nama tidak merusak tombol hapus kolom.
             const removeBtn = !picReadOnly
-                ? `<button onclick="picRemoveModuleCol('${mEsc}')" class="ml-1 text-red-300 hover:text-red-600 font-bold leading-none" title="Remove column">&times;</button>`
+                ? `<button data-mod="${escHtml(m)}" onclick="picRemoveModuleCol(this.dataset.mod)" class="ml-1 text-red-300 hover:text-red-600 font-bold leading-none" title="Remove column">&times;</button>`
                 : '';
-            headHtml += `<th class="px-2 py-2 text-center text-xs font-semibold text-gray-600 border border-gray-200 whitespace-nowrap">${m}${removeBtn}</th>`;
+            headHtml += `<th class="px-2 py-2 text-center text-xs font-semibold text-gray-600 border border-gray-200 whitespace-nowrap">${escHtml(m)}${removeBtn}</th>`;
         });
         headHtml += '</tr>';
         document.getElementById('picMandaysHead').innerHTML = headHtml;
@@ -7464,18 +7465,21 @@
             </td></tr>`;
         }
         activities.forEach(act => {
-            const actEsc = act.replace(/"/g, '&quot;');
+            // Activity dibaca kembali lewat dataset (nilai asli), jadi cukup di-escape untuk HTML.
+            // Tombol hapus memakai data-act, bukan string di dalam onclick: nama dengan apostrof
+            // (mis. "Customer's request") sebelumnya membuat onclick error dan baris tak bisa dihapus.
+            const actEsc = escHtml(act);
             const removeRowBtn = !picReadOnly
-                ? `<button onclick="picRemoveActivityRow('${actEsc}')" class="ml-1 text-red-300 hover:text-red-600 font-bold leading-none" title="Remove row">&times;</button>`
+                ? `<button data-act="${actEsc}" onclick="picRemoveActivityRow(this.dataset.act)" class="ml-1 text-red-300 hover:text-red-600 font-bold leading-none" title="Remove row">&times;</button>`
                 : '';
-            bodyHtml += `<tr data-activity="${act}">`;
-            bodyHtml += `<td class="px-2 py-1.5 border border-gray-200 text-xs font-medium text-gray-700 whitespace-nowrap">${act}${removeRowBtn}</td>`;
+            bodyHtml += `<tr data-activity="${actEsc}">`;
+            bodyHtml += `<td class="px-2 py-1.5 border border-gray-200 text-xs font-medium text-gray-700 whitespace-nowrap">${actEsc}${removeRowBtn}</td>`;
             modules.forEach(m => {
                 const val = valueMap[act]?.[m] || '';
                 bodyHtml += `<td class="border border-gray-200 p-0">
                     <input type="number" min="0" step="0.5"
                         class="pic-cell w-full px-2 py-1.5 text-xs text-center focus:outline-none focus:bg-gray-100 ${picReadOnly ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'}"
-                        data-activity="${act}" data-module="${m}" value="${val}"
+                        data-activity="${actEsc}" data-module="${escHtml(m)}" value="${val}"
                         ${picReadOnly ? 'readonly' : ''} oninput="picDirty=true; picUpdateTotal()">
                     </td>`;
             });
@@ -7511,10 +7515,10 @@
             colTotals[m] = (colTotals[m] || 0) + v;
             grand += v;
         });
-        document.getElementById('picTotalDisplay').textContent = grand.toFixed(2);
+        document.getElementById('picTotalDisplay').textContent = formatMd(grand);
         Object.entries(colTotals).forEach(([m, t]) => {
             const el = document.getElementById(`picColTotal_${m}`);
-            if (el) el.textContent = t.toFixed(2);
+            if (el) el.textContent = formatMd(t);
         });
     }
 
@@ -7599,7 +7603,7 @@
                 method: 'POST', headers: getHeaders(), credentials: 'same-origin',
                 body: JSON.stringify(payload),
             });
-            const data = await res.json();
+            const data = await picReadJson(res);
             if (data.success) {
                 showNotification('Draft saved!', 'success');
                 picDirty = false;
@@ -7607,6 +7611,9 @@
                 picDraftData = data.data;
                 document.getElementById('picMandaysVersion').textContent     = picDraftData?.version ?? '—';
                 document.getElementById('picMandaysStatusLabel').textContent = 'Draft';
+                // Draft baru saja tersimpan: tombol Delete Draft harus muncul sekarang, bukan baru
+                // setelah modal dibuka ulang (sebelumnya hanya dievaluasi saat tabel digambar).
+                document.getElementById('picBtnDeleteDraft').classList.toggle('hidden', picReadOnly || picDraftData?.status !== 'draft');
             } else {
                 showNotification(data.message || 'Failed to save', 'error');
             }
@@ -7662,16 +7669,31 @@
         finally { btn.disabled = false; btn.textContent = 'Submit to Helpdesk'; }
     }
 
+    // Baca respons API modal Propose Mandays. Bila server mengirim sesuatu yang bukan JSON
+    // (halaman error, output PHP liar, respons proxy), tampilkan status HTTP dan cuplikan body
+    // alih-alih pesan JSON.parse yang tidak menjelaskan apa-apa; body penuh ada di console.
+    async function picReadJson(res) {
+        const text = await res.text();
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('Respons bukan JSON', { status: res.status, url: res.url, body: text });
+            const snippet = text.replace(/\s+/g, ' ').trim().slice(0, 140);
+            throw new Error(`Server mengirim respons yang tidak terbaca (HTTP ${res.status}): ${snippet || '(kosong)'}`);
+        }
+    }
+
     async function picDeleteDraft() {
         if (!picDraftData || picDraftData.status !== 'draft') return;
         if (!await showConfirm('Delete this draft? This cannot be undone.', 'Delete Draft', 'danger')) return;
         const btn = document.getElementById('picBtnDeleteDraft');
         btn.disabled = true; btn.textContent = 'Deleting...';
         try {
-            const res = await fetch(MANDAYS_API('pic-draft'), {
-                method: 'DELETE', headers: getHeaders(), credentials: 'same-origin',
+            // POST (bukan DELETE): WAF production memblokir method DELETE.
+            const res = await fetch(MANDAYS_API('pic-draft/delete'), {
+                method: 'POST', headers: getHeaders(), credentials: 'same-origin',
             });
-            const data = await res.json();
+            const data = await picReadJson(res);
             if (data.success) {
                 showNotification('Draft deleted.', 'success');
                 picMandaysUpdateSidebarBadge(data.ticket_mandays_status);
@@ -7802,8 +7824,8 @@
             const totalMd = status === 'approved' ? (apprDays + appAdd) : (md + appAdd);
             const mdVal  = md  > 0 ? md  : '';
             const addVal = add > 0 ? add : '';
-            const apprDaysDisplay = apprDays > 0 ? apprDays.toFixed(1) : '—';
-            const apprAddDisplay = appAdd > 0 ? appAdd.toFixed(1) : '—';
+            const apprDaysDisplay = apprDays > 0 ? formatMd(apprDays) : '—';
+            const apprAddDisplay = appAdd > 0 ? formatMd(appAdd) : '—';
             html += `<tr>
                 <td class="px-3 py-2 border border-gray-200 font-medium text-gray-700">${person.name}</td>
                 <td class="border border-gray-200 p-0">
@@ -7827,7 +7849,7 @@
                 </td>
                 <td class="px-2 py-1.5 border border-gray-200 text-xs text-center bg-gray-50 text-gray-500" data-emp-apprdays="${person.employee_id}">${apprDaysDisplay}</td>
                 <td class="px-2 py-1.5 border border-gray-200 text-xs text-center bg-gray-50 text-gray-500" data-emp-appr="${person.employee_id}">${apprAddDisplay}</td>
-                <td class="px-2 py-1.5 border border-gray-200 text-xs text-center font-semibold bg-gray-50" data-emp-total="${person.employee_id}">${totalMd > 0 ? totalMd.toFixed(1) : '—'}</td>
+                <td class="px-2 py-1.5 border border-gray-200 text-xs text-center font-semibold bg-gray-50" data-emp-total="${person.employee_id}">${totalMd > 0 ? formatMd(totalMd) : '—'}</td>
             </tr>`;
         });
         document.getElementById('resolutionBody').innerHTML = html;
@@ -7844,7 +7866,7 @@
         const existingApproved = (resolutionPicData?.details || []).find(d => d.employee_id == empId)?.approved_additional || 0;
         const totalMd = mdVal + existingApproved;
         const totalCell = row.querySelector(`[data-emp-total="${empId}"]`);
-        if (totalCell) totalCell.textContent = totalMd > 0 ? totalMd.toFixed(1) : '—';
+        if (totalCell) totalCell.textContent = totalMd > 0 ? formatMd(totalMd) : '—';
         internalUpdateTotal();
     }
 
@@ -7854,19 +7876,19 @@
             const v = parseFloat(cell.textContent) || 0;
             total += v;
         });
-        document.getElementById('resolutionTotalDisplay').textContent = total.toFixed(1);
+        document.getElementById('resolutionTotalDisplay').textContent = formatMd(total);
         const footer = document.getElementById('resolutionFooterTotal');
-        if (footer) footer.textContent = total.toFixed(1);
+        if (footer) footer.textContent = formatMd(total);
 
         let days = 0, add = 0, apprDays = 0, apprAdd = 0;
         document.querySelectorAll('.internal-md-cell').forEach(inp => { days += parseFloat(inp.value) || 0; });
         document.querySelectorAll('.internal-add-cell').forEach(inp => { add += parseFloat(inp.value) || 0; });
         document.querySelectorAll('[data-emp-apprdays]').forEach(cell => { apprDays += parseFloat(cell.textContent) || 0; });
         document.querySelectorAll('[data-emp-appr]').forEach(cell => { apprAdd += parseFloat(cell.textContent) || 0; });
-        document.getElementById('resFooterDays').textContent        = days.toFixed(1);
-        document.getElementById('resFooterAdd').textContent         = add.toFixed(1);
-        document.getElementById('resFooterApprovedDays').textContent = apprDays.toFixed(1);
-        document.getElementById('resFooterApprAdd').textContent     = apprAdd.toFixed(1);
+        document.getElementById('resFooterDays').textContent        = formatMd(days);
+        document.getElementById('resFooterAdd').textContent         = formatMd(add);
+        document.getElementById('resFooterApprovedDays').textContent = formatMd(apprDays);
+        document.getElementById('resFooterApprAdd').textContent     = formatMd(apprAdd);
     }
 
     function resolutionPicGetPayload() {
@@ -8207,10 +8229,10 @@
         });
         Object.entries(colTotals).forEach(([m, t]) => {
             const el = document.getElementById(`hdColTotal_${m}`);
-            if (el) el.textContent = t.toFixed(2);
+            if (el) el.textContent = formatMd(t);
         });
         const totalEl = document.getElementById('hdTotalDisplay');
-        if (totalEl) totalEl.textContent = grand.toFixed(2);
+        if (totalEl) totalEl.textContent = formatMd(grand);
     }
 
     async function hdSaveAndAction(endpoint, method = 'POST', extraBody = {}) {
@@ -8448,8 +8470,8 @@
                 addTotal  += emp.additional_mandays;
                 bodyHtml += `<tr>
                     <td class="px-3 py-2 border border-gray-200 text-xs font-medium">${emp.name}</td>
-                    <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.mandays > 0 ? emp.mandays.toFixed(1) : '—'}</td>
-                    <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.additional_mandays > 0 ? emp.additional_mandays.toFixed(1) : '—'}</td>
+                    <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.mandays > 0 ? formatMd(emp.mandays) : '—'}</td>
+                    <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.additional_mandays > 0 ? formatMd(emp.additional_mandays) : '—'}</td>
                     <td class="px-3 py-2 border border-gray-200 text-xs text-gray-500">${emp.notes || ''}</td>
                     <td class="border border-gray-200 p-0">
                         <input type="number" min="0" step="0.5"
@@ -8466,13 +8488,13 @@
                             value="${currentApprAdd > 0 ? currentApprAdd : ''}"
                             oninput="headUpdateRowTotal(this)">
                     </td>
-                    <td class="px-2 py-1.5 border border-gray-200 text-xs text-center font-semibold bg-gray-50" data-head-total="${eid}">${rowTotal > 0 ? rowTotal.toFixed(1) : '—'}</td>
+                    <td class="px-2 py-1.5 border border-gray-200 text-xs text-center font-semibold bg-gray-50" data-head-total="${eid}">${rowTotal > 0 ? formatMd(rowTotal) : '—'}</td>
                 </tr>`;
             });
             document.getElementById('headresolutionBody').innerHTML = bodyHtml;
-            document.getElementById('headResolutionTotal').textContent = grandTotal.toFixed(1);
-            document.getElementById('headFooterDays').textContent = daysTotal.toFixed(1);
-            document.getElementById('headFooterAdd').textContent  = addTotal.toFixed(1);
+            document.getElementById('headResolutionTotal').textContent = formatMd(grandTotal);
+            document.getElementById('headFooterDays').textContent = formatMd(daysTotal);
+            document.getElementById('headFooterAdd').textContent  = formatMd(addTotal);
             headRecalcApprovedFooter();
 
             if (proposal.proposed_by) {
@@ -8544,11 +8566,11 @@
         const total    = apprDays + apprAdd;
         const empId    = inp.dataset.employee;
         const cell     = row.querySelector(`[data-head-total="${empId}"]`);
-        if (cell) cell.textContent = total > 0 ? total.toFixed(1) : '—';
+        if (cell) cell.textContent = total > 0 ? formatMd(total) : '—';
         // Update grand total
         let grand = 0;
         document.querySelectorAll('[data-head-total]').forEach(c => grand += parseFloat(c.textContent) || 0);
-        document.getElementById('headResolutionTotal').textContent = grand.toFixed(1);
+        document.getElementById('headResolutionTotal').textContent = formatMd(grand);
         headRecalcApprovedFooter();
     }
 
@@ -8556,8 +8578,8 @@
         let daysApproved = 0, addApproved = 0;
         document.querySelectorAll('.head-approve-days').forEach(inp => { daysApproved += parseFloat(inp.value) || 0; });
         document.querySelectorAll('.head-approve-add').forEach(inp => { addApproved += parseFloat(inp.value) || 0; });
-        document.getElementById('headFooterApprovedDays').textContent = daysApproved.toFixed(1);
-        document.getElementById('headFooterApproveAdd').textContent   = addApproved.toFixed(1);
+        document.getElementById('headFooterApprovedDays').textContent = formatMd(daysApproved);
+        document.getElementById('headFooterApproveAdd').textContent   = formatMd(addApproved);
     }
 
     async function headResolutionApprove(confirmNegative = false) {
@@ -8647,11 +8669,11 @@
                     bodyHtml += `<tr>
                         <td class="px-3 py-2 border border-gray-200 text-xs">${d.activity || '—'}</td>
                         <td class="px-3 py-2 border border-gray-200 text-xs">${d.module || '—'}</td>
-                        <td class="px-3 py-2 border border-gray-200 text-xs text-center font-semibold">${parseFloat(d.mandays || 0).toFixed(2)}</td>
+                        <td class="px-3 py-2 border border-gray-200 text-xs text-center font-semibold">${formatMd(parseFloat(d.mandays || 0))}</td>
                     </tr>`;
                 });
                 document.getElementById('headCustMandaysBody').innerHTML = bodyHtml;
-                document.getElementById('headCustMandaysTotal').textContent = total.toFixed(2);
+                document.getElementById('headCustMandaysTotal').textContent = formatMd(total);
 
                 if (proposal.notes) {
                     const nw = document.getElementById('headCustMandaysNotes');

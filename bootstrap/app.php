@@ -46,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         
         $middleware->web(append: [
+            \App\Http\Middleware\EnforceSystemLock::class,
             ShareMenuPermissions::class,
             DetectAttackPatterns::class,
             DetectAccessPatterns::class,

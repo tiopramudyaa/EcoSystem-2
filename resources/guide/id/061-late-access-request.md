@@ -63,6 +63,14 @@ Anda tidak perlu fitur ini bila periodenya masih terbuka. Bila periode berjalan 
 3. Untuk menyetujui, isi `Access Deadline` (harus di masa depan) dan `RPMO Notes`, lalu pilih `Approve & Set Deadline`. Beri waktu secukupnya agar pekerjaan selesai, tidak lebih.
 4. Untuk menolak, isi alasannya lalu pilih `Reject`.
 
+## Aturan yang perlu diketahui
+
+- Anda hanya dapat memiliki satu permintaan per periode. Selama permintaan masih menunggu, atau sudah disetujui dan aksesnya masih aktif, permintaan baru ditolak.
+- Setelah ditolak atau setelah akses berakhir, mengirim permintaan lagi untuk periode yang sama memakai kembali permintaan itu dan memulai persetujuan dari awal.
+- Head memutuskan lebih dulu, lalu RPMO. Seorang Head hanya melihat permintaan tim yang dikelolanya.
+- RPMO harus memberi batas waktu yang ada di masa depan saat menyetujui. Akses hanya berlaku untuk orang itu, periode itu, dan tim itu, sampai batas waktu.
+- Akses terlambat yang disetujui memungkinkan Anda mengisi periode meskipun sudah tertutup. Semua aturan timesheet lain tetap berlaku, misalnya kuota dan pemeriksaan tumpang tindih.
+
 ## Apa yang terjadi selanjutnya
 
 - Menolak di langkah mana pun mengakhiri alur, dan pemohon menerima alasannya. Pemohon boleh mengirim ulang permintaan untuk periode itu.

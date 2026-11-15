@@ -150,6 +150,11 @@ class CheckAuthToken
                 return false;
             }
 
+            // System lock: a remember-me cookie must not bring a non-admin back in.
+            if (\App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
+                return false;
+            }
+
             // Update last_login_at
             DB::table('auth_users')
                 ->where('id', $authUser->id)

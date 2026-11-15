@@ -18,10 +18,14 @@ class DeliveryProjectPlanningController extends Controller
         if (!$project) {
             Log::info('📋 Viewing all projects planning index');
 
-            $projects = DeliveryProject::with(['client', 'phases' => function($query) {
+            $projects = DeliveryProject::with(['client.basicData', 'phases' => function($query) {
                 $query->where('is_visible', true)
                     ->orderBy('order_sequence', 'asc');
             }])->get();
+
+            // View menghitung progress per project dari plannings; preload sekali supaya
+            // tidak ada query per project / group / activity.
+            DeliveryProject::preloadProgressRelations($projects);
 
             return view('delivery.project.project-planning.index', compact('projects'));
         }
@@ -58,32 +62,6 @@ class DeliveryProjectPlanningController extends Controller
 
         // Redirect to phase management
         return redirect()->route('planning.phases.index', $project);
-    }
-
-    /**
-     * Show Gantt Chart page
-     */
-    public function gantt(DeliveryProject $project)
-    {
-        Log::info('📊 Viewing Gantt chart', [
-            'delivery_projects_id' => $project->id,
-            'project_name' => $project->name
-        ]);
-
-        return view('project-planning.gantt', compact('project'));
-    }
-
-    /**
-     * Show S-Curve Analysis page
-     */
-    public function scurve(DeliveryProject $project)
-    {
-        Log::info('📈 Viewing S-Curve analysis', [
-            'delivery_projects_id' => $project->id,
-            'project_name' => $project->name
-        ]);
-
-        return view('project-planning.scurve', compact('project'));
     }
 
     /**

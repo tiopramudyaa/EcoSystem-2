@@ -1,6 +1,6 @@
 ---
 key: delivery-types
-chapter: administration
+chapter: management
 order: 131
 title: Project Type, Support Type and Document Type
 summary: Maintain the lists used in the Delivery Project form, the Delivery Support form and the ticket document form.
@@ -38,6 +38,10 @@ Administrators, and roles given `Management` › `Project Type`, `Support Type` 
 3. Under `Ticket Type`, choose for every ticket type one of `Not required`, `Optional` or `Mandatory`. This is the default for tickets of that type.
 4. Set the status to `Active` so the type appears in the ticket document list.
 5. Select `Save`. Use `Edit` or `Delete` on a row later.
+
+## Rules to know
+
+- Adding, editing or deleting a Project Type needs the `Project Type` menu and doing the same to a Support Type needs the `Support Type` menu in `Menu Access`. Without it the change is refused, even if the request is sent directly. The lists shown in the delivery forms can be read by every signed-in user.
 
 ## What happens next
 

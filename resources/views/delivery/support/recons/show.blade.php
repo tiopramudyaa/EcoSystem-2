@@ -110,7 +110,7 @@
                 </div>
                 <div class="text-right">
                     <p class="text-xs text-gray-500">Total MD</p>
-                    <p class="font-bold text-gray-900">{{ number_format($summary['total_md'], 2) }}</p>
+                    <p class="font-bold text-gray-900">{{ \App\Support\Md::format($summary['total_md']) }}</p>
                 </div>
             </div>
         </div>
@@ -143,7 +143,7 @@
                             <td class="px-4 py-3 text-center whitespace-nowrap text-gray-600">{{ $row['status_label'] }}</td>
                             <td class="px-4 py-3 text-center whitespace-nowrap text-gray-600">{{ $row['type'] ?: '-' }}</td>
                             <td class="px-4 py-3 text-right whitespace-nowrap text-gray-900">
-                                {{ $row['man_days'] !== null ? number_format($row['man_days'], 2) : '-' }}
+                                {{ $row['man_days'] !== null ? \App\Support\Md::format($row['man_days']) : '-' }}
                             </td>
                         </tr>
                         @empty
@@ -187,7 +187,7 @@ window.ReconsDetail = (function () {
         // Modal konfirmasi global (partials/confirm-modal), bukan confirm() browser.
         const ok = await showConfirm(
             @json('Submit recons ' . $recons->recons_number . ' with ' . $summary['ticket_count']
-                . ' ticket(s) and ' . number_format($summary['total_md'], 2) . " MD?\n\n"
+                . ' ticket(s) and ' . \App\Support\Md::format($summary['total_md']) . " MD?\n\n"
                 . 'After submitting, its header and ticket list can no longer be changed.'),
             'Submit Recons',
             'primary',

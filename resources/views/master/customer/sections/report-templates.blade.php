@@ -147,8 +147,9 @@
         }
 
         try {
-            const res = await fetch(`/api/customers/{{ $customerId }}/report-templates/${id}`, {
-                method: 'DELETE',
+            // POST (bukan DELETE): WAF production memblokir method DELETE.
+            const res = await fetch(`/api/customers/{{ $customerId }}/report-templates/${id}/delete`, {
+                method: 'POST',
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',

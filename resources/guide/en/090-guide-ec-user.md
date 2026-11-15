@@ -41,7 +41,7 @@ Employees with the EC User role. Your menus are `Home`, `AI Research` and `Calen
 
 ### Keep your account safe
 
-Open `Settings` and the `Security` tab to change your password and set up `Two-factor authentication`. See [[sign-in-and-security]].
+Open `Settings` and the `Security` tab to change your password and set up `Two-factor authentication`. See [[sign-in-and-security]] and [[two-step-verification]].
 
 ## What happens next
 

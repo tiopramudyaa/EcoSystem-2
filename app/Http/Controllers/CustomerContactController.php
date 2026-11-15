@@ -861,6 +861,62 @@ class CustomerContactController extends Controller
     }
 
     /**
+     * Send a password reset link to a contact person's Jarvies login email.
+     * Admin never sees or sets the password; the customer chooses it via the link.
+     */
+    public function sendResetLink($customerId, $contactId)
+    {
+        $contact = DB::table('customer_contact')
+            ->where('customer_id', $customerId)
+            ->where('contact_id', $contactId)
+            ->first();
+
+        if (!$contact) {
+            return response()->json(['success' => false, 'message' => 'Contact not found'], 404);
+        }
+
+        $authUser = DB::table('auth_users')->where('contact_id', $contactId)->first();
+        if (!$authUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No login account found for this contact'
+            ], 404);
+        }
+
+        if (!$authUser->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This login account is inactive'
+            ], 422);
+        }
+
+        if (empty($authUser->email)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This login account has no email address'
+            ], 422);
+        }
+
+        PasswordSetupController::generateAndSendToken($authUser, 'reset');
+
+        AuditLog::recordAction(
+            module: 'Customer',
+            auditableType: 'CustomerContact',
+            auditableId: $contactId,
+            event: 'updated',
+            recordLabel: $contact->full_name ?? (string) $contactId,
+            description: "sent Jarvies password reset link to contact: " . ($contact->full_name ?? $contactId) . " ({$authUser->email}) — Customer #{$customerId}",
+            old: null,
+            new: ['contact_id' => $contactId, 'customer_id' => $customerId, 'email' => $authUser->email],
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset link has been sent to ' . $authUser->email,
+        ]);
+    }
+
+    /**
      * Revoke Jarvies login access from a contact person.
      * Deletes the auth_users entry linked to this contact.
      */

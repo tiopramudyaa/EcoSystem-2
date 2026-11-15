@@ -1,6 +1,6 @@
 ---
 key: ai-settings
-chapter: administration
+chapter: control-center
 order: 132
 title: AI Settings
 summary: Choose the AI model and thinking effort behind each assistant, and understand what each choice costs.

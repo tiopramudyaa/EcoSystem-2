@@ -40,7 +40,7 @@ window.SupportRecons = (function () {
 
     function fmtMd(value) {
         if (value === null || value === undefined || value === '') return '-';
-        return Number(value).toFixed(2);
+        return formatMd(value);
     }
 
     function statusBadge(status, label) {

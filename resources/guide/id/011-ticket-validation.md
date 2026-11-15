@@ -65,6 +65,19 @@ Administrator dan role yang meninjau permintaan masuk, seperti Helpdesk, Deliver
 
 Pilih `View Rejected` (lencana menunjukkan jumlahnya). Anda dapat mencari menurut customer atau deskripsi, membaca `Rejection Reason`, dan membuka `Detail`. Pakai `Back to Ticket Validation` untuk kembali.
 
+## Aturan yang perlu diketahui
+
+- Menyetujui memerlukan fungsi `Action Validate` dan menolak memerlukan fungsi `Action Reject` di `Menu Access`. Memiliki halamannya saja tidak cukup: tanpa fungsi itu permintaan ditolak, meskipun dikirim langsung.
+- `Type` dan `Priority` wajib untuk menyetujui. Tipenya `Incident`, `Change Request`, `Service Request`, `EWA`, `RISE`, dan `Consult`. Prioritasnya `Very High`, `High`, `Medium`, dan `Low`. `Scale` opsional (`Simple`, `Medium`, atau `Complex`).
+- Menyetujui memerlukan analisis AI yang sudah selesai. Bila gagal, pakai `Re-analyze`. Bila analisis sedang berjalan, tunggu.
+- `Delivery Support` wajib bila customer punya delivery support, dan harus milik customer yang sama.
+- Ticket baru dimulai sebagai `Open` dan mendapat nomor ticket berikutnya: tahun dan bulan (misalnya `2611`) diikuti nomor urut empat digit.
+- Jam SLA untuk request `Incident`, `Change Request`, atau `Consult` dimulai saat customer mengirimnya, bukan saat Anda menyetujui. Waktu menunggu di `Ticket Validation` karena itu ikut dihitung terhadap target respons, jadi proses request yang menunggu dengan cepat.
+- Menolak memerlukan alasan tertulis maksimal 1000 karakter. Customer melihat notifikasi di portal yang memuat awal alasan, dan penolakan disinkronkan ke portal customer.
+- Menyetujui juga memberi tahu customer, tim, dan chat Teams ticket.
+- Setelah request disetujui atau ditolak, request tidak dapat diproses lagi, dan analisis AI serta `Ask a question` ditutup. Satu pertanyaan maksimal 2000 karakter.
+- Bila analisis AI menyebut catatan kredensial customer yang tersimpan, hanya role dengan akses lihat `Customer Credential` yang dapat membacanya. Yang lain mengklasifikasikan request secara manual. Kredensial tersimpan itu sendiri hanya diberikan kepada role yang memegang `View Customer Credential` (halaman ticket) atau `View Credential` (halaman customer) di `Menu Access`; selain itu ditolak.
+
 ## Apa yang terjadi selanjutnya
 
 Permintaan yang disetujui muncul di `Ticket` bersama lead dan timnya, dan customer diberi tahu. Permintaan yang ditolak tetap ada di daftar tolak beserta alasan Anda, dan customer menerima pemberitahuan yang memuat alasan itu.

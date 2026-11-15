@@ -63,6 +63,14 @@ You do not need this while the period is still open. If the running or previous 
 3. To approve, fill in `Access Deadline` (it must be in the future) and `RPMO Notes`, then select `Approve & Set Deadline`. Give enough time to finish the work, no more.
 4. To reject, fill in the reason and select `Reject`.
 
+## Rules to know
+
+- You can have only one request per period. While it is pending, or approved and still active, a new request is refused.
+- After a rejection or after the access expired, sending a request for the same period again reuses it and starts the approvals from the beginning.
+- The Head decides first, then RPMO. A Head only sees requests of the team they manage.
+- RPMO must give a deadline that is in the future when approving. The access works only for that person, that period and that team, until the deadline.
+- Approved late access lets you fill in the period even though it is closed. All the other timesheet rules still apply, for example the quota and the overlap checks.
+
 ## What happens next
 
 - A rejection at either step ends the flow, and the requester receives the reason. They may send a new request for that period.

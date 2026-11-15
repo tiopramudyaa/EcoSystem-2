@@ -983,6 +983,33 @@
                         <span style="font-size:.875rem;font-weight:600;">Signing in...</span>
                     </div>
                 </button>
+
+                {{-- Opsi tambahan: login dengan akun Microsoft 365 (diaktifkan EC Administrator di Settings > Security) --}}
+                @if(!empty($microsoftLoginAvailable))
+                <div style="display:flex;align-items:center;gap:.75rem;color:#94A3B8;font-size:.75rem;">
+                    <span style="flex:1;height:1px;background:#E2E8F0;"></span>
+                    <span>or</span>
+                    <span style="flex:1;height:1px;background:#E2E8F0;"></span>
+                </div>
+                <a id="microsoftSignInBtn" href="#"
+                   style="display:flex;align-items:center;justify-content:center;gap:.625rem;width:100%;padding:.8125rem 1rem;
+                          border:1.5px solid #CBD5E1;border-radius:.75rem;background:#fff;color:#1E293B;
+                          font-size:.875rem;font-weight:600;text-decoration:none;transition:background .15s, border-color .15s;"
+                   onmouseover="this.style.background='#F8FAFC';this.style.borderColor='#94A3B8';"
+                   onmouseout="this.style.background='#fff';this.style.borderColor='#CBD5E1';">
+                    <svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+                    Sign in with Microsoft
+                </a>
+                <script>
+                    // Bawa tujuan deep link (?redirect=) ke langkah Microsoft. Nilainya
+                    // disanitasi lagi di server (IntendedUrl), bukan dipercaya begitu saja.
+                    (function () {
+                        var el = document.getElementById('microsoftSignInBtn');
+                        var r  = new URLSearchParams(window.location.search).get('redirect');
+                        el.href = '{{ route('microsoft.redirect') }}' + (r ? '?redirect=' + encodeURIComponent(r) : '');
+                    })();
+                </script>
+                @endif
         </div>
     </div>
 
