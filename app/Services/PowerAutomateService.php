@@ -252,6 +252,7 @@ class PowerAutomateService
             'scale'        => $ticket->scale,
             'channel'      => $ticket->channel,
             'customer'     => $this->customerName($ticket->customer_id),
+            'customer_code' => $this->customerCode($ticket->customer_id),
             'end_customer' => $this->customerName($ticket->end_customer_id),
             'module'       => $this->moduleName($ticket->module, $ticket->module_id),
             'module_id'    => $ticket->module_id ? (int) $ticket->module_id : null,
@@ -374,11 +375,17 @@ class PowerAutomateService
     public function ticketChatTopic(array $ticketPayload): string
     {
         $number  = trim((string) ($ticketPayload['number'] ?? ''));
+        $code    = trim((string) ($ticketPayload['customer_code'] ?? ''));
         $subject = trim((string) ($ticketPayload['subject'] ?? ''));
 
+        // Format: [nomor tiket]-[customer code]-[description], mis.
+        // "26110373-AIRNAV-Permohonan Pendampingan ...". Bagian yang kosong
+        // dilewati supaya tidak muncul tanda hubung ganda. Nomor tiket tetap
+        // di depan: flow 6 memakai awalan nomor sebagai kunci cadangan.
+        //
         // Batas nama group chat di Teams 250 karakter; potong subjeknya, bukan
         // nomornya, supaya tiket tetap bisa dikenali saat subjeknya panjang.
-        $topic = trim($number . ' - ' . $subject);
+        $topic = implode('-', array_filter([$number, $code, $subject], static fn ($p) => $p !== ''));
         if (mb_strlen($topic) > 250) {
             // Penanda potongnya '...' ASCII, bukan elipsis satu karakter: topic
             // ini dibandingkan huruf-per-huruf oleh ekspresi di Power Automate,
@@ -531,11 +538,24 @@ class PowerAutomateService
         $text          = $this->memberAddedText($person, $roleLabel, $actor);
         $afterMention  = $this->memberAddedMentionText($role === 'member' ? 'member' : $roleLabel, $actor);
 
+        // Nama grup yang BENAR-BENAR dipakai saat chat dibuat (tersimpan di
+        // ticket_teams_chat) didahulukan atas hasil rakitan ulang. Tanpa ini,
+        // grup lama yang dibuat dengan format nama sebelumnya
+        // ("26110370 - Subject") tidak lagi cocok exact-match di flow 6 sejak
+        // formatnya diganti menjadi "nomor-KODE-Subject".
+        $storedChat = DB::table('ticket_teams_chat')
+            ->where('ticket_id', (int) $ticket->ticket_id)
+            ->orderByDesc('id')
+            ->first(['chat_id', 'topic']);
+
         return [
             'ticket'  => $ticketPayload,
             'chat'    => [
-                'topic'  => $this->ticketChatTopic($ticketPayload),
+                'topic'  => ($storedChat && trim((string) $storedChat->topic) !== '')
+                    ? (string) $storedChat->topic
+                    : $this->ticketChatTopic($ticketPayload),
                 'number' => (string) ($ticketPayload['number'] ?? ''),
+                'id'     => $storedChat->chat_id ?? null,
             ],
             'person'  => [
                 'employee_id' => $person['employee_id'] ?? null,
@@ -1010,6 +1030,20 @@ class PowerAutomateService
         return DB::table('customer_basic_data')
             ->where('customer_id', $customerId)
             ->value('name_1');
+    }
+
+    /** Kode customer (mis. "AIRNAV") dari tabel customer, untuk nama group chat. */
+    private function customerCode($customerId): ?string
+    {
+        if (!$customerId) {
+            return null;
+        }
+
+        $code = trim((string) DB::table('customer')
+            ->where('customer_id', $customerId)
+            ->value('customer_code'));
+
+        return $code !== '' ? $code : null;
     }
 
     /**

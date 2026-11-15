@@ -758,8 +758,15 @@ yang sama dipakai flow 5 saat membuat grup dan flow 6 saat mencarinya kembali,
 jadi pencocokannya exact-match, bukan tebak-tebakan awalan.
 
 ```json
-"chat": { "topic": "26090012 - Error saat posting GR di MIGO", "number": "26090012" }
+"chat": { "topic": "26090012-AIRNAV-Error saat posting GR di MIGO", "number": "26090012", "id": "19:xxxx@thread.v2" }
 ```
+
+> **Format nama grup (sejak 16 November 2026):** `[nomor tiket]-[customer code]-[description]`,
+> diambil dari `customer.customer_code`. Sebelumnya `nomor - description`. Supaya grup
+> lama tetap ketemu, `chat.topic` di payload flow 6 memakai nama yang tersimpan di
+> `ticket_teams_chat` bila ada (plus `chat.id`). Grup yang dulu dibuat oleh flow 5
+> sendiri (tidak tercatat di tabel itu) hanya bisa ditemukan lewat kunci cadangan
+> `startsWith(item()?['topic'], triggerBody()?['chat']?['number'])`.
 
 Aksi **Add a user to a chat** (`AddMemberToChat`) dan **List chats** (`GetChats`)
 dua-duanya ada di konektor Microsoft Teams kelas **Standard**, jadi jalur ini

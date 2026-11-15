@@ -5,7 +5,7 @@ order: 16
 title: Ticket group chat in Microsoft Teams
 summary: Why you are suddenly added to a Teams group chat, what the chat is for and how it stays in step with the ticket.
 requires: [tickets.inbox]
-updated: 2026-10-28
+updated: 2026-11-16
 ---
 Every validated ticket now gets its own group chat in Microsoft Teams. EcoSystem creates the chat and adds the people who work on the ticket. So if a new group chat shows up in your Teams without anyone telling you, it is a ticket chat and you were added on purpose.
 
@@ -15,7 +15,7 @@ Everyone who works on tickets: consultants, ticket leads, ticket members, Module
 
 ## Before you start
 
-- The chat is named after the ticket: the ticket number, a space, a hyphen and the subject, for example `26109001 - Error posting GR in MIGO`. Use the number to find the ticket in `Ticket`.
+- The chat is named `ticket number-customer code-subject`, for example `26109001-AIRNAV-Error posting GR in MIGO`. Older chats keep their old name. Use the number to find the ticket in `Ticket`.
 - The chat is for the internal team only. The customer is never in it and never sees it, even though the conversation with the customer is copied into the chat for the team to read.
 - One ticket has one chat. Do not create a second group for the same ticket by hand.
 
