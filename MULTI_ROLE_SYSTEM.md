@@ -1,4 +1,4 @@
-# Multi-Role System — EcoSystem-2
+# Multi-Role System - EcoSystem-2
 
 Dokumen ini adalah referensi lengkap untuk AI (dan developer) yang bekerja di branch lain dan perlu memahami atau mengimplementasikan ulang sistem multi-role yang ada di branch `multi-role-system`.
 
@@ -25,7 +25,7 @@ Dokumen ini adalah referensi lengkap untuk AI (dan developer) yang bekerja di br
 
 ## 1. Konsep Inti
 
-Sistem ini mengizinkan **satu employee memiliki banyak role** (many-to-many). Permission dihitung dengan **union** — jika salah satu role mengizinkan, employee bisa melakukannya.
+Sistem ini mengizinkan **satu employee memiliki banyak role** (many-to-many). Permission dihitung dengan **union** - jika salah satu role mengizinkan, employee bisa melakukannya.
 
 Ada **3 level granularitas** permission:
 
@@ -103,7 +103,7 @@ employee ──────< employee_role_assignment >────── employ
 
 Jalankan dalam urutan ini. Nomor prefix file sudah mencerminkan urutan yang benar.
 
-### Step 1 — Tabel `employee_role` (harus ada sebelum pivot)
+### Step 1 - Tabel `employee_role` (harus ada sebelum pivot)
 
 File: `database/migrations/xxxx_create_employee_role_table.php`
 
@@ -120,7 +120,7 @@ Schema::create('employee_role', function (Blueprint $table) {
 
 ---
 
-### Step 2 — Tabel `menu`
+### Step 2 - Tabel `menu`
 
 File: `database/migrations/xxxx_create_menu_table.php`
 
@@ -143,7 +143,7 @@ Schema::create('menu', function (Blueprint $table) {
 
 ---
 
-### Step 3 — Tabel `employee_role_assignment` (pivot many-to-many)
+### Step 3 - Tabel `employee_role_assignment` (pivot many-to-many)
 
 File: `database/migrations/2026_03_17_100001_create_employee_role_assignment_table.php`
 
@@ -179,7 +179,7 @@ if (Schema::hasColumn('employee', 'role_id')) {
 
 ---
 
-### Step 4 — Tabel `role_menu` (pivot role ↔ menu + CRUD flags)
+### Step 4 - Tabel `role_menu` (pivot role ↔ menu + CRUD flags)
 
 File: `database/migrations/2026_04_17_000002_create_role_menu_table.php`
 
@@ -274,15 +274,15 @@ Manajemen                  (group)  ← Admin only
 
 ### FunctionPermissionSeeder
 
-Mengisi menu dengan `type='function'` — ini adalah tombol/kontrol UI level granular yang dikontrol per-role. Memanggil `RoleSeeder` di dalamnya.
+Mengisi menu dengan `type='function'` - ini adalah tombol/kontrol UI level granular yang dikontrol per-role. Memanggil `RoleSeeder` di dalamnya.
 
 Contoh function slugs:
-- `calendar.events.create` — Tombol "Create Event"
-- `ticket.assign-pic` — Tombol "Assign PIC"
-- `ticket.view-all` — Lihat semua tiket
-- `ticket.view-own` — Lihat tiket sendiri
-- `ui.ticket.sidebar-tabs` — Sidebar tabs
-- `delivery-support.add-new` — Tambah delivery support
+- `calendar.events.create` - Tombol "Create Event"
+- `ticket.assign-pic` - Tombol "Assign PIC"
+- `ticket.view-all` - Lihat semua tiket
+- `ticket.view-own` - Lihat tiket sendiri
+- `ui.ticket.sidebar-tabs` - Sidebar tabs
+- `delivery-support.add-new` - Tambah delivery support
 
 ### AdminRoleAssignmentSeeder
 
@@ -357,7 +357,7 @@ class Menu extends Model
 }
 ```
 
-### `app/Models/Employee.php` — method terkait role
+### `app/Models/Employee.php` - method terkait role
 
 Tambahkan method-method berikut ke Employee model:
 
@@ -576,7 +576,7 @@ Route::get('/management/roles', ...)->middleware('menu:management.roles');
 
 ## 9. Routes
 
-### `routes/web.php` — contoh pola
+### `routes/web.php` - contoh pola
 
 ```php
 Route::middleware(['auth.token'])->group(function () {
@@ -602,14 +602,14 @@ Route::middleware(['auth.token'])->group(function () {
 });
 ```
 
-### `routes/api.php` — endpoint role & menu
+### `routes/api.php` - endpoint role & menu
 
 ```php
 Route::middleware(['auth.token'])->group(function () {
 
     Route::get('/my-menus', [MenuController::class, 'getMyMenus']);
 
-    // Menu management (Admin only — proteksi via halaman web)
+    // Menu management (Admin only - proteksi via halaman web)
     Route::get('/menus', [MenuController::class, 'index']);
     Route::get('/menus/all', [MenuController::class, 'allWithPermissions']);
     Route::get('/menus/with-roles', [MenuController::class, 'withRoles']);
@@ -696,7 +696,7 @@ resetFilter()    // reset semua filter
 Saat employee login, `AuthController::buildEmployeeSessionData()` membangun session:
 
 ```php
-// Ambil role pertama (MIN role_id) dari pivot table — untuk backward compat
+// Ambil role pertama (MIN role_id) dari pivot table - untuk backward compat
 $employee = DB::table('employee as e')
     ->leftJoin('(SELECT employee_id, MIN(role_id) as role_id FROM employee_role_assignment GROUP BY employee_id) as era', ...)
     ->leftJoin('employee_role as r', 'r.id', '=', 'era.role_id')

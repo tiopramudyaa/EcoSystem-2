@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Customer Group struktural (membership) — meng-upgrade field teks lama
+ * Customer Group struktural (membership) - meng-upgrade field teks lama
  * `customer_basic_data.customer_group` menjadi grouping nyata berbasis tabel.
  *
  * - Tabel baru `customer_groups` (nama unik + kode opsional).

@@ -60,7 +60,7 @@
     </div>
 </div>
 
-{{-- ── Column search panel (Consultant / Module) — lives outside the table so it
+{{-- ── Column search panel (Consultant / Module) - lives outside the table so it
      survives renderHead() re-rendering the header row --}}
 <div id="rtSearchPanel" class="hidden fixed bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] p-3" style="min-width:220px;">
     <label id="rtSearchLabel" class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Search</label>
@@ -164,7 +164,7 @@
         background-color: #fff;
         z-index: 10;
     }
-    /* `background: inherit` isn't reliable here — Tailwind's CDN stylesheet is
+    /* `background: inherit` isn't reliable here - Tailwind's CDN stylesheet is
        injected at an unpredictable point relative to this block, so cascade
        order against `bg-white`/`bg-gray-50` isn't guaranteed. Hardcoding the
        actual color avoids the scrolled date columns bleeding through. */
@@ -172,12 +172,12 @@
     tbody tr:hover .rt-sticky { background-color: #f9fafb; }
 
     /* `overflow-x: auto` on #rtScroll forces its computed `overflow-y` to
-       `auto` too (CSS2.1 overflow interaction — can't have one axis `auto`
+       `auto` too (CSS2.1 overflow interaction - can't have one axis `auto`
        and the other `visible`), which silently makes #rtScroll itself the
        sticky containing block instead of the viewport, breaking a
        window-scroll sticky header. Fix: make #rtScroll a bounded, genuinely
        self-scrolling box (height set in JS) so `top: 0` sticks correctly
-       within it — the standard pattern for a data grid with a sticky header. */
+       within it - the standard pattern for a data grid with a sticky header. */
     #rtScroll {
         overflow-y: auto;
     }
@@ -414,7 +414,7 @@
 
             // Yearly: one cell per month. Each customer is a coloured bar that
             // starts/ends at the position of its first/last day in the month
-            // (day 1–15 fills the left half, 16–31 the right half). Overlapping
+            // (day 1-15 fills the left half, 16-31 the right half). Overlapping
             // customers are stacked on separate lanes.
             const monthCells = rtView === 'yearly' ? RT_MONTHS.map((_, i) => {
                 const items = (r.months && r.months[i + 1]) || [];
@@ -575,7 +575,7 @@
         }
     };
 
-    // Closes only via the header's X button (rtCloseModal) — intentionally no
+    // Closes only via the header's X button (rtCloseModal) - intentionally no
     // backdrop-click or Escape handler, so an accidental click outside the
     // form never discards an in-progress entry.
     window.rtCloseModal = function () {
@@ -711,7 +711,7 @@
         saveBtn.textContent = 'Saving…';
 
         try {
-            // `<input type="date">` values are already plain "YYYY-MM-DD" strings —
+            // `<input type="date">` values are already plain "YYYY-MM-DD" strings -
             // no Date-object/timezone conversion involved, so no risk of the
             // UTC-shift-by-a-day bug a toISOString() approach would have.
             const payload = {
@@ -723,7 +723,7 @@
             };
             // Editing an existing range (not creating a fresh one): tell the
             // backend the ORIGINAL range too, so it can clear whatever part of
-            // it fell outside the new range — otherwise shrinking/shifting the
+            // it fell outside the new range - otherwise shrinking/shifting the
             // dates while editing leaves the old tail still holding the old
             // location, which looks like the date edit did nothing.
             if (rtEditingRange) {
@@ -752,7 +752,7 @@
 
     // ── Scroll-box height ────────────────────────────────────────────────
     // #rtScroll needs a genuine bounded height (not just "grow to fit
-    // content") for its own `overflow-y: auto` to actually scroll — which is
+    // content") for its own `overflow-y: auto` to actually scroll - which is
     // what makes `position: sticky; top: 0` on the header work. Fills the
     // remaining viewport below the box's own top edge.
     function rtSyncScrollHeight() {

@@ -95,7 +95,7 @@ class DeliveryProjectTypeController extends Controller
 
         // project_type di delivery_projects adalah kolom string biasa (bukan
         // FK), jadi menghapus tipe di sini tidak mengubah project yang sudah
-        // ada — hanya menghilangkannya dari pilihan dropdown ke depan.
+        // ada - hanya menghilangkannya dari pilihan dropdown ke depan.
         $inUseCount = DeliveryProject::where('project_type', $type->name)->count();
 
         $type->delete();

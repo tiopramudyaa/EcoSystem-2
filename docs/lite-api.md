@@ -1,4 +1,4 @@
-# EcoSystem Lite API — Dokumentasi Integrasi
+# EcoSystem Lite API - Dokumentasi Integrasi
 
 > Versi: 1.0  
 > Base URL: `https://<your-domain>/api/lite`  
@@ -66,7 +66,7 @@ Browser akan otomatis menyimpan dan mengirim session cookie (`ecosystem-session`
 
 | Endpoint                    | Keterangan                                      |
 | --------------------------- | ----------------------------------------------- |
-| `POST /api/lite/auth/login` | Login — satu-satunya endpoint tanpa autentikasi |
+| `POST /api/lite/auth/login` | Login - satu-satunya endpoint tanpa autentikasi |
 
 ### Semua Endpoint Lain
 
@@ -164,7 +164,7 @@ Login ke sistem. Mengembalikan token dan data user.
 }
 ```
 
-#### Contoh Response: Akun Baru — Harus Ganti Password (200)
+#### Contoh Response: Akun Baru - Harus Ganti Password (200)
 
 ```json
 {
@@ -319,7 +319,7 @@ Mengambil data dashboard yang disesuaikan berdasarkan role user yang sedang logi
 | ------------- | ---------------- | ---------------------------- |
 | Authorization | `Bearer <token>` | Ya (jika tidak pakai cookie) |
 
-#### Contoh Response Sukses (200) — EC Administrator
+#### Contoh Response Sukses (200) - EC Administrator
 
 ```json
 {
@@ -532,10 +532,10 @@ Mengambil ringkasan jumlah tiket per status.
 Mengambil detail lengkap satu tiket berdasarkan ID.
 
 `to_emails` dan `cc_emails` adalah penerima email yang **tersimpan terakhir**
-di tiket ini (hasil reply sebelumnya, dari web maupun mobile) — dipakai untuk
+di tiket ini (hasil reply sebelumnya, dari web maupun mobile) - dipakai untuk
 pre-fill composer reply. Kirim balik nilai yang sama (atau daftar baru) di
 `to_emails`/`cc_emails` saat `POST /tickets/{ticketId}/messages` untuk
-mempertahankan/mengubahnya — lihat [5.6](#56-post-ticketsticketidmessages).
+mempertahankan/mengubahnya - lihat [5.6](#56-post-ticketsticketidmessages).
 
 **Method:** `GET`  
 **URL:** `/api/lite/tickets/{id}`  
@@ -781,21 +781,21 @@ Menambah pesan baru ke tiket (reply atau internal note).
 Untuk `message_type: reply`, endpoint ini memakai alur **email-first** yang sama
 dengan web (`TicketMessageController::sendEmailThenSave`, dipanggil via method
 baru `sendLiteReply()`): email dikirim dulu ke customer lewat M365 Graph
-(penerima To/CC diambil dari `ticket.to_emails` / `ticket.cc_emails` — hasil
+(penerima To/CC diambil dari `ticket.to_emails` / `ticket.cc_emails` - hasil
 reply terakhir dari web), baru pesan disimpan dengan `channel: email`. Nama
 pengirim yang tampil ke customer selalu **"Helpdesk Support"** (bukan nama
 employee), persis seperti reply dari web. Jika tidak ada penerima email sama
 sekali atau pengiriman gagal, pesan tetap tersimpan sebagai fallback dengan
-`channel: web` dan `email_status: failed` + `email_error` berisi alasannya —
+`channel: web` dan `email_status: failed` + `email_error` berisi alasannya -
 reply tidak pernah hilang, hanya tidak terkirim ke email. Reply juga memicu
 SLA event dan notifikasi ke PIC/member ticket, sama seperti web.
 
-`message_type: internal_note` **tidak pernah** dikirim ke email — perilaku ini tidak berubah, dan field `to_emails`/`cc_emails` diabaikan untuk internal note.
+`message_type: internal_note` **tidak pernah** dikirim ke email - perilaku ini tidak berubah, dan field `to_emails`/`cc_emails` diabaikan untuk internal note.
 
 **To/CC bisa di-set dari mobile** dengan mengirim field `to_emails` dan/atau
 `cc_emails` di request body (hanya berlaku untuk `message_type: reply`):
 - Jika field **tidak dikirim** (null) → pakai To/CC yang sudah tersimpan di
-  tiket saat ini (perilaku lama/legacy — tetap aman untuk klien yang belum
+  tiket saat ini (perilaku lama/legacy - tetap aman untuk klien yang belum
   update).
 - Jika **dikirim** (termasuk array kosong `[]`) → menimpa To/CC tiket dengan
   daftar baru sebelum email dikirim, persis seperti composer reply di web.
@@ -804,7 +804,7 @@ SLA event dan notifikasi ke PIC/member ticket, sama seperti web.
   kosong-kosong berarti tidak ada penerima sama sekali → reply otomatis
   fallback tersimpan sebagai `channel: web`.
 - Daftar To/CC yang dikirim akan **dipersist ke tiket** (`ticket.to_emails` /
-  `ticket.cc_emails`), jadi reply berikutnya — dari web maupun mobile — ikut
+  `ticket.cc_emails`), jadi reply berikutnya - dari web maupun mobile - ikut
   memakai daftar yang sama sampai diubah lagi.
 
 > **Keterbatasan saat ini:** Lite API belum punya endpoint upload lampiran
@@ -829,13 +829,13 @@ SLA event dan notifikasi ke PIC/member ticket, sama seperti web.
 | `message_type`     | `string`        | Tidak | `reply` (default) atau `internal_note`                        |
 | `is_internal_note` | `boolean`       | Tidak | `true` untuk internal note (alternatif dari `message_type`)   |
 | `reply_to_id`      | `integer`       | Tidak | ID pesan yang dibalas                                         |
-| `ticket_status`    | `string`        | Tidak | Ubah status tiket bersamaan reply — `inprocess`, `waiting_on_customer`, `waiting_to_confirmation`, `waiting_on_3rd_party`, atau `hold` |
-| `to_emails`        | `array<string\|object>` | Tidak | Hanya untuk `reply`. Override daftar TO — array string email, atau array objek `{"address": "...", "name": "..."}`. Item pertama = primary recipient. |
-| `cc_emails`        | `array<string\|object>` | Tidak | Hanya untuk `reply`. Override daftar CC — format sama seperti `to_emails`. |
+| `ticket_status`    | `string`        | Tidak | Ubah status tiket bersamaan reply - `inprocess`, `waiting_on_customer`, `waiting_to_confirmation`, `waiting_on_3rd_party`, atau `hold` |
+| `to_emails`        | `array<string\|object>` | Tidak | Hanya untuk `reply`. Override daftar TO - array string email, atau array objek `{"address": "...", "name": "..."}`. Item pertama = primary recipient. |
+| `cc_emails`        | `array<string\|object>` | Tidak | Hanya untuk `reply`. Override daftar CC - format sama seperti `to_emails`. |
 | `mentioned_employee_ids` | `array<integer>` | Tidak | **Hanya untuk `internal_note`.** Daftar `employee_id` yang di-@mention di note ini (dari hasil pilihan autocomplete [`GET /employees/mentionable`](#510-get-employeesmentionable)). Tiap id yang dimasukkan akan menerima notifikasi tipe `mention` (kecuali diri sendiri). Diabaikan untuk `reply`. |
-| `mentioned_role_ids`     | `array<integer>` | Tidak | **Hanya untuk `internal_note`.** Daftar `role_id` yang di-@mention (mis. `@Delivery Support Head`) — backend otomatis fan-out notifikasi ke semua employee aktif yang punya role tsb. Diabaikan untuk `reply`. |
+| `mentioned_role_ids`     | `array<integer>` | Tidak | **Hanya untuk `internal_note`.** Daftar `role_id` yang di-@mention (mis. `@Delivery Support Head`) - backend otomatis fan-out notifikasi ke semua employee aktif yang punya role tsb. Diabaikan untuk `reply`. |
 
-> **Catatan tentang mention:** mention **tidak** disisipkan sebagai markup khusus (mis. `@[Nama](id)`) di `message`/`message_html` — teks tetap apa adanya yang diketik user (mis. `"@Jane Smith tolong cek"`). ID mention dikirim **terpisah** lewat `mentioned_employee_ids`/`mentioned_role_ids`, dan hasilnya dikembalikan di field `mentions` pada response (lihat contoh di bawah serta di [5.5](#55-get-ticketsticketidmessages)) — frontend tidak perlu parsing ulang teks untuk tahu siapa yang di-mention.
+> **Catatan tentang mention:** mention **tidak** disisipkan sebagai markup khusus (mis. `@[Nama](id)`) di `message`/`message_html` - teks tetap apa adanya yang diketik user (mis. `"@Jane Smith tolong cek"`). ID mention dikirim **terpisah** lewat `mentioned_employee_ids`/`mentioned_role_ids`, dan hasilnya dikembalikan di field `mentions` pada response (lihat contoh di bawah serta di [5.5](#55-get-ticketsticketidmessages)) - frontend tidak perlu parsing ulang teks untuk tahu siapa yang di-mention.
 
 #### Contoh Request
 
@@ -849,7 +849,7 @@ SLA event dan notifikasi ke PIC/member ticket, sama seperti web.
 }
 ```
 
-#### Contoh Request — internal note dengan mention
+#### Contoh Request - internal note dengan mention
 
 ```json
 {
@@ -860,7 +860,7 @@ SLA event dan notifikasi ke PIC/member ticket, sama seperti web.
 }
 ```
 
-#### Contoh Response Sukses (201) — email terkirim
+#### Contoh Response Sukses (201) - email terkirim
 
 ```json
 {
@@ -893,7 +893,7 @@ SLA event dan notifikasi ke PIC/member ticket, sama seperti web.
 }
 ```
 
-#### Contoh Response Sukses (201) — email gagal (fallback tersimpan)
+#### Contoh Response Sukses (201) - email gagal (fallback tersimpan)
 
 ```json
 {
@@ -913,10 +913,10 @@ SLA event dan notifikasi ke PIC/member ticket, sama seperti web.
 
 > **Catatan:** `email_failed: true` berarti reply **tetap tersimpan** di tiket
 > tapi TIDAK terkirim (atau hanya sebagian terkirim, saat `email_status:
-> partial`) ke customer — frontend sebaiknya menampilkan indikator peringatan
+> partial`) ke customer - frontend sebaiknya menampilkan indikator peringatan
 > pada bubble pesan tsb, mengikuti pola yang sama dengan web.
 
-#### Contoh Response Sukses (201) — internal note dengan mention
+#### Contoh Response Sukses (201) - internal note dengan mention
 
 ```json
 {
@@ -951,7 +951,7 @@ SLA event dan notifikasi ke PIC/member ticket, sama seperti web.
 > **Catatan:** setiap id di `mentioned_employee_ids` (dan setiap employee aktif
 > yang punya role di `mentioned_role_ids`) otomatis dibuatkan baris notifikasi
 > tipe `mention` di [`GET /notifications`](#71-get-notifications), lengkap
-> dengan `message_id` — cocok dipakai dengan `highlight_message_id` di
+> dengan `message_id` - cocok dipakai dengan `highlight_message_id` di
 > [5.5](#55-get-ticketsticketidmessages) untuk auto-scroll saat notifikasi
 > di-tap. Sender tidak pernah menerima notifikasi mention dari pesannya
 > sendiri.
@@ -963,15 +963,15 @@ SLA event dan notifikasi ke PIC/member ticket, sama seperti web.
 Edit isi **internal note** milik sendiri. Aturan identik dengan web
 (`TicketMessageController::updateInternalNote`):
 
-- Hanya bisa mengedit note milik sendiri (`sender_id` harus = user login) —
+- Hanya bisa mengedit note milik sendiri (`sender_id` harus = user login) -
   tidak ada pengecualian untuk admin di endpoint ini.
 - Hanya bisa diedit dalam **10 menit** sejak `created_at`. Setelah lewat,
   request akan ditolak (`403`) meski pemilik note sendiri.
 - Note yang sudah dihapus (`is_deleted: true`) tidak bisa diedit.
-- Hanya berlaku untuk pesan bertipe `internal_note` — reply ke customer
+- Hanya berlaku untuk pesan bertipe `internal_note` - reply ke customer
   **tidak bisa** diedit sama sekali (baik di web maupun Lite API), karena
   sudah terkirim sebagai email nyata ke M365.
-- Setelah berhasil, `edited_at` terisi timestamp saat ini — gunakan field ini
+- Setelah berhasil, `edited_at` terisi timestamp saat ini - gunakan field ini
   di UI untuk menampilkan label "diedit".
 
 **Method:** `POST`  
@@ -1026,16 +1026,16 @@ Edit isi **internal note** milik sendiri. Aturan identik dengan web
 #### Contoh Response Gagal
 
 ```json
-// 403 — bukan pemilik note
+// 403 - bukan pemilik note
 { "success": false, "message": "You can only edit your own notes." }
 
-// 403 — sudah lewat 10 menit
+// 403 - sudah lewat 10 menit
 { "success": false, "message": "Notes can only be edited within 10 minutes of posting." }
 
-// 422 — note sudah dihapus
+// 422 - note sudah dihapus
 { "success": false, "message": "Cannot edit a deleted note." }
 
-// 404 — bukan internal note, atau tidak ditemukan di tiket ini
+// 404 - bukan internal note, atau tidak ditemukan di tiket ini
 { "success": false, "message": "Note not found." }
 ```
 
@@ -1049,10 +1049,10 @@ Soft-delete ("unsend") **internal note**. Aturan identik dengan web
 - Bisa dilakukan oleh **pengirim sendiri** (dalam 10 menit sejak `created_at`)
   atau **admin** (role `EC_ADMINISTRATOR`, tanpa batas waktu).
 - Note yang sudah dihapus tidak bisa dihapus ulang (`422`).
-- Ini soft-delete — hanya menandai `is_deleted: true`, data tidak benar-benar
+- Ini soft-delete - hanya menandai `is_deleted: true`, data tidak benar-benar
   dihapus dari database. FE Lite sebaiknya menampilkan placeholder ("Note ini
   telah dihapus") mengikuti pola yang sama dengan web.
-- Hanya berlaku untuk `internal_note` — reply ke customer tidak bisa
+- Hanya berlaku untuk `internal_note` - reply ke customer tidak bisa
   di-unsend.
 
 > **Catatan client HTTP:** jika klien mobile tidak mendukung method `DELETE`
@@ -1080,16 +1080,16 @@ Soft-delete ("unsend") **internal note**. Aturan identik dengan web
 #### Contoh Response Gagal
 
 ```json
-// 403 — bukan pemilik note dan bukan admin
+// 403 - bukan pemilik note dan bukan admin
 { "success": false, "message": "You can only delete your own notes." }
 
-// 403 — bukan admin, dan sudah lewat 10 menit
+// 403 - bukan admin, dan sudah lewat 10 menit
 { "success": false, "message": "Notes can only be deleted within 10 minutes of posting." }
 
-// 422 — sudah dihapus sebelumnya
+// 422 - sudah dihapus sebelumnya
 { "success": false, "message": "Note already deleted." }
 
-// 404 — bukan internal note, atau tidak ditemukan di tiket ini
+// 404 - bukan internal note, atau tidak ditemukan di tiket ini
 { "success": false, "message": "Note not found." }
 ```
 
@@ -1193,7 +1193,7 @@ Autocomplete untuk fitur **@mention** di composer internal note (lihat
 autentikasi Lite (session atau Bearer token).
 
 > **Catatan:** endpoint ini berada di path `/api/lite/employees/...`, bukan
-> `/api/lite/tickets/...` — didokumentasikan di sini karena kegunaannya
+> `/api/lite/tickets/...` - didokumentasikan di sini karena kegunaannya
 > khusus untuk fitur mention di chat tiket.
 
 **Method:** `GET`  
@@ -1204,11 +1204,11 @@ autentikasi Lite (session atau Bearer token).
 
 | Parameter | Type     | Wajib | Deskripsi                                                                                          |
 | --------- | -------- | ----- | --------------------------------------------------------------------------------------------------- |
-| `q`       | `string` | Tidak | Keyword pencarian — cocok terhadap nama lengkap atau nickname employee, dan nama role. Kosongkan untuk daftar default (tanpa filter). |
+| `q`       | `string` | Tidak | Keyword pencarian - cocok terhadap nama lengkap atau nickname employee, dan nama role. Kosongkan untuk daftar default (tanpa filter). |
 
 Hasil selalu mengecualikan user yang sedang login, dan hanya employee yang
 `is_active` serta tidak `block`/`deletion_flag`. Employee dibatasi **10 hasil**
-(role tidak dibatasi — biasanya jumlahnya sedikit).
+(role tidak dibatasi - biasanya jumlahnya sedikit).
 
 #### Contoh Request
 
@@ -1239,11 +1239,11 @@ Authorization: Bearer <token>
 }
 ```
 
-> **Catatan:** `avatar_url` saat ini selalu `null` — belum ada kolom
+> **Catatan:** `avatar_url` saat ini selalu `null` - belum ada kolom
 > foto/avatar employee di database. Field ini tetap disertakan di kontrak
 > response agar frontend forward-compatible bila kolom tsb ditambahkan nanti.
 > Memilih hasil dari `roles` mengisi `mentioned_role_ids` (bukan
-> `mentioned_employee_ids`) saat mengirim pesan — backend otomatis fan-out
+> `mentioned_employee_ids`) saat mengirim pesan - backend otomatis fan-out
 > notifikasi ke semua employee aktif yang memegang role tsb.
 
 #### Contoh Response Error (401)
@@ -1368,13 +1368,13 @@ Mengubah password user yang sedang login.
 
 ## 7. Endpoint Notifikasi
 
-Notifikasi bekerja sama persis dengan yang ada di web app (bell dropdown, badge unread, mark as read, delete) — sama-sama membaca tabel `notifications` yang sudah dipakai lintas modul (reply tiket, mention, perubahan member tiket, timesheet, mandays, late exception, reminder kontrak/invoice, dsb). Notifikasi baru otomatis dibuat oleh business logic yang bersangkutan; endpoint di bawah ini hanya untuk membaca dan mengelola status baca/hapus.
+Notifikasi bekerja sama persis dengan yang ada di web app (bell dropdown, badge unread, mark as read, delete) - sama-sama membaca tabel `notifications` yang sudah dipakai lintas modul (reply tiket, mention, perubahan member tiket, timesheet, mandays, late exception, reminder kontrak/invoice, dsb). Notifikasi baru otomatis dibuat oleh business logic yang bersangkutan; endpoint di bawah ini hanya untuk membaca dan mengelola status baca/hapus.
 
-> **Catatan:** Web Push (notifikasi ke browser saat ada notifikasi baru) berjalan otomatis dan independen dari endpoint ini — tidak perlu subscribe apa pun dari Lite app. Untuk update real-time di UI, lakukan polling ke `GET /notifications/unread-count` secara berkala (misal setiap 30–60 detik).
+> **Catatan:** Web Push (notifikasi ke browser saat ada notifikasi baru) berjalan otomatis dan independen dari endpoint ini - tidak perlu subscribe apa pun dari Lite app. Untuk update real-time di UI, lakukan polling ke `GET /notifications/unread-count` secara berkala (misal setiap 30-60 detik).
 
 ### 7.1 GET /notifications
 
-Mengambil 20 notifikasi terbaru milik user yang sedang login, beserta jumlah yang belum dibaca — untuk bell dropdown.
+Mengambil 20 notifikasi terbaru milik user yang sedang login, beserta jumlah yang belum dibaca - untuk bell dropdown.
 
 **Method:** `GET`
 **URL:** `/api/lite/notifications`
@@ -1424,7 +1424,7 @@ Endpoint ringan khusus untuk polling badge notifikasi (tanpa mengambil isi list)
 }
 ```
 
-> `message_sound_count` adalah subset dari `count` khusus tipe `ticket_reply` / `ticket_internal_note` / `mention` — dipakai jika ingin membedakan bunyi notifikasi chat (termasuk saat di-mention) dari notifikasi umum lainnya.
+> `message_sound_count` adalah subset dari `count` khusus tipe `ticket_reply` / `ticket_internal_note` / `mention` - dipakai jika ingin membedakan bunyi notifikasi chat (termasuk saat di-mention) dari notifikasi umum lainnya.
 
 ---
 
@@ -1502,14 +1502,14 @@ Menghapus semua notifikasi yang **sudah dibaca** milik user yang login.
 
 | Kode  | Deskripsi                                             |
 | ----- | ----------------------------------------------------- |
-| `200` | OK — Request berhasil                                 |
-| `201` | Created — Resource berhasil dibuat                    |
-| `401` | Unauthorized — Token tidak valid atau belum login     |
-| `403` | Forbidden — Tidak memiliki izin                       |
-| `404` | Not Found — Resource tidak ditemukan                  |
-| `422` | Unprocessable Entity — Validasi input gagal           |
-| `429` | Too Many Requests — Rate limit tercapai               |
-| `500` | Internal Server Error — Terjadi kesalahan pada server |
+| `200` | OK - Request berhasil                                 |
+| `201` | Created - Resource berhasil dibuat                    |
+| `401` | Unauthorized - Token tidak valid atau belum login     |
+| `403` | Forbidden - Tidak memiliki izin                       |
+| `404` | Not Found - Resource tidak ditemukan                  |
+| `422` | Unprocessable Entity - Validasi input gagal           |
+| `429` | Too Many Requests - Rate limit tercapai               |
+| `500` | Internal Server Error - Terjadi kesalahan pada server |
 
 ---
 
@@ -1581,12 +1581,12 @@ Menghapus semua notifikasi yang **sudah dibaca** milik user yang login.
 
 ### Scope Data per Role
 
-5. Data yang ditampilkan di `/tickets` dan `/dashboard` **disesuaikan otomatis** berdasarkan role user yang login — tidak perlu mengirim parameter role tambahan.
+5. Data yang ditampilkan di `/tickets` dan `/dashboard` **disesuaikan otomatis** berdasarkan role user yang login - tidak perlu mengirim parameter role tambahan.
 6. **Delivery Support User** hanya melihat tiket yang belum di-assign (unassigned) di `GET /tickets`. Untuk melihat tiket yang dia tangani sendiri (sebagai PIC atau member), gunakan `GET /tickets/my`. Endpoint ini tersedia untuk semua role.
 
 ### Pesan (Messages)
 
-7. Endpoint `POST /tickets/{ticketId}/messages` untuk `message_type: reply` **mengirim email ke customer** (email-first, sama seperti web) — lihat detail di [5.6](#56-post-ticketsticketidmessages). Reply belum mendukung lampiran; hanya jatuh ke `channel: web` bila email gagal/tidak ada penerima.
+7. Endpoint `POST /tickets/{ticketId}/messages` untuk `message_type: reply` **mengirim email ke customer** (email-first, sama seperti web) - lihat detail di [5.6](#56-post-ticketsticketidmessages). Reply belum mendukung lampiran; hanya jatuh ke `channel: web` bila email gagal/tidak ada penerima.
 8. `internal_note` hanya terlihat oleh tim internal dan **tidak akan ditampilkan kepada customer**.
 
 ### Password

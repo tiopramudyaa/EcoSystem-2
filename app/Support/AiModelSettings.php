@@ -15,14 +15,14 @@ use Throwable;
  * Sekarang pemiliknya adalah super admin lewat Control Center → AI Settings,
  * dan kelas ini yang membaca keputusannya.
  *
- * SEJAK Agustus 2026 katalognya LINTAS PROVIDER — bukan Claude saja. Setiap
+ * SEJAK Agustus 2026 katalognya LINTAS PROVIDER - bukan Claude saja. Setiap
  * model membawa `provider` ('anthropic'|'openai'); AiChatService/
  * AiResearchService/AiTicketAnalyzerService membaca `provider` hasil
  * resolve() untuk memilih driver (lihat App\Services\Ai\Drivers\AiDriverFactory)
  * yang benar-benar bicara ke API provider itu. Kelas ini sendiri TIDAK
- * memanggil API mana pun — cuma sumber kebenaran ketentuan mana yang aktif.
+ * memanggil API mana pun - cuma sumber kebenaran ketentuan mana yang aktif.
  *
- * SATU MODEL PER ASISTEN — bukan beberapa preset (dulu "Fast"/"Balanced"/
+ * SATU MODEL PER ASISTEN - bukan beberapa preset (dulu "Fast"/"Balanced"/
  * "Reasoning"/"Deep research") yang dipilih lewat radio "Active". Preset itu
  * dibuang karena user tidak pernah memilih tier sendiri (selalu memakai yang
  * admin tandai aktif), jadi menyimpan beberapa preset yang tidak dipakai
@@ -30,22 +30,22 @@ use Throwable;
  * penyimpanan sekarang rata: satu {provider, model, max_tokens, effort} per
  * asisten, bukan {active, tiers: {...}}.
  *
- * DUA HAL YANG TIDAK BOLEH DISERAHKAN KE ADMIN — ditegakkan di sanitize():
+ * DUA HAL YANG TIDAK BOLEH DISERAHKAN KE ADMIN - ditegakkan di sanitize():
  *
  *   1. AI Research & Ticket Analyzer HARUS memakai model yang mendukung
  *      server-side web tool (web_search_20260209/web_fetch_20260209 di
  *      Anthropic, tool `web_search` bawaan Responses API di OpenAI). Model
- *      tanpa itu (mis. Haiku 4.5) TIDAK ditawarkan untuk dua asisten itu —
+ *      tanpa itu (mis. Haiku 4.5) TIDAK ditawarkan untuk dua asisten itu -
  *      kalau sampai terpilih, halamannya mati total dengan 400 dari API.
  *      Katalognya karena itu disaring per-asisten, bukan satu daftar global.
  *
- *   2. Effort/reasoning bukan satu skala universal — Claude memakai
+ *   2. Effort/reasoning bukan satu skala universal - Claude memakai
  *      low/medium/high/xhigh/max (output_config.effort), OpenAI memakai
  *      minimal/low/medium/high (reasoning.effort), dan sebagian model
  *      (Haiku 4.5) menolak parameter ini sama sekali, bukan mengabaikannya.
  *      Karena itu setiap entri katalog membawa daftar `efforts` MILIKNYA
  *      SENDIRI, dan nilai yang tersimpan divalidasi terhadap daftar model
- *      yang benar-benar aktif — bukan daftar global satu ukuran untuk semua.
+ *      yang benar-benar aktif - bukan daftar global satu ukuran untuk semua.
  *
  * Nilai yang tersimpan di DB SELALU dilewatkan sanitize() saat DIBACA, bukan
  * hanya saat disimpan: baris app_configs bisa saja diedit langsung lewat SQL,
@@ -63,14 +63,14 @@ final class AiModelSettings
 
     /**
      * Tanya-jawab interaktif di panel AI Analyzer saat validasi staging ticket
-     * (AiTicketQaService) — entri TERPISAH dari TICKET_ANALYZER meski sama-sama
+     * (AiTicketQaService) - entri TERPISAH dari TICKET_ANALYZER meski sama-sama
      * dipakai di layar yang sama, karena keduanya beda driver & beban kerja:
      * TICKET_ANALYZER lewat TicketAnalysisDriver (Agent Skill + code execution,
      * satu giliran, bisa makan waktu menitan), sedangkan ini lewat ChatDriver
      * (streaming, banyak giliran cepat, tanpa tool). Menumpang konfigurasi
      * TICKET_ANALYZER berarti tanya-jawab ringan ikut memakai model/effort yang
      * dipilih untuk triage berat (default opus-5/high) tanpa bisa diatur
-     * terpisah — pola yang sama seperti TICKET_SUMMARY yang sengaja dipisah
+     * terpisah - pola yang sama seperti TICKET_SUMMARY yang sengaja dipisah
      * dari INTERNAL (lihat docblock konstanta itu).
      */
     public const TICKET_QA = 'ticket_qa';
@@ -107,19 +107,19 @@ final class AiModelSettings
     /** Skala effort Claude (output_config.effort). */
     private const CLAUDE_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 
-    /** Skala reasoning effort OpenAI Responses API (reasoning.effort) — kosakata berbeda dari Claude. */
+    /** Skala reasoning effort OpenAI Responses API (reasoning.effort) - kosakata berbeda dari Claude. */
     private const OPENAI_EFFORTS = ['minimal', 'low', 'medium', 'high'];
 
     /**
-     * Model yang boleh dipilih. Daftar TERTUTUP — bukan input teks bebas,
+     * Model yang boleh dipilih. Daftar TERTUTUP - bukan input teks bebas,
      * supaya salah ketik ("claude-sonet-5") ketahuan di form, bukan saat user
      * pertama menekan Enter dan API menjawab 404.
      *
-     * - provider     : 'anthropic' | 'openai' — menentukan driver mana yang dipakai
+     * - provider     : 'anthropic' | 'openai' - menentukan driver mana yang dipakai
      *                  (App\Services\Ai\Drivers\AiDriverFactory), BUKAN cuma label.
      * - server_tools : mendukung web search/fetch bawaan provider (Anthropic:
      *                  web_search_20260209/web_fetch_20260209; OpenAI: tool
-     *                  `web_search` Responses API) — syarat AI Research & Ticket Analyzer.
+     *                  `web_search` Responses API) - syarat AI Research & Ticket Analyzer.
      * - efforts      : daftar TERTUTUP nilai effort/reasoning yang diterima model INI.
      *                  Array kosong = model menolak parameter effort sama sekali.
      * - max_output   : plafon max_tokens/max_output_tokens milik model itu sendiri
@@ -226,7 +226,7 @@ final class AiModelSettings
     private const MIN_MAX_TOKENS = 512;
 
     /**
-     * Keadaan awal — SATU model per asisten, bukan beberapa preset yang
+     * Keadaan awal - SATU model per asisten, bukan beberapa preset yang
      * dipilih lewat radio "Active". Angka-angkanya sama persis dengan yang
      * dulu jadi preset "Balanced"/"Reasoning" default, supaya migrasi dari
      * struktur tier lama tidak mengubah perilaku apa pun sampai admin
@@ -302,7 +302,7 @@ final class AiModelSettings
      * Konfigurasi yang BENAR-BENAR dipakai sebuah asisten sekarang.
      *
      * 'tier' dipertahankan di sini murni sebagai label pelacakan untuk jalur
-     * yang sudah ada (AiConversation::model_tier, AuditLog::logAiPrompt) —
+     * yang sudah ada (AiConversation::model_tier, AuditLog::logAiPrompt) -
      * sejak preset Fast/Balanced/Reasoning/Deep research dihapus (lihat
      * docblock kelas), tidak ada lagi "tier" yang dipilih, jadi nilainya
      * sekarang adalah model yang benar-benar dipakai. Itu informasi yang
@@ -337,7 +337,7 @@ final class AiModelSettings
         } catch (Throwable $e) {
             // Tabel app_configs belum ada (fresh install), DB sedang bermasalah,
             // atau isinya bukan JSON. Apa pun sebabnya, halaman AI tidak boleh
-            // ikut mati — jatuh ke bawaan dan catat.
+            // ikut mati - jatuh ke bawaan dan catat.
             Log::warning('AI model settings unreadable, falling back to defaults', [
                 'error' => $e->getMessage(),
             ]);
@@ -347,7 +347,7 @@ final class AiModelSettings
     }
 
     /**
-     * Simpan pilihan admin. Input mentah dari form — sanitize() yang menjaga
+     * Simpan pilihan admin. Input mentah dari form - sanitize() yang menjaga
      * agar yang mendarat di DB tidak pernah berupa kombinasi yang ditolak API.
      *
      * @param array<string, mixed> $input
@@ -366,15 +366,15 @@ final class AiModelSettings
     {
         // Research genuinely butuh flag `server_tools` ini (web_search/web_fetch).
         // Ticket Analyzer & Word Report dipinjamkan filter yang SAMA sebagai proxy
-        // kasar, tapi alasannya beda per provider — jangan disamakan kalau nanti diubah:
+        // kasar, tapi alasannya beda per provider - jangan disamakan kalau nanti diubah:
         //   - Sisi Anthropic: AnthropicTicketAnalysisDriver/AnthropicReportDriver
         //     butuh Agent Skills + code execution container. Belum ada konfirmasi
         //     model mana saja yang mendukungnya di luar Opus 5/Sonnet 5/Fable 5,
         //     jadi sementara ikut disaring ke katalog "server tools" biar tidak
         //     sengaja kepilih model yang belum tentu jalan (mis. Haiku 4.5).
         //   - Sisi OpenAI: OpenAiTicketAnalysisDriver TIDAK butuh web_search sama
-        //     sekali — cuma butuh Structured Outputs, dan OpenAiReportDriver cuma
-        //     butuh tool `code_interpreter` bawaan Responses API — keduanya
+        //     sekali - cuma butuh Structured Outputs, dan OpenAiReportDriver cuma
+        //     butuh tool `code_interpreter` bawaan Responses API - keduanya
         //     didukung hampir semua model GPT modern. Filter ini kebetulan tidak
         //     menyingkirkan model apa pun di katalog OpenAI hari ini (semua entri
         //     gpt-5.6-* punya server_tools:true), tapi kalau suatu saat ada model
@@ -394,7 +394,7 @@ final class AiModelSettings
      * model AI Assistant lalu diam-diam jatuh ke konfigurasi AI Research bila
      * modelnya tidak punya web search. Sejak AI Summarize punya entri sendiri
      * (TICKET_SUMMARY, dijamin ber-server-tool oleh sanitize()), pemeriksaan itu
-     * tidak dibutuhkan lagi — tapi helper-nya dipertahankan karena ini satu-
+     * tidak dibutuhkan lagi - tapi helper-nya dipertahankan karena ini satu-
      * satunya cara membaca flag `server_tools` untuk SATU model dari luar kelas
      * ini.
      */
@@ -444,7 +444,7 @@ final class AiModelSettings
             // Model tak dikenal, atau model tanpa server tool untuk assistant yang
             // butuh code execution/web tool (Research, Ticket Analyzer, dan kedua
             // fase Word Report Generator -- lihat catalogFor()): kembalikan ke
-            // bawaan asisten ini — bukan ke model lain yang kebetulan tersedia,
+            // bawaan asisten ini - bukan ke model lain yang kebetulan tersedia,
             // supaya hasilnya bisa ditebak.
             $needsServerTools = in_array($assistant, self::NEEDS_SERVER_TOOLS, true);
             if (!isset(self::CATALOG[$model])
@@ -456,7 +456,7 @@ final class AiModelSettings
             $maxTokens = max(self::MIN_MAX_TOKENS, min($maxTokens, self::CATALOG[$model]['max_output']));
 
             // Effort divalidasi terhadap daftar MILIK MODEL INI, bukan satu skala
-            // global — Claude dan OpenAI memakai kosakata berbeda (lihat docblock
+            // global - Claude dan OpenAI memakai kosakata berbeda (lihat docblock
             // kelas), dan sebagian model (Haiku 4.5) menolak parameter ini sama
             // sekali (efforts = []), bukan mengabaikan nilai yang tidak dikenal.
             $effort = $given['effort'] ?? $defaults['effort'];

@@ -1,8 +1,8 @@
-# Customer Email Resolution — Urutan Prioritas
+# Customer Email Resolution - Urutan Prioritas
 
 ## Latar Belakang
 
-Setiap kali EcoSystem mengirim email ke customer (reply ticket, proposal mandays, deliverable, dll), sistem harus mencari alamat email customer. Masalahnya: tidak ada satu kolom tunggal yang selalu terisi untuk semua skenario pembuatan ticket. Ticket bisa masuk via email, via portal Jarvies, via import CSV, atau dibuat manual oleh agent — masing-masing menyimpan email di tempat berbeda.
+Setiap kali EcoSystem mengirim email ke customer (reply ticket, proposal mandays, deliverable, dll), sistem harus mencari alamat email customer. Masalahnya: tidak ada satu kolom tunggal yang selalu terisi untuk semua skenario pembuatan ticket. Ticket bisa masuk via email, via portal Jarvies, via import CSV, atau dibuat manual oleh agent - masing-masing menyimpan email di tempat berbeda.
 
 Solusinya adalah **resolve bertahap**: cek sumber paling reliable dulu, turun ke fallback berikutnya jika kosong.
 
@@ -14,8 +14,8 @@ Solusinya adalah **resolve bertahap**: cek sumber paling reliable dulu, turun ke
 |--------|--------|-------|--------------|
 | 1 | `tickets.submitted_by_email` | `tickets.submitted_by_email` | Saat agent klik **Initiate Email** di ticket, atau ticket dibuat via import CSV dengan email customer |
 | 2 | `staging_tickets.submitted_by_email` | `staging_tickets.submitted_by_email` | Saat customer submit ticket dari portal Jarvies (form staging) dan ticket diapprove |
-| 3 | `ticket_messages.sender_email` (pesan pertama dari customer) | `ticket_messages.sender_email` | Saat email masuk dari customer diproses oleh webhook inbound email — `sender_email` diisi dari header `From:` email asli |
-| 4 | `customers.email` | `customers.email` | Email login akun customer di sistem — sering kosong karena tidak semua customer punya akun portal |
+| 3 | `ticket_messages.sender_email` (pesan pertama dari customer) | `ticket_messages.sender_email` | Saat email masuk dari customer diproses oleh webhook inbound email - `sender_email` diisi dari header `From:` email asli |
+| 4 | `customers.email` | `customers.email` | Email login akun customer di sistem - sering kosong karena tidak semua customer punya akun portal |
 
 > **Penting:** Langkah 4 (`customers.email`) adalah email login perusahaan/akun, bukan alamat kontak personal. Field ini sering NULL, jadi tidak boleh dijadikan sumber utama.
 
@@ -50,7 +50,7 @@ Solusinya adalah **resolve bertahap**: cek sumber paling reliable dulu, turun ke
 
 ## Implementasi Per Controller
 
-### `TicketMessageController` — method `resolveCustomerEmail()`
+### `TicketMessageController` - method `resolveCustomerEmail()`
 Digunakan untuk: reply agent ke customer, sistem email (meeting invitation, dll).
 
 ```php
@@ -87,14 +87,14 @@ private function resolveCustomerEmail(Ticket $ticket): ?string
 
 ---
 
-### `TicketDeliverableController` — method `resolveCustomerEmail()`
+### `TicketDeliverableController` - method `resolveCustomerEmail()`
 Digunakan untuk: pengiriman dokumen deliverable ke customer.
 
 Implementasi identik dengan `TicketMessageController` (4 langkah sama).
 
 ---
 
-### `MandaysController` — method `resolveCustomerEmailForTicket()`
+### `MandaysController` - method `resolveCustomerEmailForTicket()`
 Digunakan untuk: pengiriman proposal mandays ke customer via tombol **Send to Customer**.
 
 Implementasi identik dengan `TicketMessageController` (4 langkah sama, langkah 1 ditambahkan pada 2026-07-02 setelah ditemukan bug warning *"No customer email address found"*).
@@ -103,7 +103,7 @@ Implementasi identik dengan `TicketMessageController` (4 langkah sama, langkah 1
 
 ## Catatan untuk Implementasi Baru
 
-Setiap kali ada fitur baru yang perlu mengirim email ke customer, ikuti pola yang sama persis — 4 langkah, urutan sama. Jangan hanya pakai `customer.email` karena sering kosong.
+Setiap kali ada fitur baru yang perlu mengirim email ke customer, ikuti pola yang sama persis - 4 langkah, urutan sama. Jangan hanya pakai `customer.email` karena sering kosong.
 
 Template yang bisa di-copy:
 

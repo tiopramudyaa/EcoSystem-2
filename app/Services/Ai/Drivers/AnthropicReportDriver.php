@@ -15,7 +15,7 @@ use RuntimeException;
 use Throwable;
 
 /**
- * Claude side of Word Report Generator — Agent Skill custom
+ * Claude side of Word Report Generator - Agent Skill custom
  * "laravel-word-report-generator" (lihat
  * .claude/skills/laravel-word-report-generator/SKILL.md) + code execution
  * container, dipakai HANYA di assembleDocument() (fase 3 -- lihat

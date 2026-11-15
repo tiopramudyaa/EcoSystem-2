@@ -101,7 +101,7 @@ class DeliveryProject extends Model
      * Kolom yang diisi OTOMATIS oleh sistem (turunan planning / metadata OneDrive).
      * Perubahan pada kolom ini saja tidak dihitung sebagai aktivitas user.
      * Catatan: category/status/phase juga diturunkan sistem, tapi jalurnya
-     * (updateFromPlanning) memakai saveQuietly sehingga tidak memicu event —
+     * (updateFromPlanning) memakai saveQuietly sehingga tidak memicu event -
      * sedangkan perubahan manual lewat updateField tetap terhitung.
      */
     private const SYSTEM_MANAGED_COLUMNS = [
@@ -124,7 +124,7 @@ class DeliveryProject extends Model
      * Catat "Last Update Date" (last_activity_at) project = sekarang.
      *
      * Ditulis lewat query builder mentah: tidak memicu event model, audit log,
-     * maupun updated_at — kolom ini murni jejak aktivitas user.
+     * maupun updated_at - kolom ini murni jejak aktivitas user.
      */
     public static function markActivity($projectId): void
     {
@@ -173,7 +173,7 @@ class DeliveryProject extends Model
     }
 
     /**
-     * Jalankan $callback tanpa mencatat aktivitas — untuk penulisan yang
+     * Jalankan $callback tanpa mencatat aktivitas - untuk penulisan yang
      * dilakukan SISTEM (auto-sync saat halaman dibuka, scheduler, dsb).
      */
     public static function withoutActivityTracking(callable $callback)
@@ -262,12 +262,12 @@ class DeliveryProject extends Model
      * Apakah employee ini adalah Project Owner dari project ini?
      *
      * PENTING: kolom `project_owner` menyimpan NAMA (EmployeeBasicData::$full_name),
-     * bukan foreign key — dropdown "Project Owner" di form Add/Edit Project mengirim
+     * bukan foreign key - dropdown "Project Owner" di form Add/Edit Project mengirim
      * full_name sebagai value. Jadi pencocokan terpaksa dilakukan by nama
      * (trim + case-insensitive). Konsekuensinya: kalau ada dua employee dengan
      * full_name identik, keduanya dianggap owner.
      *
-     * Catatan: `full_name` adalah ACCESSOR (first_name + last_name), bukan kolom —
+     * Catatan: `full_name` adalah ACCESSOR (first_name + last_name), bukan kolom -
      * jadi tidak bisa di-query lewat where/value(), harus dibaca dari model.
      */
     public function isOwnedByEmployee($employeeId): bool
@@ -581,7 +581,7 @@ class DeliveryProject extends Model
      * Σ(bobot phase × progres phase) ÷ Σbobot phase, dengan progres phase sendiri
      * = Σ(bobot group × progres group) ÷ Σbobot group.
      *
-     * Satu-satunya sumber angka Overall Progress / Planned Progress / SPI —
+     * Satu-satunya sumber angka Overall Progress / Planned Progress / SPI -
      * calculateOverallProgress(), calculatePlannedProgress() dan calculateSpi()
      * semuanya membacanya dari sini, supaya list, halaman detail dan export
      * tidak pernah menampilkan tiga angka berbeda.
@@ -635,7 +635,7 @@ class DeliveryProject extends Model
                     $phaseProgress = $weightedGroupProgress / $totalGroupWeight;
                     $phasePlanned  = $weightedGroupPlanned / $totalGroupWeight;
                 } else {
-                    // Bobot group belum diisi sama sekali — bagi rata, jangan
+                    // Bobot group belum diisi sama sekali - bagi rata, jangan
                     // diperlakukan 0%. Bobot phase-nya tetap menekan penyebut
                     // overall, jadi menol-kan progresnya menarik turun angka
                     // proyek tanpa sebab. Aturan yang sama dipakai
@@ -720,7 +720,7 @@ class DeliveryProject extends Model
     }
 
     /**
-     * Progres RENCANA keseluruhan — pasangan dari calculateOverallProgress().
+     * Progres RENCANA keseluruhan - pasangan dari calculateOverallProgress().
      * Dipakai export/laporan untuk menampilkan deviasi rencana vs aktual di
      * samping SPI (SPI = aktual ÷ rencana).
      */

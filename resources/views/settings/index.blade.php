@@ -166,7 +166,7 @@
                         </div>
                         <div class="flex items-center gap-3">
                             {{-- 'default' bukan bagian dari SeasonalThemes (itu katalog tema yang
-                                 bisa dirender) — ini murni pilihan "ikut admin" di level preferensi
+                                 bisa dirender) - ini murni pilihan "ikut admin" di level preferensi
                                  user, lihat App\Support\SeasonalThemeResolver. --}}
                             <button type="button" onclick="selectSeasonalTheme('default')"
                                 class="flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all hover:border-red-400

@@ -43,7 +43,7 @@
                     parts.push(d.toLocaleString('en-GB', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }));
                 }
                 if (parts.length) {
-                    meta.textContent = parts.join(' — ');
+                    meta.textContent = parts.join(' - ');
                     meta.classList.remove('hidden');
                 }
             }
@@ -86,7 +86,7 @@
                         parts.push(d.toLocaleString('en-GB', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }));
                     }
                     if (parts.length) {
-                        meta.textContent = parts.join(' — ');
+                        meta.textContent = parts.join(' - ');
                         meta.classList.remove('hidden');
                     }
                 }

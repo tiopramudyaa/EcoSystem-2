@@ -51,7 +51,7 @@
                     </div>
                     <div>
                         <h3 class="text-sm font-semibold text-gray-900">Upload New Sound</h3>
-                        <p class="text-xs text-gray-400">WAV, MP3, OGG, AAC — max 3 MB</p>
+                        <p class="text-xs text-gray-400">WAV, MP3, OGG, AAC - max 3 MB</p>
                     </div>
                 </div>
 

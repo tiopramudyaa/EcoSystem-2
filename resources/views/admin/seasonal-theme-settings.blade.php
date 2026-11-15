@@ -25,7 +25,7 @@
         <p class="text-xs leading-relaxed text-indigo-900">
             This sets the <strong>default</strong> theme applied to every user's dashboard sidebar/navbar and the
             login page. It does not override users who already picked their own choice ("Off" or a specific theme)
-            in Settings &rarr; Appearance &mdash; only users still on <strong>"Default"</strong> follow this setting.
+            in Settings &rarr; Appearance - only users still on <strong>"Default"</strong> follow this setting.
         </p>
     </div>
 
@@ -78,7 +78,7 @@
                 </div>
                 <div class="min-w-0 flex-1">
                     <h2 class="text-sm font-semibold text-gray-900">Background music</h2>
-                    <p class="text-xs text-gray-500">Plays on every page after login. Admin-only — users cannot pick the track (they may only mute/unmute for themselves).</p>
+                    <p class="text-xs text-gray-500">Plays on every page after login. Admin-only - users cannot pick the track (they may only mute/unmute for themselves).</p>
                 </div>
             </header>
 
@@ -106,11 +106,11 @@
                     <input type="range" name="volume" id="globalVolumeInput" min="0" max="100" value="{{ $activeVolume }}"
                         oninput="document.getElementById('globalVolumeLabel').textContent = this.value + '%'"
                         class="w-full accent-red-700">
-                    <p class="text-xs text-gray-400 mt-1">Applies to every user — they cannot adjust this themselves (they may only mute/unmute).</p>
+                    <p class="text-xs text-gray-400 mt-1">Applies to every user - they cannot adjust this themselves (they may only mute/unmute).</p>
                 </div>
 
-                {{-- Upload BUKAN <form> bersarang (form di dalam form tidak valid HTML —
-                     section ini ada di dalam form Save utama) — pakai fetch() langsung ke
+                {{-- Upload BUKAN <form> bersarang (form di dalam form tidak valid HTML -
+                     section ini ada di dalam form Save utama) - pakai fetch() langsung ke
                      endpoint upload terpisah, lalu reload supaya file baru masuk daftar. --}}
                 <div class="rounded-lg border border-dashed border-gray-300 p-4">
                     <label class="block text-xs font-medium text-gray-600 mb-2">Upload a new track</label>
@@ -123,9 +123,9 @@
                         </button>
                     </div>
                     <p class="text-xs text-gray-400 mt-2">
-                        WAV, MP3, OGG, or AAC — max 3&nbsp;MB. Same storage as
+                        WAV, MP3, OGG, or AAC - max 3&nbsp;MB. Same storage as
                         <a href="{{ route('admin.sounds') }}" class="text-red-700 hover:underline">Control Center &rarr; Notif Sounds</a>
-                        (one shared folder for all sound files in the app) — after uploading, select the track above and Save.
+                        (one shared folder for all sound files in the app) - after uploading, select the track above and Save.
                     </p>
                 </div>
             </div>
@@ -165,7 +165,7 @@ async function uploadGlobalSound() {
             body: fd,
         });
         if (res.redirected || res.ok) {
-            // Upload sukses lalu redirect balik ke halaman ini (respons controller) —
+            // Upload sukses lalu redirect balik ke halaman ini (respons controller) -
             // reload penuh supaya <select> daftar lagu ikut ter-refresh dengan file baru.
             window.location.reload();
         } else {

@@ -24,7 +24,7 @@ $allRoles = DB::table('employee_role_assignment as era')
 $primaryRoleId = $roleIds[0] ?? 0; // ← urutan tidak dijamin!
 ```
 
-MySQL tidak menjamin urutan tanpa `ORDER BY`, sehingga role pertama yang dikembalikan bisa role mana saja — bukan yang paling tinggi secara struktural.
+MySQL tidak menjamin urutan tanpa `ORDER BY`, sehingga role pertama yang dikembalikan bisa role mana saja - bukan yang paling tinggi secara struktural.
 
 ### Kenapa `ORDER BY id` Tidak Cukup?
 
@@ -57,9 +57,9 @@ Codebase sudah memiliki infrastruktur untuk multi-role:
 | `getRoleIds()` | `app/Models/Employee.php` | ✅ Ada |
 
 **Yang sudah menggunakan dengan benar:**
-- `ReportingController` — pakai `$sessionUser['role_ids'] ?? [$sessionUser['role']['id']]`
-- `TimesheetController` — pakai `$user->hasAnyRole()`
-- `StagingTicketController` — pakai `SessionUser::fromSession()`
+- `ReportingController` - pakai `$sessionUser['role_ids'] ?? [$sessionUser['role']['id']]`
+- `TimesheetController` - pakai `$user->hasAnyRole()`
+- `StagingTicketController` - pakai `SessionUser::fromSession()`
 
 ---
 
@@ -143,26 +143,26 @@ try { data = await res.json(); } catch { showNotification(`Server error (HTTP ${
 
 ## Rencana Perbaikan Bertahap
 
-### Phase 1 — Controller Tiket (Prioritas Tinggi)
-- [ ] `TicketController.php` — migrate semua 40+ role check ke `role_ids`
+### Phase 1 - Controller Tiket (Prioritas Tinggi)
+- [ ] `TicketController.php` - migrate semua 40+ role check ke `role_ids`
 - Estimasi: 2-3 hari
 
-### Phase 2 — Controller Lain yang Sering Dipakai
+### Phase 2 - Controller Lain yang Sering Dipakai
 - [ ] `MandaysController.php`
 - [ ] `CalendarController.php`
 - [ ] `TimesheetController.php`
 - Estimasi: 1-2 hari
 
-### Phase 3 — Service Layer
-- [ ] `PeriodService.php` — fix `$roleIds[0]` menjadi cek semua role
+### Phase 3 - Service Layer
+- [ ] `PeriodService.php` - fix `$roleIds[0]` menjadi cek semua role
 - Estimasi: 0.5 hari
 
-### Phase 4 — Cleanup Hardcoded Values
-- [ ] `SlaController.php` — ganti `[1, 5, 6]` dengan RoleId enum
-- [ ] `AdminNotificationSoundController.php` — ganti `1` dengan `RoleId::EC_ADMINISTRATOR->value`
+### Phase 4 - Cleanup Hardcoded Values
+- [ ] `SlaController.php` - ganti `[1, 5, 6]` dengan RoleId enum
+- [ ] `AdminNotificationSoundController.php` - ganti `1` dengan `RoleId::EC_ADMINISTRATOR->value`
 - Estimasi: 0.5 hari
 
-### Phase 5 — Standardisasi Pattern
+### Phase 5 - Standardisasi Pattern
 - [ ] Semua controller migrate ke `SessionUser::fromSession()` + `hasAnyRole()`
 - [ ] Hapus direct access `$sessionUser['role']['id']` kecuali untuk display saja
 - Estimasi: 2-3 hari
@@ -174,7 +174,7 @@ try { data = await res.json(); } catch { showNotification(`Server error (HTTP ${
 ## Pattern yang Direkomendasikan
 
 ```php
-// ✅ CARA YANG BENAR — cek semua role
+// ✅ CARA YANG BENAR - cek semua role
 $roleIds    = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id']]);
 $isAdmin    = in_array(RoleId::EC_ADMINISTRATOR->value, $roleIds, true);
 $isHelpdesk = (bool) array_intersect($roleIds, RoleId::HELPDESK_GROUP);
@@ -183,7 +183,7 @@ $isHelpdesk = (bool) array_intersect($roleIds, RoleId::HELPDESK_GROUP);
 $user = SessionUser::fromSession();
 if ($user->hasAnyRole([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value])) { }
 
-// ❌ JANGAN — hanya cek primary role
+// ❌ JANGAN - hanya cek primary role
 $roleId     = $sessionUser['role']['id'];
 $isHelpdesk = in_array($roleId, RoleId::HELPDESK_GROUP, true);
 ```

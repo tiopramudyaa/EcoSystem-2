@@ -108,7 +108,7 @@ class AdminBackupController extends Controller
             if (!is_dir($dir)) mkdir($dir, 0755, true);
             $filepath  = $dir . DIRECTORY_SEPARATOR . $filename;
 
-            // Build command — redirect stderr to a temp file to capture errors.
+            // Build command - redirect stderr to a temp file to capture errors.
             // escapeshellarg() is used on all platforms; on Windows it wraps with
             // double-quotes which mysqldump accepts for the -p argument.
             $passArg = $pass !== '' ? '-p' . escapeshellarg($pass) : '';
@@ -398,7 +398,7 @@ class AdminBackupController extends Controller
             ->select(
                 'c.customer_id', 'c.customer_code', 'c.email', 'c.is_active',
                 'b.title', 'b.name_1', 'b.name_2',
-                // Customer Group struktural — utamakan nama dari relasi customer_groups,
+                // Customer Group struktural - utamakan nama dari relasi customer_groups,
                 // fallback ke kolom teks lama bila FK belum terisi.
                 DB::raw('COALESCE(cg.name, b.customer_group) as customer_group'),
                 'b.customer_category', 'b.industry_sector',
@@ -479,7 +479,7 @@ class AdminBackupController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->fromArray([
-            // Header columns — snake_case, compatible with both full names and Excel-truncated variants
+            // Header columns - snake_case, compatible with both full names and Excel-truncated variants
             [
                 'ECI', 'role', 'status', 'email', 'phone',
                 'title', 'nick_name', 'gender', 'religion',
@@ -648,7 +648,7 @@ class AdminBackupController extends Controller
         };
 
         // Cari baris header asli. File dari Excel kadang punya baris judul
-        // ("Employee") sebelum baris header sebenarnya — lewati sampai ketemu
+        // ("Employee") sebelum baris header sebenarnya - lewati sampai ketemu
         // baris yang memuat kolom "ECI" (maks. 5 baris pertama).
         $colIndex = $buildColIndex($rawHeaders);
         $headerAttempts = 0;
@@ -703,10 +703,10 @@ class AdminBackupController extends Controller
 
             $eci = $get('eci');
 
-            // Pencocokan employee memakai ECI — identifier unik & stabil,
+            // Pencocokan employee memakai ECI - identifier unik & stabil,
             // sedangkan nama bisa berubah/duplikat antar employee.
             if (!$eci) {
-                $errors[] = "Baris {$rowNum}: Kolom 'ECI' wajib diisi — dipakai untuk mencocokkan employee";
+                $errors[] = "Baris {$rowNum}: Kolom 'ECI' wajib diisi - dipakai untuk mencocokkan employee";
                 continue;
             }
 
@@ -756,7 +756,7 @@ class AdminBackupController extends Controller
                 if (isset($homeBaseCanon[$key])) {
                     $homeBase = $homeBaseCanon[$key];
                 } else {
-                    $errors[] = "[Peringatan] Baris {$rowNum} ({$eci}): Home Base '{$homeBase}' tidak dikenali — tersimpan apa adanya";
+                    $errors[] = "[Peringatan] Baris {$rowNum} ({$eci}): Home Base '{$homeBase}' tidak dikenali - tersimpan apa adanya";
                 }
             }
 
@@ -804,7 +804,7 @@ class AdminBackupController extends Controller
 
                 // Email auth WAJIB unik. Bila email CSV sudah dipakai akun lain
                 // (mis. email berpola nama-depan yang kebetulan sama), jangan pakai
-                // untuk baris ini — buat employee tanpa email + beri peringatan,
+                // untuk baris ini - buat employee tanpa email + beri peringatan,
                 // agar import tetap jalan (admin isi/perbaiki email manual nanti).
                 $emailForAuth  = $email;
                 $emailConflict = false;
@@ -881,7 +881,7 @@ class AdminBackupController extends Controller
                             'updated_at'    => now(),
                         ]);
                         if ($emailConflict) {
-                            $errors[] = "[Peringatan] Baris {$rowNum} ({$eci}): email '{$email}' sudah dipakai akun lain — employee tetap dibuat tapi TANPA email, isi manual nanti";
+                            $errors[] = "[Peringatan] Baris {$rowNum} ({$eci}): email '{$email}' sudah dipakai akun lain - employee tetap dibuat tapi TANPA email, isi manual nanti";
                         }
                     } else {
                         $authUpdate = ['updated_at' => now()];
@@ -904,7 +904,7 @@ class AdminBackupController extends Controller
                     // dipakai employee lain lewat matching $existing di atas)
                     if (!$roleId) {
                         DB::rollBack();
-                        $errors[] = "Baris {$rowNum} ({$eci}): employee baru tapi Role tidak valid — baris dilewati";
+                        $errors[] = "Baris {$rowNum} ({$eci}): employee baru tapi Role tidak valid - baris dilewati";
                         continue;
                     }
                     // Email kosong di CSV → employee tetap dibuat, auth_users.email = null
@@ -917,7 +917,7 @@ class AdminBackupController extends Controller
                         'updated_at' => now(),
                     ]);
 
-                    // Role assignment — SEMUA role dari CSV + "User System
+                    // Role assignment - SEMUA role dari CSV + "User System
                     // Registered" (wajib untuk akses login).
                     $assignRoleIds = array_values(array_unique(array_filter(array_merge($roleIds, [$systemRoleId]))));
                     DB::table('employee_role_assignment')->insertOrIgnore(
@@ -929,7 +929,7 @@ class AdminBackupController extends Controller
                         ], $assignRoleIds)
                     );
 
-                    // Auth account — password default = initial. is_already_cp=false:
+                    // Auth account - password default = initial. is_already_cp=false:
                     // saat login pertama sistem kirim email link set-password.
                     DB::table('auth_users')->insert([
                         'employee_id'   => $employeeId,
@@ -944,7 +944,7 @@ class AdminBackupController extends Controller
                         'updated_at'    => now(),
                     ]);
                     if ($emailConflict) {
-                        $errors[] = "Baris {$rowNum} ({$eci}): email '{$email}' sudah dipakai akun lain — akun dibuat TANPA email, isi manual nanti";
+                        $errors[] = "Baris {$rowNum} ({$eci}): email '{$email}' sudah dipakai akun lain - akun dibuat TANPA email, isi manual nanti";
                     }
 
                     if ($basicData) {
@@ -1053,7 +1053,7 @@ class AdminBackupController extends Controller
      *    ("6.28123E+12") → di sini dikembalikan ke string integer penuh.
      *  - Excel menambah apostrof di depan ('6281...) → di-strip.
      * Catatan: bila presisi SUDAH hilang di Excel (mis. "6281230000000"),
-     * server tidak bisa memulihkannya — kolom Phone WAJIB diformat Text di Excel
+     * server tidak bisa memulihkannya - kolom Phone WAJIB diformat Text di Excel
      * sebelum diisi/di-export ke CSV.
      */
     private function normalizePhone(?string $v): ?string
@@ -1186,7 +1186,7 @@ class AdminBackupController extends Controller
         $updated  = 0;
         $errors   = [];
         $rowNum   = 1;
-        // [customer_id => parent customer code] — resolved in a second pass so a
+        // [customer_id => parent customer code] - resolved in a second pass so a
         // parent referenced by a row above it (not yet inserted) still maps.
         $pendingParents = [];
 
@@ -1221,7 +1221,7 @@ class AdminBackupController extends Controller
             $isActive     = $get('Status', $row) !== null
                 ? (strtolower($get('Status', $row)) === 'active' ? 1 : 0)
                 : 1;
-            // Customer Group struktural — resolve nama ke customer_groups
+            // Customer Group struktural - resolve nama ke customer_groups
             // (find-or-create). null bila kolom kosong → FK tidak disentuh saat
             // update, parity dengan mirror kolom teks yang juga di-skip saat kosong.
             $group   = $this->resolveCustomerGroup($get('Customer Group', $row));
@@ -1301,11 +1301,11 @@ class AdminBackupController extends Controller
                     }
 
                     if (DB::table('customer')->where('customer_code', $customerCode)->exists()) {
-                        $errors[] = "Baris {$rowNum}: Customer Code '{$customerCode}' sudah ada — baris dilewati";
+                        $errors[] = "Baris {$rowNum}: Customer Code '{$customerCode}' sudah ada - baris dilewati";
                         continue;
                     }
                     if ($email && DB::table('customer')->where('email', $email)->exists()) {
-                        $errors[] = "Baris {$rowNum}: Email '{$email}' sudah terdaftar — baris dilewati";
+                        $errors[] = "Baris {$rowNum}: Email '{$email}' sudah terdaftar - baris dilewati";
                         continue;
                     }
 
@@ -1342,7 +1342,7 @@ class AdminBackupController extends Controller
         foreach ($pendingParents as $cid => $pcode) {
             $parent = DB::table('customer')->where('customer_code', $pcode)->first();
             if (!$parent) {
-                $errors[] = "Parent Customer Code '{$pcode}' tidak ditemukan — parent untuk customer ID {$cid} dilewati";
+                $errors[] = "Parent Customer Code '{$pcode}' tidak ditemukan - parent untuk customer ID {$cid} dilewati";
                 continue;
             }
             if ($parent->customer_id == $cid) {
@@ -1720,7 +1720,7 @@ class AdminBackupController extends Controller
                 if ($rawCustomerCreate    === '' || $rawCustomerCreate    === '-') $missingCreate[] = 'Customer';
 
                 if ($missingCreate) {
-                    $errors[] = "Row {$rowNum} (#{$ticketNumber}): Ticket tidak ditemukan dan tidak dapat dibuat — field wajib kosong: " . implode(', ', $missingCreate);
+                    $errors[] = "Row {$rowNum} (#{$ticketNumber}): Ticket tidak ditemukan dan tidak dapat dibuat - field wajib kosong: " . implode(', ', $missingCreate);
                     $skipped++;
                     continue;
                 }
@@ -1735,7 +1735,7 @@ class AdminBackupController extends Controller
                     ->first();
 
                 if (!$customerCreate) {
-                    $errors[] = "Row {$rowNum} (#{$ticketNumber}): Customer '{$rawCustomerCreate}' tidak ditemukan — ticket tidak dapat dibuat";
+                    $errors[] = "Row {$rowNum} (#{$ticketNumber}): Customer '{$rawCustomerCreate}' tidak ditemukan - ticket tidak dapat dibuat";
                     $skipped++;
                     continue;
                 }
@@ -1746,7 +1746,7 @@ class AdminBackupController extends Controller
                     if (strcasecmp($rawPriorityCreate, $vp) === 0) { $priorityCreate = $vp; break; }
                 }
                 if (!$priorityCreate) {
-                    $errors[] = "Row {$rowNum} (#{$ticketNumber}): Priority '{$rawPriorityCreate}' tidak valid (diterima: " . implode(', ', $validPriorities) . ") — ticket tidak dapat dibuat";
+                    $errors[] = "Row {$rowNum} (#{$ticketNumber}): Priority '{$rawPriorityCreate}' tidak valid (diterima: " . implode(', ', $validPriorities) . ") - ticket tidak dapat dibuat";
                     $skipped++;
                     continue;
                 }
@@ -1757,7 +1757,7 @@ class AdminBackupController extends Controller
                     if (strcasecmp($rawTypeCreate, $vt) === 0) { $typeCreate = $vt; break; }
                 }
                 if (!$typeCreate) {
-                    $errors[] = "Row {$rowNum} (#{$ticketNumber}): Type '{$rawTypeCreate}' tidak valid (diterima: " . implode(', ', $validTypes) . ") — ticket tidak dapat dibuat";
+                    $errors[] = "Row {$rowNum} (#{$ticketNumber}): Type '{$rawTypeCreate}' tidak valid (diterima: " . implode(', ', $validTypes) . ") - ticket tidak dapat dibuat";
                     $skipped++;
                     continue;
                 }
@@ -1787,7 +1787,7 @@ class AdminBackupController extends Controller
                     if ($rawPC !== '' && $rawPC !== '-') $picCreate = $rawPC;
                 }
 
-                // Ticket Lead (optional) — first name → lead, rest → members
+                // Ticket Lead (optional) - first name → lead, rest → members
                 $ticketLeadIdCreate  = null;
                 $extraMemberIdsCreate = [];
                 if (isset($colIndex['ticket_lead'])) {
@@ -1798,7 +1798,7 @@ class AdminBackupController extends Controller
                         foreach ($leadNames as $leadName) {
                             $emp = $lookupEmployeeByName($leadName);
                             if (!$emp) {
-                                $errors[] = "[Peringatan] Row {$rowNum} (#{$ticketNumber}): Ticket Lead '{$leadName}' tidak ditemukan — dilewati";
+                                $errors[] = "[Peringatan] Row {$rowNum} (#{$ticketNumber}): Ticket Lead '{$leadName}' tidak ditemukan - dilewati";
                                 continue;
                             }
                             if ($firstLead) {
@@ -1812,7 +1812,7 @@ class AdminBackupController extends Controller
                     }
                 }
 
-                // Start date (optional — kolom 'Date')
+                // Start date (optional - kolom 'Date')
                 $startDateCreate = null;
                 if (isset($colIndex['date'])) {
                     $rawDC = trim($row[$colIndex['date']] ?? '');
@@ -1838,7 +1838,7 @@ class AdminBackupController extends Controller
                             })
                             ->value('c.customer_id');
                         if (!$endCustomerIdCreate) {
-                            $errors[] = "[Peringatan] Row {$rowNum} (#{$ticketNumber}): End Customer '{$rawEc}' tidak ditemukan — diabaikan";
+                            $errors[] = "[Peringatan] Row {$rowNum} (#{$ticketNumber}): End Customer '{$rawEc}' tidak ditemukan - diabaikan";
                         }
                     }
                 }
@@ -1894,7 +1894,7 @@ class AdminBackupController extends Controller
                         ->first();
 
                     if (!$customerUpdate) {
-                        $errors[] = "Row {$rowNum} (#{$ticketNumber}): Customer '{$rawCustomer}' tidak ditemukan di master customer — baris dilewati";
+                        $errors[] = "Row {$rowNum} (#{$ticketNumber}): Customer '{$rawCustomer}' tidak ditemukan di master customer - baris dilewati";
                         $skipped++;
                         continue;
                     }
@@ -1976,7 +1976,7 @@ class AdminBackupController extends Controller
                 }
             }
 
-            // Ticket Lead (UPDATE) — first name → update lead + pic, rest → add as members
+            // Ticket Lead (UPDATE) - first name → update lead + pic, rest → add as members
             $extraMemberIdsUpdate = [];
             if (isset($colIndex['ticket_lead'])) {
                 $rawLead = trim($row[$colIndex['ticket_lead']] ?? '');
@@ -1986,7 +1986,7 @@ class AdminBackupController extends Controller
                     foreach ($leadNames as $leadName) {
                         $emp = $lookupEmployeeByName($leadName);
                         if (!$emp) {
-                            $errors[] = "[Peringatan] Row {$rowNum} (#{$ticketNumber}): Ticket Lead '{$leadName}' tidak ditemukan — dilewati";
+                            $errors[] = "[Peringatan] Row {$rowNum} (#{$ticketNumber}): Ticket Lead '{$leadName}' tidak ditemukan - dilewati";
                             continue;
                         }
                         if ($firstLead) {
@@ -2307,7 +2307,7 @@ class AdminBackupController extends Controller
                 ->first();
 
             if (!$ticket) {
-                $errors[] = "Ticket #{$ticketNumber}: tidak ditemukan — semua baris tiket ini dilewati";
+                $errors[] = "Ticket #{$ticketNumber}: tidak ditemukan - semua baris tiket ini dilewati";
                 continue;
             }
 
@@ -2318,10 +2318,10 @@ class AdminBackupController extends Controller
                 $eci = $get('employee_eci', $row);
                 // Normalisasi nilai error Excel (#N/A, #REF!, dll)
                 if ($eci && preg_match('/^#[A-Z\/]+[!?]?$/', $eci)) $eci = null;
-                if (!$eci) { $errors[] = "Ticket #{$ticketNumber}: kolom Employee ECI kosong di satu baris — baris dilewati"; continue; }
+                if (!$eci) { $errors[] = "Ticket #{$ticketNumber}: kolom Employee ECI kosong di satu baris - baris dilewati"; continue; }
 
                 $employee = \Illuminate\Support\Facades\DB::table('employee')->where('eci', $eci)->select('employee_id')->first();
-                if (!$employee) { $errors[] = "Ticket #{$ticketNumber}: ECI '{$eci}' tidak ditemukan — baris dilewati"; continue; }
+                if (!$employee) { $errors[] = "Ticket #{$ticketNumber}: ECI '{$eci}' tidak ditemukan - baris dilewati"; continue; }
 
                 $md     = (float) ($get('mandays', $row) ?? 0);
                 $addMd  = (float) ($get('additional_mandays', $row) ?? 0);
@@ -2556,7 +2556,7 @@ class AdminBackupController extends Controller
             ['End Time', 'HH:mm', 'Contoh: 17:00'],
             ['MD Consumed', 'Desimal', 'Mandays dikonsumsi, contoh: 1.0'],
             ['Period Year', 'Tahun', 'Opsional, default dari kolom Date'],
-            ['Period Month', '1–12', 'Opsional, default dari kolom Date'],
+            ['Period Month', '1-12', 'Opsional, default dari kolom Date'],
         ]);
         $noteSheet->getStyle('A1:C1')->getFont()->setBold(true);
         foreach (range('A', 'C') as $col) {
@@ -2653,13 +2653,13 @@ class AdminBackupController extends Controller
             $eci = $get('employee_eci', $row);
             // Normalisasi nilai error Excel (#N/A, #REF!, dll)
             if ($eci && preg_match('/^#[A-Z\/]+[!?]?$/', $eci)) $eci = null;
-            if (!$eci) { $errors[] = "Baris {$rowNum}: Employee ECI kosong — dilewati"; $skipped++; continue; }
+            if (!$eci) { $errors[] = "Baris {$rowNum}: Employee ECI kosong - dilewati"; $skipped++; continue; }
 
             $employee = \Illuminate\Support\Facades\DB::table('employee')->where('eci', $eci)->select('employee_id')->first();
-            if (!$employee) { $errors[] = "Baris {$rowNum}: ECI '{$eci}' tidak ditemukan — dilewati"; $skipped++; continue; }
+            if (!$employee) { $errors[] = "Baris {$rowNum}: ECI '{$eci}' tidak ditemukan - dilewati"; $skipped++; continue; }
 
             $date = $this->normalizeDate($get('date', $row));
-            if (!$date) { $errors[] = "Baris {$rowNum}: Tanggal tidak valid — dilewati"; $skipped++; continue; }
+            if (!$date) { $errors[] = "Baris {$rowNum}: Tanggal tidak valid - dilewati"; $skipped++; continue; }
 
             $startTime = $get('start_time', $row);
             $endTime   = $get('end_time',   $row);
@@ -2674,7 +2674,7 @@ class AdminBackupController extends Controller
                     ->select('ticket_id')
                     ->first();
                 if (!$t) {
-                    $errors[] = "[Peringatan] Baris {$rowNum}: Ticket #{$tn} tidak ditemukan — timesheet tetap dibuat tanpa ticket";
+                    $errors[] = "[Peringatan] Baris {$rowNum}: Ticket #{$tn} tidak ditemukan - timesheet tetap dibuat tanpa ticket";
                 } else {
                     $ticketId = $t->ticket_id;
                 }
@@ -2689,7 +2689,7 @@ class AdminBackupController extends Controller
             if ($ticketId)  $dupQuery->where('ticket_id', $ticketId);
 
             if ($dupQuery->exists()) {
-                $errors[] = "[Peringatan] Baris {$rowNum}: Timesheet duplikat (ECI={$eci}, date={$date}" . ($startTime ? ", start={$startTime}" : '') . ") — dilewati";
+                $errors[] = "[Peringatan] Baris {$rowNum}: Timesheet duplikat (ECI={$eci}, date={$date}" . ($startTime ? ", start={$startTime}" : '') . ") - dilewati";
                 $skipped++;
                 continue;
             }
@@ -2866,13 +2866,13 @@ class AdminBackupController extends Controller
 
             $eci = $get('employee_eci', $row);
             if ($eci && preg_match('/^#[A-Z\/]+[!?]?$/', $eci)) $eci = null;
-            if (!$eci) { $errors[] = "Baris {$rowNum}: Employee ECI kosong — dilewati"; $skipped++; continue; }
+            if (!$eci) { $errors[] = "Baris {$rowNum}: Employee ECI kosong - dilewati"; $skipped++; continue; }
 
             $employee = \Illuminate\Support\Facades\DB::table('employee')->where('eci', $eci)->select('employee_id')->first();
-            if (!$employee) { $errors[] = "Baris {$rowNum}: ECI '{$eci}' tidak ditemukan — dilewati"; $skipped++; continue; }
+            if (!$employee) { $errors[] = "Baris {$rowNum}: ECI '{$eci}' tidak ditemukan - dilewati"; $skipped++; continue; }
 
             $date = $this->normalizeDate($get('date', $row));
-            if (!$date) { $errors[] = "Baris {$rowNum}: Tanggal tidak valid — dilewati"; $skipped++; continue; }
+            if (!$date) { $errors[] = "Baris {$rowNum}: Tanggal tidak valid - dilewati"; $skipped++; continue; }
 
             $startTime = $get('start_time', $row);
             $endTime   = $get('end_time',   $row);
@@ -2886,7 +2886,7 @@ class AdminBackupController extends Controller
                     ->select('ticket_id')
                     ->first();
                 if (!$t) {
-                    $errors[] = "[Peringatan] Baris {$rowNum}: Ticket #{$tn} tidak ditemukan — timesheet tetap dibuat tanpa ticket";
+                    $errors[] = "[Peringatan] Baris {$rowNum}: Ticket #{$tn} tidak ditemukan - timesheet tetap dibuat tanpa ticket";
                 } else {
                     $ticketId = $t->ticket_id;
                 }
@@ -2900,7 +2900,7 @@ class AdminBackupController extends Controller
             if ($ticketId)  $dupQuery->where('ticket_id', $ticketId);
 
             if ($dupQuery->exists()) {
-                $errors[] = "[Peringatan] Baris {$rowNum}: Timesheet duplikat (ECI={$eci}, date={$date}" . ($startTime ? ", start={$startTime}" : '') . ") — dilewati";
+                $errors[] = "[Peringatan] Baris {$rowNum}: Timesheet duplikat (ECI={$eci}, date={$date}" . ($startTime ? ", start={$startTime}" : '') . ") - dilewati";
                 $skipped++;
                 continue;
             }
@@ -3221,14 +3221,14 @@ class AdminBackupController extends Controller
 
             $name = $get('name', $row);
             if (!$name) {
-                $errors[] = "Baris {$rowNum}: Name kosong — dilewati";
+                $errors[] = "Baris {$rowNum}: Name kosong - dilewati";
                 $skipped++;
                 continue;
             }
 
             $customerCode = $get('customer_code', $row);
             if (!$customerCode) {
-                $errors[] = "Baris {$rowNum}: Customer Code kosong — dilewati";
+                $errors[] = "Baris {$rowNum}: Customer Code kosong - dilewati";
                 $skipped++;
                 continue;
             }
@@ -3238,7 +3238,7 @@ class AdminBackupController extends Controller
                 ->select('customer_id')
                 ->first();
             if (!$customer) {
-                $errors[] = "Baris {$rowNum}: Customer Code '{$customerCode}' tidak ditemukan — dilewati";
+                $errors[] = "Baris {$rowNum}: Customer Code '{$customerCode}' tidak ditemukan - dilewati";
                 $skipped++;
                 continue;
             }
@@ -3246,7 +3246,7 @@ class AdminBackupController extends Controller
             $typeRaw = $get('type', $row);
             $type    = collect($validTypes)->first(fn($t) => strcasecmp($t, $typeRaw ?? '') === 0);
             if (!$type) {
-                $errors[] = "Baris {$rowNum}: Type '{$typeRaw}' tidak valid (harus: " . implode('/', $validTypes) . ") — dilewati";
+                $errors[] = "Baris {$rowNum}: Type '{$typeRaw}' tidak valid (harus: " . implode('/', $validTypes) . ") - dilewati";
                 $skipped++;
                 continue;
             }
@@ -3257,7 +3257,7 @@ class AdminBackupController extends Controller
                 ->where('client_id', $customer->customer_id)
                 ->exists();
             if ($exists) {
-                $errors[] = "[Peringatan] Baris {$rowNum}: Delivery Support '{$name}' untuk customer '{$customerCode}' sudah ada — dilewati";
+                $errors[] = "[Peringatan] Baris {$rowNum}: Delivery Support '{$name}' untuk customer '{$customerCode}' sudah ada - dilewati";
                 $skipped++;
                 continue;
             }
@@ -3426,7 +3426,7 @@ class AdminBackupController extends Controller
             ['Kolom', 'Keterangan'],
             ['Employee ECI', 'ECI karyawan (wajib, harus ada di sistem)'],
             ['Qualification Type', 'Tipe: Education / Certification / Language (opsional)'],
-            ['Module', 'Nama modul, misal: SAP ABAP, SAP MM — dipakai untuk cek duplikat (opsional jika ada Language)'],
+            ['Module', 'Nama modul, misal: SAP ABAP, SAP MM - dipakai untuk cek duplikat (opsional jika ada Language)'],
             ['Language', 'Bahasa (diisi jika Qualification Type = Language)'],
             ['Qualification Level', 'Junior / Senior / Expert dll (opsional)'],
             ['First Year', 'Tahun mulai (opsional)'],
@@ -3530,14 +3530,14 @@ class AdminBackupController extends Controller
 
             $eci = $get('employee_eci', $row);
             if (!$eci) {
-                $errors[] = "Baris {$rowNum}: Employee ECI kosong — dilewati";
+                $errors[] = "Baris {$rowNum}: Employee ECI kosong - dilewati";
                 $skipped++;
                 continue;
             }
 
             $employee = DB::table('employee')->where('eci', $eci)->select('employee_id')->first();
             if (!$employee) {
-                $errors[] = "Baris {$rowNum}: ECI '{$eci}' tidak ditemukan — dilewati";
+                $errors[] = "Baris {$rowNum}: ECI '{$eci}' tidak ditemukan - dilewati";
                 $skipped++;
                 continue;
             }
@@ -3546,7 +3546,7 @@ class AdminBackupController extends Controller
             $language   = $get('language', $row);
 
             if (!$moduleName && !$language) {
-                $errors[] = "Baris {$rowNum}: Module dan Language keduanya kosong — dilewati";
+                $errors[] = "Baris {$rowNum}: Module dan Language keduanya kosong - dilewati";
                 $skipped++;
                 continue;
             }
@@ -3677,7 +3677,7 @@ class AdminBackupController extends Controller
             ['Nick Name', 'Nama panggilan (opsional)'],
             ['Position', 'Jabatan contact person (opsional)'],
             ['Department', 'Departemen (opsional)'],
-            ['Email Work', 'Email kerja — dipakai untuk cek duplikat (opsional)'],
+            ['Email Work', 'Email kerja - dipakai untuk cek duplikat (opsional)'],
             ['Email Personal', 'Email pribadi (opsional)'],
             ['Cell Phone', 'Nomor HP (opsional)'],
             ['Telephone', 'Nomor telepon kantor (opsional)'],
@@ -3791,7 +3791,7 @@ class AdminBackupController extends Controller
             $seqNo        = $get('seq_no', $row);
 
             if ($customerCode) {
-                // Baris dengan kode eksplisit — update carry-over
+                // Baris dengan kode eksplisit - update carry-over
                 $lastCustomerCode = $customerCode;
                 $lastCustomer     = \Illuminate\Support\Facades\DB::table('customer')
                     ->where('customer_code', $customerCode)
@@ -3805,13 +3805,13 @@ class AdminBackupController extends Controller
             // else: baris lanjutan (No.=2,3,...) tanpa kode → carry-over dari sebelumnya
 
             if (!$lastCustomerCode) {
-                $errors[] = "Baris {$rowNum}: Customer Code kosong — dilewati";
+                $errors[] = "Baris {$rowNum}: Customer Code kosong - dilewati";
                 $skipped++;
                 continue;
             }
 
             if (!$lastCustomer) {
-                $errors[] = "Baris {$rowNum}: Customer Code '{$lastCustomerCode}' tidak ditemukan di database — dilewati";
+                $errors[] = "Baris {$rowNum}: Customer Code '{$lastCustomerCode}' tidak ditemukan di database - dilewati";
                 $skipped++;
                 continue;
             }
@@ -3820,7 +3820,7 @@ class AdminBackupController extends Controller
 
             $fullName = $get('full_name', $row);
             if (!$fullName) {
-                // Baris header grup (Company Name only, no contact data) — skip tanpa error
+                // Baris header grup (Company Name only, no contact data) - skip tanpa error
                 $skipped++;
                 continue;
             }

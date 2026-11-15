@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * "User Manual" adalah salah satu doc type di aturan mandatory/optional
  * deliverable per ticket type (App\Support\DeliverableDocumentRequirements)
- * untuk Change Request, tapi belum ada di master data — tambahkan di sini
+ * untuk Change Request, tapi belum ada di master data - tambahkan di sini
  * supaya bisa dipilih di dropdown "New Document" dan dihitung checklist-nya.
  */
 return new class extends Migration

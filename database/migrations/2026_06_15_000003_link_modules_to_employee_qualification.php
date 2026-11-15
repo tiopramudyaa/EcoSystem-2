@@ -46,7 +46,7 @@ return new class extends Migration
             $table->dropColumn('module');
         });
 
-        // 4. Drop employee_modules (redundant — modules now via employee_qualification)
+        // 4. Drop employee_modules (redundant - modules now via employee_qualification)
         Schema::table('employee_modules', function (Blueprint $table) {
             $table->dropForeign(['employee_id']);
             $table->dropForeign(['module_id']);

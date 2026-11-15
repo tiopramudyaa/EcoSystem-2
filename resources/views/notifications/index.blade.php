@@ -28,8 +28,8 @@
             'late_exception_head_rejected'=> ['icon' => 'fa-times-circle',        'color' => 'red',    'title' => 'Late Access Request rejected by Head'],
             'late_exception_approved'     => ['icon' => 'fa-unlock',              'color' => 'green',  'title' => 'Late Access Request approved by RPMO'],
             'late_exception_rejected'     => ['icon' => 'fa-ban',                 'color' => 'red',    'title' => 'Late Access Request rejected by RPMO'],
-            'customer_mandays_proposed'   => ['icon' => 'fa-file-invoice',        'color' => 'blue',   'title' => 'Customer Mandays Proposal — needs review'],
-            'resolution_days_proposed'    => ['icon' => 'fa-users',               'color' => 'indigo', 'title' => 'Resolution Days Proposal — needs review'],
+            'customer_mandays_proposed'   => ['icon' => 'fa-file-invoice',        'color' => 'blue',   'title' => 'Customer Mandays Proposal - needs review'],
+            'resolution_days_proposed'    => ['icon' => 'fa-users',               'color' => 'indigo', 'title' => 'Resolution Days Proposal - needs review'],
             'customer_mandays_canceled'   => ['icon' => 'fa-times-circle',        'color' => 'orange', 'title' => 'Customer Mandays Proposal canceled'],
             'contract_end_reminder'       => ['icon' => 'fa-file-contract',       'color' => 'yellow', 'title' => 'Contract deadline reminder'],
             'top_invoice_reminder'        => ['icon' => 'fa-file-invoice-dollar', 'color' => 'blue',   'title' => 'Invoice submission due'],
@@ -151,7 +151,7 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribut
 
 // Mark a notification as read (it STAYS on the page, just shown as read). The backend
 // also marks every other unread notification for the same ticket read in one go, so
-// mirror that here — update every row sharing this ticket_id, not just the one clicked.
+// mirror that here - update every row sharing this ticket_id, not just the one clicked.
 function markReadRow(el) {
     if (!el) return;
     el.classList.remove('bg-red-50');

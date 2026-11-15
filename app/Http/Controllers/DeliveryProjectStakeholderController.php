@@ -8,13 +8,13 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 /**
- * Stakeholder Register — AJAX CRUD untuk section "Stakeholders" di halaman
+ * Stakeholder Register - AJAX CRUD untuk section "Stakeholders" di halaman
  * detail Delivery Project (antara Delivery Information dan Team Members).
  */
 class DeliveryProjectStakeholderController extends Controller
 {
     /**
-     * GET /projects/{project}/stakeholders — JSON list untuk tabel.
+     * GET /projects/{project}/stakeholders - JSON list untuk tabel.
      */
     public function apiIndex(DeliveryProject $project)
     {

@@ -12,7 +12,7 @@ class LiteDashboardController extends Controller
 {
     /**
      * Kembalikan data dashboard sesuai role user yang sedang login.
-     * Adaptasi dari DashboardController::index() — mengembalikan JSON, bukan view.
+     * Adaptasi dari DashboardController::index() - mengembalikan JSON, bukan view.
      *
      * GET /api/lite/dashboard
      */
@@ -340,7 +340,7 @@ class LiteDashboardController extends Controller
         ];
     }
 
-    /** Chart trend 30 hari — semua tiket global */
+    /** Chart trend 30 hari - semua tiket global */
     private function appendTicketChart(array &$data): void
     {
         $start30 = now()->subDays(29)->format('Y-m-d');
@@ -363,7 +363,7 @@ class LiteDashboardController extends Controller
         $data['ticket_chart'] = ['labels' => $labels, 'data' => $values];
     }
 
-    /** Chart trend 30 hari — dari query builder tertentu */
+    /** Chart trend 30 hari - dari query builder tertentu */
     private function appendTicketChartFromQuery(array &$data, $base): void
     {
         $start30 = now()->subDays(29)->format('Y-m-d');
@@ -385,7 +385,7 @@ class LiteDashboardController extends Controller
         $data['ticket_chart'] = ['labels' => $labels, 'data' => $values];
     }
 
-    /** 8 tiket terbaru — global, tanpa SLA */
+    /** 8 tiket terbaru - global, tanpa SLA */
     private function appendRecentTickets(array &$data): void
     {
         $data['recent_tickets'] = DB::table('ticket as t')
@@ -405,7 +405,7 @@ class LiteDashboardController extends Controller
             ->get();
     }
 
-    /** 8 tiket terbaru — global, dengan SLA */
+    /** 8 tiket terbaru - global, dengan SLA */
     private function appendRecentTicketsWithSla(array &$data): void
     {
         $data['recent_tickets'] = DB::table('ticket as t')
@@ -429,7 +429,7 @@ class LiteDashboardController extends Controller
             ->get();
     }
 
-    /** 8 tiket terbaru — scoped berdasarkan managedTicketIds */
+    /** 8 tiket terbaru - scoped berdasarkan managedTicketIds */
     private function appendRecentTicketsWithSlaFromQuery(array &$data, $managedTicketIds): void
     {
         $data['recent_tickets'] = DB::table('ticket as t')

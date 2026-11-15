@@ -8,7 +8,7 @@ use Illuminate\Database\Migrations\Migration;
  *
  * Sebelumnya akses export di-hardcode ke 3 role (EC Administrator, Delivery
  * Support Head, Delivery Support Service Helpdesk) langsung di Blade +
- * controller — tidak bisa diatur lewat Control Center → Menu Access. Slug
+ * controller - tidak bisa diatur lewat Control Center → Menu Access. Slug
  * ini menggantikan hardcode itu dengan grant yang PERSIS SAMA (bukan
  * admin-only default), supaya tidak ada role yang mendadak kehilangan akses
  * saat migrasi ini jalan. Perubahan akses selanjutnya lewat Control Center.

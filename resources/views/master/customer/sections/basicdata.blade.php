@@ -20,7 +20,7 @@
                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent uppercase">
             </div>
 
-            <!-- Type Business Partner (customer.type) — Customer / Vendor.
+            <!-- Type Business Partner (customer.type) - Customer / Vendor.
                  Menentukan data ini muncul sebagai klien atau sebagai vendor
                  di modul lain (mis. dropdown Vendor di Delivery Support). -->
             <div class="col-span-1">
@@ -32,7 +32,7 @@
                 </select>
             </div>
 
-            <!-- Company Email (customer.email — kontak perusahaan; tampil di list & header).
+            <!-- Company Email (customer.email - kontak perusahaan; tampil di list & header).
                  id sengaja 'companyEmail' (BUKAN 'email') agar tidak bentrok dengan
                  field Email di section Address yang berbagi halaman. -->
             <div class="col-span-2">
@@ -150,7 +150,7 @@
         <h3 class="text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Customer Information</h3>
 
         <div class="grid grid-cols-6 gap-4 form-grid">
-            <!-- Customer Group (struktural — anggota mandiri, ditampilkan bersama di Grouping) -->
+            <!-- Customer Group (struktural - anggota mandiri, ditampilkan bersama di Grouping) -->
             <div class="col-span-2">
                 <div class="flex items-center justify-between mb-1.5">
                     <label class="block text-xs font-semibold text-gray-600">Customer Group</label>
@@ -158,19 +158,19 @@
                 </div>
                 <select id="customerGroupId" data-searchable="true"
                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
-                    <option value="">— No group —</option>
+                    <option value="">- No group -</option>
                     @foreach(($customerGroups ?? []) as $grp)
                         <option value="{{ $grp->id }}" {{ (int)($customer->customer_group_id ?? 0) === (int)$grp->id ? 'selected' : '' }}>{{ $grp->name }}</option>
                     @endforeach
                 </select>
             </div>
 
-            <!-- Parent Customer (hierarki parent–child) -->
+            <!-- Parent Customer (hierarki parent-child) -->
             <div class="col-span-2">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Parent Customer</label>
                 <select id="customerParentId" data-searchable="true"
                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
-                    <option value="">— None (Top-level customer) —</option>
+                    <option value="">- None (Top-level customer) -</option>
                     @foreach(($parentOptions ?? []) as $po)
                         <option value="{{ $po['id'] }}" {{ (int)($customer->parent_customer_id ?? 0) === (int)$po['id'] ? 'selected' : '' }}>{{ $po['name'] }}</option>
                     @endforeach
@@ -214,14 +214,14 @@
                 @endphp
                 <select id="ecAccountExecutive" data-searchable="true"
                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
-                    <option value="">— Select Employee —</option>
+                    <option value="">- Select Employee -</option>
                     @foreach(($employees ?? []) as $emp)
                         <option value="{{ $emp['eci'] }}" {{ $ecCurrent === $emp['eci'] ? 'selected' : '' }}>
                             {{ $emp['name'] }} ({{ $emp['eci'] }})
                         </option>
                     @endforeach
                     @if($ecCurrent !== '' && !$ecMatched)
-                        {{-- Legacy value not matching any employee ECI — keep it so it isn't lost --}}
+                        {{-- Legacy value not matching any employee ECI - keep it so it isn't lost --}}
                         <option value="{{ $ecCurrent }}" selected>{{ $ecCurrent }}</option>
                     @endif
                 </select>

@@ -187,7 +187,7 @@ function workflow(array $trigger, array $actions): array
     ];
 }
 
-/** runAfter kosong WAJIB objek {} — json_encode PHP menulis array kosong sebagai []. */
+/** runAfter kosong WAJIB objek {} - json_encode PHP menulis array kosong sebagai []. */
 function connectorAction(string $connectionName, string $apiId, string $operationId, array $parameters, array $runAfter = []): array
 {
     return [
@@ -205,7 +205,7 @@ function connectorAction(string $connectionName, string $apiId, string $operatio
     ];
 }
 
-/** Kartu Teams ke channel tim. Team/Channel sengaja kosong — dipilih di designer. */
+/** Kartu Teams ke channel tim. Team/Channel sengaja kosong - dipilih di designer. */
 function postCardToChannel(string $name, string $card, array $runAfter = []): array
 {
     return [$name => connectorAction('shared_teams', API_TEAMS, 'PostCardToConversation', [

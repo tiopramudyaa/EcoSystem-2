@@ -132,7 +132,7 @@ class CustomerController extends Controller
                 ->get(['id', 'name']);
 
             // Kandidat parent: top-level business partner (tanpa parent) selain diri
-            // sendiri, DAN bertipe sama — hierarki parent–child tidak boleh
+            // sendiri, DAN bertipe sama - hierarki parent-child tidak boleh
             // menyilang antara Customer dan Vendor.
             $parentOptions = Customer::topLevel()
                 ->with('basicData')
@@ -380,7 +380,7 @@ class CustomerController extends Controller
 
     /**
      * Get top-level business partners (no parent) for dropdown selection (API).
-     * Difilter per `type` (default 'Customer') karena hierarki parent–child tidak
+     * Difilter per `type` (default 'Customer') karena hierarki parent-child tidak
      * boleh menyilang antara Customer dan Vendor.
      */
     public function topLevel(Request $request)
@@ -411,7 +411,7 @@ class CustomerController extends Controller
      * Dipakai dropdown "AE (Account Executive)" di modal Create Customer.
      * Nilai yang dikirim = ECI, sama dengan kolom `ec_account_executive`
      * di customer_basic_data supaya tab Basic Data menampilkan pilihan
-     * yang sama. Role di-resolve via NAMA ("Sales ...") — ID role diverge
+     * yang sama. Role di-resolve via NAMA ("Sales ...") - ID role diverge
      * antar environment.
      */
     public function salesEmployees()
@@ -501,13 +501,13 @@ class CustomerController extends Controller
         DB::beginTransaction();
 
         try {
-            // Customer Group struktural — kolom teks lama di-mirror dari nama grup
+            // Customer Group struktural - kolom teks lama di-mirror dari nama grup
             $groupId   = $request->customer_group_id ?: null;
             $groupName = $groupId
                 ? optional(\App\Models\CustomerGroup::find($groupId))->name
                 : ($request->customer_group ?: null);
 
-            // Prepare customer data (company record only — no login here)
+            // Prepare customer data (company record only - no login here)
             $customerData = [
                 'customer_code'      => strtoupper($request->customer_code),
                 'type'               => $request->type,
@@ -647,7 +647,7 @@ class CustomerController extends Controller
                 ], 404);
             }
 
-            // Customer Group struktural — resolve nama untuk mirror ke kolom teks.
+            // Customer Group struktural - resolve nama untuk mirror ke kolom teks.
             $hasGroupField = $request->has('customer_group_id');
             $groupId   = $hasGroupField ? ($request->customer_group_id ?: null) : $customer->customer_group_id;
             $groupName = $groupId

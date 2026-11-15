@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
  *
  * Escape hatch for a botched CSV import or a restructure large enough that
  * deleting node by node is impractical. Everything below the project is removed
- * — phases, groups, activities, their stages and member assignments — leaving
+ * - phases, groups, activities, their stages and member assignments - leaving
  * the project with a blank planning slate.
  *
  * NOT touched: timesheets. They are real logged work, so the rows survive and
@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Log;
  *
  * Deletion runs through the query builder rather than Eloquent on purpose. The
  * model's deleting/saved hooks recurse into children and recompute project
- * aggregates per row — correct for a single node, but O(n²) and log-flooding for
+ * aggregates per row - correct for a single node, but O(n²) and log-flooding for
  * a few hundred. The aggregates are recomputed once at the end instead.
  */
 class DeliveryProjectPlanningResetController extends Controller
@@ -100,7 +100,7 @@ class DeliveryProjectPlanningResetController extends Controller
                     ->delete();
 
                 // ── 4. Activities ────────────────────────────────────────────
-                // Clears timesheets.activity_id via SET NULL — timesheet rows stay.
+                // Clears timesheets.activity_id via SET NULL - timesheet rows stay.
                 $result['activities'] = DB::table('delivery_project_activities')
                     ->where('delivery_projects_id', $project->id)
                     ->delete();
@@ -151,7 +151,7 @@ class DeliveryProjectPlanningResetController extends Controller
         }
 
         // Aggregates (go-live estimate, current phase, category) are derived from
-        // planning. Recompute once now that the structure is empty — the per-row
+        // planning. Recompute once now that the structure is empty - the per-row
         // model hooks that normally do this were bypassed above.
         $project->refresh()->updateFromPlanning();
 

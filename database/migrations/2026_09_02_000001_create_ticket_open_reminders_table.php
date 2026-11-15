@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Schema;
  * bersama repo JARVIES (customer side), jadi menambah kolom di sana menyeret
  * aplikasi lain ikut memikirkan kolom yang tidak ada urusannya dengan mereka.
  *
- * Barisnya juga yang menjaga scheduler tetap idempoten — kalau satu run
+ * Barisnya juga yang menjaga scheduler tetap idempoten - kalau satu run
  * kebetulan tumpang tindih dengan run berikutnya, last_sent_at membuat tiket
  * yang sama tidak dikirimi dua kali dalam satu interval.
  */

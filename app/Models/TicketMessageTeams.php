@@ -32,7 +32,7 @@ class TicketMessageTeams extends Model
     /**
      * Id pesan Teams yang SUDAH tercatat untuk sebuah chat.
      *
-     * Dipakai polling untuk membuang pesan yang sudah diserap — termasuk pesan
+     * Dipakai polling untuk membuang pesan yang sudah diserap - termasuk pesan
      * yang kita sendiri yang kirim, yang tanpa pagar ini akan diserap balik jadi
      * internal note baru dan memicu loop.
      *

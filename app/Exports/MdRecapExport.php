@@ -54,7 +54,7 @@ class MdRecapExport implements FromCollection, WithHeadings, WithStyles, ShouldA
         ];
 
         // Name is deliberately repeated on every row (not blanked/merged) so the
-        // file stays safe to filter/sort/pivot — a blanked name on repeat rows
+        // file stays safe to filter/sort/pivot - a blanked name on repeat rows
         // breaks that the moment someone sorts or filters the sheet. Instead,
         // the FIRST row of each employee's group gets a bold name + a thicker
         // top border, so groups are still easy to spot at a glance without

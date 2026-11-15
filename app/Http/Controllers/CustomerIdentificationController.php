@@ -177,7 +177,7 @@ class CustomerIdentificationController extends Controller
                 auditableId: $identificationId,
                 event: 'created',
                 recordLabel: $label,
-                description: "added Customer Identification: {$label} — Customer #{$customerId}",
+                description: "added Customer Identification: {$label} - Customer #{$customerId}",
                 old: null,
                 new: $this->redactIdentificationRow($identificationData),
             );
@@ -238,7 +238,7 @@ class CustomerIdentificationController extends Controller
         }
 
         try {
-            // Snapshot before update — needed for the audit log entry below.
+            // Snapshot before update - needed for the audit log entry below.
             $existingIdentification = DB::table('customer_identification')
                 ->where('customer_id', $customerId)
                 ->where('identification_id', $identificationId)
@@ -278,7 +278,7 @@ class CustomerIdentificationController extends Controller
                 auditableId: $identificationId,
                 event: 'updated',
                 recordLabel: $label,
-                description: "updated Customer Identification: {$label} — Customer #{$customerId}",
+                description: "updated Customer Identification: {$label} - Customer #{$customerId}",
                 old: $this->redactIdentificationRow((array) $existingIdentification),
                 new: $this->redactIdentificationRow($updateData),
             );
@@ -314,7 +314,7 @@ class CustomerIdentificationController extends Controller
         ]);
 
         try {
-            // Snapshot before delete — needed for the audit log entry below.
+            // Snapshot before delete - needed for the audit log entry below.
             $existingIdentification = DB::table('customer_identification')
                 ->where('customer_id', $customerId)
                 ->where('identification_id', $identificationId)
@@ -340,7 +340,7 @@ class CustomerIdentificationController extends Controller
                 auditableId: $identificationId,
                 event: 'deleted',
                 recordLabel: $label,
-                description: "deleted Customer Identification: {$label} — Customer #{$customerId}",
+                description: "deleted Customer Identification: {$label} - Customer #{$customerId}",
                 old: $this->redactIdentificationRow((array) $existingIdentification),
                 new: null,
             );

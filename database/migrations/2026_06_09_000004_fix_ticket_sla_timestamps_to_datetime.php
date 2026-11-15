@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
-     * ticket_sla.sla_start_at is TIMESTAMP NOT NULL — MySQL's first NOT NULL TIMESTAMP
+     * ticket_sla.sla_start_at is TIMESTAMP NOT NULL - MySQL's first NOT NULL TIMESTAMP
      * column gets implicit ON UPDATE CURRENT_TIMESTAMP, overwriting sla_start_at
      * (the SLA clock baseline) on every row update (ball_holder changes, pauses, etc.).
      * Convert all TIMESTAMP columns in ticket_sla to DATETIME to remove this behavior.

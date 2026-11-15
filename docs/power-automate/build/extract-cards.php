@@ -6,7 +6,7 @@
  *
  * Parameter aksi konektor TIDAK ikut terbawa saat import solution (lihat
  * README bagian "Catatan lapangan"), jadi kartu harus diisi tangan. Menyalin
- * dari berkas ini — bukan dari chat/dokumen — menjaga apostrof tetap lurus.
+ * dari berkas ini - bukan dari chat/dokumen - menjaga apostrof tetap lurus.
  */
 
 require 'docs/power-automate/build/definitions.php';

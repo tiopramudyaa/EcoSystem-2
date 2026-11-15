@@ -67,9 +67,9 @@
         </div>
         @endif
 
-        {{-- Tab "Ticket Modul" — independen dari role di atas. Muncul hanya kalau role-nya
+        {{-- Tab "Ticket Modul" - independen dari role di atas. Muncul hanya kalau role-nya
              di-grant menu 'ticket.module-lead' DAN employee ini memang lead di module manapun
-             (module_leads) — dua-duanya harus true. --}}
+             (module_leads) - dua-duanya harus true. --}}
         @if($can('ticket.module-lead') && ($isModuleLead ?? false))
         <div class="inline-flex bg-gray-100 rounded-xl p-1">
             <button onclick="toggleView('module-lead')" id="btnViewModuleLead" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200">
@@ -177,7 +177,7 @@
         {{-- Table Toolbar --}}
         <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
             <p class="text-xs text-gray-400">
-                Showing <span class="font-semibold text-gray-600" id="currentRangeStart">1</span>&ndash;<span class="font-semibold text-gray-600" id="currentRangeEnd">20</span>
+                Showing <span class="font-semibold text-gray-600" id="currentRangeStart">1</span>-<span class="font-semibold text-gray-600" id="currentRangeEnd">20</span>
                 <span class="text-gray-300 mx-1">of</span>
                 <span class="font-semibold text-gray-700" id="totalItems">0</span> tickets
                 <button onclick="resetFilters()" title="Reset all filters and sorting"
@@ -553,7 +553,7 @@
                         </th>
                         {{-- ASSIGN DELIVERY: column filter dropdown (pola sama dengan Type/Module).
                              data-searchable eksplisit karena item-nya diisi belakangan lewat
-                             /api/tickets/filter-options — ambang auto-inject search di
+                             /api/tickets/filter-options - ambang auto-inject search di
                              custom-dropdown.js dihitung saat init, saat panel masih kosong. --}}
                         <th class="p-0 text-left whitespace-nowrap border-b border-gray-200 bg-gray-50" style="min-width:130px;">
                             <div class="custom-dd relative w-full" id="ddColFilterDelivery" data-fixed="true" data-multi="true" data-searchable="true" data-search-placeholder="Search delivery..." data-onchange="applyColFilter">
@@ -663,17 +663,17 @@
                     </div>
                 </div>
 
-                {{-- To (dikosongkan by default — TIDAK auto company email; diisi manual bila perlu) --}}
+                {{-- To (dikosongkan by default - TIDAK auto company email; diisi manual bila perlu) --}}
                 <div>
                     <label class="text-xs font-semibold text-gray-600 mb-1.5 block uppercase tracking-wide">
-                        To <span class="text-gray-400 font-normal normal-case">(optional — kosongkan untuk EWA; bisa lebih dari satu, pisah koma)</span>
+                        To <span class="text-gray-400 font-normal normal-case">(optional - kosongkan untuk EWA; bisa lebih dari satu, pisah koma)</span>
                     </label>
                     <input type="text" id="newToEmail"
                         class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent"
                         placeholder="to1@example.com, to2@example.com">
                 </div>
 
-                {{-- CC Emails (diisi manual — TIDAK auto dari contact) --}}
+                {{-- CC Emails (diisi manual - TIDAK auto dari contact) --}}
                 <div>
                     <label class="text-xs font-semibold text-gray-600 mb-1.5 block uppercase tracking-wide">
                         CC <span class="text-gray-400 font-normal normal-case">(optional, pisah koma)</span>
@@ -756,7 +756,7 @@
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-gray-600 mb-1.5 block uppercase tracking-wide">Module</label>
-                            {{-- Tiket boleh menyentuh lebih dari satu modul (Ticket::modules()) —
+                            {{-- Tiket boleh menyentuh lebih dari satu modul (Ticket::modules()) -
                                  module_id (scalar) tetap otomatis terisi sebagai "modul utama",
                                  mengikuti modul pertama yang dipilih (Ticket::syncModules()). --}}
                             <div class="custom-dd relative" data-fixed="true" data-multi="true" data-placeholder="Select module(s)">
@@ -787,7 +787,7 @@
                 {{-- Body / Message (Quill rich-text) --}}
                 <div>
                     <label class="text-xs font-semibold text-gray-600 mb-1.5 block uppercase tracking-wide">
-                        Message <span class="text-gray-400 font-normal normal-case">(optional — supports paste image)</span>
+                        Message <span class="text-gray-400 font-normal normal-case">(optional - supports paste image)</span>
                     </label>
                     <div id="adminBodyEditor" class="border border-gray-300 rounded-lg overflow-hidden" style="min-height:140px; background:#fff;"></div>
                 </div>
@@ -925,7 +925,7 @@
         background: #f8fafc;
     }
 
-    /* ── Unread ticket row — blue (customer email) ── */
+    /* ── Unread ticket row - blue (customer email) ── */
     #ticketsListBody tr.ticket-unread-customer {
         background: #f0f7ff;
     }
@@ -949,7 +949,7 @@
         background: #e6f0fd;
     }
 
-    /* ── Unread ticket row — yellow (internal note) ── */
+    /* ── Unread ticket row - yellow (internal note) ── */
     #ticketsListBody tr.ticket-unread-internal {
         background: #fffbeb;
     }
@@ -1093,7 +1093,7 @@
                 descFilterInput: document.getElementById('descFilterInput')?.value || '',
             };
             sessionStorage.setItem(TICKET_FILTER_STORAGE_KEY, JSON.stringify(state));
-        } catch (e) { /* sessionStorage unavailable (private mode, dsb) — abaikan */ }
+        } catch (e) { /* sessionStorage unavailable (private mode, dsb) - abaikan */ }
     }
 
     function restoreTicketFilterState() {
@@ -1101,7 +1101,7 @@
         try {
             const raw = sessionStorage.getItem(TICKET_FILTER_STORAGE_KEY);
             if (raw) state = JSON.parse(raw);
-        } catch (e) { /* corrupt/unavailable — abaikan */ }
+        } catch (e) { /* corrupt/unavailable - abaikan */ }
         if (!state) return;
 
         if (state.currentTicketSort && state.currentTicketSort.key) currentTicketSort = state.currentTicketSort;
@@ -1115,10 +1115,10 @@
         setVal('ticketFilterInput', state.ticketFilterInput);
         setVal('descFilterInput', state.descFilterInput);
 
-        // Single-select custom dropdowns — restore value + label sekaligus. Values are now
+        // Single-select custom dropdowns - restore value + label sekaligus. Values are now
         // customer_id/employee_id (numeric) or '__unassigned__', not the name string older
         // sessionStorage entries (persisted before this endpoint switched to ID-based
-        // filtering) may still contain — ignore anything that doesn't look like one of those,
+        // filtering) may still contain - ignore anything that doesn't look like one of those,
         // instead of sending a non-numeric value to the server and silently getting zero results.
         const looksLikeIdOrUnassigned = v => v === '__unassigned__' || /^\d+$/.test(v);
         if (state.colFilterCustomer && looksLikeIdOrUnassigned(state.colFilterCustomer) && typeof setCustomDropdownValue === 'function') {
@@ -1128,7 +1128,7 @@
             setCustomDropdownValue('colFilterPic', state.colFilterPic);
         }
 
-        // Multi-select custom dropdowns — set value mentah lalu sync checkmark + label
+        // Multi-select custom dropdowns - set value mentah lalu sync checkmark + label
         ['colFilterPriority', 'colFilterScale', 'colFilterStatus', 'colFilterType', 'colFilterDocStatus', 'colFilterModule', 'colFilterDelivery'].forEach(id => {
             if (!state[id]) return;
             const hidden = document.getElementById(id);
@@ -1138,20 +1138,20 @@
             if (dd && typeof _syncMultiVisualState === 'function') _syncMultiVisualState(dd);
         });
 
-        // Status card (currentFilter) — pakai filterTickets() supaya highlight border-nya
+        // Status card (currentFilter) - pakai filterTickets() supaya highlight border-nya
         // ikut ter-update, bukan cuma variabelnya.
         if (state.currentFilter && typeof filterTickets === 'function') {
             filterTickets(state.currentFilter);
         }
 
         // Sinkronkan indikator "active" di dropdown kolom + terapkan filter ke data
-        // (aman dipanggil walau allTickets masih kosong — akan diulang lagi oleh loadTickets()).
+        // (aman dipanggil walau allTickets masih kosong - akan diulang lagi oleh loadTickets()).
         if (typeof applyColFilter === 'function') applyColFilter();
     }
 
     document.addEventListener('DOMContentLoaded', async function() {
         if (typeof initCustomDropdowns === 'function') initCustomDropdowns();
-        // Filter options must be populated before restoring persisted state — the Customer/PIC
+        // Filter options must be populated before restoring persisted state - the Customer/PIC
         // dropdown values are now IDs, and setCustomDropdownValue() needs a matching item
         // already in the panel to resolve the ID back to a display name.
         await loadFilterOptions();
@@ -1169,7 +1169,7 @@
     // -------------------------------------------------------------------------
     // Ticket polling: cek update tiket setiap 20 detik dari DB lokal (bukan Graph API)
     // Email inbox diproses server-side oleh scheduler (email:process-inbox tiap menit)
-    // Kalau ada perubahan, langsung auto-refresh (silent, tanpa spinner/flash) — search,
+    // Kalau ada perubahan, langsung auto-refresh (silent, tanpa spinner/flash) - search,
     // filter, sort, dan posisi halaman yang sedang aktif tetap dipertahankan.
     // -------------------------------------------------------------------------
     let _lastTicketUpdate = null;
@@ -1189,7 +1189,7 @@
             const latest = data.latest_update ?? null;
 
             if (_isFirstPoll) {
-                // Simpan baseline — jangan reload (loadTickets sudah dipanggil saat DOMContentLoaded)
+                // Simpan baseline - jangan reload (loadTickets sudah dipanggil saat DOMContentLoaded)
                 _lastTicketUpdate = latest;
                 _isFirstPoll = false;
                 return;
@@ -1258,7 +1258,7 @@
         // Helpdesk toggling All/Unassigned used to filter an already-fully-loaded client
         // array instead of re-fetching; now that the list is paginated there's no full
         // array to filter, so every role re-fetches from the server (loadTickets() passes
-        // ?unassigned=1 for this case — see its endpoint-selection logic).
+        // ?unassigned=1 for this case - see its endpoint-selection logic).
         if (STAFF_TOGGLE_ROLES.includes(userRole)) {
             currentFilter = 'all';
         }
@@ -1280,13 +1280,13 @@
             if (btnA) btnA.classList.toggle('active', currentView === 'all');
             if (btnU) btnU.classList.toggle('active', currentView === 'unassigned');
         }
-        // Unassigned Ticket tab — visibility driven by 'ticket.unassigned' menu permission
+        // Unassigned Ticket tab - visibility driven by 'ticket.unassigned' menu permission
         // (Role & Menu Access), independent of the hardcoded role toggles above.
         const btnUt = document.getElementById('btnViewUnassignedTab');
         if (btnUt) {
             btnUt.classList.toggle('active', currentView === 'unassigned-tab');
         }
-        // Ticket Modul tab — visibility driven by 'ticket.module-lead' menu permission +
+        // Ticket Modul tab - visibility driven by 'ticket.module-lead' menu permission +
         // isModuleLead (server-computed), independent of the role toggles above.
         const btnMl = document.getElementById('btnViewModuleLead');
         if (btnMl) {
@@ -1294,11 +1294,11 @@
         }
     }
 
-    // Server-side pagination/filter/sort — loadTickets() fetches exactly one page that
+    // Server-side pagination/filter/sort - loadTickets() fetches exactly one page that
     // already matches every active filter and sort, instead of fetching the entire ticket
     // set and filtering/sorting/paginating it in the browser. `allTickets`/`filteredTickets`
     // therefore hold only the current page from here on (names kept to minimize churn
-    // elsewhere in this file). Called directly by every filter/sort/pagination control —
+    // elsewhere in this file). Called directly by every filter/sort/pagination control -
     // there's no separate client-side "apply filters to already-fetched data" step anymore.
     async function loadTickets(silent = false, _isRetry = false) {
         try {
@@ -1383,7 +1383,7 @@
 
             if (data.success) {
                 // Filters shrank the result set below the page we were on (e.g. searched
-                // while on page 3) — snap back to the last valid page instead of showing blank.
+                // while on page 3) - snap back to the last valid page instead of showing blank.
                 if (!_isRetry && data.meta && data.meta.last_page >= 1 && currentPage > data.meta.last_page) {
                     currentPage = data.meta.last_page;
                     return loadTickets(silent, true);
@@ -1427,13 +1427,13 @@
     }
 
     // Angka di kartu status ("Open", "Closed", dst) mengikuti filter kolom yang sedang
-    // aktif (customer, PIC, priority, scale, type, date, keyword) — TAPI sengaja tidak
+    // aktif (customer, PIC, priority, scale, type, date, keyword) - TAPI sengaja tidak
     // ikut memfilter berdasarkan kartu status itu sendiri (currentFilter), supaya klik
     // kartu "Closed" tidak membuat kartu lain menghitung ulang dari subset "closed" saja
     // (yang akan membuat semuanya jadi 0 kecuali Closed). Base ini dipakai bareng oleh
     // applyAdvancedFilters() untuk membangun `filteredTickets` tabel.
     // Badge counts now come from the server (`stats` in loadTickets()'s response, honoring
-    // the same column filters/search as the list itself but not the card_status filter —
+    // the same column filters/search as the list itself but not the card_status filter -
     // same semantics as the old client-side version, just computed server-side over the
     // whole filtered set instead of only whatever page happened to be loaded).
     function updateStats() {
@@ -1449,7 +1449,7 @@
         document.getElementById('closedCount').textContent = s.closed ?? 0;
     }
 
-    // filteredTickets is now exactly one page, already filtered+sorted by the server —
+    // filteredTickets is now exactly one page, already filtered+sorted by the server -
     // no client-side slicing or sorting needed here anymore. totalItems/totalPages come
     // from loadTickets()'s response meta (set before this is called), not recomputed from
     // filteredTickets.length (which would just be the current page's count).
@@ -1555,7 +1555,7 @@
         const lastUpdateStr = relativeTime(lastActivity);
         const lastUpdateTitle = fmtDT(lastActivity);
         const dateStr = fmt(createdDate);
-        const endDateStr = endDate ? fmt(endDate) : '—';
+        const endDateStr = endDate ? fmt(endDate) : '-';
 
         const agentName = ticket.employee?.employee_name || '<span class="text-gray-400">Unassigned</span>';
 
@@ -1566,7 +1566,7 @@
             'Low': 'bg-blue-50 text-blue-700'
         };
         const priorityClass = priorityColors[ticket.ticket_priority] || 'bg-gray-100 text-gray-500';
-        const priorityLabel = ticket.ticket_priority || '—';
+        const priorityLabel = ticket.ticket_priority || '-';
 
         const statusMap = {
             'open': {
@@ -1619,13 +1619,13 @@
         };
 
         const sInfo = statusMap[ticket.status] || {
-            label: ticket.status || '—',
+            label: ticket.status || '-',
             cls: 'bg-gray-100 text-gray-500'
         };
-        const typeLabel = ticket.ticket_type || '—';
+        const typeLabel = ticket.ticket_type || '-';
         const typeCls = typeColors[ticket.ticket_type] || 'bg-gray-100 text-gray-500';
 
-        const mandays = ticket.customer_mandays != null ? formatMd(parseFloat(ticket.customer_mandays)) : '—';
+        const mandays = ticket.customer_mandays != null ? formatMd(parseFloat(ticket.customer_mandays)) : '-';
 
         // ── Priority dots ──
         const prioDots = {
@@ -1656,7 +1656,7 @@
         const hasUnreadCustomer = lastCustomer && (!lastAgent || lastCustomer > lastAgent);
         const hasUnreadInternal = lastInternal && (Number(lastNoteSender) !== currentEmployeeId);
 
-        // Kalau dua-duanya aktif, menangkan yang waktunya paling baru — bukan selalu
+        // Kalau dua-duanya aktif, menangkan yang waktunya paling baru - bukan selalu
         // internal note yang menang (perilaku lama), supaya warna mengikuti update terakhir.
         const customerTs = hasUnreadCustomer ? lastCustomer.getTime() : -Infinity;
         const internalTs = hasUnreadInternal ? lastInternal.getTime() : -Infinity;
@@ -1687,7 +1687,7 @@
             `<td class="px-3 py-3 text-sm text-gray-700 whitespace-nowrap ${extraCls}">${content}</td>`;
 
         const dash = () =>
-            `<td class="px-3 py-3 text-gray-300 whitespace-nowrap text-xs text-center">—</td>`;
+            `<td class="px-3 py-3 text-gray-300 whitespace-nowrap text-xs text-center">-</td>`;
 
         // ── Row bgColor (must match for sticky cells) ──
         const rowBg = unreadCls === 'ticket-unread-internal' ? '#fffbeb' :
@@ -1704,12 +1704,12 @@
             </td>
             {{-- Ticket # --}}
             <td class="px-3 py-3 whitespace-nowrap sticky border-r border-gray-100" style="left:110px;background:${rowBg}">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 font-mono text-xs font-bold ${numColor}">${ticket.ticket_number || '—'}</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 font-mono text-xs font-bold ${numColor}">${ticket.ticket_number || '-'}</span>
             </td>
             {{-- Description --}}
             <td class="px-3 py-3 text-sm" style="min-width:260px;max-width:320px;">
                 <span class="block truncate text-gray-700 ${ticket.is_read ? 'font-normal' : 'font-bold'} leading-snug"
-                      title="${(ticket.description||'').replace(/"/g,'&quot;')}">${ticket.description || '—'}</span>
+                      title="${(ticket.description||'').replace(/"/g,'&quot;')}">${ticket.description || '-'}</span>
             </td>
             {{-- Start Date --}}
             <td class="px-3 py-3 whitespace-nowrap">
@@ -1729,7 +1729,7 @@
                         return '<span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-gray-100 text-gray-500">Cancelled</span>';
                     }
                     const days = dayOnCloseValue(ticket);
-                    if (days === null) return '<span class="text-gray-300 text-xs">—</span>';
+                    if (days === null) return '<span class="text-gray-300 text-xs">-</span>';
                     return `<span class="text-sm font-semibold text-gray-700">${days}</span>`;
                 })()}
             </td>
@@ -1754,20 +1754,20 @@
             <td class="px-3 py-3 whitespace-nowrap">
                 ${ticket.ticket_priority
                     ? badge(priorityLabel, priorityClass, prioDots[ticket.ticket_priority] || 'bg-gray-400')
-                    : `<span class="text-gray-300 text-xs">—</span>`}
+                    : `<span class="text-gray-300 text-xs">-</span>`}
             </td>
             {{-- Scale --}}
             <td class="px-3 py-3 whitespace-nowrap">
                 ${ticket.scale
                     ? badge(ticket.scale, scaleColors[ticket.scale] || 'bg-gray-100 text-gray-500')
-                    : `<span class="text-gray-300 text-xs">—</span>`}
+                    : `<span class="text-gray-300 text-xs">-</span>`}
             </td>
             {{-- Status --}}
             <td class="px-3 py-3 whitespace-nowrap">
                 ${badge(sInfo.label, sInfo.cls, statusDots[ticket.status] || 'bg-gray-400')}
             </td>
             {{-- Type --}}
-            ${cell(ticket.ticket_type ? badge(typeLabel, typeCls) : '<span class="text-gray-300 text-xs">—</span>')}
+            ${cell(ticket.ticket_type ? badge(typeLabel, typeCls) : '<span class="text-gray-300 text-xs">-</span>')}
             {{-- Document Status --}}
             ${cell(ticket.document_status === 'complete'
                 ? badge('Complete', 'bg-green-100 text-green-700')
@@ -1775,7 +1775,7 @@
                     ? badge('Incomplete', 'bg-amber-100 text-amber-700')
                     : '<span class="text-gray-300 text-xs">-</span>')}
             {{-- Module --}}
-            ${cell(ticket.module ? `<span class="text-sm text-gray-700">${ticket.module}</span>` : '<span class="text-gray-300 text-xs">—</span>')}
+            ${cell(ticket.module ? `<span class="text-sm text-gray-700">${ticket.module}</span>` : '<span class="text-gray-300 text-xs">-</span>')}
             {{-- Assign Delivery --}}
             <td class="px-3 py-3 whitespace-nowrap">
                 ${ticket.delivery?.delivery_name
@@ -1784,14 +1784,14 @@
                     : `<span class="text-xs text-gray-300 italic">Unassigned</span>`}
             </td>
             {{-- Customer Mandays --}}
-            ${cell(mandays !== '—' ? `<span class="font-semibold text-gray-700">${mandays}</span>` : '<span class="text-gray-300 text-xs">—</span>')}
+            ${cell(mandays !== '-' ? `<span class="font-semibold text-gray-700">${mandays}</span>` : '<span class="text-gray-300 text-xs">-</span>')}
             {{-- Activity Date: latest activity date logged across this ticket's support timesheets --}}
-            ${cell(ticket.activity_date ? fmt(new Date(ticket.activity_date + 'T00:00:00')) : '<span class="text-gray-300 text-xs">—</span>')}
+            ${cell(ticket.activity_date ? fmt(new Date(ticket.activity_date + 'T00:00:00')) : '<span class="text-gray-300 text-xs">-</span>')}
             {{-- Progress --}}
             <td class="px-3 py-3 whitespace-nowrap">
                 ${(function() {
                     const pct = parseFloat(ticket.all_consultant_progress) || 0;
-                    if (pct === 0 && !ticket.man_days) return '<span class="text-gray-300 text-xs">—</span>';
+                    if (pct === 0 && !ticket.man_days) return '<span class="text-gray-300 text-xs">-</span>';
                     const barCls = pct >= 75 ? 'bg-green-500' : pct >= 40 ? 'bg-yellow-400' : 'bg-red-400';
                     const txtCls = pct >= 75 ? 'text-green-700' : pct >= 40 ? 'text-yellow-700' : 'text-red-600';
                     return `<div class="flex items-center gap-2">
@@ -1815,18 +1815,18 @@
                         'pending_validation':  { label: 'Validating', cls: 'bg-blue-50 text-blue-600', dot: 'bg-blue-400' },
                         'paused':              { label: 'Paused',   cls: 'bg-amber-50 text-amber-700', dot: 'bg-amber-400' },
                     };
-                    const s = map[status] || { label: status || '—', cls: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' };
+                    const s = map[status] || { label: status || '-', cls: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' };
                     return badge(s.label, s.cls, s.dot);
                 };
-                const fmtDue = d => d ? fmtDT(new Date(d)) : '—';
+                const fmtDue = d => d ? fmtDT(new Date(d)) : '-';
 
                 return `
-                    <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">${sla.target_response_hours != null ? parseFloat(sla.target_response_hours).toFixed(2) + ' h' : '<span class="text-gray-300">—</span>'}</td>
-                    <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">${sla.response_time_hours != null ? parseFloat(sla.response_time_hours).toFixed(2) + ' h' : '<span class="text-gray-300">—</span>'}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">${sla.target_response_hours != null ? parseFloat(sla.target_response_hours).toFixed(2) + ' h' : '<span class="text-gray-300">-</span>'}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">${sla.response_time_hours != null ? parseFloat(sla.response_time_hours).toFixed(2) + ' h' : '<span class="text-gray-300">-</span>'}</td>
                     <td class="px-3 py-3 whitespace-nowrap">${slaStatusBadge(sla.response_status)}</td>
-                    <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">${sla.target_resolution_hours != null ? parseFloat(sla.target_resolution_hours).toFixed(2) + ' h' : '<span class="text-gray-300">—</span>'}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">${sla.target_resolution_hours != null ? parseFloat(sla.target_resolution_hours).toFixed(2) + ' h' : '<span class="text-gray-300">-</span>'}</td>
                     <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-500">${fmtDue(sla.resolution_due_at)}</td>
-                    <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">${sla.resolution_time_hours != null ? parseFloat(sla.resolution_time_hours).toFixed(2) + ' h' : '<span class="text-gray-300">—</span>'}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">${sla.resolution_time_hours != null ? parseFloat(sla.resolution_time_hours).toFixed(2) + ' h' : '<span class="text-gray-300">-</span>'}</td>
                     <td class="px-3 py-3 whitespace-nowrap">${slaStatusBadge(sla.resolution_status)}</td>
                 `;
             })()}
@@ -1847,7 +1847,7 @@
                                <i class="fas fa-download text-xs"></i><span>Summary PDF</span>
                            </a>
                        </div>`
-                    : `<span class="text-gray-300 text-xs">—</span>`
+                    : `<span class="text-gray-300 text-xs">-</span>`
                 }
             </td>` : ''}
             ${CAN_HIDE_TICKET ? `
@@ -1916,7 +1916,7 @@
         applyAdvancedFilters();
     }
 
-    // Customer/PIC filter options — fetched once from /api/tickets/filter-options (distinct
+    // Customer/PIC filter options - fetched once from /api/tickets/filter-options (distinct
     // values across every visible ticket) instead of scanned out of allTickets, which after
     // pagination only ever holds the current page. Values are now customer_id/employee_id
     // (sent to the server as customer_id/pic_id), not the name string the old client-side
@@ -1944,13 +1944,13 @@
      *
      * Berbeda dari Customer/PIC yang single-select, dropdown ini multi-select
      * sehingga tiap item butuh <span class="custom-dd-item-text"> + ikon
-     * .custom-dd-check — persis markup item Type/Module di Blade, supaya
+     * .custom-dd-check - persis markup item Type/Module di Blade, supaya
      * _toggleMultiItem()/_updateMultiLabel() di custom-dropdown.js mengenalinya.
      */
     function populateDeliveryFilter(deliveries) {
         const ddEl = document.getElementById('ddColFilterDelivery');
         if (!ddEl) return;
-        // Panel bisa sudah dipindah ke document.body (mode fixed) — pakai ref tersimpan.
+        // Panel bisa sudah dipindah ke document.body (mode fixed) - pakai ref tersimpan.
         const panel = ddEl._ddPanel || ddEl.querySelector('.custom-dd-panel');
         if (!panel) return;
 
@@ -2005,7 +2005,7 @@
     function populateCustomerFilter(customers) {
         const ddEl = document.getElementById('ddColFilterCustomer');
         if (!ddEl) return;
-        // Panel may be detached to document.body (fixed mode) — use stored ref
+        // Panel may be detached to document.body (fixed mode) - use stored ref
         const panel = ddEl._ddPanel || ddEl.querySelector('.custom-dd-panel');
         if (!panel) return;
 
@@ -2084,11 +2084,11 @@
 
     // Entry point for every filter control (column dropdowns, date range, keyword search,
     // status cards). Filtering now happens server-side, so this just resets to page 1 and
-    // re-fetches — indicator/stats/render updates happen inside loadTickets()'s response
+    // re-fetches - indicator/stats/render updates happen inside loadTickets()'s response
     // handler once the new data is back.
     // Always silent: the list is already on screen when a filter changes, so there's no
     // need for loadTickets() to hide #ticketsContainer while it fetches. That container
-    // wraps the keyword-search popovers themselves — hiding it mid-fetch force-blurs
+    // wraps the keyword-search popovers themselves - hiding it mid-fetch force-blurs
     // whichever input the user is still typing in (they'd have to click back in after
     // every debounced search).
     function applyAdvancedFilters() {
@@ -2310,7 +2310,7 @@
 
     // Close popovers on any scroll outside the panel (table scroll, page scroll,
     // window resize). These panels are position:fixed, so scrolling would leave
-    // them floating detached from their header — close them instead of letting
+    // them floating detached from their header - close them instead of letting
     // them collide with the view.
     function _closeTicketHeaderPanels() {
         document.getElementById('dateFilterPanel')?.classList.add('hidden');
@@ -2408,10 +2408,10 @@
         'Simple': 1
     };
 
-    // Sorting is server-side now (TicketController::applyTicketListSort() — has to be, so
+    // Sorting is server-side now (TicketController::applyTicketListSort() - has to be, so
     // it applies across the whole filtered set instead of just whatever page is loaded).
     // This just updates the sort state and re-fetches; there's no client-side comparator
-    // anymore (dayOnCloseValue() below is kept — it's still used to *display* the column,
+    // anymore (dayOnCloseValue() below is kept - it's still used to *display* the column,
     // just no longer to sort it).
     function sortTickets(key, forcedDir) {
         if (forcedDir) {
@@ -2873,16 +2873,16 @@
         const respSc = STATUS_CFG_SLA[data.response && data.response.status] || STATUS_CFG_SLA['pending'];
         const resSc = STATUS_CFG_SLA[data.resolution && data.resolution.status] || STATUS_CFG_SLA['pending'];
 
-        document.getElementById('slaStatResponseVal').textContent = data.response && data.response.actual_hours != null ? data.response.actual_hours + ' hrs' : '—';
-        document.getElementById('slaStatResponseStatus').innerHTML = `<span class="${respSc.text} font-semibold">${respSc.label}</span><span class="text-slate-400"> / target ${data.response ? data.response.target_hours : '—'} hrs</span>`;
-        document.getElementById('slaStatResolutionVal').textContent = data.resolution && data.resolution.actual_hours != null ? data.resolution.actual_hours + ' hrs' : (data.sla_mode === 'response_only' ? 'N/A' : '—');
+        document.getElementById('slaStatResponseVal').textContent = data.response && data.response.actual_hours != null ? data.response.actual_hours + ' hrs' : '-';
+        document.getElementById('slaStatResponseStatus').innerHTML = `<span class="${respSc.text} font-semibold">${respSc.label}</span><span class="text-slate-400"> / target ${data.response ? data.response.target_hours : '-'} hrs</span>`;
+        document.getElementById('slaStatResolutionVal').textContent = data.resolution && data.resolution.actual_hours != null ? data.resolution.actual_hours + ' hrs' : (data.sla_mode === 'response_only' ? 'N/A' : '-');
         document.getElementById('slaStatResolutionStatus').innerHTML = data.resolution ?
             `<span class="${resSc.text} font-semibold">${resSc.label}</span><span class="text-slate-400"> / target ${data.resolution.target_hours} hrs</span>` :
             `<span class="text-slate-400">Response-only mode</span>`;
 
         const totalWait = data.total_waiting_hours != null ? data.total_waiting_hours : 0;
         document.getElementById('slaStatWaitingVal').textContent = totalWait > 0 ? totalWait.toFixed(2) + ' hrs' : '0 hrs';
-        document.getElementById('slaStatBallHolder').textContent = data.ball_holder ? (data.ball_holder.charAt(0).toUpperCase() + data.ball_holder.slice(1)) : '—';
+        document.getElementById('slaStatBallHolder').textContent = data.ball_holder ? (data.ball_holder.charAt(0).toUpperCase() + data.ball_holder.slice(1)) : '-';
         document.getElementById('slaDetailStatsBar').classList.remove('hidden');
 
         const badgesEl = document.getElementById('slaDetailBadges');
@@ -2913,12 +2913,12 @@
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric'
-            }) : '—';
+            }) : '-';
             const timeStr = dt ? dt.toLocaleTimeString('id-ID', {
                 timeZone: 'Asia/Jakarta',
                 hour: '2-digit',
                 minute: '2-digit'
-            }) : '—';
+            }) : '-';
             const showDate = dateStr !== lastDate;
             lastDate = dateStr;
             const evCfg = EVENT_ROW_CFG_SLA[e.event_type] || {
@@ -2927,18 +2927,18 @@
                 label: e.event_type
             };
             const ballCfg = e.ball_after ? (BALL_ICON_SLA[e.ball_after] || null) : null;
-            const waitCell = e.waiting_hours !== null && e.waiting_hours !== undefined ? `<span class="text-[11px] font-semibold text-amber-600 whitespace-nowrap">${_slaToHLabel(e.waiting_hours)}</span>` : `<span class="text-gray-300 text-xs">—</span>`;
-            const respCell = e.response_hours !== null && e.response_hours !== undefined ? `<span class="text-[11px] font-semibold text-gray-700 whitespace-nowrap">${_slaToHLabel(e.response_hours)}</span>` : `<span class="text-gray-300 text-xs">—</span>`;
+            const waitCell = e.waiting_hours !== null && e.waiting_hours !== undefined ? `<span class="text-[11px] font-semibold text-amber-600 whitespace-nowrap">${_slaToHLabel(e.waiting_hours)}</span>` : `<span class="text-gray-300 text-xs">-</span>`;
+            const respCell = e.response_hours !== null && e.response_hours !== undefined ? `<span class="text-[11px] font-semibold text-gray-700 whitespace-nowrap">${_slaToHLabel(e.response_hours)}</span>` : `<span class="text-gray-300 text-xs">-</span>`;
             const resCell = e.meeting_paused ?
                 `<span class="text-[10px] font-semibold text-purple-600 whitespace-nowrap">Paused (Meeting)</span>` :
-                (e.resolution_hours !== null && e.resolution_hours !== undefined ? `<span class="text-[11px] font-semibold text-gray-700 whitespace-nowrap">${_slaToHLabel(e.resolution_hours)}</span>` : `<span class="text-gray-300 text-xs">—</span>`);
-            const statusCell = e.jarvis_status ? `<span class="text-[10px] text-gray-500 whitespace-nowrap">${e.jarvis_status.replace(/_/g,' ')}</span>` : `<span class="text-gray-300 text-xs">—</span>`;
-            const ballCell = ballCfg ? `<span class="text-[11px] font-semibold text-gray-600 whitespace-nowrap">${ballCfg.icon} ${ballCfg.label}</span>` : `<span class="text-gray-300 text-xs">—</span>`;
+                (e.resolution_hours !== null && e.resolution_hours !== undefined ? `<span class="text-[11px] font-semibold text-gray-700 whitespace-nowrap">${_slaToHLabel(e.resolution_hours)}</span>` : `<span class="text-gray-300 text-xs">-</span>`);
+            const statusCell = e.jarvis_status ? `<span class="text-[10px] text-gray-500 whitespace-nowrap">${e.jarvis_status.replace(/_/g,' ')}</span>` : `<span class="text-gray-300 text-xs">-</span>`;
+            const ballCell = ballCfg ? `<span class="text-[11px] font-semibold text-gray-600 whitespace-nowrap">${ballCfg.icon} ${ballCfg.label}</span>` : `<span class="text-gray-300 text-xs">-</span>`;
             const senderPrefix = e.sender_name ? `<span class="font-semibold text-gray-700">${e.sender_name}:</span> ` : '';
             const bodyText = e.message_preview || e.notes || null;
             const msgText = bodyText ?
                 `<span title="${(e.message_preview || '').replace(/"/g,'&quot;')}" class="text-gray-500 text-xs">${senderPrefix}${bodyText.substring(0, 80)}${bodyText.length > 80 ? '…' : ''}</span>` :
-                (e.sender_name ? `<span class="font-semibold text-gray-700 text-xs">${e.sender_name}</span>` : `<span class="text-gray-300 text-xs">—</span>`);
+                (e.sender_name ? `<span class="font-semibold text-gray-700 text-xs">${e.sender_name}</span>` : `<span class="text-gray-300 text-xs">-</span>`);
             const dateSep = showDate ? `<tr><td colspan="9" style="background:#f3f4f6;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;padding:4px 12px;"><span style="font-size:10px;font-weight:600;color:#6b7280;letter-spacing:0.04em;">${dt ? dt.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday:'long', day:'numeric', month:'long', year:'numeric' }) : dateStr}</span></td></tr>` : '';
             return `${dateSep}<tr style="background:${evCfg.rowBg};border-left:3px solid ${evCfg.dot};" class="border-b border-gray-100/80 hover:brightness-[0.97] transition-all">
                 <td class="px-3 py-2.5 text-xs text-gray-400 whitespace-nowrap">${showDate ? dateStr : ''}</td>
@@ -3041,22 +3041,22 @@
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div class="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
                             <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Response</p>
-                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="slaStatResponseVal">—</p>
+                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="slaStatResponseVal">-</p>
                             <p class="text-[10px] mt-0.5" id="slaStatResponseStatus"></p>
                         </div>
                         <div class="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
                             <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Resolution</p>
-                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="slaStatResolutionVal">—</p>
+                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="slaStatResolutionVal">-</p>
                             <p class="text-[10px] mt-0.5" id="slaStatResolutionStatus"></p>
                         </div>
                         <div class="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
                             <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Waiting</p>
-                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="slaStatWaitingVal">—</p>
+                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="slaStatWaitingVal">-</p>
                             <p class="text-[10px] text-gray-400 mt-0.5">total pause time</p>
                         </div>
                         <div class="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
                             <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Ball Holder</p>
-                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="slaStatBallHolder">—</p>
+                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="slaStatBallHolder">-</p>
                         </div>
                     </div>
                 </div>
@@ -3071,7 +3071,7 @@
 </div>
 @endif
 
-{{-- Load custom-dd component (sama dengan Employee/Customer Management) —
+{{-- Load custom-dd component (sama dengan Employee/Customer Management) -
      minified build (~63% smaller after gzip); regenerate via `npm run
      minify:js` whenever public/js/custom-dropdown.js changes.
      filemtime cache buster supaya production auto-invalidate setiap deploy. --}}
@@ -3193,7 +3193,7 @@ $customDdVer = file_exists($customDdPath) ? filemtime($customDdPath) : time();
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
             <div>
                 <h3 class="text-sm font-bold text-gray-900">Ticket Activity Log</h3>
-                <p id="alModalTicketNum" class="text-xs text-gray-400 mt-0.5">—</p>
+                <p id="alModalTicketNum" class="text-xs text-gray-400 mt-0.5">-</p>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="openAlForm(null)"
@@ -3252,14 +3252,14 @@ $customDdVer = file_exists($customDdPath) ? filemtime($customDdPath) : time();
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1.5">File Ref. — Link</label>
+                <label class="block text-xs font-semibold text-gray-600 mb-1.5">File Ref. - Link</label>
                 <input type="url" id="alFormUrl" placeholder="https://…"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-500">
                 <p class="text-[10px] text-gray-400 mt-1">Paste a Google Drive, OneDrive, or other link</p>
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1.5">File Ref. — Upload</label>
+                <label class="block text-xs font-semibold text-gray-600 mb-1.5">File Ref. - Upload</label>
                 <div id="alFileArea" class="border border-dashed border-gray-300 rounded-lg px-3 py-3 text-xs text-gray-500">
                     <div id="alCurrentFile" class="hidden flex items-center gap-2 mb-2 p-2 bg-gray-50 rounded-lg">
                         <i class="fas fa-paperclip text-gray-400"></i>
@@ -3358,7 +3358,7 @@ $customDdVer = file_exists($customDdPath) ? filemtime($customDdPath) : time();
                     ${isOwner ? `
                     <button onclick="openAlForm(${log.id})" class="text-blue-500 hover:text-blue-700 mr-2" title="Edit"><i class="fas fa-pen text-xs"></i></button>
                     <button onclick="deleteAlLog(${log.id})" class="text-red-400 hover:text-red-600" title="Delete"><i class="fas fa-trash text-xs"></i></button>
-                    ` : '<span class="text-gray-300">—</span>'}
+                    ` : '<span class="text-gray-300">-</span>'}
                 </td>
             </tr>`;
             }).join('');
@@ -3372,7 +3372,7 @@ $customDdVer = file_exists($customDdPath) ? filemtime($customDdPath) : time();
             if (log.file_ref_path) {
                 parts.push(`<a href="${ESC(log.file_ref_path)}" target="_blank" rel="noopener" class="flex items-center gap-1 text-blue-500 hover:underline"><i class="fas fa-paperclip text-[10px]"></i><span class="truncate max-w-[120px]">${ESC(log.file_ref_name || 'File')}</span></a>`);
             }
-            return parts.length ? `<div class="space-y-0.5">${parts.join('')}</div>` : '<span class="text-gray-300">—</span>';
+            return parts.length ? `<div class="space-y-0.5">${parts.join('')}</div>` : '<span class="text-gray-300">-</span>';
         }
 
         // ── Form ─────────────────────────────────────────────────────────────────
@@ -3517,14 +3517,14 @@ $customDdVer = file_exists($customDdPath) ? filemtime($customDdPath) : time();
 
 @if($can('reporting.log-shifting'))
 {{-- ══════════════════════════════════════════════════════════════════════════
-     LOG SHIFTING MODAL (single ticket — same data as Reporting > Log Shifting)
+     LOG SHIFTING MODAL (single ticket - same data as Reporting > Log Shifting)
 ══════════════════════════════════════════════════════════════════════════ --}}
 <div id="logShiftingTicketModal" class="hidden fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
             <div>
                 <h3 class="text-sm font-bold text-gray-900">Log Shifting</h3>
-                <p id="lstModalTicketNum" class="text-xs text-gray-400 mt-0.5">—</p>
+                <p id="lstModalTicketNum" class="text-xs text-gray-400 mt-0.5">-</p>
             </div>
             <button onclick="closeLogShiftingTicketModal()"
                 class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all text-sm">✕</button>
@@ -3564,7 +3564,7 @@ $customDdVer = file_exists($customDdPath) ? filemtime($customDdPath) : time();
             if (!json.success) throw new Error(json.message || 'Failed to load data');
 
             const { ticket, messages } = json.data;
-            document.getElementById('lstModalTicketNum').textContent = ticket.ticket_number || '—';
+            document.getElementById('lstModalTicketNum').textContent = ticket.ticket_number || '-';
 
             if (!messages.length) {
                 body.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">No SLA messages found for this ticket.</td></tr>';
@@ -3573,13 +3573,13 @@ $customDdVer = file_exists($customDdPath) ? filemtime($customDdPath) : time();
 
             body.innerHTML = messages.map(m => {
                 const bubble  = m.bubble_date ? new Date(m.bubble_date) : null;
-                const dateStr = bubble ? bubble.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-                const timeStr = bubble ? bubble.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB' : '—';
+                const dateStr = bubble ? bubble.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+                const timeStr = bubble ? bubble.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB' : '-';
                 return `
                 <tr class="border-b border-gray-100">
                     <td class="px-3 py-2.5 text-gray-500 whitespace-nowrap">${dateStr}</td>
                     <td class="px-3 py-2.5 text-gray-500 whitespace-nowrap">${timeStr}</td>
-                    <td class="px-3 py-2.5 text-gray-700 whitespace-pre-wrap">${lstEsc(m.sla_message || '—')}</td>
+                    <td class="px-3 py-2.5 text-gray-700 whitespace-pre-wrap">${lstEsc(m.sla_message || '-')}</td>
                     <td class="px-3 py-2.5 text-gray-700 whitespace-nowrap">${m.sla_message_by ? lstEsc(m.sla_message_by) : '<span class="text-gray-300 italic">Unknown</span>'}</td>
                 </tr>`;
             }).join('');

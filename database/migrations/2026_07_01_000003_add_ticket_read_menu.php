@@ -9,7 +9,7 @@ return new class extends Migration
     {
         $now = now();
 
-        // ── ticket.read — function menu (parent: tickets.inbox) ──────────────────
+        // ── ticket.read - function menu (parent: tickets.inbox) ──────────────────
         $ticketsInbox = DB::table('menu')->where('slug', 'tickets.inbox')->first();
         if ($ticketsInbox) {
             $existing = DB::table('menu')->where('slug', 'ticket.read')->first();

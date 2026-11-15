@@ -9,7 +9,7 @@ return new class extends Migration
     {
         $now = now();
 
-        // ── 1. ticket.hide — function menu (parent: tickets.inbox) ───────────────
+        // ── 1. ticket.hide - function menu (parent: tickets.inbox) ───────────────
         $ticketsInbox = DB::table('menu')->where('slug', 'tickets.inbox')->first();
         if ($ticketsInbox) {
             $existing = DB::table('menu')->where('slug', 'ticket.hide')->first();
@@ -34,7 +34,7 @@ return new class extends Migration
             $this->grantRoles($hideMenuId, [1, 5, 6, 7], $now);
         }
 
-        // ── 2. management.hidden-tickets — page menu (parent: management) ────────
+        // ── 2. management.hidden-tickets - page menu (parent: management) ────────
         $management = DB::table('menu')->where('slug', 'management')->first();
         if ($management) {
             $existing = DB::table('menu')->where('slug', 'management.hidden-tickets')->first();

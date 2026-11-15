@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * ticket.view-all / ticket.view-own / ticket.view-team were seeded years ago but never
- * read by any controller or view — toggling them in Role & Menu Access had no effect.
+ * read by any controller or view - toggling them in Role & Menu Access had no effect.
  * Remove them and take over their list position (order_seq 2-4) with the My Ticket
  * scope permissions added in the previous two migrations, which ARE wired into
  * TicketController::myTickets().

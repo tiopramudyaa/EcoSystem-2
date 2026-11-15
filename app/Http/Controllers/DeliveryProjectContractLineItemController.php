@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Contract Line Item — acuan termin nominal tetap pada mode TOP "line_item".
+ * Contract Line Item - acuan termin nominal tetap pada mode TOP "line_item".
  * Daftar line item ikut dikirim oleh GET payment-terms (ProjectTopPlan::payload).
  */
 class DeliveryProjectContractLineItemController extends Controller
@@ -81,7 +81,7 @@ class DeliveryProjectContractLineItemController extends Controller
      *
      * Membuat semua termin berulang sekaligus (basis nominal tetap). Jadwal yang
      * dipakai disimpan balik ke line item supaya nilai kontrak tetap konsisten.
-     * Periode yang sudah punya termin dilewati — aman ditekan ulang.
+     * Periode yang sudah punya termin dilewati - aman ditekan ulang.
      */
     public function generateSchedule(Request $request, DeliveryProject $project, DeliveryProjectContractLineItem $lineItem)
     {
@@ -130,7 +130,7 @@ class DeliveryProjectContractLineItemController extends Controller
                     'term_number'           => $next++,
                     'basis'                 => 'fixed',
                     'contract_line_item_id' => $lineItem->id,
-                    'payment_term'          => $lineItem->name . ' – ' . $period['label'],
+                    'payment_term'          => $lineItem->name . ' - ' . $period['label'],
                     'period'                => $period['label'],
                     'payment_percentage'    => 0,
                     'amount'                => round((float) $validated['amount'], 2),

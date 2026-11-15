@@ -27,7 +27,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  *                   tab aktif & tombol primary di UI).
  * - Baris selang-seling #F9FAFB (abu paling muda Tailwind) supaya baris panjang
  *   tetap mudah diikuti tanpa membuat tabel jadi ramai.
- * - Garis tabel #E5E7EB (abu muda) — tipis, tidak mendominasi isi.
+ * - Garis tabel #E5E7EB (abu muda) - tipis, tidak mendominasi isi.
  * - Badge status memakai warna semantik: hijau untuk Submitted, kuning untuk
  *   Draft; konsisten dengan badge di halaman web.
  * Kontras teks terhadap latar semuanya di atas rasio 4.5:1 (WCAG AA).
@@ -36,13 +36,13 @@ class DeliverySupportReconsExport implements FromArray, WithEvents, WithTitle
 {
     private const LAST_COL = 'G';
 
-    /** Judul kolom tabel — dipakai untuk menulis DAN menemukan baris header. */
+    /** Judul kolom tabel - dipakai untuk menulis DAN menemukan baris header. */
     private const TABLE_HEADINGS = [
         'Ticket Number', 'Description', 'Start Date', 'Close Date',
         'Status', 'Type', 'Customer MD',
     ];
 
-    // Palet (ARGB) — diselaraskan dengan warna UI aplikasi.
+    // Palet (ARGB) - diselaraskan dengan warna UI aplikasi.
     private const C_BRAND       = 'FF991B1B'; // merah tua brand (header tabel)
     private const C_WHITE       = 'FFFFFFFF';
     private const C_TEXT        = 'FF111827'; // gray-900
@@ -75,7 +75,7 @@ class DeliverySupportReconsExport implements FromArray, WithEvents, WithTitle
             ['TICKET RECONCILIATION', '', '', '', '', '', ''],
             [
                 ($this->support->name ?: ('Support #' . $this->support->id))
-                    . ' — ' . ($this->support->client->basicData->name_1 ?? 'N/A'),
+                    . ' - ' . ($this->support->client->basicData->name_1 ?? 'N/A'),
                 '', '', '', '', '', '',
             ],
             $blank,

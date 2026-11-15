@@ -1,4 +1,4 @@
-# Jarvies — Deliverable Folder Link di Panel Properties
+# Jarvies - Deliverable Folder Link di Panel Properties
 
 ## Overview
 
@@ -13,7 +13,7 @@ DELIVERY SUPPORT / CUSTOMER DELIVERABLE / {NNN NAMA CUSTOMER} / TICKETING / {tic
 
 - **Level akses = folder ticket saja** (`.../TICKETING/{ticket_number}`), **bukan** folder
   customer. Anonymous share link dibuat pada folder ticket, jadi customer yang membuka
-  link **hanya** melihat isi folder ticket ini — tidak bisa naik ke folder customer
+  link **hanya** melihat isi folder ticket ini - tidak bisa naik ke folder customer
   (`011 AIRNAV INDONESIA`) apalagi ke `CUSTOMER DELIVERABLE`. Dengan begitu **customer
   tidak bisa melihat folder customer lain**. Prefix `Delivery Support > CUSTOMER
   DELIVERABLE` juga tidak pernah tampil ke customer anonim (hanya tampil untuk employee
@@ -23,11 +23,11 @@ DELIVERY SUPPORT / CUSTOMER DELIVERABLE / {NNN NAMA CUSTOMER} / TICKETING / {tic
 
 > Ini adalah link **`onedrive_folder_url`** yang sudah tersimpan di tabel `ticket`
 > (dibuat di `TicketDeliverableController::store`). Tidak ada folder/link baru yang
-> dibuat khusus Jarvies — kita hanya mengekspos link yang sama.
+> dibuat khusus Jarvies - kita hanya mengekspos link yang sama.
 
 ---
 
-> **Penting — Jarvies pakai DATABASE yang sama dgn EcoSystem.** Kolom
+> **Penting - Jarvies pakai DATABASE yang sama dgn EcoSystem.** Kolom
 > `ticket.onedrive_folder_url` langsung terbaca oleh model Eloquent Jarvies. Jadi
 > tombol di web Jarvies (Blade) membaca kolom itu **langsung dari DB**, TIDAK perlu
 > memanggil API EcoSystem.
@@ -36,14 +36,14 @@ DELIVERY SUPPORT / CUSTOMER DELIVERABLE / {NNN NAMA CUSTOMER} / TICKETING / {tic
 
 `app/Http/Controllers/TicketController.php` → method `show()` (endpoint
 `GET /api/jarvies/tickets/{id}`) juga mengekspos field ini di response JSON, untuk
-konsumen API lain (mis. mobile) — meskipun web Jarvies tidak memakainya:
+konsumen API lain (mis. mobile) - meskipun web Jarvies tidak memakainya:
 
 ```php
 'deliverable_folder_url' => $ticket->onedrive_folder_url,   // string|null
 'has_deliverable_folder' => !empty($ticket->onedrive_folder_url), // bool
 ```
 
-- `deliverable_folder_url` — `null` selama belum ada file deliverable yang diupload
+- `deliverable_folder_url` - `null` selama belum ada file deliverable yang diupload
   (folder di-create lazy saat upload pertama). Setelah ada minimal 1 file, berisi URL
   anonymous edit-link ke folder ticket.
 
@@ -79,7 +79,7 @@ sudah closed):
 
 ### Catatan
 
-- `target="_blank"` + `rel="noopener noreferrer"` — buka OneDrive di tab baru dengan aman.
+- `target="_blank"` + `rel="noopener noreferrer"` - buka OneDrive di tab baru dengan aman.
 - Kalau `onedrive_folder_url` masih `null` (belum ada deliverable), tombol tidak
-  dirender — tidak perlu tombol disabled.
+  dirender - tidak perlu tombol disabled.
 - Pakai inline SVG (bukan emoji UTF-8 literal) sesuai aturan proyek anti-mojibake.

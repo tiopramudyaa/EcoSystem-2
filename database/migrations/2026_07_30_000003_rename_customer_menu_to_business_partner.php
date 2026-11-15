@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
  * Master "Customer" berganti nama tampilan menjadi "Business Partner".
  * Slug menu (`master.customer`, `master.customer.create`, …) SENGAJA tidak diubah
  * supaya seluruh grant di `role_menu` dan middleware `menu:` yang sudah ada tetap
- * berlaku — yang berubah hanya label yang dilihat user.
+ * berlaku - yang berubah hanya label yang dilihat user.
  */
 return new class extends Migration
 {

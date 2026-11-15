@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('delivery_support', function (Blueprint $table) {
-            // IO Number — unik per delivery support (satu IO Number hanya boleh
+            // IO Number - unik per delivery support (satu IO Number hanya boleh
             // dipakai oleh satu support). Nullable karena boleh belum diisi.
             $table->string('io_number')->nullable()->after('sales_id');
             $table->decimal('revenue', 20, 2)->nullable()->after('io_number');

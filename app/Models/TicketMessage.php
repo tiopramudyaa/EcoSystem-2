@@ -15,7 +15,7 @@ class TicketMessage extends Model
     /**
      * Metadata gambar inline yang baru disimpan ke disk pada event `saving`,
      * menunggu dibuatkan baris TicketAttachment di event `saved` (butuh id row).
-     * Bukan atribut DB — tidak masuk $fillable/$casts.
+     * Bukan atribut DB - tidak masuk $fillable/$casts.
      *
      * @var array<int, array{file_path:string, file_name:string, file_size:int, mime_type:string}>
      */

@@ -12,7 +12,7 @@ return new class extends Migration
      * - email_status = 'partial'   : terkirim ke sebagian; sebagian gagal (alamat salah/bounce).
      * - email_status = 'failed'    : tidak terkirim ke SIAPAPUN.
      *
-     * - email_recipients        : daftar SEMUA alamat tujuan (To+CC) saat dikirim — dipakai
+     * - email_recipients        : daftar SEMUA alamat tujuan (To+CC) saat dikirim - dipakai
      *   untuk memutuskan partial vs total saat NDR/bounce datang belakangan (async).
      * - email_failed_recipients : daftar alamat yang GAGAL (invalid pra-kirim atau bounce),
      *   diakumulasi lintas NDR; dipakai membangun teks alasan.

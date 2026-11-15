@@ -17,7 +17,7 @@ use Illuminate\Http\UploadedFile;
  *
  *   2. BERKAS TEKS/KODE yang dilampirkan lewat tombol klip. Sebelum ini
  *      SEMUA yang bukan PDF/gambar ditolak dengan "file type isn't supported
- *      yet" — termasuk .csv, .md, .json, .log, .php. Padahal justru berkas
+ *      yet" - termasuk .csv, .md, .json, .log, .php. Padahal justru berkas
  *      itulah yang paling gampang dibaca model: isinya sudah teks.
  *
  * Keduanya diubah jadi content block `text` biasa (BUKAN `document` base64),
@@ -25,7 +25,7 @@ use Illuminate\Http\UploadedFile;
  * memberi apa pun, dan blok teks bekerja di semua model tanpa syarat beta.
  *
  * Isinya dibungkus tag <attached_text …> supaya model bisa membedakan mana
- * yang ditulis user dan mana yang cuma ditempel — tanpa itu, potongan kode
+ * yang ditulis user dan mana yang cuma ditempel - tanpa itu, potongan kode
  * panjang gampang dikira instruksi.
  */
 class AiTextAttachment
@@ -33,7 +33,7 @@ class AiTextAttachment
     /**
      * Plafon per berkas: 600 rb karakter ≈ 150 rb token.
      *
-     * Yang mengikat di sini BUKAN jendela konteks — Sonnet 5 dan Opus 5
+     * Yang mengikat di sini BUKAN jendela konteks - Sonnet 5 dan Opus 5
      * (dua model yang benar-benar dipakai AI Research) punya jendela 1 juta
      * token, jadi angka ini masih sangat longgar. Yang mengikat adalah
      * BIAYA: lampiran menempel di percakapan dan dikirim ULANG pada setiap
@@ -41,7 +41,7 @@ class AiTextAttachment
      *
      * 20 Agu 2026: 400 rb → 600 rb. Angka 400 rb memotong file view nyata
      * di repo ini (show.blade.php, 8.645 baris ≈ 485 rb karakter) di sekitar
-     * 82% — persis kasus yang paling sering ditempel orang, dan potongan
+     * 82% - persis kasus yang paling sering ditempel orang, dan potongan
      * yang hilang justru bagian bawah file.
      *
      * Yang di atas plafon DIPOTONG, bukan ditolak: user yang menempel satu
@@ -50,7 +50,7 @@ class AiTextAttachment
      */
     public const MAX_CHARS = 600000;
 
-    /** Ambang "ini tempelan, bukan ketikan" — dipakai juga oleh sisi browser. */
+    /** Ambang "ini tempelan, bukan ketikan" - dipakai juga oleh sisi browser. */
     public const PASTE_THRESHOLD_CHARS = 1500;
     public const PASTE_THRESHOLD_LINES = 25;
 
@@ -74,7 +74,7 @@ class AiTextAttachment
     /** Berkas teks tanpa ekstensi yang berarti (Dockerfile, Makefile, …). */
     private const TEXT_BASENAMES = ['dockerfile', 'makefile', 'procfile', 'gemfile', 'rakefile'];
 
-    /** MIME resmi .docx — tapi banyak browser/OS malah melaporkannya sebagai application/zip. */
+    /** MIME resmi .docx - tapi banyak browser/OS malah melaporkannya sebagai application/zip. */
     private const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
     /**
@@ -82,7 +82,7 @@ class AiTextAttachment
      *
      * Cek terakhir sengaja melihat ISI berkas, bukan namanya: file bernama
      * .txt yang ternyata biner akan lolos nama tapi gagal di sini, dan itu
-     * yang kita mau — mengirim byte biner sebagai teks membuang token tanpa
+     * yang kita mau - mengirim byte biner sebagai teks membuang token tanpa
      * hasil.
      */
     public static function isTextual(UploadedFile $file): bool
@@ -112,7 +112,7 @@ class AiTextAttachment
     }
 
     /**
-     * .docx BUKAN teks polos — dia zip berisi XML, jadi diperiksa lewat
+     * .docx BUKAN teks polos - dia zip berisi XML, jadi diperiksa lewat
      * ekstensi/MIME saja di sini; isinya baru diambil di fromFile().
      */
     private static function isDocx(UploadedFile $file): bool
@@ -147,7 +147,7 @@ class AiTextAttachment
 
     /**
      * .docx → teks polos. Format aslinya adalah zip berisi XML (word/document.xml
-     * menyimpan isi badan dokumen); memformat ulang XML itu di luar cakupan sini —
+     * menyimpan isi badan dokumen); memformat ulang XML itu di luar cakupan sini -
      * yang dibutuhkan model hanyalah ISI-nya, bukan tata letaknya.
      *
      * Batas paragraf/baris/tab XML diubah jadi karakter teks yang sepadan SEBELUM
@@ -158,7 +158,7 @@ class AiTextAttachment
         $zip = new \ZipArchive();
 
         if (true !== $zip->open($path)) {
-            return '[Could not read this .docx file — it may be corrupted or password-protected.]';
+            return '[Could not read this .docx file - it may be corrupted or password-protected.]';
         }
 
         $xml = $zip->getFromName('word/document.xml');
@@ -191,7 +191,7 @@ class AiTextAttachment
     {
         $text = self::toUtf8($raw);
 
-        // chars/lines menggambarkan berkas UTUH, bukan potongannya — kalau
+        // chars/lines menggambarkan berkas UTUH, bukan potongannya - kalau
         // keduanya dihitung setelah pemotongan, header lampiran berbohong
         // tentang seberapa besar yang sebenarnya ada. Yang dipotong
         // diumumkan lewat penanda [... truncated ...] di akhir isi.
@@ -241,7 +241,7 @@ class AiTextAttachment
     }
 
     /**
-     * Ukuran lampiran teks dalam byte — dipakai anggaran konteks AI Research,
+     * Ukuran lampiran teks dalam byte - dipakai anggaran konteks AI Research,
      * yang menghitung SEMUA lampiran dengan satuan yang sama.
      */
     public static function bytes(array $attachment): int
@@ -251,7 +251,7 @@ class AiTextAttachment
 
     /**
      * CSV dari Excel datang sebagai Windows-1252, dan byte non-UTF-8 membuat
-     * json_encode() pada payload API mengembalikan false — request-nya gagal
+     * json_encode() pada payload API mengembalikan false - request-nya gagal
      * tanpa pesan yang menjelaskan apa pun. Sama seperti helper toUtf8() di
      * import CSV planning.
      */

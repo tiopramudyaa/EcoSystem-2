@@ -17,7 +17,7 @@ class TaskController extends Controller
     }
 
     /**
-     * API: Daftar tiket aktif di mana user yang login ditugaskan —
+     * API: Daftar tiket aktif di mana user yang login ditugaskan -
      * sebagai Lead, Member, atau punya alokasi mandays.
      */
     public function list(Request $request)
@@ -72,7 +72,7 @@ class TaskController extends Controller
             $myModules         = $modulesMap[$empId] ?? '-';
 
             // Nama SEMUA modul tiket (bukan cuma teks bebas `ticket.module` yang
-            // dipilih di query di atas) — satu tiket boleh menyentuh lebih dari
+            // dipilih di query di atas) - satu tiket boleh menyentuh lebih dari
             // satu modul terstruktur sekarang, lihat Ticket::modules() dan
             // Ticket::moduleNamesMapFor() (versi batch dari module_names, dipakai
             // di sini karena $tickets hasil query builder mentah, bukan Eloquent).

@@ -60,7 +60,7 @@ class TicketAttachment extends Model
             return route('attachments.show', $this->id);
         }
 
-        // File lokal (internal note, ticket non-email) — di-stream via proxy yang sama
+        // File lokal (internal note, ticket non-email) - di-stream via proxy yang sama
         if ($this->file_path) {
             return route('attachments.show', $this->id);
         }
@@ -80,7 +80,7 @@ class TicketAttachment extends Model
      * Tautan cloud yang boleh diambilkan EcoSystem lewat Graph.
      *
      * Host-nya dibatasi dengan SENGAJA. `link_url` berasal dari lampiran pesan
-     * Teams — isinya ditentukan orang lain, dan proxy ini mengambil berkas
+     * Teams - isinya ditentukan orang lain, dan proxy ini mengambil berkas
      * memakai token aplikasi yang punya akses luas. Tanpa pembatasan host, satu
      * baris attachment berisi URL sembarang bisa memancing server mengambil
      * apa pun yang bisa dijangkau token itu.

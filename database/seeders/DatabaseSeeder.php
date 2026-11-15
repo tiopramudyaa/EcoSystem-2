@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             EmployeeSeeder::class,        // hanya akun ECI_ADMIN
             UserSystemRolesSeeder::class, // beri admin baris employee_role_assignment
 
-            // ── Seeder data dummy — dinonaktifkan untuk clean install ───────────
+            // ── Seeder data dummy - dinonaktifkan untuk clean install ───────────
             // Aktifkan kembali bila butuh data contoh untuk development.
             // CustomerSeeder::class,        // customer dummy
             // DeliveryProjectSeeder::class, // delivery project dummy

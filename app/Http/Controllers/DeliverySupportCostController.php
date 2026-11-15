@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 /**
- * Plan Cost untuk Delivery Support — mirror dari DeliveryProjectCostController.
+ * Plan Cost untuk Delivery Support - mirror dari DeliveryProjectCostController.
  */
 class DeliverySupportCostController extends Controller
 {
@@ -39,7 +39,7 @@ class DeliverySupportCostController extends Controller
 
     // ──────────────────────────────────────────────────────────────
     // GET /delivery/support/{support}/costs/export
-    // Export Plan Cost ke Excel — 4 sheet yang sama dengan Delivery Project
+    // Export Plan Cost ke Excel - 4 sheet yang sama dengan Delivery Project
     // ──────────────────────────────────────────────────────────────
     public function export(DeliverySupport $support)
     {
@@ -91,7 +91,7 @@ class DeliverySupportCostController extends Controller
             'cost_type'      => 'required|in:indirect,direct',
             'budget'         => 'nullable|numeric|min:0',
             'release_amount' => 'nullable|numeric|min:0',
-            // actual_amount is NOT accepted here — it is derived from the
+            // actual_amount is NOT accepted here - it is derived from the
             // sum of expense detail items (see syncActualFromItems()).
         ]);
 
@@ -514,7 +514,7 @@ class DeliverySupportCostController extends Controller
     // support, lalu buat share link ANONIM.
     //
     // PENTING: yang disimpan HARUS share link (createShareLink), bukan
-    // `webUrl` hasil upload. webUrl adalah path SharePoint langsung — hanya
+    // `webUrl` hasil upload. webUrl adalah path SharePoint langsung - hanya
     // bisa dibuka akun yang punya izin item tersebut, sehingga siapa pun yang
     // lain akan dihadang halaman login / "Request access".
     //

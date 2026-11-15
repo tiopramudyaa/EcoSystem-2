@@ -8,7 +8,7 @@ use Illuminate\Database\Query\Builder;
  * Shared filter validation + application for tools that query a table via
  * the query builder (QueryDataTool, AggregateDataTool). Every filter's
  * "field" is checked against the table's real columns before use, and the
- * operator against a fixed whitelist — all values are bound through the
+ * operator against a fixed whitelist - all values are bound through the
  * query builder, never interpolated into raw SQL.
  */
 trait FiltersTableQueries

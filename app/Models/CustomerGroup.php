@@ -9,9 +9,9 @@ use App\Traits\Auditable;
 /**
  * Customer Group struktural.
  *
- * Berbeda dengan Parent–Child (hierarki `customer.parent_customer_id`),
+ * Berbeda dengan Parent-Child (hierarki `customer.parent_customer_id`),
  * Customer Group adalah grouping datar: tiap anggota tetap customer mandiri
- * penuh (punya login, kontak, tiket, akses Jarvies sendiri) — grup hanya
+ * penuh (punya login, kontak, tiket, akses Jarvies sendiri) - grup hanya
  * mengelompokkan mereka untuk keperluan tampilan.
  */
 class CustomerGroup extends Model

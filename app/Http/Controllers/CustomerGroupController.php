@@ -157,7 +157,7 @@ class CustomerGroupController extends Controller
     /**
      * GET /api/customer-groups/available-customers
      * Customer yang belum tergabung di grup mana pun (customer_group_id null),
-     * untuk dropdown "tambah anggota". Menjamin aturan 1 customer = 0–1 grup.
+     * untuk dropdown "tambah anggota". Menjamin aturan 1 customer = 0-1 grup.
      */
     public function availableCustomers()
     {
@@ -185,7 +185,7 @@ class CustomerGroupController extends Controller
     /**
      * POST /api/customer-groups/{id}/members
      * Tambah satu customer ke grup. Ditolak jika customer sudah punya grup lain
-     * (aturan: 1 customer = 0–1 grup).
+     * (aturan: 1 customer = 0-1 grup).
      */
     public function addMember(Request $request, $id)
     {
@@ -206,7 +206,7 @@ class CustomerGroupController extends Controller
             return response()->json(['success' => false, 'message' => 'Customer not found'], 404);
         }
 
-        // Grup ini murni pengelompokan sisi customer — vendor tidak boleh masuk.
+        // Grup ini murni pengelompokan sisi customer - vendor tidak boleh masuk.
         if (($customer->type ?? Customer::TYPE_CUSTOMER) !== Customer::TYPE_CUSTOMER) {
             return response()->json([
                 'success' => false,

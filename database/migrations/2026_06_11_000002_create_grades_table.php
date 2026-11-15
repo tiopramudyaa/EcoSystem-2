@@ -6,12 +6,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Tabel referensi Grade consultant — single source of truth untuk:
+ * Tabel referensi Grade consultant - single source of truth untuk:
  *   1. Opsi dropdown Grade di form employee (master/profile).
  *   2. Harga Man-Day (MD) per grade (kolom `md_price`, diisi saat fitur harga aktif).
  *
  * Catatan desain: `employee_basic_data.grade` TETAP menyimpan nama grade sebagai
- * string (penghubung lewat `grades.name`), bukan FK — agar minim disrupsi & import
+ * string (penghubung lewat `grades.name`), bukan FK - agar minim disrupsi & import
  * tetap berbasis nama. FK `grade_id` bisa ditambah belakangan bila diperlukan.
  */
 return new class extends Migration
@@ -21,7 +21,7 @@ return new class extends Migration
         Schema::create('grades', function (Blueprint $table) {
             $table->id();
             $table->string('name', 100)->unique();
-            // Harga Man-Day per grade — nullable, diisi nanti saat fitur harga MD aktif.
+            // Harga Man-Day per grade - nullable, diisi nanti saat fitur harga MD aktif.
             $table->decimal('md_price', 15, 2)->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);

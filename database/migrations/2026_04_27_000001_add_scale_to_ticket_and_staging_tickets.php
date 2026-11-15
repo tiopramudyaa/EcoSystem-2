@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Kolom scale opsional — value list final masih didiskusikan, jadi disimpan
+        // Kolom scale opsional - value list final masih didiskusikan, jadi disimpan
         // sebagai VARCHAR bebas (bukan ENUM) supaya tidak butuh migrasi ulang
         // saat opsi diputuskan. Validasi nilai dilakukan di controller.
         Schema::table('staging_tickets', function (Blueprint $table) {

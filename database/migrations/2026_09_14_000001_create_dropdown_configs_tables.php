@@ -11,23 +11,23 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Generic dropdown/lookup master data — single source of truth for every
+ * Generic dropdown/lookup master data - single source of truth for every
  * admin-editable Employee Information dropdown (Position, Department,
  * Division, Personnel Area, Personnel Subarea, Employee Group, Employee
  * Subgroup). Two tables instead of one-per-field:
  *
- *   dropdown_configs        — one row per dropdown TYPE (code + label)
- *   dropdown_config_values  — the values belonging to a config
+ *   dropdown_configs        - one row per dropdown TYPE (code + label)
+ *   dropdown_config_values  - the values belonging to a config
  *
  * A new dropdown type can be added later purely as data (insert a
- * `dropdown_configs` row via the Dropdown Settings admin page) — no
+ * `dropdown_configs` row via the Dropdown Settings admin page) - no
  * migration or deploy needed. `employee_basic_data` keeps storing the
  * plain string value as it does today; this table only governs which
  * values are valid/offered in the UI, it is not a hard FK.
  *
- * Existing values are seeded here from wherever they currently live —
+ * Existing values are seeded here from wherever they currently live -
  * `positions`/`departments` tables and the Division/PersonnelArea/
- * PersonnelSubarea/EmployeeGroup/EmployeeSubgroup enums — so nothing in
+ * PersonnelSubarea/EmployeeGroup/EmployeeSubgroup enums - so nothing in
  * the UI changes on deploy; only where the list is edited afterwards does.
  * Those tables/enums are left in place (not dropped) since nothing else
  * references them once AppServiceProvider stops reading from them.

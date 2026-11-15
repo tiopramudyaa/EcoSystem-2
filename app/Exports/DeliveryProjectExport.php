@@ -13,7 +13,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 /**
- * Export daftar Delivery Project — satu baris per project, berisi seluruh data
+ * Export daftar Delivery Project - satu baris per project, berisi seluruh data
  * yang tersebar di halaman detail (general, delivery info, financial, progress,
  * dan ringkasan section Issue/Risk/WRICEF/TOP) supaya bisa dianalisis di Excel
  * tanpa membuka project satu per satu.
@@ -24,15 +24,15 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 class DeliveryProjectExport implements FromArray, WithEvents, WithTitle, WithStrictNullComparison, ShouldAutoSize
 {
     // WithStrictNullComparison: tanpa ini Laravel-Excel menulis setiap nilai 0
-    // sebagai sel KOSONG — progres 0%, deviasi 0, dan hitungan 0 akan hilang.
+    // sebagai sel KOSONG - progres 0%, deviasi 0, dan hitungan 0 akan hilang.
 
     /** Kolom terakhir (58 kolom, lihat urutan header di array()). */
     private const LAST_COL = 'BF';
 
-    /** Kolom angka rupiah — ditulis sebagai number, diformat #,##0. */
+    /** Kolom angka rupiah - ditulis sebagai number, diformat #,##0. */
     private const MONEY_COLS = ['Y', 'Z', 'AA', 'AB', 'AD', 'AU', 'AV', 'AW'];
 
-    /** Kolom angka desimal (persentase & SPI) — format 0.00. */
+    /** Kolom angka desimal (persentase & SPI) - format 0.00. */
     private const DECIMAL_COLS = ['AC', 'AE', 'AF', 'AG', 'AH', 'AI'];
 
     /** Kolom yang di-center: tanggal, hitungan, dan flag. */

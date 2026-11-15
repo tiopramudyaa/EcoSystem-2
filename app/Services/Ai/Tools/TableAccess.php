@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * Three layers of protection, in increasing order of nuance:
  *
  *   - EXCLUDED_TABLES: framework/session/token tables. These don't hold
- *     business data — they hold live credentials (a session or personal
+ *     business data - they hold live credentials (a session or personal
  *     access token row IS a working login for whoever reads it) or
  *     framework plumbing (queue/cache/migration bookkeeping). Exposing them
  *     would be an account-takeover primitive, not a data-access question.
@@ -22,14 +22,14 @@ use Illuminate\Support\Facades\Schema;
  *   - SECRET_COLUMN_NEEDLES: column-name substrings stripped from every
  *     returned row on every table, so a secret column added to some other
  *     table in the future doesn't get exposed just because it wasn't in an
- *     exclusion list — matches app\Models\AuthUser's own $hidden intent
+ *     exclusion list - matches app\Models\AuthUser's own $hidden intent
  *     (password / remember_token / cp_token) but applies universally.
  *   - SENSITIVE_TABLES: business-data tables gated by the menu permission
  *     slugs already used elsewhere in the app for the same data (see
  *     docs/ai-assistant-sensitive-data-policy.md for the rationale per
  *     table). Where a "my-profile.section.*" self-service slug exists
  *     (employee bank/payment/identification), an employee who only has
- *     that slug still gets to see their OWN row — authorizeQuery() forces
+ *     that slug still gets to see their OWN row - authorizeQuery() forces
  *     a `self_field = current employee` filter onto the query rather than
  *     denying outright, mirroring how GetTicketsTool falls back to "my
  *     tickets" instead of refusing. Every other table not listed here
@@ -52,15 +52,15 @@ class TableAccess
 
     /**
      * SENGAJA cuma tiga kata ini, bukan tempat menambahkan needle PII lain
-     * (mis. "salary") — dibuktikan lewat tinker saat audit skema ini: begitu
+     * (mis. "salary") - dibuktikan lewat tinker saat audit skema ini: begitu
      * "salary" ditambahkan ke sini, stripSecrets() membuang kolom itu dari
      * SEMUA baris tanpa syarat, TERMASUK untuk employee dengan permission
      * eksplisit (employee.section.contract.view) yang seharusnya berhak
-     * melihatnya lewat gerbang SENSITIVE_TABLES di bawah — needle ini jadi
+     * melihatnya lewat gerbang SENSITIVE_TABLES di bawah - needle ini jadi
      * meniadakan izin yang baru saja diberikan, bukan menambah lapisan.
      * password/token/secret aman berada di sini karena tidak ada permission
      * apa pun yang seharusnya membuat NILAI itu (bukan keberadaan barisnya)
-     * layak dikembalikan ke model — beda kategori dari data bisnis seperti
+     * layak dikembalikan ke model - beda kategori dari data bisnis seperti
      * gaji, yang harus MUNCUL begitu tabelnya berwenang, bukan selalu hilang.
      * Proteksi kolom sejenis salary ada di tingkat tabel (SENSITIVE_TABLES),
      * bukan di sini.
@@ -86,7 +86,7 @@ class TableAccess
             'self_permission' => 'my-profile.section.identification.view',
             'permission' => 'employee.section.identification.view',
         ],
-        // Ditambahkan setelah audit skema — employee_contract.salary adalah data
+        // Ditambahkan setelah audit skema - employee_contract.salary adalah data
         // gaji personal persis seperti employee_payment, tapi belum pernah masuk
         // daftar ini sama sekali (celah nyata, bukan cuma kandidat "borderline").
         'employee_contract' => [
@@ -94,7 +94,7 @@ class TableAccess
             'self_permission' => 'my-profile.section.contract.view',
             'permission' => 'employee.section.contract.view',
         ],
-        // Data pribadi anggota keluarga (nama, tanggal lahir, dll) — orangnya
+        // Data pribadi anggota keluarga (nama, tanggal lahir, dll) - orangnya
         // sendiri tidak pernah memberi izin ke AI ini, jadi diperlakukan sama
         // seperti data pribadi karyawan yang lain.
         'employee_family' => [
@@ -102,8 +102,8 @@ class TableAccess
             'self_permission' => 'my-profile.section.family.view',
             'permission' => 'employee.section.family.view',
         ],
-        // Metadata saja (nama berkas/tipe dokumen) — tool ini tidak pernah
-        // membaca isi berkasnya — tapi nama berkas bisa menyingkap isi dokumen
+        // Metadata saja (nama berkas/tipe dokumen) - tool ini tidak pernah
+        // membaca isi berkasnya - tapi nama berkas bisa menyingkap isi dokumen
         // (mis. "KTP_...pdf", "Surat_Sakit_...pdf"), jadi tetap digerbang.
         'employee_attachment' => [
             'self_field' => 'employee_id',
@@ -125,7 +125,7 @@ class TableAccess
             'self_permission' => null,
             'permission' => 'customer.section.identification.view',
         ],
-        // Catatan bebas teks tentang perubahan data customer — isinya bisa apa
+        // Catatan bebas teks tentang perubahan data customer - isinya bisa apa
         // saja tergantung siapa yang menulis, sama seperti customer_credential
         // butuh gerbang eksplisit ketimbang dibiarkan terbuka.
         'customer_history' => [
@@ -156,7 +156,7 @@ class TableAccess
     // customer_history). Alasannya: kebijakan ini menggerbang tiap tabel
     // dengan slug permission yang SAMA dengan yang menggerbang halaman
     // manusia untuk data itu (lihat docs/ai-assistant-sensitive-data-policy.md)
-    // — tapi employee_history tidak punya halaman sama sekali (nol pemakaian
+    // - tapi employee_history tidak punya halaman sama sekali (nol pemakaian
     // EmployeeHistory model di luar dirinya sendiri, dicek lewat pencarian
     // kode). Menempelkan slug yang kedengarannya cocok tapi sebenarnya tidak
     // menggerbang apa pun akan melanggar prinsip "akses AI = akses UI" itu
@@ -250,21 +250,21 @@ class TableAccess
     }
 
     /**
-     * Ticket yang di-hide (Ticket::is_hidden — lihat tombol Hide/Unhide di
+     * Ticket yang di-hide (Ticket::is_hidden - lihat tombol Hide/Unhide di
      * ticket/show.blade.php, permission ticket.hide) TIDAK PERNAH boleh
      * terhitung lewat query_data/aggregate_data, dan begitu juga SELURUH
-     * data yang menempel padanya (SLA, mandays, attachment, message, dst) —
+     * data yang menempel padanya (SLA, mandays, attachment, message, dst) -
      * bukan cuma baris ticket itu sendiri. Dua kasus:
      *
      *   - $table === 'ticket' sendiri → whereNull('is_hidden') + whereNull('deleted_at') langsung
      *     (tiket yang dihapus/soft delete diperlakukan sama seperti yang di-hide).
      *   - tabel lain yang punya FOREIGN KEY sungguhan ke ticket.ticket_id
-     *     (lihat ticketForeignKeyColumn() — 24 tabel per audit skema saat
+     *     (lihat ticketForeignKeyColumn() - 24 tabel per audit skema saat
      *     ini: ticket_message, ticket_sla, timesheets, dst) → buang baris
      *     yang ticket_id-nya menunjuk ke ticket yang sedang di-hide.
      *
      * Sengaja dibatasi ke kolom yang BENAR-BENAR constrained FK ke ticket
-     * (bukan "tabel mana pun yang punya kolom bernama ticket_id") — dua
+     * (bukan "tabel mana pun yang punya kolom bernama ticket_id") - dua
      * tabel di skema ini (notifications, ticket_reads) punya kolom
      * ticket_id tanpa FK constraint, jadi maknanya tidak bisa dipastikan
      * sama; lebih aman diam daripada menebak dan salah membuang data yang
@@ -272,7 +272,7 @@ class TableAccess
      *
      * Dipanggil terpisah dari authorizeQuery() (bukan digabung) karena
      * gerbang izin per-tabel di atas bisa MENOLAK query sama sekali,
-     * sedangkan ini hanya MENYARING baris — keduanya independen dan caller
+     * sedangkan ini hanya MENYARING baris - keduanya independen dan caller
      * (QueryDataTool/AggregateDataTool) memanggil dua-duanya.
      */
     public static function excludeHiddenTickets(string $table, Builder $query): void
@@ -288,10 +288,10 @@ class TableAccess
             return;
         }
 
-        // whereNull($column) OR whereNotIn(...) — bukan whereNotIn() polos:
+        // whereNull($column) OR whereNotIn(...) - bukan whereNotIn() polos:
         // kolom FK ini nullable di beberapa tabel (mis. staging_tickets.ticket_id
         // sebelum di-approve), dan "NULL NOT IN (subquery)" di SQL adalah
-        // UNKNOWN (bukan true), yang oleh MySQL diperlakukan sebagai false —
+        // UNKNOWN (bukan true), yang oleh MySQL diperlakukan sebagai false -
         // baris ber-ticket_id NULL akan ikut terbuang meski sama sekali tidak
         // menempel ke ticket manapun, apalagi ke yang di-hide.
         $query->where(function ($q) use ($column) {
@@ -305,11 +305,11 @@ class TableAccess
     }
 
     /**
-     * Kolom di $table yang FK-nya menunjuk ke ticket.ticket_id, kalau ada —
+     * Kolom di $table yang FK-nya menunjuk ke ticket.ticket_id, kalau ada -
      * dibaca dari information_schema (bukan daftar statis digenggam tangan)
      * supaya tabel baru yang menambahkan FK ke ticket di migrasi nanti
      * otomatis ikut tersaring tanpa perlu ingat memperbarui berkas ini.
-     * Di-cache per REQUEST (static, bukan Cache facade) — cukup untuk
+     * Di-cache per REQUEST (static, bukan Cache facade) - cukup untuk
      * menghindari query information_schema berulang dalam satu giliran
      * tool-loop yang bisa memanggil query_data/aggregate_data berkali-kali.
      */

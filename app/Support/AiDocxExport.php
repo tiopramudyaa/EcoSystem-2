@@ -11,12 +11,12 @@ use ZipArchive;
  * di sana .docx diubah jadi teks untuk dikirim ke model, di sini teks
  * jawaban model diubah balik jadi .docx supaya user punya file yang bisa
  * diunduh. Assistant AI Research sendiri tidak punya alat untuk membuat
- * atau melampirkan file — ini murni konversi sisi server saat tombol
+ * atau melampirkan file - ini murni konversi sisi server saat tombol
  * Download ditekan.
  *
- * Docx yang dihasilkan sengaja MINIMAL — hanya tiga bagian yang benar-benar
+ * Docx yang dihasilkan sengaja MINIMAL - hanya tiga bagian yang benar-benar
  * wajib menurut Open XML ([Content_Types].xml, _rels/.rels, word/document.xml)
- * — karena satu-satunya tujuan file ini adalah dibaca ulang, diedit, atau
+ * - karena satu-satunya tujuan file ini adalah dibaca ulang, diedit, atau
  * ditempel ke dokumen lain, bukan menjadi dokumen kop-resmi.
  */
 class AiDocxExport
@@ -70,7 +70,7 @@ class AiDocxExport
         return '<w:p>' . $pPr . self::renderRuns($text, $bold, $size) . '</w:p>';
     }
 
-    /** Cuma **bold** yang diurai — cukup untuk jawaban markdown AI, tanpa kompleksitas inline lain. */
+    /** Cuma **bold** yang diurai - cukup untuk jawaban markdown AI, tanpa kompleksitas inline lain. */
     private static function renderRuns(string $text, bool $forceBold, ?int $size): string
     {
         $parts = preg_split('/(\*\*[^*]+\*\*)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) ?: [$text];

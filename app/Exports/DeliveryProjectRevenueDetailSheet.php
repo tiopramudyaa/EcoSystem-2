@@ -15,14 +15,14 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 
 /**
- * Sheet "Project Revenue" — satu baris per Delivery Project
+ * Sheet "Project Revenue" - satu baris per Delivery Project
  * (lihat DeliveryProjectRevenueExport). Gross profit & persentase ditulis
  * sebagai formula supaya tetap benar bila angka diedit di Excel; AutoFilter
  * + Total SUBTOTAL supaya total ikut menyempit saat difilter.
  */
 class DeliveryProjectRevenueDetailSheet implements WithTitle, WithEvents
 {
-    /** key => [label, lebar] — urutan = urutan kolom. */
+    /** key => [label, lebar] - urutan = urutan kolom. */
     private const COLUMNS = [
         'no'          => ['No', 6],
         'io'          => ['IO Number', 15],
@@ -50,7 +50,7 @@ class DeliveryProjectRevenueDetailSheet implements WithTitle, WithEvents
         'receivable'  => ['Receivable (Invoiced - Paid)', 19],
     ];
 
-    /** Kolom angka rupiah — dijumlah di baris TOTAL. */
+    /** Kolom angka rupiah - dijumlah di baris TOTAL. */
     private const MONEY = ['revenue', 'plan_cost', 'gp', 'actual_cost', 'agp', 'top', 'invoiced', 'paid', 'unbilled', 'receivable'];
 
     /** Warna badge di layar. */
@@ -92,7 +92,7 @@ class DeliveryProjectRevenueDetailSheet implements WithTitle, WithEvents
                 $last  = $col['receivable'];
 
                 // ── Judul + info ──────────────────────────────────────
-                $text('A1', 'DELIVERY PROJECT REVENUE — ALL PROJECTS');
+                $text('A1', 'DELIVERY PROJECT REVENUE - ALL PROJECTS');
                 $sheet->mergeCells("A1:{$last}1");
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
 

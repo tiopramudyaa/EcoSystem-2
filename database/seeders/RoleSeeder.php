@@ -9,7 +9,7 @@ use Carbon\Carbon;
 class RoleSeeder extends Seeder
 {
     /**
-     * Daftar master SELURUH role — diurutkan alfabet sesuai nama agar mudah
+     * Daftar master SELURUH role - diurutkan alfabet sesuai nama agar mudah
      * dicocokkan dengan daftar resmi. Tidak dipisah "lama vs baru".
      *
      * Catatan: 7 role inti memakai 'id' TETAP karena direferensikan langsung

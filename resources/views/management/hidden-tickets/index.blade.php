@@ -15,7 +15,7 @@
         </div>
         <div class="flex items-center gap-2 text-sm text-gray-500 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
             <i class="fas fa-eye-slash text-orange-400"></i>
-            <span id="hiddenCount" class="font-semibold text-orange-700">—</span>
+            <span id="hiddenCount" class="font-semibold text-orange-700">-</span>
             <span>tiket tersembunyi</span>
         </div>
     </div>
@@ -161,18 +161,18 @@
         tbody.innerHTML = filtered.map(t => {
             const prioCls    = PRIORITY_COLORS[t.ticket_priority] || 'bg-gray-100 text-gray-500';
             const statusCls  = STATUS_COLORS[t.status]  || 'bg-gray-100 text-gray-500';
-            const statusLbl  = STATUS_LABELS[t.status]  || t.status || '—';
-            const custName   = t.customer?.customer_name || '—';
+            const statusLbl  = STATUS_LABELS[t.status]  || t.status || '-';
+            const custName   = t.customer?.customer_name || '-';
             const leadName   = t.employee?.employee_name || '<span class="text-gray-300 italic text-xs">Unassigned</span>';
-            const createdAt  = t.created_at ? new Date(t.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-            const desc       = (t.description || '—').length > 80
+            const createdAt  = t.created_at ? new Date(t.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+            const desc       = (t.description || '-').length > 80
                 ? (t.description.substring(0, 80) + '…')
-                : (t.description || '—');
+                : (t.description || '-');
 
             return `<tr class="hover:bg-gray-50 transition-colors">
                 <td class="px-4 py-3 whitespace-nowrap">
                     <a href="/ticket/${t.ticket_id}" class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 font-mono text-xs font-bold text-gray-700 hover:bg-gray-200 transition-colors">
-                        ${t.ticket_number || '—'}
+                        ${t.ticket_number || '-'}
                     </a>
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-700" title="${(t.description||'').replace(/"/g,'&quot;')}">
@@ -183,7 +183,7 @@
                 <td class="px-4 py-3 whitespace-nowrap">
                     ${t.ticket_priority
                         ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${prioCls}">${t.ticket_priority}</span>`
-                        : '<span class="text-gray-300 text-xs">—</span>'}
+                        : '<span class="text-gray-300 text-xs">-</span>'}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${statusCls}">${statusLbl}</span>

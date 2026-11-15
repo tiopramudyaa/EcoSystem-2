@@ -81,7 +81,7 @@ class DeliverySupport extends Model
     }
 
     /**
-     * Vendor (opsional) — Business Partner bertipe Vendor di master `customer`.
+     * Vendor (opsional) - Business Partner bertipe Vendor di master `customer`.
      */
     public function vendor()
     {
@@ -152,7 +152,7 @@ class DeliverySupport extends Model
     }
 
     /**
-     * Term Of Payment (TOP) plan entries — mirror of DeliveryProject::paymentTerms.
+     * Term Of Payment (TOP) plan entries - mirror of DeliveryProject::paymentTerms.
      */
     public function paymentTerms()
     {
@@ -161,7 +161,7 @@ class DeliverySupport extends Model
     }
 
     /**
-     * Contract Line Items — acuan termin TOP mode "line_item" (mirror DeliveryProject::contractLineItems).
+     * Contract Line Items - acuan termin TOP mode "line_item" (mirror DeliveryProject::contractLineItems).
      */
     public function contractLineItems()
     {
@@ -171,7 +171,7 @@ class DeliverySupport extends Model
     }
 
     /**
-     * Plan Cost tree (top-level rows only) — mirror of DeliveryProject::costs.
+     * Plan Cost tree (top-level rows only) - mirror of DeliveryProject::costs.
      */
     public function costs()
     {

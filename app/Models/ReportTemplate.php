@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Satu template .docx tersimpan di library Word Report Generator — lihat
+ * Satu template .docx tersimpan di library Word Report Generator - lihat
  * migrasi create_report_templates_table. customer_id null = template umum/
  * internal, tidak terikat customer/business partner tertentu.
  */

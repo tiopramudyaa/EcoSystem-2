@@ -9,7 +9,7 @@ use App\Models\Employee;
  *
  * Implementations must resolve the acting employee's permissions themselves
  * inside run() and must never trust an employee/user identifier coming from
- * the model's input — the $employee passed in is the only source of truth
+ * the model's input - the $employee passed in is the only source of truth
  * for "who is asking".
  */
 interface AiTool

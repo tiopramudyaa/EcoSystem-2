@@ -6,7 +6,7 @@ use App\Support\MenuRegistrar;
 /**
  * Slug izin khusus untuk fitur Contact Groups (shared ticket visibility),
  * terpisah dari `customer.section.contact.update` supaya bisa di-grant
- * independen — siapa yang boleh edit data contact belum tentu boleh
+ * independen - siapa yang boleh edit data contact belum tentu boleh
  * mengatur grup mereka. Baru → admin-only (aturan baku MenuRegistrar),
  * role lain diberikan manual lewat Control Center → Menu Access.
  */

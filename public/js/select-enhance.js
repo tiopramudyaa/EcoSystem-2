@@ -14,7 +14,7 @@
  * Opt-out: tambahkan atribut `data-no-enhance` di <select>, atau buat <select multiple>.
  *
  * Public API:
- *   window.enhanceSelects(scope?)  — Re-scan DOM (atau scope tertentu) dan bind
+ *   window.enhanceSelects(scope?)  - Re-scan DOM (atau scope tertentu) dan bind
  *                                    select baru. Aman dipanggil berulang.
  */
 (function () {
@@ -114,7 +114,7 @@
             .se-item.is-disabled:hover { background: transparent; }
             /* Mode panel fixed (untuk select di dalam container overflow:auto/hidden).
                Saat panel di-detach ke <body>, selector descendant
-               \`.se-wrap.is-open .se-panel\` tidak match lagi — jadi state visible
+               \`.se-wrap.is-open .se-panel\` tidak match lagi - jadi state visible
                harus dideklarasi ulang via class .is-fixed agar panel benar-benar
                muncul. Tanpa rule ini, panel akan tetap display:none meski sudah
                di-detach (penyebab "dropdown tidak ada value" di banyak halaman). */
@@ -150,13 +150,13 @@
         if (sel.closest('.ql-toolbar, .ql-container, .ql-editor')) return true;
         // SweetAlert2 pre-render SEMUA jenis input (.swal2-select, .swal2-input,
         // dst.) di setiap popup dan sembunyikan yang tidak dipakai lewat CSS-nya
-        // sendiri (display:none) — bukan lewat atribut yang bisa kita deteksi
+        // sendiri (display:none) - bukan lewat atribut yang bisa kita deteksi
         // sebelum enhance. Kalau kita tetap enhance select tersembunyi itu,
         // wrapper .se-wrap yang kita buat TIDAK ikut ter-display:none (rule CSS
         // Swal2 menyasar .swal2-select, bukan wrapper kita), jadi muncul sebagai
-        // dropdown kosong "—" mengambang di tengah setiap dialog confirm/alert
+        // dropdown kosong "-" mengambang di tengah setiap dialog confirm/alert
         // Swal2 manapun di seluruh aplikasi. Select di dalam popup Swal2 juga
-        // tidak pernah butuh enhancement kita — Swal2 sudah punya styling sendiri.
+        // tidak pernah butuh enhancement kita - Swal2 sudah punya styling sendiri.
         if (sel.closest('.swal2-popup')) return true;
         return false;
     }
@@ -197,8 +197,8 @@
 
     function renderItems(sel, panel, label) {
         // Pertahankan UI search yang sudah diinject (sticky input + "No results")
-        // saat re-render, supaya dropdown dinamis — yang opsinya di-repopulate via
-        // AJAX/cascade — tetap punya search box setelahnya. Untuk select tanpa
+        // saat re-render, supaya dropdown dinamis - yang opsinya di-repopulate via
+        // AJAX/cascade - tetap punya search box setelahnya. Untuk select tanpa
         // search, `_seSearchWrap` undefined → perilaku identik seperti sebelumnya.
         const searchWrap = panel._seSearchWrap || null;
         const emptyEl    = panel._seEmpty || null;
@@ -228,12 +228,12 @@
 
         // Update label dari selected option
         if (selectedOpt) {
-            label.textContent = selectedOpt.textContent.trim() || selectedOpt.value || '—';
+            label.textContent = selectedOpt.textContent.trim() || selectedOpt.value || '-';
             // Tandai placeholder bila value kosong DAN ada lebih dari satu opsi
             label.classList.toggle('is-placeholder',
                 selectedOpt.value === '' && opts.length > 1 && sel.selectedIndex === 0);
         } else {
-            label.textContent = '—';
+            label.textContent = '-';
             label.classList.add('is-placeholder');
         }
 
@@ -496,7 +496,7 @@
         // Sinkronisasi balik: kalau kode lain mengubah nilai/option select secara
         // programmatic, ikut update tampilan.
         sel.addEventListener('change', () => renderItems(sel, panel, label));
-        // Beberapa kode set value langsung tanpa dispatch event — tangkap via
+        // Beberapa kode set value langsung tanpa dispatch event - tangkap via
         // MutationObserver pada childList (option list berubah) + atribut.
         const mo = new MutationObserver(() => renderItems(sel, panel, label));
         mo.observe(sel, { childList: true, subtree: true, attributes: true, attributeFilter: ['value', 'disabled'] });

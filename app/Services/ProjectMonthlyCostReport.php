@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
- * Report "Monthly Cost vs TOP Invoiced" sebuah Delivery Project — satu baris
+ * Report "Monthly Cost vs TOP Invoiced" sebuah Delivery Project - satu baris
  * per bulan:
  *
  *   Release Cost  = jadwal release bulanan (delivery_project_cost_release_schedules)
@@ -24,7 +24,7 @@ use Illuminate\Support\Collection;
  * period, termin tanpa Submit Invoice Date) masuk baris "unscheduled" di
  * bawah bulan terakhir, sehingga baris Total selalu = jumlah seluruh data.
  *
- * Hanya cost "leaf" yang dihitung — sub-item, atau parent tanpa sub-item —
+ * Hanya cost "leaf" yang dihitung - sub-item, atau parent tanpa sub-item -
  * sama seperti tabel Plan Cost (nilai parent ber-sub-item = agregat anaknya).
  * Dipakai bersama oleh endpoint JSON dan export Excel supaya angkanya identik.
  *

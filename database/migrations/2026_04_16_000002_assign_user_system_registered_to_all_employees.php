@@ -13,7 +13,7 @@ return new class extends Migration
             ->value('id');
 
         if (!$roleId) {
-            // Role belum ada — lewati (seharusnya tidak terjadi jika migrasi sebelumnya sudah jalan)
+            // Role belum ada - lewati (seharusnya tidak terjadi jika migrasi sebelumnya sudah jalan)
             return;
         }
 

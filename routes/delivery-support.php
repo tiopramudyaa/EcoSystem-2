@@ -62,7 +62,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         //   .view   → endpoint baca section (GET)
         //   .edit   → mengubah record yang sudah ada (PATCH/PUT)
         //   .manage → menambah & menghapus record (POST/DELETE)
-        // Mirror dari Delivery Project — lihat routes/web.php.
+        // Mirror dari Delivery Project - lihat routes/web.php.
         // ---------------------------------------------------------------------
 
         // View support details
@@ -76,7 +76,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
 
         // Update support (section-based via AJAX). Satu endpoint melayani beberapa
         // section (support-info / approval-info / team-info), jadi izinnya TIDAK
-        // bisa ditentukan di level route — dicek per `section` di updateField().
+        // bisa ditentukan di level route - dicek per `section` di updateField().
         Route::patch('/field', [DeliverySupportController::class, 'updateField'])->name('update-field');
 
         // Folder OneDrive & customer deliverable → section Documents
@@ -170,7 +170,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
                 Route::put('/{activity}/employees/{employeeId}', [DeliverySupportActivityController::class, 'updateAssignment'])->name('employees.update');
             });
 
-            // "Remove Ticket from DS" — gating-nya slug sendiri (bukan activities.edit)
+            // "Remove Ticket from DS" - gating-nya slug sendiri (bukan activities.edit)
             // supaya bisa diberi/dicabut lewat Control Center → Menu Access.
             Route::middleware('menu:delivery-support.remove-ticket')->group(function () {
                 Route::patch('/{activity}/remove-ticket', [DeliverySupportActivityController::class, 'removeTicketLink'])->name('remove-ticket');
@@ -221,7 +221,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         });
 
         // =====================================================================
-        // CUSTOMER PIC — sync menggantikan seluruh daftar sekaligus (= edit)
+        // CUSTOMER PIC - sync menggantikan seluruh daftar sekaligus (= edit)
         // =====================================================================
         Route::middleware('menu:delivery-support.customer-pic.view')->group(function () {
             Route::get('/client-contacts', [DeliverySupportController::class, 'getClientContacts'])->name('client-contacts');
@@ -235,7 +235,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         Route::patch('/financial-info', [DeliverySupportController::class, 'updateFinancialInfo'])->name('financial-info.update')->middleware('menu:delivery-support.financial.edit');
 
         // =====================================================================
-        // TERM OF PAYMENT (TOP) PLAN — tampil di dalam section Financial
+        // TERM OF PAYMENT (TOP) PLAN - tampil di dalam section Financial
         // =====================================================================
         Route::get('/payment-terms',        [DeliverySupportPaymentTermController::class, 'index'])->name('paymentTerms.index')->middleware('menu:delivery-support.financial.view');
         Route::middleware('menu:delivery-support.financial.edit')->group(function () {
@@ -249,7 +249,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
             Route::post('/payment-terms',               [DeliverySupportPaymentTermController::class, 'store'])->name('paymentTerms.store');
             Route::delete('/payment-terms/{term}',      [DeliverySupportPaymentTermController::class, 'destroy'])->name('paymentTerms.destroy');
             Route::post('/payment-terms/{term}/delete', [DeliverySupportPaymentTermController::class, 'destroy'])->name('paymentTerms.destroy-post');
-            // Contract Line Item (mode TOP Line Item) — tambah/hapus & generate termin berulang
+            // Contract Line Item (mode TOP Line Item) - tambah/hapus & generate termin berulang
             Route::post('/contract-line-items',                             [DeliverySupportContractLineItemController::class, 'store'])->name('contractLineItems.store');
             Route::post('/contract-line-items/{lineItem}/delete',           [DeliverySupportContractLineItemController::class, 'destroy'])->name('contractLineItems.destroy');
             Route::post('/contract-line-items/{lineItem}/generate-schedule', [DeliverySupportContractLineItemController::class, 'generateSchedule'])->name('contractLineItems.generateSchedule');
@@ -290,7 +290,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
                 Route::get('/batches',          [DeliverySupportReconsController::class, 'batches'])->name('batches');
             });
 
-            // Membuat Recons baru (halaman + simpan) — izin manage.
+            // Membuat Recons baru (halaman + simpan) - izin manage.
             Route::middleware('menu:delivery-support.recons.manage')->group(function () {
                 Route::get('/create', [DeliverySupportReconsController::class, 'create'])->name('create');
                 Route::post('/save',  [DeliverySupportReconsController::class, 'store'])->name('store');

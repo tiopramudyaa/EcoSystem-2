@@ -8,7 +8,7 @@ return new class extends Migration
     public function up(): void
     {
         $correctRoleId = 14; // Delivery Support Manager (actual DB id)
-        $wrongRoleId   = 20; // HO Accounting Head — salah di-assign oleh migration 2026_06_17
+        $wrongRoleId   = 20; // HO Accounting Head - salah di-assign oleh migration 2026_06_17
 
         $slugs = ['tickets.staging', 'staging.approve', 'staging.reject'];
 

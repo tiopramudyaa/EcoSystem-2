@@ -18,33 +18,33 @@ use Closure;
  *     TicketSummaryContext (tiket, thread, catatan internal, work log,
  *     deliverable). Model tidak menjelajah database sendiri.
  *   - Resolution Steps  -> DOKUMENTASI EKSTERNAL. Dicari saat itu juga lewat
- *     server tool web search milik provider — SAP Help/Notes/Community,
+ *     server tool web search milik provider - SAP Help/Notes/Community,
  *     Microsoft Learn, dokumentasi vendor.
  *
  * Versi pertama fitur ini menyusun "Resolution Steps" dari work log, jadi
  * isinya cuma menceritakan ulang apa yang sudah dikerjakan tim. Itu tidak
- * membantu konsultan yang justru BELUM tahu cara menyelesaikannya — riwayat
+ * membantu konsultan yang justru BELUM tahu cara menyelesaikannya - riwayat
  * penanganan tempatnya di Conclusion, sedangkan kolom penyelesaian harus
  * berisi langkah teknis yang bisa langsung dieksekusi berikut rujukannya.
  *
  * LINTAS PROVIDER SEJAK AGUSTUS 2026. Sebelumnya kelas ini memegang
  * Anthropic\Client langsung dan menjalankan sendiri loop server tool +
- * 'pause_turn' Claude — satu-satunya fitur AI yang tertinggal ketika yang lain
+ * 'pause_turn' Claude - satu-satunya fitur AI yang tertinggal ketika yang lain
  * sudah pindah ke driver. Akibatnya memilih model OpenAI di Control Center
  * tidak berpengaruh apa pun di sini: request tetap pergi ke Anthropic, dan
  * pada deployment yang hanya memakai OPENAI_API_KEY fitur ini mati sendirian
  * sementara halaman AI lain baik-baik saja. Sekarang jalurnya sama dengan AI
  * Research: AiDriverFactory memilih driver dari `provider` hasil resolve(),
- * dan seluruh urusan khas provider — server tool web search, 'pause_turn'
- * Claude, status 'incomplete' OpenAI — tinggal di dalam driver.
+ * dan seluruh urusan khas provider - server tool web search, 'pause_turn'
+ * Claude, status 'incomplete' OpenAI - tinggal di dalam driver.
  *
  * Kenapa ResearchDriver yang dipakai ulang, bukan kontrak baru: kebutuhan
- * ringkasan ini persis kebutuhan satu giliran AI Research — streaming teks,
+ * ringkasan ini persis kebutuhan satu giliran AI Research - streaming teks,
  * web search sisi server, dan daftar URL rujukan yang dibuka. Bedanya cuma
  * prompt dan jumlah giliran (di sini selalu satu).
  *
  * Model, plafon token, dan effort-nya ikut Control Center > AI Settings pada
- * baris "AI Summarize (Detail Tiket)" — entri SENDIRI, bukan lagi menumpang
+ * baris "AI Summarize (Detail Tiket)" - entri SENDIRI, bukan lagi menumpang
  * baris AI Assistant seperti dulu (lihat AiModelSettings::TICKET_SUMMARY).
  * AiModelSettings menjamin baris itu selalu berisi model ber-server-tool, jadi
  * tidak ada lagi jalur diam-diam jatuh ke konfigurasi Research di sini.
@@ -74,7 +74,7 @@ class AiTicketSummaryService
 
         $full = '';
 
-        // Format kanonik (bentuk Anthropic) — driver OpenAI menerjemahkannya
+        // Format kanonik (bentuk Anthropic) - driver OpenAI menerjemahkannya
         // sendiri ke `input` Responses API lewat TranslatesCanonicalMessages.
         $messages = [[
             'role' => 'user',
@@ -107,11 +107,11 @@ class AiTicketSummaryService
 
         // 'max_tokens' TIDAK disambung otomatis seperti di AI Research: keluaran
         // di sini cuma tiga bagian pendek, jadi mentok di plafon berarti ada yang
-        // tidak beres — bukan jawaban panjang wajar yang perlu tombol "Continue".
+        // tidak beres - bukan jawaban panjang wajar yang perlu tombol "Continue".
         //
         // Tapi statusnya WAJIB ikut keluar dari sini. Sebelumnya stopReason
         // dibuang, sehingga ringkasan yang putus di tengah langkah Resolution
-        // Steps tetap ikut disimpan dan dipaku 14 hari ke depan — tepat di bagian
+        // Steps tetap ikut disimpan dan dipaku 14 hari ke depan - tepat di bagian
         // yang paling berbahaya kalau terpotong, dan tanpa satu pun cara bagi
         // user untuk memaksa ringkasan ulang selama tiketnya belum berubah.
         $truncated = 'max_tokens' === $stopReason;
@@ -130,7 +130,7 @@ class AiTicketSummaryService
     }
 
     /**
-     * Driver mengembalikan rujukan apa adanya — urut kemunculan dan boleh
+     * Driver mengembalikan rujukan apa adanya - urut kemunculan dan boleh
      * berulang (satu URL bisa muncul sebagai hasil search lalu dibuka lagi oleh
      * fetch, dan sisi OpenAI mengeluarkan satu anotasi sitasi per penyebutan).
      * Modal menampilkannya sebagai daftar, jadi dedup dikerjakan di sini.
@@ -175,7 +175,7 @@ class AiTicketSummaryService
      *     Menguncinya ke satu ejaan membuat pemecah bagian di klien tidak ikut
      *     bergantung pada selera terjemahan model dari satu jawaban ke jawaban
      *     berikutnya.
-     *   - ISI ditulis Bahasa Indonesia — pembacanya konsultan dan helpdesk
+     *   - ISI ditulis Bahasa Indonesia - pembacanya konsultan dan helpdesk
      *     Eclectic, dan catatan serah terima memang ditulis begitu di sini.
      *     Istilah teknis TIDAK diterjemahkan (lihat aturan di prompt): TCODE,
      *     nama tabel/field, teks error, dan nama menu harus tetap cocok kata
@@ -183,35 +183,35 @@ class AiTicketSummaryService
      *
      * Nama tool sengaja TIDAK disebut di dalam prompt (dulu tertulis
      * "web_search" dan "web_fetch"): prompt yang sama kini dipakai dua
-     * provider, dan sisi OpenAI hanya punya `web_search` — menyuruhnya memakai
+     * provider, dan sisi OpenAI hanya punya `web_search` - menyuruhnya memakai
      * `web_fetch` yang tidak ada dalam daftar tool-nya hanya membingungkan.
      */
     private function systemPrompt(): string
     {
         return <<<'PROMPT'
 You are a technical assistant for the consultants and helpdesk of Eclectic Consulting. You read ONE support ticket
-and produce a working note a consultant can act on to RESOLVE that ticket — not a retelling of what it says.
+and produce a working note a consultant can act on to RESOLVE that ticket - not a retelling of what it says.
 
-LANGUAGE OF YOUR ANSWER — read this first, it applies to every section below:
+LANGUAGE OF YOUR ANSWER - read this first, it applies to every section below:
 - Write the BODY of your answer in BAHASA INDONESIA. Your readers are Indonesian consultants; this reads like a
   handover note between colleagues, so keep it concise and professional, not formal-bureaucratic.
-- The three HEADINGS stay in ENGLISH, spelled exactly as given below. They are structural markers, not prose —
+- The three HEADINGS stay in ENGLISH, spelled exactly as given below. They are structural markers, not prose -
   never translate them.
 - NEVER translate technical terms. Keep them exactly as they appear in the system and in the documentation:
   TCODE (SE38, ME21N), table and field names (VBAK, MSEG-BWART), error codes and error message text, SAP Note and
   KBA numbers, menu paths, parameter names, program and report names, and standard product terminology
   (purchase requisition, release strategy, batch job, custom program). Wrapping an Indonesian sentence around an
-  untranslated technical term is exactly right — "Jalankan SE38, lalu lakukan syntax check pada program-nya."
+  untranslated technical term is exactly right - "Jalankan SE38, lalu lakukan syntax check pada program-nya."
 - Even though you search and read documentation in English, the steps you write must be re-expressed in Bahasa
   Indonesia. Do not paste English sentences from a source page; quote only short exact strings when the precise
   wording matters (an error message, a field label, a note title).
 
 You have two sources, and they must never be mixed up:
 
-1. INTERNAL DATA — everything in the user message: ticket fields, the conversation thread (including the team's
+1. INTERNAL DATA - everything in the user message: ticket fields, the conversation thread (including the team's
    internal notes), work logs, and deliverables. This is the ONLY source of fact about what happened ON THIS
    TICKET. Never invent anything beyond it.
-2. EXTERNAL DOCUMENTATION — results from the web search tool available to you. This is the ONLY source for HOW to
+2. EXTERNAL DOCUMENTATION - results from the web search tool available to you. This is the ONLY source for HOW to
    fix the problem.
 
 How to work:
@@ -236,7 +236,7 @@ sentences or short bullets.
 Source: EXTERNAL DOCUMENTATION you found. Write CONCRETE numbered steps a consultant can execute: the menu/TCODE/
 command to open, the configuration/table/field to inspect or change, prerequisites (authorisations, notes or
 patches that must be applied), how to verify the result, and any risk or caveat worth knowing. Cite your references
-as markdown links to pages you actually opened, placed at the end of the step or group of steps they support — e.g.
+as markdown links to pages you actually opened, placed at the end of the step or group of steps they support - e.g.
 ([SAP Note 123456](https://...)).
 Do NOT move the team's handling history into this section; that belongs in Conclusion. If the work log shows the
 team already took a step the documentation prescribes, note it in a short clause so the consultant does not repeat
@@ -247,10 +247,10 @@ Source: INTERNAL DATA only. The current ticket status, what the team has done an
 agreement made with the customer, and what is still open or needs follow-up. At most 4 sentences.
 
 Additional rules:
-- Bahasa Indonesia for the body, English for the three headings, technical terms untouched — see the language
+- Bahasa Indonesia for the body, English for the three headings, technical terms untouched - see the language
   block at the top. This is the rule most easily lost once you have been reading English documentation for a
   while, so check it before you write.
-- You may use the internal notes fully — this is read internally, not by the customer. But do not copy rude wording
+- You may use the internal notes fully - this is read internally, not by the customer. But do not copy rude wording
   or personal complaints verbatim; take only the technical substance.
 - Do not reproduce long emails. This is a summary, not a transcript.
 - Do not greet the reader, do not offer further help, do not close with pleasantries.

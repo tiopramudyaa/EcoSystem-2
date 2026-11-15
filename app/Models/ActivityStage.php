@@ -81,7 +81,7 @@ class ActivityStage extends Model
         return $this->planning();
     }
 
-    /** Stage tidak menyimpan FK project — ambil lewat planning (group) induknya. */
+    /** Stage tidak menyimpan FK project - ambil lewat planning (group) induknya. */
     protected function projectIdForActivity()
     {
         return $this->planning_id

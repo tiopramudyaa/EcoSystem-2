@@ -42,7 +42,7 @@ class DeliveryProjectRevenueSummarySheet implements WithTitle, WithEvents
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
 
-                $sheet->setCellValueExplicit('A1', 'DELIVERY PROJECT REVENUE — SUMMARY', DataType::TYPE_STRING);
+                $sheet->setCellValueExplicit('A1', 'DELIVERY PROJECT REVENUE - SUMMARY', DataType::TYPE_STRING);
                 $sheet->mergeCells('A1:M1');
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
                 $sheet->setCellValueExplicit('A2', 'Exported At: ' . now()->format('d M Y H:i'), DataType::TYPE_STRING);

@@ -8,19 +8,19 @@ use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
- * Klien Microsoft Graph khusus chat Teams — token client-credentials + GET/POST.
+ * Klien Microsoft Graph khusus chat Teams - token client-credentials + GET/POST.
  *
  * SENGAJA berdiri sendiri, tidak menumpang EmailController::getAccessTokenPublic().
  * Alasannya pagar isolasi (docs/teams-chat-sync-design.md §2): jalur email tidak
  * boleh punya cara baru untuk gagal gara-gara fitur ini. Kredensialnya memang
- * kredensial yang sama — tapi lewat config sendiri yang jatuh balik ke MS_*,
+ * kredensial yang sama - tapi lewat config sendiri yang jatuh balik ke MS_*,
  * sehingga memisahkan app registration nanti cukup lewat .env.
  *
  * Yang TIDAK ada di kelas ini, dan alasannya (terbukti di spike 17 Sep 2026):
  *
- *  - Resolusi user lewat GET /users/{id} — app ini TIDAK punya User.Read.All,
+ *  - Resolusi user lewat GET /users/{id} - app ini TIDAK punya User.Read.All,
  *    panggilannya 403. Identitas diambil dari roster chat; lihat design §7.
- *  - Kirim pesan (POST /chats/{id}/messages) — tidak bisa app-only sama sekali,
+ *  - Kirim pesan (POST /chats/{id}/messages) - tidak bisa app-only sama sekali,
  *    hanya tersedia untuk Teamwork.Migrate.All. Arah keluar lewat Power Automate.
  */
 class TeamsGraphClient
@@ -116,7 +116,7 @@ class TeamsGraphClient
         return $token;
     }
 
-    /** Buang token tersimpan — dipakai saat Graph menjawab 401. */
+    /** Buang token tersimpan - dipakai saat Graph menjawab 401. */
     public function forgetToken(): void
     {
         Cache::forget($this->tokenCacheKey());
@@ -126,7 +126,7 @@ class TeamsGraphClient
 
     /**
      * GET Graph. $query dirakit oleh pemanggil sebagai pasangan kunci-nilai
-     * mentah ('$filter' => "...") — Http::get() yang meng-encode-nya.
+     * mentah ('$filter' => "...") - Http::get() yang meng-encode-nya.
      *
      * @throws TeamsGraphException kalau Graph membalas non-2xx.
      */
@@ -145,7 +145,7 @@ class TeamsGraphClient
      * Ambil byte mentah (mis. hostedContents/{id}/$value).
      *
      * Dikembalikan sebagai Response, bukan string, karena MIME-nya HANYA ada di
-     * header Content-Type respons — di daftar hostedContents, contentBytes dan
+     * header Content-Type respons - di daftar hostedContents, contentBytes dan
      * contentType keduanya null (terbukti di spike). Pemanggil butuh header itu.
      *
      * Belum dipakai di fase teks-saja; disediakan supaya fase lampiran tidak
@@ -177,7 +177,7 @@ class TeamsGraphClient
      * Satu putaran request, dengan satu kali coba ulang khusus untuk 401.
      *
      * 401 di sini hampir selalu berarti token cache sudah tidak berlaku (secret
-     * dirotasi, atau token dicabut) — bukan permission yang salah, yang muncul
+     * dirotasi, atau token dicabut) - bukan permission yang salah, yang muncul
      * sebagai 403. Membuang cache lalu mencoba sekali lagi menyembuhkannya tanpa
      * menunggu TTL habis. Selain 401, tidak ada retry: command penjadwal akan
      * datang lagi semenit kemudian.

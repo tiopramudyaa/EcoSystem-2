@@ -9,21 +9,21 @@ use App\Models\Ticket;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Akses "team lead di lapangan" untuk sebuah tiket — dipakai bareng oleh
+ * Akses "team lead di lapangan" untuk sebuah tiket - dipakai bareng oleh
  * TicketController (endpoint assign Ticket Lead & add/remove member) dan
  * TicketViewController/ticket.show (menampilkan tombol + daftar kandidat).
  *
  * Aturannya murni data-driven, TIDAK lewat menu permission:
  *   - Ticket Lead tiket itu sendiri (ticket_lead_id), ATAU
- *   - Employee yang jadi Module Lead di module MANA PUN (tabel module_leads) —
+ *   - Employee yang jadi Module Lead di module MANA PUN (tabel module_leads) -
  *     berlaku untuk semua tiket, tidak dibatasi ticket.module_id.
  *
  * Kandidat Ticket Lead / member: kalau tiket sudah punya modul (satu atau
- * lebih — lihat Ticket::modules()), dibatasi ke gabungan "anggota module" dari
+ * lebih - lihat Ticket::modules()), dibatasi ke gabungan "anggota module" dari
  * SEMUA modul tiket itu (employee ber-qualification di salah satu modul +
  * module lead-nya). Kalau tiket tidak punya modul sama sekali (tiket lama),
  * pakai daftar eligible penuh. Role manajemen (ticket.assign-pic) tidak lewat
- * sini — mereka selalu pakai daftar eligible penuh seperti sebelumnya.
+ * sini - mereka selalu pakai daftar eligible penuh seperti sebelumnya.
  */
 final class TicketTeamAccess
 {
@@ -44,7 +44,7 @@ final class TicketTeamAccess
     }
 
     /**
-     * Apakah $employeeId adalah Ticket Lead ATAU member aktif tiket ini —
+     * Apakah $employeeId adalah Ticket Lead ATAU member aktif tiket ini -
      * beda dari canManageAsLead() di atas: TIDAK ikut menghitung Module Lead
      * sistem-wide yang belum tentu tersangkut tiket ini, dan TIDAK menghitung
      * member yang sudah tidak aktif (di-remove) dari tim. Dipakai untuk
@@ -62,7 +62,7 @@ final class TicketTeamAccess
         }
 
         // wherePivot(), bukan where(): members() adalah belongsToMany yang
-        // JOIN ke tabel employee — 'employee_id' polos ambigu (ada di kedua
+        // JOIN ke tabel employee - 'employee_id' polos ambigu (ada di kedua
         // tabel employee DAN ticket_member), wherePivot() menegaskan kolom
         // di tabel pivot (ticket_member) yang dimaksud.
         return $ticket->members()->wherePivot('employee_id', $employeeId)->exists();
@@ -99,7 +99,7 @@ final class TicketTeamAccess
     }
 
     /**
-     * Module ID yang dipimpin employee ini (module_leads) — dipakai untuk
+     * Module ID yang dipimpin employee ini (module_leads) - dipakai untuk
      * membatasi modul mana yang boleh dia generate/refresh/isi notes di
      * Weekly Consolidation (Reporting → Support).
      *
@@ -121,7 +121,7 @@ final class TicketTeamAccess
      * Daftar kandidat (Ticket Lead / member) untuk jalur lead: employee aktif
      * yang punya qualification di SALAH SATU modul yang diberikan, digabung
      * dengan module lead dari modul-modul itu. Satu tiket bisa punya lebih
-     * dari satu modul (Ticket::modules()) — kandidatnya adalah UNION lintas
+     * dari satu modul (Ticket::modules()) - kandidatnya adalah UNION lintas
      * semua modul itu, bukan irisan.
      *
      * @param array<int, int> $moduleIds
@@ -156,7 +156,7 @@ final class TicketTeamAccess
             // Employee yang di-block atau ditandai untuk dihapus di Basic Data
             // tidak boleh muncul sebagai kandidat, meskipun dia qualified/module lead.
             // Employee TANPA basic data (leftJoin, bd.employee_id NULL) tetap
-            // eligible — disamakan persis dengan Employee::scopeEligibleForTicketTeam()
+            // eligible - disamakan persis dengan Employee::scopeEligibleForTicketTeam()
             // supaya dropdown kandidat ini dan validasi assignment akhir
             // (TicketTeamAccess::isEligibleEmployee(), yang lewat scope itu) tidak
             // pernah berselisih soal siapa yang dianggap eligible.
@@ -180,7 +180,7 @@ final class TicketTeamAccess
     }
 
     /**
-     * Set employee_id kandidat module — untuk validasi server-side.
+     * Set employee_id kandidat module - untuk validasi server-side.
      *
      * @param array<int, int> $moduleIds
      * @return array<int, int>
@@ -224,7 +224,7 @@ final class TicketTeamAccess
 
     /**
      * Validasi akhir sebelum benar-benar meng-assign employee sebagai Ticket
-     * Lead / member — di luar filter dropdown, supaya request langsung ke API
+     * Lead / member - di luar filter dropdown, supaya request langsung ke API
      * (bypass UI) tidak bisa menunjuk employee yang nonaktif, diblokir, atau
      * ditandai untuk dihapus.
      */
@@ -236,10 +236,10 @@ final class TicketTeamAccess
     /**
      * Siapa boleh pakai AI Research untuk tiket ini: Ticket Lead/member tiket
      * ini, ATAU salah satu role "privileged" (lihat isPrivilegedForAiResearch()
-     * — EC Administrator + role yang sama-sama bisa approve di Ticket
+     * - EC Administrator + role yang sama-sama bisa approve di Ticket
      * Validation). Dipakai bareng oleh AiResearchController::openForTicket()
      * dan assertCanAccessConversation() (gerbang endpoint) dan
-     * ticket/show.blade.php (tampil/sembunyi tombol) — satu tempat supaya
+     * ticket/show.blade.php (tampil/sembunyi tombol) - satu tempat supaya
      * ketiganya tidak bisa diam-diam melenceng kalau aturan bypass ini
      * berubah nanti. $isPrivileged dihitung oleh caller lewat
      * isPrivilegedForAiResearch() sendiri (Employee/SessionUser punya
@@ -255,13 +255,13 @@ final class TicketTeamAccess
      * Role yang otomatis lolos gerbang AI Research untuk SEMUA tiket,
      * terlepas dari status lead/member-nya di tiket itu:
      *   - EC Administrator (sudah begitu sejak awal), DITAMBAH
-     *   - RoleId::STAGING_GROUP — Delivery Support Head, Delivery Helpdesk,
+     *   - RoleId::STAGING_GROUP - Delivery Support Head, Delivery Helpdesk,
      *     Delivery RPMO Head, Delivery Support Manager (MO Support): persis
      *     role yang bisa approve di Ticket Validation.
      *
      * Alasan grup kedua: merekalah yang men-trigger pembuatan room BERSAMA
      * ini lewat approve() (lihat StagingTicketController::
-     * createSharedAiResearchRoom()) — tidak masuk akal kalau justru mereka
+     * createSharedAiResearchRoom()) - tidak masuk akal kalau justru mereka
      * sendiri tidak bisa membuka lagi room yang baru saja mereka buat, hanya
      * karena kebetulan bukan Ticket Lead/member tiket itu.
      *
@@ -269,7 +269,7 @@ final class TicketTeamAccess
      * saja) supaya employee dengan banyak role tetap kebagian akses walau
      * role privileged itu bukan role utamanya.
      *
-     * Parameter sengaja TIDAK diketik Employee — dua caller-nya pakai tipe
+     * Parameter sengaja TIDAK diketik Employee - dua caller-nya pakai tipe
      * berbeda yang sama-sama punya hasRole(int):bool/hasAnyRole(array):bool
      * (Employee di controller, SessionUser di Blade), lihat catatan di
      * canAccessAiResearch() di atas. Duck typing di sini, bukan interface

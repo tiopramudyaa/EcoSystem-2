@@ -100,13 +100,13 @@
                         <input type="hidden" id="sfin_apct_val" value="">
                     </div>
                 </div>
-                {{-- Vendor (opsional) — Business Partner bertipe Vendor di Master
+                {{-- Vendor (opsional) - Business Partner bertipe Vendor di Master
                      Business Partner. Sengaja di kolom yang sama dengan IO Number. --}}
                 <div class="lg:col-start-1">
                     <label class="block text-sm font-medium text-gray-900 mb-1">Vendor</label>
                     <select name="vendor_id" id="sfin_vendor" data-searchable="true"
                             class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus bg-white">
-                        <option value="">— No vendor —</option>
+                        <option value="">- No vendor -</option>
                         @foreach($vendors ?? [] as $vendor)
                             <option value="{{ $vendor->customer_id }}" {{ (int) $support->vendor_id === (int) $vendor->customer_id ? 'selected' : '' }}>
                                 {{ $vendor->basicData->name_1 ?? $vendor->customer_code }}
@@ -137,12 +137,12 @@
             {{-- Peringatan non-blocking (mis. total TOP melebihi revenue Sales Data) --}}
             <div id="supPtWarnings" class="hidden mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
 
-            {{-- Contract Line Items — hanya di mode Line Item --}}
+            {{-- Contract Line Items - hanya di mode Line Item --}}
             <div id="supPtLineItemSection" class="hidden mb-8">
                 <div class="flex justify-between items-center flex-wrap gap-3 mb-4">
                     <div>
                         <h4 class="text-lg font-medium text-gray-900">Contract Line Items</h4>
-                        <p class="text-xs text-gray-500 mt-0.5">Add the contract line items first — every payment term takes its amount from one of them.</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Add the contract line items first - every payment term takes its amount from one of them.</p>
                     </div>
                     @if($can('delivery-support.financial.manage'))
                     <button type="button" onclick="SupportPaymentTermPlan.openAddLineItem()"

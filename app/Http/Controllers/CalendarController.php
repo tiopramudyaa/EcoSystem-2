@@ -41,7 +41,7 @@ class CalendarController extends Controller
 
         // ── Collect ALL role IDs (primary + pivot assignments) ────────────────
         // "Primary" role in session is just whichever pivot row the DB returns
-        // first (no ORDER BY at login) — an employee holding both Delivery
+        // first (no ORDER BY at login) - an employee holding both Delivery
         // Support Head and a lower-id role can end up with the wrong role as
         // "primary". So every check below must look at the full role set, not
         // just $roleId.

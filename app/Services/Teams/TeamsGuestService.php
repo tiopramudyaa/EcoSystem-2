@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
  *
  * Consultant tanpa akun kantor (Gmail, domain vendor) hanya bisa masuk Teams
  * Eclectic sebagai GUEST tenant. Alamat emailnya tidak bisa langsung dipakai di
- * `users('...')` — Graph hanya mengenal object id atau UPN, dan UPN guest
+ * `users('...')` - Graph hanya mengenal object id atau UPN, dan UPN guest
  * berbentuk `nama_gmail.com#EXT#@...`. Id itu didapat dari respons
  * POST /invitations lalu disimpan di `teams_guest_user`.
  *
@@ -39,7 +39,7 @@ class TeamsGuestService
             && $this->graph->isConfigured();
     }
 
-    /** Alamat di luar domain tenant — harus lewat jalur guest. */
+    /** Alamat di luar domain tenant - harus lewat jalur guest. */
     public function isExternal(string $email): bool
     {
         $domain = mb_strtolower(trim((string) substr(strrchr($email, '@') ?: '', 1)));
@@ -55,7 +55,7 @@ class TeamsGuestService
      *
      * Tidak ada pemeriksaan "sudah jadi guest lewat jalan lain" (mis. diundang
      * manual dari Teams): itu butuh User.Read.All. POST /invitations untuk
-     * orang yang sudah guest tetap mengembalikan id yang sama — hanya email
+     * orang yang sudah guest tetap mengembalikan id yang sama - hanya email
      * undangannya terkirim sekali lagi, sekali seumur baris tabel ini.
      */
     public function resolve(string $email): ?string
@@ -80,7 +80,7 @@ class TeamsGuestService
             $invite = $this->graph->post('invitations', [
                 'invitedUserEmailAddress' => $key,
                 'inviteRedirectUrl'       => (string) config('services.teams_sync.guest_redirect_url'),
-                // Email bawaan Microsoft masuk Spam Gmail — lihat sendChatInvite().
+                // Email bawaan Microsoft masuk Spam Gmail - lihat sendChatInvite().
                 'sendInvitationMessage'   => !$this->customInvite(),
             ]);
         } catch (TeamsGraphException $e) {
@@ -128,7 +128,7 @@ class TeamsGuestService
      *
      * Ukurannya invited_at baris kita, bukan umur guest di Entra (membacanya
      * butuh User.Read.All). Akibatnya guest yang sebenarnya sudah lama ada
-     * tetapi baru pertama kali tercatat di sini ikut dianggap baru — itu hanya
+     * tetapi baru pertama kali tercatat di sini ikut dianggap baru - itu hanya
      * membuatnya masuk grup beberapa menit lebih lambat, tidak menggagalkan apa
      * pun.
      */
@@ -165,12 +165,12 @@ class TeamsGuestService
      *  1. Email itu masuk Spam Gmail (26 Okt 2026). Ia dikirim infrastruktur
      *     Microsoft atas nama eclectic.co.id, sementara DMARC domain ini
      *     quarantine dan DKIM-nya belum aktif. Email dari mailbox support lewat
-     *     Exchange lolos SPF yang selaras — dan alamat itu juga yang sudah
+     *     Exchange lolos SPF yang selaras - dan alamat itu juga yang sudah
      *     dipakai korespondensi tiket.
      *  2. Tujuannya hanya halaman Teams web, tanpa pilihan membuka aplikasi
      *     desktop. Tautan chat (/l/chat/...) melewati halaman peluncur Teams
      *     yang menawarkan "Open Teams app", dan langsung berpindah ke tenant
-     *     Eclectic — di aplikasi desktop, guest sering masih berada di akun
+     *     Eclectic - di aplikasi desktop, guest sering masih berada di akun
      *     pribadinya sendiri sehingga grupnya tampak "tidak ada".
      *
      * Email pertama ke seorang guest memuat langkah menerima undangan
@@ -241,7 +241,7 @@ class TeamsGuestService
     }
 
     /**
-     * Isi email: teks polos tanpa gambar, satu tujuan per tombol — bentuk yang
+     * Isi email: teks polos tanpa gambar, satu tujuan per tombol - bentuk yang
      * paling kecil peluangnya dianggap spam.
      */
     public static function chatInviteHtml(string $topic, string $chatUrl, ?string $redeemUrl): string
@@ -256,9 +256,9 @@ class TeamsGuestService
 <p style="margin:20px 0;"><a href="{$chatUrl}" style="{$button}">Buka group chat di Teams</a></p>
 HTML
             : <<<HTML
-<p><strong>Langkah 1 — terima undangan (cukup sekali):</strong></p>
+<p><strong>Langkah 1 - terima undangan (cukup sekali):</strong></p>
 <p style="margin:12px 0 20px;"><a href="{$redeem}" style="{$button}">Terima undangan Eclectic Company</a></p>
-<p><strong>Langkah 2 — buka group chat tiket:</strong></p>
+<p><strong>Langkah 2 - buka group chat tiket:</strong></p>
 <p style="margin:12px 0 20px;"><a href="{$chatUrl}" style="{$button}">Buka group chat di Teams</a></p>
 <p style="color:#555;">Login dengan alamat email ini. Jika diminta, masukkan kode verifikasi yang dikirim Microsoft ke email Anda.</p>
 HTML;

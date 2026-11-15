@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Jadwal bulanan Release per cost item Plan Cost Delivery Support — mirror
+ * Jadwal bulanan Release per cost item Plan Cost Delivery Support - mirror
  * delivery_project_cost_release_schedules. Total release tetap di
  * delivery_support_costs.release_amount; baris di sini membaginya ke bulan.
  */

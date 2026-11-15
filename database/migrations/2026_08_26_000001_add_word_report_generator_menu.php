@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
  *
  * Sama seperti migrasi AI Assistant/AI Research: barisnya ditulis manual
  * karena MenuRegistrar::register() hanya bisa membuat menu di bawah parent,
- * tapi grant-nya tetap lewat MenuRegistrar supaya aturan baku berlaku — menu
+ * tapi grant-nya tetap lewat MenuRegistrar supaya aturan baku berlaku - menu
  * BARU aktif HANYA untuk EC Administrator. Role lain menyusul lewat Control
  * Center → Menu Access.
  */

@@ -70,7 +70,7 @@
             </div>
         </div>
 
-        <p class="mt-2 text-xs text-gray-400">Supported: PDF, DOC, DOCX, JPG, PNG, XLSX, XLS — Max 10MB</p>
+        <p class="mt-2 text-xs text-gray-400">Supported: PDF, DOC, DOCX, JPG, PNG, XLSX, XLS - Max 10MB</p>
     </div>
 
     <!-- DOCUMENTS TABLE -->
@@ -344,7 +344,7 @@
         }
     }
 
-    // Initial load — employeeId may not be defined yet (declared in parent script),
+    // Initial load - employeeId may not be defined yet (declared in parent script),
     // use PHP-rendered value directly for the auto-call.
     const _attachEmpId = {{ $employeeId ?? 0 }};
     document.addEventListener('DOMContentLoaded', function () {

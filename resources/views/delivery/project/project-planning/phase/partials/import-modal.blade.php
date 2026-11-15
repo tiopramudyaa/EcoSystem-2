@@ -1,5 +1,5 @@
 {{-- ====================================================================
-     Project Planning — CSV Import Modal
+     Project Planning - CSV Import Modal
      Bulk migration of the planning structure (Phase → Group → Activity).
      ==================================================================== --}}
 <div id="planningImportModal"
@@ -28,7 +28,7 @@
                 <p class="text-sm text-gray-600">
                     Unggah file CSV untuk membuat seluruh struktur planning sekaligus:
                     <strong>Fase → Group → Activity</strong>. Fase &amp; group dicocokkan berdasarkan
-                    nama — yang sudah ada dipakai ulang (tidak diduplikasi), yang belum ada dibuat baru.
+                    nama - yang sudah ada dipakai ulang (tidak diduplikasi), yang belum ada dibuat baru.
                     Activity dengan nama sama di fase/group yang sama akan <strong>diperbarui</strong>
                     dari CSV (sel yang diisi menimpa data lama; sel kosong tetap mempertahankan nilai lama).
                 </p>
@@ -45,9 +45,9 @@
                     <ul class="text-xs text-indigo-700 mb-2 list-disc pl-4 space-y-0.5">
                         <li><strong>Bobot activity</strong> dalam satu fase harus berjumlah <strong>≤ Phase Weight</strong>
                             (mis. fase 30% → activity-nya 10 + 20 = 30). Yang melebihi akan dilewati.</li>
-                        <li><strong>Tanggal</strong> harus berada dalam rentang <strong>Contract Start–End</strong> project.
+                        <li><strong>Tanggal</strong> harus berada dalam rentang <strong>Contract Start-End</strong> project.
                             Di luar itu baris dilewati.</li>
-                        <li>Baris yang dilewati akan muncul di log hasil di bawah — periksa bila ada yang tidak masuk.</li>
+                        <li>Baris yang dilewati akan muncul di log hasil di bawah - periksa bila ada yang tidak masuk.</li>
                     </ul>
                     <a href="{{ route('planning.import.template', $project) }}"
                        class="inline-flex items-center text-sm font-medium text-indigo-700 hover:text-indigo-900">
@@ -92,7 +92,7 @@
 <script>
     // Primary-button state: 'import' | 'retry' | 'done'.
     let planningImportMode = 'import';
-    // True once a run actually created something — Close then refreshes the page.
+    // True once a run actually created something - Close then refreshes the page.
     let planningImportDirty = false;
 
     // Set the primary button's label, colour and action mode.
@@ -141,7 +141,7 @@
         }
     }
 
-    // Lightweight toast — reuse the global showToast helper, fall back gracefully.
+    // Lightweight toast - reuse the global showToast helper, fall back gracefully.
     function planningImportToast(message, type, duration) {
         if (typeof window.showToast === 'function') {
             window.showToast(message, type, duration);

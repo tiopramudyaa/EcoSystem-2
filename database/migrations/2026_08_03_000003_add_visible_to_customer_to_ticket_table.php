@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Schema;
  * dibuat internal dari EcoSystem (Admin / Helpdesk / External API) ikut
  * terlihat oleh customer dan membingungkan mereka.
  *
- * `channel` TIDAK bisa dipakai sebagai pembeda — jalur create internal sengaja
+ * `channel` TIDAK bisa dipakai sebagai pembeda - jalur create internal sengaja
  * meng-hardcode `channel = 'email'` supaya composer To/CC tetap tersedia di
  * halaman tiket, jadi nilainya sama dengan tiket hasil intake email asli.
  * Karena itu dibutuhkan kolom eksplisit.
@@ -38,7 +38,7 @@ return new class extends Migration
         // lewat `staging_tickets` dulu (approve mengisi staging_tickets.ticket_id).
         // Tiket buatan EcoSystem tidak pernah menyentuh staging.
         //
-        // `channel = 'imported'` DIKECUALIKAN — itu data historis hasil import CSV
+        // `channel = 'imported'` DIKECUALIKAN - itu data historis hasil import CSV
         // yang sengaja tetap boleh dilihat customer sebagai riwayat.
         // Perbandingan ditulis NULL-safe: `channel` bisa NULL (jalur External API),
         // dan `channel <> 'imported'` akan bernilai NULL (= tidak match) untuk baris itu.

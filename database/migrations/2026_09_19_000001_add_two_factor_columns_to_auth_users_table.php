@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Real TOTP 2FA columns, replacing the decorative Settings toggle.
  *
- * "2FA enabled" = two_factor_secret AND two_factor_confirmed_at both set —
+ * "2FA enabled" = two_factor_secret AND two_factor_confirmed_at both set -
  * a secret can exist mid-enrollment (unconfirmed) without being active.
  * two_factor_last_used_at stores the last ACCEPTED TOTP timestep (not a
  * wall-clock timestamp) so a captured code can't be replayed within its

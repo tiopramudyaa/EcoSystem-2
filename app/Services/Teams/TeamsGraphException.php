@@ -9,7 +9,7 @@ use RuntimeException;
  * Kegagalan panggilan Graph, dengan status dan body errornya dibawa utuh.
  *
  * Body-nya sengaja tidak diringkas: kode error Graph itulah yang membedakan
- * masalah yang penanganannya berbeda jauh — 403 Authorization_RequestDenied
+ * masalah yang penanganannya berbeda jauh - 403 Authorization_RequestDenied
  * (permission belum di-grant) vs 404 (chat sudah dihapus, sync-nya harus
  * dimatikan) vs 429 (dipanggil terlalu sering). Meringkasnya jadi "Graph gagal"
  * membuat ketiganya tidak bisa dibedakan saat kejadian.
@@ -46,13 +46,13 @@ class TeamsGraphException extends RuntimeException
         );
     }
 
-    /** Chat sudah tidak ada / tidak bisa diakses — sinkronnya percuma diteruskan. */
+    /** Chat sudah tidak ada / tidak bisa diakses - sinkronnya percuma diteruskan. */
     public function isGone(): bool
     {
         return in_array($this->status, [403, 404], true);
     }
 
-    /** Dipanggil terlalu sering — putaran berikutnya saja, jangan hitung sebagai gagal. */
+    /** Dipanggil terlalu sering - putaran berikutnya saja, jangan hitung sebagai gagal. */
     public function isThrottled(): bool
     {
         return $this->status === 429;

@@ -4,7 +4,7 @@ use App\Support\MenuRegistrar;
 use Illuminate\Database\Migrations\Migration;
 
 /**
- * Slug izin tombol "Export Chat" di headbar room chat tiket — unduh percakapan
+ * Slug izin tombol "Export Chat" di headbar room chat tiket - unduh percakapan
  * tiket (tanpa internal note) sebagai PDF.
  *
  * Mengikuti aturan baku MenuRegistrar: lahir aktif HANYA untuk EC Administrator.

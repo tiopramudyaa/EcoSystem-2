@@ -13,8 +13,8 @@ use Symfony\Component\HttpFoundation\Response;
  * (basic-data, address, contact, identification, bank, credential,
  * history, attachment).
  *
- * Tidak ada konsep "diri sendiri" di sisi customer — employee selalu
- * mengubah data pihak lain — jadi slug-nya tunggal:
+ * Tidak ada konsep "diri sendiri" di sisi customer - employee selalu
+ * mengubah data pihak lain - jadi slug-nya tunggal:
  *
  *     customer.section.{key}.{view|update}
  *

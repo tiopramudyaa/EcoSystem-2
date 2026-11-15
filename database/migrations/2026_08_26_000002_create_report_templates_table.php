@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Library template .docx untuk Word Report Generator — bisa lebih dari satu
+ * Library template .docx untuk Word Report Generator - bisa lebih dari satu
  * per customer/business partner (customer_id nullable = template umum/
  * internal, tidak terikat customer tertentu). Upload lewat halaman generate
  * otomatis tersimpan ke sini supaya bisa dipakai ulang tanpa upload lagi.

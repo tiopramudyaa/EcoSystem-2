@@ -14,7 +14,7 @@
 <div class="phase-mgmt-page min-h-screen bg-gray-50 pb-20 sm:pb-6" data-closed-lock-root data-project-id="{{ $project->id }}">
     <script>
         window.currentProjectId = {{ $project->id }};
-        // Contract window — used to constrain planning (activity) date pickers.
+        // Contract window - used to constrain planning (activity) date pickers.
         window.projectContractDates = {
             start: @json($project->contract_start_date ? \Carbon\Carbon::parse($project->contract_start_date)->format('Y-m-d') : null),
             end:   @json($project->contract_end_date ? \Carbon\Carbon::parse($project->contract_end_date)->format('Y-m-d') : null)
@@ -273,7 +273,7 @@
                         </button>
                     </div>
 
-                    {{-- Export Menu Dropdown — sections are filtered to the active view --}}
+                    {{-- Export Menu Dropdown - sections are filtered to the active view --}}
                     <div id="exportMenu" class="hidden absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black/5 z-50">
                         <div class="py-1" role="menu">
                             {{-- Table View --}}
@@ -714,7 +714,7 @@ window.editItem = function(itemId) {
     };
 
     // ==========================================
-    // EXPORT MENU — show only the active view's options
+    // EXPORT MENU - show only the active view's options
     // ==========================================
     window.updateExportMenu = function(view) {
         document.querySelectorAll('#exportMenu [data-export-section]').forEach(function(section) {

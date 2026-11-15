@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
  *
  * Grant awal mengikuti role yang SUDAH punya akses ke menu induknya, supaya
  * role existing tidak kehilangan kemampuan yang selama ini mereka punya.
- * (ID role tidak di-hardcode — lihat catatan divergensi ID role hasil
+ * (ID role tidak di-hardcode - lihat catatan divergensi ID role hasil
  * migrate:fresh.)
  */
 return new class extends Migration

@@ -27,7 +27,7 @@ use Maatwebsite\Excel\Facades\Excel;
  * hanya boleh kelola modul yang dia pimpin; role privileged (Admin/HOS/
  * Helpdesk/RPMO) boleh kelola semua modul. Menu slug reporting.weekly-
  * consolidation sendiri dibagikan ke semua role terkait (lihat migrasi
- * menu) — pembatasan sebenarnya terjadi di sini, bukan di menu permission.
+ * menu) - pembatasan sebenarnya terjadi di sini, bukan di menu permission.
  */
 class WeeklyConsolidationController extends Controller
 {
@@ -70,7 +70,7 @@ class WeeklyConsolidationController extends Controller
     /**
      * Kombinasi >1 modul ("all" atau module_ids lebih dari satu) digerbangi
      * lewat function permission reporting.weekly-consolidation.combine-modules
-     * (menu Access, sama pola dengan ticket.assign-pic dkk) — BUKAN dikunci ke
+     * (menu Access, sama pola dengan ticket.assign-pic dkk) - BUKAN dikunci ke
      * accessibleModuleIds() lagi, supaya admin bisa grant/cabut kapabilitas
      * ini per-role kapan saja lewat Menu Access tanpa perlu deploy kode baru.
      * Default grant migrasi disamakan dengan role privileged sebelumnya
@@ -84,7 +84,7 @@ class WeeklyConsolidationController extends Controller
     /**
      * Edit (ubah modul/period) dan Delete (soft/restore/permanen) sebuah
      * recon tersimpan digerbangi lewat kolom can_edit/can_delete yang SUDAH
-     * ada di role_menu untuk menu reporting.weekly-consolidation — diatur
+     * ada di role_menu untuk menu reporting.weekly-consolidation - diatur
      * admin lewat Control Center → Menu Access, tanpa slug/migrasi baru.
      */
     private function canEditBatch(Employee $employee): bool
@@ -98,7 +98,7 @@ class WeeklyConsolidationController extends Controller
     }
 
     /**
-     * Semua modul yang tercakup dalam satu batch — dipakai untuk otorisasi
+     * Semua modul yang tercakup dalam satu batch - dipakai untuk otorisasi
      * (assertBatchAccess) dan query live-join (syncMatchingTickets). Fallback
      * ke module_id tunggal untuk jaga-jaga kalau pivot-nya kosong.
      *
@@ -114,7 +114,7 @@ class WeeklyConsolidationController extends Controller
     /**
      * Akses ke SATU batch yang sudah tersimpan (show/refresh/notes/export):
      * employee harus punya akses ke SEMUA modul yang tercakup di batch itu,
-     * bukan cuma salah satu — batch gabungan ABAP+BASIS TIDAK boleh dibuka
+     * bukan cuma salah satu - batch gabungan ABAP+BASIS TIDAK boleh dibuka
      * oleh module lead yang cuma memimpin salah satunya, karena dia akan ikut
      * melihat baris tiket modul yang bukan haknya.
      */
@@ -132,11 +132,11 @@ class WeeklyConsolidationController extends Controller
     }
 
     /**
-     * Resolve & validasi set module_id dari request — dipakai bareng oleh
+     * Resolve & validasi set module_id dari request - dipakai bareng oleh
      * preview() dan generate(). Terima `all=1` ATAU `module_ids[]`. Memilih
      * lebih dari satu modul (atau "all") wajib lolos canCombineModules();
      * setiap id tetap dicek satu-satu lewat assertModuleAccess() apapun
-     * rolenya — jangan pernah percaya array dari client sebagai sudah valid.
+     * rolenya - jangan pernah percaya array dari client sebagai sudah valid.
      *
      * @return array<int,int>
      */
@@ -209,7 +209,7 @@ class WeeklyConsolidationController extends Controller
         ]);
     }
 
-    // ── API: preview — live-query matching tickets for a module, nothing saved ──
+    // ── API: preview - live-query matching tickets for a module, nothing saved ──
     // Dipakai layar "View" sebelum user memutuskan Generate. Tidak menyentuh
     // database sama sekali (read-only), jadi aman dipanggil berkali-kali saat
     // user ganti-ganti pilihan modul.
@@ -252,7 +252,7 @@ class WeeklyConsolidationController extends Controller
             ->withCount('lines')
             ->orderByDesc('created_at');
 
-        // Show Deleted (frontend toggle) — hanya berarti kalau employee punya
+        // Show Deleted (frontend toggle) - hanya berarti kalau employee punya
         // can_delete, dicek juga di sini (bukan cuma disembunyikan di UI)
         // supaya ?trashed=1 lewat devtools tidak membocorkan recon terhapus
         // ke role yang tidak berhak melihatnya sama sekali.
@@ -294,7 +294,7 @@ class WeeklyConsolidationController extends Controller
         $moduleIds    = $this->resolveModuleIds($request, $employee);
 
         // Modul utama/representatif = yang pertama secara alfabet, dipakai untuk
-        // kolom module_id (backward-compat) — daftar lengkapnya ada di pivot modules().
+        // kolom module_id (backward-compat) - daftar lengkapnya ada di pivot modules().
         $sortedModules   = Module::whereIn('id', $moduleIds)->orderBy('name')->get(['id', 'name']);
         $primaryModuleId = $sortedModules->first()->id ?? $moduleIds[0];
 
@@ -335,7 +335,7 @@ class WeeklyConsolidationController extends Controller
         ]);
     }
 
-    // ── API: refresh — insert newly-matching tickets, keep existing notes ──
+    // ── API: refresh - insert newly-matching tickets, keep existing notes ──
 
     public function refresh(Request $request, $id)
     {
@@ -357,11 +357,11 @@ class WeeklyConsolidationController extends Controller
         return $this->show($id);
     }
 
-    // ── API: edit a saved batch — period + module composition ───────────────
+    // ── API: edit a saved batch - period + module composition ───────────────
     // Menambah modul memakai jalur yang sama persis dengan generate()
     // (resolveModuleIds → syncMatchingTickets), jadi otorisasi & insert baris
     // baru konsisten. Mengurangi modul HANYA menghapus baris tiket yang tidak
-    // lagi cocok dengan modul manapun yang tersisa — tiket lintas-modul yang
+    // lagi cocok dengan modul manapun yang tersisa - tiket lintas-modul yang
     // masih cocok dengan modul lain yang tetap dipilih TIDAK ikut terhapus.
     // Frontend wajib sudah menampilkan konfirmasi sebelum request ini dikirim
     // kalau ada modul yang dilepas (Notes-nya ikut hilang, tidak bisa dibatalkan).
@@ -397,7 +397,7 @@ class WeeklyConsolidationController extends Controller
 
         // Modul bertambah: tarik tiket baru yang cocok (idempotent, sama
         // seperti Refresh). Modul berkurang: buang baris yang tiketnya sudah
-        // tidak cocok dengan modul manapun yang tersisa — Notes-nya ikut
+        // tidak cocok dengan modul manapun yang tersisa - Notes-nya ikut
         // terhapus lewat baris ini sendiri (bukan kolom terpisah).
         $this->syncMatchingTickets($consolidation, $employee);
 
@@ -505,7 +505,7 @@ class WeeklyConsolidationController extends Controller
             return response()->json(['success' => false, 'message' => 'You are not allowed to permanently delete this recon.'], 403);
         }
 
-        // Catat audit SEBELUM forceDelete() — setelah baris ini hilang, tidak
+        // Catat audit SEBELUM forceDelete() - setelah baris ini hilang, tidak
         // bisa lagi diambil datanya untuk log.
         AuditLog::recordAction(
             module: 'Reporting',
@@ -575,7 +575,7 @@ class WeeklyConsolidationController extends Controller
             : ($moduleNamesSorted->implode(', ') ?: ($consolidation->module->name ?? 'Module'));
 
         // Recon Date/Code dipatok ke created_at BATCH (bukan now()) supaya stabil
-        // — export ulang batch yang sama besok tetap menunjukkan kode & tanggal
+        // - export ulang batch yang sama besok tetap menunjukkan kode & tanggal
         // recon yang sama, bukan berubah tiap kali tombol Export diklik.
         $reconCreatedAt  = $consolidation->created_at->timezone('Asia/Jakarta');
         $moduleGroupLabel = $consolidation->is_all_modules
@@ -593,7 +593,7 @@ class WeeklyConsolidationController extends Controller
         ];
 
         // Format sengaja ddMMyy ("dmy"), BUKAN mengikuti konvensi export lain di
-        // aplikasi ini (dmY/dmY_Hi) — sesuai permintaan eksplisit: Logistic_230926.
+        // aplikasi ini (dmY/dmY_Hi) - sesuai permintaan eksplisit: Logistic_230926.
         // Gabungan modul diurutkan alfabet supaya nama file deterministik terlepas
         // urutan klik (ABAP_BASIS, bukan tergantung mana yang dicentang duluan).
         $filenameBase = $consolidation->is_all_modules
@@ -611,7 +611,7 @@ class WeeklyConsolidationController extends Controller
     /**
      * Tiket dianggap "milik" salah satu modul terpilih kalau modul itu ada di
      * DAFTAR LENGKAP modulnya (pivot ticket_module, lihat Ticket::modules()),
-     * bukan cuma modul utama (module_id) — supaya tiket lintas-modul (mis.
+     * bukan cuma modul utama (module_id) - supaya tiket lintas-modul (mis.
      * "FI, ABAP") tetap muncul di recon SEMUA modul yang disentuhnya, bukan
      * cuma modul utamanya. Fallback ke module_id tetap disertakan sebagai
      * jaring pengaman untuk tiket lama yang seandainya belum sempat ter-sync
@@ -651,8 +651,8 @@ class WeeklyConsolidationController extends Controller
             'id'                 => $c->id,
             'module_id'          => $c->module_id,
             'module_ids'         => $modules->isNotEmpty() ? $modules->pluck('id')->map(fn ($id) => (int) $id)->all() : [(int) $c->module_id],
-            'module_name'        => $c->module->name ?? '—',
-            'module_names'       => $moduleNames->isNotEmpty() ? $moduleNames->implode(', ') : ($c->module->name ?? '—'),
+            'module_name'        => $c->module->name ?? '-',
+            'module_names'       => $moduleNames->isNotEmpty() ? $moduleNames->implode(', ') : ($c->module->name ?? '-'),
             'is_all_modules'     => (bool) $c->is_all_modules,
             'period_start'       => optional($c->period_start)->format('Y-m-d'),
             'period_end'         => optional($c->period_end)->format('Y-m-d'),
@@ -681,14 +681,14 @@ class WeeklyConsolidationController extends Controller
     }
 
     /**
-     * Satu baris tampilan tiket — dipakai bareng oleh preview() (belum ada
+     * Satu baris tampilan tiket - dipakai bareng oleh preview() (belum ada
      * batch/notes) dan shapeRows() (sudah ada batch tersimpan). $lineId/$notes
      * null berarti ini masih preview (belum di-generate).
      */
     private function shapeTicketRow(Ticket $t, ?int $lineId = null, ?string $notes = null): array
     {
         $teamLead = $this->fullName($t->ticketLead);
-        // Buang member yang employee_id-nya sama dengan Team Lead — orang yang
+        // Buang member yang employee_id-nya sama dengan Team Lead - orang yang
         // rangkap jadi lead SEKALIGUS member tidak boleh muncul dua kali di
         // kolom gabungan (dedupe by id, bukan by nama, supaya nama kembar beda
         // orang tidak ikut kebuang).
@@ -698,25 +698,25 @@ class WeeklyConsolidationController extends Controller
             ->filter()
             ->values();
 
-        // Lead & Member digabung satu kolom (Lead dulu, baru Member) — format
+        // Lead & Member digabung satu kolom (Lead dulu, baru Member) - format
         // tabel yang diminta, dipakai bareng oleh tabel web dan Excel export.
         $leadMember = collect([$teamLead])->filter()->merge($members)->implode(', ');
 
         return [
             'line_id'             => $lineId,
             'ticket_id'           => $t->ticket_id,
-            'ticket_number'       => $t->ticket_number ?? '—',
+            'ticket_number'       => $t->ticket_number ?? '-',
             'customer_name'       => $t->customer?->basicData?->name_1,
             'module_id'           => $t->module_id,
             // Daftar LENGKAP modul tiket ini (gabung koma), bukan cuma modul
-            // utama — tiket lintas-modul (mis. "FI, ABAP") tetap kelihatan
+            // utama - tiket lintas-modul (mis. "FI, ABAP") tetap kelihatan
             // jelas modul mana saja yang disentuh, sama seperti kolom Module
             // di halaman Ticket List.
             'module_name'         => $t->module_names,
             'description'         => $t->description,
             'start_date'          => $t->created_at,
             // Aktivitas tiket, bukan raw updated_at (bisa berubah karena field
-            // yang tidak relevan) — field yang sama dipakai untuk sort di
+            // yang tidak relevan) - field yang sama dipakai untuk sort di
             // preview() dan halaman Ticket List.
             'last_update'         => $t->last_message_at,
             'ticket_type'         => $t->ticket_type,

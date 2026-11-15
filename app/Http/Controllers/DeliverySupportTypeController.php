@@ -96,7 +96,7 @@ class DeliverySupportTypeController extends Controller
         $type = DeliverySupportType::findOrFail($id);
 
         // `type` di delivery_support adalah kolom string biasa (bukan FK),
-        // jadi menghapus tipe di sini tidak mengubah support yang sudah ada —
+        // jadi menghapus tipe di sini tidak mengubah support yang sudah ada -
         // hanya menghilangkannya dari pilihan dropdown ke depan.
         $inUseCount = DeliverySupport::where('type', $type->name)->count();
 

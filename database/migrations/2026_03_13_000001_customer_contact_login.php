@@ -9,12 +9,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Make customer.email nullable — no longer required for login,
+        // 1. Make customer.email nullable - no longer required for login,
         //    now optional (company general email). Keep unique so it still
         //    prevents duplicate entries when filled.
         DB::statement('ALTER TABLE customer MODIFY email VARCHAR(255) NULL');
 
-        // 2. Add contact_id to auth_users — links a login account to a
+        // 2. Add contact_id to auth_users - links a login account to a
         //    specific contact person. Cascade-delete: if the contact is
         //    removed, the login account is also removed automatically.
         Schema::table('auth_users', function (Blueprint $table) {

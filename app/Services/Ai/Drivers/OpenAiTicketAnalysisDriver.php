@@ -13,20 +13,20 @@ use RuntimeException;
  * GPT side of Ticket Analyzer. OpenAI has no Agent Skills/code-execution
  * container equivalent to Anthropic's "sap-ticket-analyzer" skill, so this
  * sends the same fully self-contained prompt AiTicketAnalyzerService already
- * builds (schema, module list, and ticket text all inlined — see
+ * builds (schema, module list, and ticket text all inlined - see
  * AiTicketAnalyzerService::buildSystemPrompt()/buildUserMessage()) and asks
  * the Responses API to constrain output to that JSON schema directly, rather
  * than relying on prompt instructions + regex extraction the way the Claude
- * path does. The enums are read from App\Support\TicketClassification — the
+ * path does. The enums are read from App\Support\TicketClassification - the
  * single source of truth shared with AiTicketAnalyzerService's sanitizeEnum()
- * calls — so this schema can't silently drift from what the caller accepts.
+ * calls - so this schema can't silently drift from what the caller accepts.
  *
- * STREAMING sejak 10 Sep 2026 (`createStreamed()`, bukan lagi `create()`) —
+ * STREAMING sejak 10 Sep 2026 (`createStreamed()`, bukan lagi `create()`) -
  * murni supaya ada status ASLI untuk diteruskan lewat $onEvent, sejajar
  * dengan sisi Claude. `text.format` (Structured Outputs strict mode) dibawa
  * apa adanya ke `createStreamed()`: parameternya identik, SDK cuma
  * menambahkan `stream:true` di baliknya (dikonfirmasi dari sumber SDK, bukan
- * asumsi) — jadi output tetap dijamin valid sesuai skema, cuma cara
+ * asumsi) - jadi output tetap dijamin valid sesuai skema, cuma cara
  * menerimanya yang berubah dari satu respons utuh jadi rentetan delta teks
  * yang diakumulasi di sini.
  */
@@ -72,7 +72,7 @@ class OpenAiTicketAnalysisDriver implements TicketAnalysisDriver
 
             switch ($event->event) {
                 case 'response.output_text.delta':
-                    // Sekali saja saat delta pertama tiba — sebelum ini,
+                    // Sekali saja saat delta pertama tiba - sebelum ini,
                     // model masih "berpikir" (reasoning) tanpa ada apa pun
                     // yang bisa dilaporkan sebagai status nyata.
                     if (!$sawText) {
@@ -107,7 +107,7 @@ class OpenAiTicketAnalysisDriver implements TicketAnalysisDriver
     }
 
     /**
-     * Structured Outputs (strict mode) — setiap properti WAJIB masuk
+     * Structured Outputs (strict mode) - setiap properti WAJIB masuk
      * `required` dan field nullable ditulis sebagai union type ['X','null'],
      * bukan lewat opsional/omit, itu aturan mode strict OpenAI.
      *
@@ -131,7 +131,7 @@ class OpenAiTicketAnalysisDriver implements TicketAnalysisDriver
                     'root_cause_hypothesis' => ['type' => 'string'],
                     'resolution_steps' => ['type' => 'array', 'items' => ['type' => 'string']],
                     // Sisa sebelum migrasi multi-modul dulu di sini singular
-                    // ('suggested_module_id', integer) — AiTicketAnalyzerService
+                    // ('suggested_module_id', integer) - AiTicketAnalyzerService
                     // ::analyze() (baris ~157) sudah lama cuma baca key PLURAL
                     // ini, jadi jalur OpenAI (strict schema override instruksi
                     // teks di buildSystemPrompt()) diam-diam SELALU kembalikan

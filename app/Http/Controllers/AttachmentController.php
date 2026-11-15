@@ -14,14 +14,14 @@ class AttachmentController extends Controller
      * Proxy: ambil file attachment dari Microsoft Graph dan stream ke browser.
      *
      * Route: GET /attachments/{id}  (CheckAuthToken middleware)
-     *       atau GET /api/lite/attachments/{id}  (lite.auth middleware — Bearer token)
+     *       atau GET /api/lite/attachments/{id}  (lite.auth middleware - Bearer token)
      *
-     * File TIDAK disimpan di server — setiap request diambil langsung dari Graph.
+     * File TIDAK disimpan di server - setiap request diambil langsung dari Graph.
      * Ini menghemat storage server sambil tetap menjaga keamanan akses (user harus login).
      */
     public function show(int $id)
     {
-        // Wajib login — via session web biasa ATAU Bearer token Lite API
+        // Wajib login - via session web biasa ATAU Bearer token Lite API
         $sessionUser = session('user') ?? request()->attributes->get('lite_user');
         if (!$sessionUser) {
             abort(401, 'Authentication required. Please log in to access this resource.');
@@ -38,14 +38,14 @@ class AttachmentController extends Controller
      * Kenapa ada jalur kedua: lampiran internal note ikut dikirim ke group chat
      * tiket sebagai tautan, dan yang membukanya adalah klien Teams milik orang
      * yang tidak punya sesi EcoSystem. Memakai {@see show()} apa adanya berujung
-     * layar login — persis masalah yang dulu bikin tautan SharePoint mentah
+     * layar login - persis masalah yang dulu bikin tautan SharePoint mentah
      * ditolak (lihat `streamSharePointFile()`).
      *
      * **Tanda tangan URL adalah kapabilitas, bukan izin.** Siapa pun yang
      * memegang tautannya bisa membuka berkasnya tanpa akun. Itu konsekuensi yang
      * diterima secara sadar (keputusan 23 Sep 2026) supaya gambar tetap tampil di
      * riwayat chat; masa berlakunya diatur `TEAMS_ATTACHMENT_LINK_DAYS` dan
-     * default-nya tanpa batas. Karena itu aksesnya DICATAT — satu-satunya jejak
+     * default-nya tanpa batas. Karena itu aksesnya DICATAT - satu-satunya jejak
      * yang tersisa kalau tautannya bocor.
      */
     public function showForTeams(int $id)
@@ -59,7 +59,7 @@ class AttachmentController extends Controller
     }
 
     /**
-     * Isi sesungguhnya {@see show()} — dipisah supaya jalur bertanda tangan
+     * Isi sesungguhnya {@see show()} - dipisah supaya jalur bertanda tangan
      * memakai logika streaming yang SAMA, bukan salinannya. Perbedaan kedua
      * jalur hanya pada cara menentukan siapa yang boleh mengakses.
      *
@@ -110,7 +110,7 @@ class AttachmentController extends Controller
 
         // Berkas yang dibagikan di group chat Teams. Lampirannya berupa TAUTAN
         // SharePoint (`contentType: "reference"`), dan membuka tautan itu
-        // langsung menuntut login Microsoft lebih dulu — sering berujung layar
+        // langsung menuntut login Microsoft lebih dulu - sering berujung layar
         // "Request access" bagi yang tidak punya izin di SharePoint-nya.
         //
         // Diambilkan lewat Graph memakai kredensial aplikasi, persis pola
@@ -356,7 +356,7 @@ class AttachmentController extends Controller
      * Stream berkas SharePoint/OneDrive yang dibagikan di group chat Teams.
      *
      * Graph tidak menerima URL SharePoint apa adanya; ia harus diubah dulu jadi
-     * "sharing token" — base64url dari URL-nya, berawalan `u!`. Dari situ
+     * "sharing token" - base64url dari URL-nya, berawalan `u!`. Dari situ
      * /shares/{token}/driveItem memberi metadata (nama, MIME, ukuran) dan
      * /content memberi byte-nya.
      *
@@ -385,7 +385,7 @@ class AttachmentController extends Controller
         // Berkas besar TIDAK diproksi: Graph mengembalikan seluruh isi sekaligus,
         // jadi memuatnya ke memori PHP hanya untuk diteruskan akan menjatuhkan
         // proses pada berkas ratusan MB. Untuk yang sebesar itu, lebih baik
-        // pengguna dilempar ke SharePoint-nya — perlu login, tapi jalan.
+        // pengguna dilempar ke SharePoint-nya - perlu login, tapi jalan.
         $maxProxyBytes = max(1, (int) config("services.teams_sync.max_proxy_file_mb", 25)) * 1024 * 1024;
 
         if ($size > $maxProxyBytes) {

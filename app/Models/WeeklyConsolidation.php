@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * Header satu batch recon "Weekly Consolidation" (Reporting → Support) untuk
  * satu modul pada satu periode. Baris tiketnya ada di WeeklyConsolidationTicket
- * — lihat docblock di sana untuk aturan live-join (data tiket TIDAK disnapshot).
+ * - lihat docblock di sana untuk aturan live-join (data tiket TIDAK disnapshot).
  *
  * Delete default = soft (SoftDeletes, bisa di-restore lewat Recon History →
  * Show Deleted); hapus permanen adalah aksi terpisah di controller
@@ -56,7 +56,7 @@ class WeeklyConsolidation extends Model
 
     /**
      * Daftar LENGKAP modul batch ini (bisa >1 kalau digenerate sebagai gabungan
-     * modul oleh role privileged) — module_id di atas cuma modul utama/
+     * modul oleh role privileged) - module_id di atas cuma modul utama/
      * representatif. Sama persis pola Ticket::module_id vs Ticket::modules().
      */
     public function modules()
