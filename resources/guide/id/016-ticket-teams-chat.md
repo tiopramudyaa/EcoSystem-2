@@ -5,7 +5,7 @@ order: 16
 title: Group chat ticket di Microsoft Teams
 summary: Kenapa Anda tiba-tiba masuk ke group chat Teams, untuk apa chat itu, dan bagaimana isinya sejalan dengan ticket.
 requires: [tickets.inbox]
-updated: 2026-10-28
+updated: 2026-11-16
 ---
 Setiap ticket yang sudah divalidasi kini punya group chat sendiri di Microsoft Teams. EcoSystem yang membuat chat itu dan memasukkan orang-orang yang mengerjakan ticket tersebut. Jadi bila tiba-tiba muncul group chat baru di Teams Anda tanpa pemberitahuan, itu adalah chat ticket dan Anda memang sengaja dimasukkan.
 
@@ -15,7 +15,7 @@ Semua yang mengerjakan ticket: consultant, ticket lead, ticket member, Module Le
 
 ## Sebelum mulai
 
-- Nama chat mengikuti ticket: nomor ticket, spasi, tanda hubung, lalu subjek, misalnya `26109001 - Error posting GR in MIGO`. Pakai nomornya untuk mencari ticket di `Ticket`.
+- Nama chat berformat `nomor ticket-customer code-subjek`, misalnya `26109001-AIRNAV-Error posting GR in MIGO`. Chat lama tetap memakai nama lamanya. Pakai nomornya untuk mencari ticket di `Ticket`.
 - Chat ini hanya untuk tim internal. Customer tidak pernah ada di dalamnya dan tidak bisa melihatnya, meskipun percakapan dengan customer ikut disalin ke chat agar tim bisa membacanya.
 - Satu ticket punya satu chat. Jangan membuat grup kedua secara manual untuk ticket yang sama.
 

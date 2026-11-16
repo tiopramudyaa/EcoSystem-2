@@ -1037,7 +1037,13 @@
             return;
         }
         const contact = contactsData.find(c => parseInt(c.contact_id) === parseInt(selectedContactId));
-        if (!confirm(`Send a password reset link to ${contact?.full_name || 'this contact'}?`)) return;
+        const ok = await showConfirm(
+            `Send a password reset link to ${contact?.full_name || 'this contact'}?`,
+            'Send Reset Link',
+            'primary',
+            { okText: 'Send' }
+        );
+        if (!ok) return;
 
         const btn = document.getElementById('btnSendResetLink');
         btn.disabled = true;

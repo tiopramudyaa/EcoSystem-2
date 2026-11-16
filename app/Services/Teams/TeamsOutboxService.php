@@ -675,9 +675,7 @@ class TeamsOutboxService
             $out[] = [
                 'id'       => (int) $row->id,
                 'name'     => (string) ($row->file_name ?: $row->link_title ?: 'Lampiran'),
-                'url'      => $days > 0
-                    ? URL::temporarySignedRoute('attachments.teams', now()->addDays($days), ['id' => $row->id])
-                    : URL::signedRoute('attachments.teams', ['id' => $row->id]),
+                'url'      => self::teamsAttachmentUrl((int) $row->id, $days),
                 'is_image' => $row->attachment_type === 'image'
                     || str_starts_with((string) $row->mime_type, 'image/'),
                 // Bisa disalin ke OneDrive untuk jadi kartu berkas asli Teams.
@@ -686,6 +684,28 @@ class TeamsOutboxService
         }
 
         return $out;
+    }
+
+    /**
+     * Tautan proxy lampiran untuk Teams, bertanda tangan atas PATH saja.
+     *
+     * Tanda tangan absolut (default Laravel) ikut menghitung skema + host. URL
+     * dibuat dengan https:// (forceScheme di AppServiceProvider), tetapi di
+     * produksi reverse proxy tidak meneruskan X-Forwarded-Proto, sehingga
+     * middleware `signed` memvalidasi terhadap http://… → HMAC tidak cocok →
+     * 403, dan Teams menampilkan ikon gambar rusak (terbukti 11 Nov 2026,
+     * tiket 26110370). Di lokal semuanya http:// jadi tidak pernah terlihat.
+     *
+     * Path-only membuat tautannya kebal terhadap perbedaan skema/host di
+     * belakang proxy. Pasangannya: route memakai middleware `signed:relative`.
+     */
+    public static function teamsAttachmentUrl(int $attachmentId, int $days = 0): string
+    {
+        $path = $days > 0
+            ? URL::temporarySignedRoute('attachments.teams', now()->addDays($days), ['id' => $attachmentId], false)
+            : URL::signedRoute('attachments.teams', ['id' => $attachmentId], null, false);
+
+        return rtrim((string) config('app.url'), '/') . $path;
     }
 
     /**
