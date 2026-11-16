@@ -22,7 +22,7 @@ class TicketExport implements
     WithStyles,
     ShouldAutoSize
 {
-    // Column count: A–Y (25 columns, lihat headings())
+    // Column count: A-Y (25 columns, lihat headings())
     private const LAST_COL = 'Y';
 
     protected Collection $rows;
@@ -71,7 +71,7 @@ class TicketExport implements
             };
 
             // Day on Close: di list, tiket closed/cancelled menampilkan labelnya
-            // (bukan angka) — ikuti persis supaya Excel sama dengan layar.
+            // (bukan angka) - ikuti persis supaya Excel sama dengan layar.
             $dayOnClose = match ($t['status'] ?? '') {
                 'closed'    => 'Closed',
                 'cancelled' => 'Cancelled',

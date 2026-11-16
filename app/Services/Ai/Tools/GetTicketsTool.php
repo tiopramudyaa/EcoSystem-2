@@ -13,8 +13,8 @@ class GetTicketsTool implements AiTool
             'name' => 'get_tickets',
             'description' => 'Look up EcoSystem support tickets to answer questions about them or to summarize them. '
                 . 'Use this whenever the user asks about "my tickets", ticket status/priority/counts, or wants a summary '
-                . 'of open/recent tickets. Do not use this for SLA due-date or breach questions — use get_sla_summary instead. '
-                . 'Do not use this for delivery/implementation project questions — use get_delivery_projects instead.',
+                . 'of open/recent tickets. Do not use this for SLA due-date or breach questions - use get_sla_summary instead. '
+                . 'Do not use this for delivery/implementation project questions - use get_delivery_projects instead.',
             'input_schema' => [
                 'type' => 'object',
                 'properties' => [
@@ -23,7 +23,7 @@ class GetTicketsTool implements AiTool
                         'enum' => ['mine', 'all'],
                         'description' => 'Whose tickets to look up. "mine" (default) is the tickets assigned to the '
                             . 'current user (as lead, member, or via mandays allocation). "all" asks for every ticket '
-                            . 'in the organization, which only works if the user has that permission — otherwise this '
+                            . 'in the organization, which only works if the user has that permission - otherwise this '
                             . 'silently falls back to "mine".',
                     ],
                     'status' => [
@@ -56,11 +56,11 @@ class GetTicketsTool implements AiTool
 
         if ('all' === $scope && !$employee->hasMenuPermission('ticket.all-tickets')) {
             $scope = 'mine';
-            $note = "The current user doesn't have permission to view all organization tickets — showing their own assigned tickets instead.";
+            $note = "The current user doesn't have permission to view all organization tickets - showing their own assigned tickets instead.";
         }
 
         // Ticket yang di-hide (Ticket::is_hidden) tidak boleh pernah terhitung
-        // di sini — assignedTicketIds() sendiri SENGAJA tidak menyaring
+        // di sini - assignedTicketIds() sendiri SENGAJA tidak menyaring
         // status/deleted/hidden (lihat docblock-nya di Ticket model), jadi
         // gerbangnya wajib di sini.
         $query = Ticket::query()->with(['ticketLead:employee_id,employee_id'])

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('delivery_projects', function (Blueprint $table) {
-            // Contract window — manually entered from the actual contract document.
+            // Contract window - manually entered from the actual contract document.
             // Acts as the boundary for all project planning dates.
             // NOTE: the existing start_date/end_date columns stay as the derived
             // planning span (still consumed by the Jarvies mobile API).

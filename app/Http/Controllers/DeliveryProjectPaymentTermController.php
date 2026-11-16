@@ -15,10 +15,10 @@ use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
 /**
- * Term Of Payment Plan — dua mode penagihan (lihat ProjectTopPlan):
+ * Term Of Payment Plan - dua mode penagihan (lihat ProjectTopPlan):
  *   - percentage : amount = revenue × % / 100 (total % ≤ 100, diblokir).
  *   - line_item  : termin wajib dikaitkan ke Contract Line Item; amount diambil
- *                  dari nilai kontrak line item — basis "line_item" (% × nilai
+ *                  dari nilai kontrak line item - basis "line_item" (% × nilai
  *                  line item) ATAU "fixed" (nominal). Basis % dari revenue
  *                  dikunci (hanya termin lama yang sudah memakainya boleh tetap).
  *                  Total > revenue hanya diperingatkan.
@@ -220,7 +220,7 @@ class DeliveryProjectPaymentTermController extends Controller
             'top_mode' => ['required', Rule::in(ProjectTopPlan::MODES)],
         ]);
 
-        // Mode % hanya mengenal % dari revenue — termin yang amount-nya diambil
+        // Mode % hanya mengenal % dari revenue - termin yang amount-nya diambil
         // dari line item harus dihapus dulu supaya tidak ada termin yang
         // amount-nya tiba-tiba berubah.
         if ($validated['top_mode'] === 'percentage') {
@@ -334,7 +334,7 @@ class DeliveryProjectPaymentTermController extends Controller
 
     /**
      * Termin basis % tetap tidak boleh membuat total % melebihi 100 (= revenue).
-     * Termin nominal tetap tidak dihitung di sini — kelebihannya hanya
+     * Termin nominal tetap tidak dihitung di sini - kelebihannya hanya
      * diperingatkan lewat ProjectTopPlan::warnings().
      */
     private function checkPercentageWithinRevenue(DeliveryProject $project, array $validated, $excludeId = null)
@@ -369,7 +369,7 @@ class DeliveryProjectPaymentTermController extends Controller
      * Perbarui amount tersimpan termin basis % bila tidak lagi sesuai revenue
      * project saat ini. Termin nominal tetap tidak disentuh. Timestamps sengaja
      * dimatikan agar audit trail term tidak berubah hanya karena halaman dibuka
-     * — begitu juga "Last Update Date" project.
+     * - begitu juga "Last Update Date" project.
      */
     private function resyncAmount(DeliveryProject $project, DeliveryProjectPaymentTerm $term): void
     {

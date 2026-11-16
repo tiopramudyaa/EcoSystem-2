@@ -20,9 +20,9 @@ use Illuminate\Database\Migrations\Migration;
 return new class extends Migration
 {
     private const SLUGS = [
-        'delivery-support.recons.view'   => 'Recons — View',
-        'delivery-support.recons.edit'   => 'Recons — Edit',
-        'delivery-support.recons.manage' => 'Recons — Create / Delete',
+        'delivery-support.recons.view'   => 'Recons - View',
+        'delivery-support.recons.edit'   => 'Recons - Edit',
+        'delivery-support.recons.manage' => 'Recons - Create / Delete',
     ];
 
     public function up(): void

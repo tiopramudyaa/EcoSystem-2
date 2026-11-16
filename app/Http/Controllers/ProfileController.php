@@ -108,7 +108,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Ganti password — dipanggil via AJAX, kembalikan JSON.
+     * Ganti password - dipanggil via AJAX, kembalikan JSON.
      */
     public function changePassword(Request $request)
     {

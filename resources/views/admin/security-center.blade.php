@@ -362,9 +362,9 @@ const RECOMMENDED_ACTIONS = {
     privilege_escalation: 'Confirm this role change was intentional and authorized before resolving.',
     mass_export: 'Confirm the export was expected. If not, treat as possible data exfiltration.',
     anomalous_login: 'Confirm with the employee this was really them (e.g. travel). If not, force-logout and reset credentials.',
-    two_factor_bypass_attempt: 'Repeated failed 2FA attempts locked this account. The password is already known to whoever tried this — confirm with the employee and consider a password reset before unlocking.',
+    two_factor_bypass_attempt: 'Repeated failed 2FA attempts locked this account. The password is already known to whoever tried this - confirm with the employee and consider a password reset before unlocking.',
     two_factor_recovery_code_used: 'Employee likely lost access to their authenticator device. Confirm with them and help them re-enroll 2FA if needed.',
-    step_up_verification_failed: 'Repeated failed step-up attempts locked this account mid-session. Could be a hijacked session without the physical 2FA device — confirm with the employee before unlocking.',
+    step_up_verification_failed: 'Repeated failed step-up attempts locked this account mid-session. Could be a hijacked session without the physical 2FA device - confirm with the employee before unlocking.',
     integration_credential_unhealthy: 'Check the event detail for which integration (MS Graph/Anthropic/OpenAI) and the failure reason. Rotate or renew the credential if expired/revoked.',
 };
 

@@ -24,7 +24,7 @@
         <i class="fas fa-circle-info mt-0.5 text-xs text-indigo-500"></i>
         <p class="text-xs leading-relaxed text-indigo-900">
             Anyone holding a <strong>checked</strong> role below is redirected to Settings and must finish 2FA setup
-            before they can use the rest of the app — this is re-checked on every request, so it also catches
+            before they can use the rest of the app - this is re-checked on every request, so it also catches
             employees who are already logged in. Uncheck a role to make 2FA optional (self-enrolled) again for that
             role. Uncheck every role to turn mandatory 2FA off entirely. Changes apply immediately.
         </p>

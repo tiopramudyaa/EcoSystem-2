@@ -14,7 +14,7 @@ return new class extends Migration
             $table->renameColumn('employee_id', 'ticket_lead_id');
         });
 
-        // 2. Add pic column (nullable dulu — akan diisi di step 3)
+        // 2. Add pic column (nullable dulu - akan diisi di step 3)
         Schema::table('ticket', function (Blueprint $table) {
             $table->string('pic')->nullable()->after('ticket_lead_id');
         });

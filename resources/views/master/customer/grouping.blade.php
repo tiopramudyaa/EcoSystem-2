@@ -20,9 +20,9 @@
         </a>
     </div>
 
-    <!-- ════════ SECTION 1: Parent–Child ════════ -->
+    <!-- ════════ SECTION 1: Parent-Child ════════ -->
     <h3 class="text-lg font-bold text-gray-900 mb-1">Parent &amp; End Customers</h3>
-    <p class="text-sm text-gray-500 mb-4">Hierarchical relationship — end customers belong to a parent customer.</p>
+    <p class="text-sm text-gray-500 mb-4">Hierarchical relationship - end customers belong to a parent customer.</p>
 
     <!-- Summary bar -->
     <div id="groupingSummary" class="flex items-center gap-3 mb-4 text-sm text-gray-500">
@@ -34,12 +34,12 @@
         <!-- Rendered by JS -->
     </div>
 
-    <!-- Empty state (parent–child) -->
+    <!-- Empty state (parent-child) -->
     <div id="groupingEmpty" class="hidden py-12 text-center">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-14 h-14 mx-auto mb-4 text-gray-300">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
         </svg>
-        <p class="text-base font-medium text-gray-900 mb-1">No parent–child relationships found</p>
+        <p class="text-base font-medium text-gray-900 mb-1">No parent-child relationships found</p>
         <p class="text-sm text-gray-500">Assign a parent to a customer via <a href="{{ route('master.customer.index') }}" class="text-red-800 underline">Customer List</a>.</p>
     </div>
 
@@ -48,7 +48,7 @@
         <div class="flex items-start justify-between gap-4 mb-4">
             <div>
                 <h3 class="text-lg font-bold text-gray-900 mb-1">Customer Groups</h3>
-                <p class="text-sm text-gray-500">Flat grouping — each member is an independent customer (own login, contacts &amp; tickets) shown together.</p>
+                <p class="text-sm text-gray-500">Flat grouping - each member is an independent customer (own login, contacts &amp; tickets) shown together.</p>
             </div>
             <button type="button" onclick="openNewGroup()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-red-800 text-white text-sm font-semibold rounded-lg hover:bg-red-900 transition-all whitespace-nowrap">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -354,7 +354,7 @@ function renderCustomerGroups(groups) {
                 <tbody class="divide-y divide-gray-50">
                     ${group.members.length === 0 ? `
                     <tr>
-                        <td colspan="6" class="px-5 py-4 text-center text-sm text-gray-400">No members yet — assign customers to this group from the Customer List or detail page.</td>
+                        <td colspan="6" class="px-5 py-4 text-center text-sm text-gray-400">No members yet - assign customers to this group from the Customer List or detail page.</td>
                     </tr>
                     ` : ''}
                     ${group.members.map(m => `
@@ -528,7 +528,7 @@ async function openAddMember(groupId) {
     const g = cgGroupsById[groupId];
     if (!g) return;
     addMemberGroupId = groupId;
-    document.getElementById('addMemberTitle').textContent = `Add Member — ${g.name}`;
+    document.getElementById('addMemberTitle').textContent = `Add Member - ${g.name}`;
     document.getElementById('addMemberSearch').value = '';
     document.getElementById('addMemberList').innerHTML = '<p class="text-sm text-gray-400 text-center py-6">Loading…</p>';
     const modal = document.getElementById('addMemberModal');
@@ -559,7 +559,7 @@ function renderAvailableList(filter) {
     );
 
     if (!availableCustomers.length) {
-        list.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">No available customers — every customer already belongs to a group.</p>';
+        list.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">No available customers - every customer already belongs to a group.</p>';
         return;
     }
     if (!rows.length) {

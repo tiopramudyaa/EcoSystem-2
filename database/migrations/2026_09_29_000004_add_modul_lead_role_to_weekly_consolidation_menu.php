@@ -5,7 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 
 /**
  * Perbaikan grant menu Weekly Consolidation: module lead yang sesungguhnya di
- * sistem ini pegang role "Modul Lead" (employee_role id 15) — BUKAN "Delivery
+ * sistem ini pegang role "Modul Lead" (employee_role id 15) - BUKAN "Delivery
  * Support User" seperti asumsi migrasi 2026_09_29_000002 sebelumnya. Tanpa
  * baris ini, ke-7 employee yang sudah punya role Modul Lead (mis. Aaliya
  * Stenya Sekaton, Fauziah Afshoh) tidak bisa melihat menu

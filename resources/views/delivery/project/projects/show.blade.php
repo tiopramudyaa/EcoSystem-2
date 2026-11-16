@@ -6,7 +6,7 @@
 @php
     // Project Owner project ini boleh CRUD Risk Register meski role-nya tidak
     // punya slug risk.*. Grant hanya berlaku di project ini (bukan lintas
-    // project) — sisi server dijaga middleware `menu.owner:`.
+    // project) - sisi server dijaga middleware `menu.owner:`.
     $isProjectOwner = $isProjectOwner ?? false;
     $canRiskView    = $can('delivery-project.risk.view')   || $isProjectOwner;
     $canRiskEdit    = $can('delivery-project.risk.edit')   || $isProjectOwner;
@@ -62,7 +62,7 @@
         color: #991b1b;
     }
 
-    /* Indikator underline aktif — bar primary-color tebal sehingga mudah dilihat */
+    /* Indikator underline aktif - bar primary-color tebal sehingga mudah dilihat */
     .section-tab.active::after {
         content: '';
         position: absolute;
@@ -508,7 +508,7 @@
 </div>
 
 {{-- Banner peringatan share link OneDrive: muncul saat link tidak benar-benar publik
-     (scope internal, kedaluwarsa, atau yang tersimpan bukan share link) — inilah
+     (scope internal, kedaluwarsa, atau yang tersimpan bukan share link) - inilah
      kondisi yang membuat penerima kena "Request access". --}}
 <div id="odrLinkWarningBanner"
      class="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 flex items-start gap-3 {{ $project->onedrive_link_warning ? '' : 'hidden' }}">
@@ -537,7 +537,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
     </svg>
     <div>
-        <p class="text-sm font-semibold text-amber-800">This project is closed — read-only</p>
+        <p class="text-sm font-semibold text-amber-800">This project is closed - read-only</p>
         <p class="text-xs text-amber-700 mt-0.5">
             Closed{{ $project->closed_at ? ' on ' . $project->closed_at->format('d M Y, H:i') : '' }}@if($project->closedBy?->basicData?->full_name) by {{ $project->closedBy->basicData->full_name }}@endif.
             @if($can('delivery-project.close-project')) Use <span class="font-semibold">Reopen Project</span> above to make changes. @endif
@@ -567,19 +567,19 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Customer</label>
-                    <div class="display-box">{{ $project->client->basicData->name_1 ?? '—' }}</div>
+                    <div class="display-box">{{ $project->client->basicData->name_1 ?? '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Project Name</label>
-                    <div class="display-box font-semibold">{{ $project->name ?: '—' }}</div>
+                    <div class="display-box font-semibold">{{ $project->name ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Project Owner</label>
-                    <div class="display-box">{{ $project->project_owner ?: '—' }}</div>
+                    <div class="display-box">{{ $project->project_owner ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Project Type</label>
-                    <div class="display-box">{{ $project->project_type ?: '—' }}</div>
+                    <div class="display-box">{{ $project->project_type ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">High Level Risk</label>
@@ -592,13 +592,13 @@
                                 {{ $project->high_level_risk }}
                             </span>
                         @else
-                            <span class="text-gray-400">—</span>
+                            <span class="text-gray-400">-</span>
                         @endif
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">IO/Number Order</label>
-                    <div class="display-box">{{ $project->io_number ?: '—' }}</div>
+                    <div class="display-box">{{ $project->io_number ?: '-' }}</div>
                 </div>
                 {{-- Category (auto dari Project Planning) --}}
                 <div>
@@ -626,11 +626,11 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Contract Start Date</label>
-                    <div class="display-box">{{ $project->contract_start_date ? \Carbon\Carbon::parse($project->contract_start_date)->format('d M Y') : '—' }}</div>
+                    <div class="display-box">{{ $project->contract_start_date ? \Carbon\Carbon::parse($project->contract_start_date)->format('d M Y') : '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Contract End Date</label>
-                    <div class="display-box">{{ $project->contract_end_date ? \Carbon\Carbon::parse($project->contract_end_date)->format('d M Y') : '—' }}</div>
+                    <div class="display-box">{{ $project->contract_end_date ? \Carbon\Carbon::parse($project->contract_end_date)->format('d M Y') : '-' }}</div>
                 </div>
                 {{-- Go Live Estimated (auto dari activity Go-Live) --}}
                 <div>
@@ -640,7 +640,7 @@
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-900 mb-1">Description</label>
-                    <div class="display-box whitespace-pre-line min-h-[5rem]">{{ $project->description ?: '—' }}</div>
+                    <div class="display-box whitespace-pre-line min-h-[5rem]">{{ $project->description ?: '-' }}</div>
                 </div>
             </div>
         </div>
@@ -648,7 +648,7 @@
 </section>
 @endif
 
-{{-- Delivery Data — sengaja ditempatkan SEBELUM Delivery Information; keduanya
+{{-- Delivery Data - sengaja ditempatkan SEBELUM Delivery Information; keduanya
      berbagi tab "Delivery Info" dan izin `edit-delivery-info`. --}}
 @if($can('delivery-project.delivery-data.view'))
 <section id="delivery-data" class="mb-6 card-hover section-animate" data-perm-edit="{{ $can('delivery-project.delivery-data.edit') ? '1' : '0' }}">
@@ -671,15 +671,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Warranty Period <span class="text-gray-400 font-normal">(months)</span></label>
-                    <div class="display-box">{{ $project->warranty_period !== null && $project->warranty_period !== '' ? $project->warranty_period . ' months' : '—' }}</div>
+                    <div class="display-box">{{ $project->warranty_period !== null && $project->warranty_period !== '' ? $project->warranty_period . ' months' : '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Delivery Method</label>
-                    <div class="display-box">{{ $project->delivery_method ?: '—' }}</div>
+                    <div class="display-box">{{ $project->delivery_method ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Total Mandays</label>
-                    <div class="display-box">{{ $project->total_mandays !== null && $project->total_mandays !== '' ? $project->total_mandays . ' days' : '—' }}</div>
+                    <div class="display-box">{{ $project->total_mandays !== null && $project->total_mandays !== '' ? $project->total_mandays . ' days' : '-' }}</div>
                 </div>
             </div>
         </div>
@@ -722,19 +722,19 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Account Executive Type</label>
-                    <div class="display-box">{{ $project->ae_type ?: '—' }}</div>
+                    <div class="display-box">{{ $project->ae_type ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Account Executive Name</label>
-                    <div class="display-box">{{ $project->ae_name ?: '—' }}</div>
+                    <div class="display-box">{{ $project->ae_name ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">AE Phone</label>
-                    <div class="display-box">{{ $project->ae_phone ?: '—' }}</div>
+                    <div class="display-box">{{ $project->ae_phone ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">AE Email</label>
-                    <div class="display-box break-all">{{ $project->ae_email ?: '—' }}</div>
+                    <div class="display-box break-all">{{ $project->ae_email ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Revenue</label>
@@ -750,7 +750,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">% Gross Profit</label>
-                    <div class="display-box text-right">{{ $dispGpPct === null ? '—' : $pct($dispGpPct) }}</div>
+                    <div class="display-box text-right">{{ $dispGpPct === null ? '-' : $pct($dispGpPct) }}</div>
                 </div>
                 {{-- Baris Actual: lg:col-start-2 agar sejajar di bawah Plan Cost, sama
                      seperti tata letak form lamanya. --}}
@@ -787,12 +787,12 @@
                 {{-- Peringatan non-blocking (mis. total TOP melebihi revenue Sales Data) --}}
                 <div id="ptWarnings" class="hidden mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
 
-                {{-- Contract Line Items — hanya di mode Line Item --}}
+                {{-- Contract Line Items - hanya di mode Line Item --}}
                 <div id="ptLineItemSection" class="hidden mb-8">
                     <div class="flex justify-between items-center flex-wrap gap-3 mb-4">
                         <div>
                             <h4 class="text-lg font-medium text-gray-900">Contract Line Items</h4>
-                            <p class="text-xs text-gray-500 mt-0.5">Add the contract line items first — every payment term takes its amount from one of them.</p>
+                            <p class="text-xs text-gray-500 mt-0.5">Add the contract line items first - every payment term takes its amount from one of them.</p>
                         </div>
                         <button type="button" onclick="PaymentTermPlan.openAddLineItem()"
                                 class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition">
@@ -880,7 +880,7 @@
     // $teamPivotRows & $employees dikirim controller, selalu tersedia.
     // ──────────────────────────────────────────────────────────────────
 
-    // Semua employee_id yang punya baris pivot — penentu FK-fallback di bawah.
+    // Semua employee_id yang punya baris pivot - penentu FK-fallback di bawah.
     $pivotEmpIds = $teamPivotRows->pluck('employee_id')->unique()->toArray();
 
     // FK-fallback rows: kolom FK PM/Co PM/PA lama hanya ditampilkan bila
@@ -915,7 +915,7 @@
         $teamPeople->push($fb['emp']->basicData->full_name ?? null);
     }
     foreach ($teamPivotRows as $tpRow) {
-        // Anggota vendor tidak ada di master employee — pakai nama di baris pivot.
+        // Anggota vendor tidak ada di master employee - pakai nama di baris pivot.
         $tpEmp = $tpRow->employee_id ? $employees->firstWhere('employee_id', $tpRow->employee_id) : null;
         $teamPeople->push($tpEmp?->basicData->full_name ?: $tpRow->member_name);
     }
@@ -926,7 +926,7 @@
     // Originator/Owner (Issue Log).
     //
     // Catatan kolom: `ae_name` dan `project_owner` menyimpan NAMA (string),
-    // bukan foreign key — jadi cukup digabung apa adanya, hanya di-trim.
+    // bukan foreign key - jadi cukup digabung apa adanya, hanya di-trim.
     $projectPeople = $teamPeople
         ->merge([$project->ae_name, $project->project_owner])
         ->map(fn ($n) => trim((string) $n))
@@ -956,7 +956,7 @@
                         </svg>
                         Stakeholder Register
                     </h2>
-                    <p class="text-xs text-gray-500 mt-1">Identifikasi &amp; strategi engagement stakeholder proyek (PMBOK — Identify / Plan / Manage / Monitor Stakeholder Engagement)</p>
+                    <p class="text-xs text-gray-500 mt-1">Identifikasi &amp; strategi engagement stakeholder proyek (PMBOK - Identify / Plan / Manage / Monitor Stakeholder Engagement)</p>
                 </div>
                 @if($can('delivery-project.stakeholder.manage'))
                 <button type="button" onclick="StakeholderRegister.openAdd()"
@@ -1042,7 +1042,7 @@
             <div>
             @if($hasAnyTeam)
                 @php
-                    // Badge role & employee type — dipakai kedua blok baris di bawah.
+                    // Badge role & employee type - dipakai kedua blok baris di bawah.
                     $teamRoleBadge = [
                         'Project Manager'    => 'bg-indigo-50 text-indigo-700 ring-indigo-200',
                         'Co Project Manager' => 'bg-sky-50 text-sky-700 ring-sky-200',
@@ -1098,13 +1098,13 @@
                                 </td>
                                 <td class="px-3 py-2 align-middle font-medium text-gray-900 whitespace-nowrap">{{ $fb['emp']->basicData->full_name ?? '-' }}</td>
                                 <td class="px-3 py-2 align-middle text-gray-500 whitespace-nowrap">{{ $fb['emp']->basicData->position ?? '-' }}</td>
-                                <td class="px-3 py-2 align-middle text-gray-400">—</td>
+                                <td class="px-3 py-2 align-middle text-gray-400">-</td>
                                 <td class="px-3 py-2 align-middle whitespace-nowrap">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ring-1 ring-inset {{ $teamRoleBadge[$fb['role']] ?? 'bg-gray-50 text-gray-600 ring-gray-200' }}">{{ $fb['role'] }}</span>
                                 </td>
-                                <td class="px-3 py-2 align-middle text-gray-400">—</td>
-                                <td class="px-3 py-2 align-middle text-gray-400">—</td>
-                                <td class="px-3 py-2 align-middle text-gray-400">—</td>
+                                <td class="px-3 py-2 align-middle text-gray-400">-</td>
+                                <td class="px-3 py-2 align-middle text-gray-400">-</td>
+                                <td class="px-3 py-2 align-middle text-gray-400">-</td>
                             </tr>
                             @endforeach
 
@@ -1117,7 +1117,7 @@
                                 $rowName     = $rEmp?->basicData->full_name ?: ($row->member_name ?: '-');
                                 $rowPosition = $rEmp?->basicData->position ?: ($row->member_position ?: '-');
                                 $rowKey = $row->id;
-                                // Module disimpan sebagai string ("FI, TR") — dipecah jadi chip biar terbaca.
+                                // Module disimpan sebagai string ("FI, TR") - dipecah jadi chip biar terbaca.
                                 $rowModules = collect(explode(',', (string) ($row->module ?? '')))
                                     ->map(fn ($m) => trim($m))
                                     ->filter()
@@ -1151,14 +1151,14 @@
                                             @endforeach
                                         </span>
                                     @else
-                                        <span class="text-gray-400">—</span>
+                                        <span class="text-gray-400">-</span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2 align-middle whitespace-nowrap">
                                     @if($row->role)
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ring-1 ring-inset {{ $teamRoleBadge[$row->role] ?? 'bg-gray-50 text-gray-600 ring-gray-200' }}">{{ $row->role }}</span>
                                     @else
-                                        <span class="text-gray-400">—</span>
+                                        <span class="text-gray-400">-</span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2 align-middle whitespace-nowrap">
@@ -1168,12 +1168,12 @@
                                             <span class="text-gray-400">{{ $row->vendor_name }}</span>
                                         @endif
                                     @else
-                                        <span class="text-gray-400">—</span>
+                                        <span class="text-gray-400">-</span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2 align-middle text-gray-500 whitespace-nowrap tabular-nums">
-                                    {{ $row->start_date ? \Carbon\Carbon::parse($row->start_date)->format('d M Y') : '—' }}
-                                    <span class="text-gray-300">–</span>
+                                    {{ $row->start_date ? \Carbon\Carbon::parse($row->start_date)->format('d M Y') : '-' }}
+                                    <span class="text-gray-300">-</span>
                                     @if($row->end_date)
                                         {{ \Carbon\Carbon::parse($row->end_date)->format('d M Y') }}
                                     @else
@@ -1184,7 +1184,7 @@
                                     @if($row->notes)
                                         <span class="block truncate" title="{{ $row->notes }}">{{ $row->notes }}</span>
                                     @else
-                                        <span class="text-gray-400">—</span>
+                                        <span class="text-gray-400">-</span>
                                     @endif
                                 </td>
                             </tr>
@@ -1441,7 +1441,7 @@
                     </tbody>
                 </table>
             </div>
-            <p class="text-xs text-gray-400 mt-2">P = Probability &nbsp;|&nbsp; I = Impact &nbsp;|&nbsp; Score = P × I &nbsp;|&nbsp; High ≥ 12 &nbsp;|&nbsp; Medium 5–11 &nbsp;|&nbsp; Low ≤ 4</p>
+            <p class="text-xs text-gray-400 mt-2">P = Probability &nbsp;|&nbsp; I = Impact &nbsp;|&nbsp; Score = P × I &nbsp;|&nbsp; High ≥ 12 &nbsp;|&nbsp; Medium 5-11 &nbsp;|&nbsp; Low ≤ 4</p>
         </div>
     </div>
 </section>
@@ -1496,11 +1496,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Location Name</label>
-                    <div class="display-box">{{ $project->location_name ?: '—' }}</div>
+                    <div class="display-box">{{ $project->location_name ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Type of Address</label>
-                    <div class="display-box">{{ $project->location_type ?: '—' }}</div>
+                    <div class="display-box">{{ $project->location_type ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Country</label>
@@ -1508,27 +1508,27 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Geographical</label>
-                    <div class="display-box">{{ $project->location_geographical ?: '—' }}</div>
+                    <div class="display-box">{{ $project->location_geographical ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Region / Province</label>
-                    <div class="display-box">{{ $project->location_region ?: '—' }}</div>
+                    <div class="display-box">{{ $project->location_region ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">City</label>
-                    <div class="display-box">{{ $project->location_city ?: '—' }}</div>
+                    <div class="display-box">{{ $project->location_city ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Valid From</label>
-                    <div class="display-box">{{ $project->location_valid_from ? \Carbon\Carbon::parse($project->location_valid_from)->format('d M Y') : '—' }}</div>
+                    <div class="display-box">{{ $project->location_valid_from ? \Carbon\Carbon::parse($project->location_valid_from)->format('d M Y') : '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Valid To</label>
-                    <div class="display-box">{{ $project->location_valid_to ? \Carbon\Carbon::parse($project->location_valid_to)->format('d M Y') : '—' }}</div>
+                    <div class="display-box">{{ $project->location_valid_to ? \Carbon\Carbon::parse($project->location_valid_to)->format('d M Y') : '-' }}</div>
                 </div>
                 <div class="md:col-span-2 lg:col-span-3">
                     <label class="block text-sm font-medium text-gray-900 mb-1">Street Address</label>
-                    <div class="display-box whitespace-pre-line">{{ $project->location_street ?: '—' }}</div>
+                    <div class="display-box whitespace-pre-line">{{ $project->location_street ?: '-' }}</div>
                 </div>
                 @php
                     $hasCoords = $project->location_latitude !== null && $project->location_longitude !== null;
@@ -1559,7 +1559,7 @@
 </section>
 @endif
 
-{{-- Location Information — cascading Geographical → Region → City dropdowns.
+{{-- Location Information - cascading Geographical → Region → City dropdowns.
      Sumber data & pola identik dengan form create (projects/create.blade.php)
      supaya tampilan & perilaku seragam. --}}
 <script>
@@ -1856,7 +1856,7 @@
                         </svg>
                         WRICEF Log
                     </h2>
-                    <p class="text-xs text-gray-500 mt-1">Workflow, Report, Interface, Conversion, Enhancement &amp; Form objects — FSD → Development → Testing</p>
+                    <p class="text-xs text-gray-500 mt-1">Workflow, Report, Interface, Conversion, Enhancement &amp; Form objects - FSD → Development → Testing</p>
                 </div>
                 @if($can('delivery-project.wricef.manage'))
                 <button type="button" onclick="WricefLog.openAdd()"
@@ -1938,7 +1938,7 @@
                             </td>
                         </tr>
                     </tbody>
-                    {{-- Total Mandays — akumulasi kolom Effort (Mandays) seluruh baris,
+                    {{-- Total Mandays - akumulasi kolom Effort (Mandays) seluruh baris,
                          mengikuti pola footer Total pada Term Of Payment Plan.
                          colspan 10 + 1 kolom Effort + 19 kolom sisanya = 30 kolom. --}}
                     <tfoot class="sticky bottom-0 z-10 bg-gray-50 border-t-2 border-gray-300">
@@ -2122,7 +2122,7 @@
 @endif
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- PLAN COST — MODALS                                            --}}
+{{-- PLAN COST - MODALS                                            --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 
 {{-- Add / Edit Cost Modal --}}
@@ -2198,7 +2198,7 @@
                 </div>
 
                 {{-- Budget / Release grid (disembunyikan untuk parent-with-children) --}}
-                {{-- Actual TIDAK diinput di sini — nilainya otomatis dari total expense detail --}}
+                {{-- Actual TIDAK diinput di sini - nilainya otomatis dari total expense detail --}}
                 <div id="costAmountsSection">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -2232,11 +2232,11 @@
                     <div class="mt-3 bg-gray-50 rounded-lg p-3 text-xs text-gray-600 grid grid-cols-2 gap-2">
                         <div>
                             <span class="font-medium text-green-700">Avail. Budget</span> (Budget − Release):
-                            <span id="previewAvailBudget" class="font-semibold ml-1 text-green-700">—</span>
+                            <span id="previewAvailBudget" class="font-semibold ml-1 text-green-700">-</span>
                         </div>
                         <div>
                             <span class="font-medium text-teal-700">Avail. Release</span> (Release − Actual):
-                            <span id="previewAvailRelease" class="font-semibold ml-1 text-teal-700">—</span>
+                            <span id="previewAvailRelease" class="font-semibold ml-1 text-teal-700">-</span>
                         </div>
                     </div>
                 </div>
@@ -2347,7 +2347,7 @@
                     <label class="block text-xs font-medium text-gray-600 mb-1">Period <span class="text-red-500">*</span></label>
                     <input type="date" id="aeDateInput"
                            class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400">
-                    <p id="aeDateHint" class="hidden text-[11px] text-amber-600 mt-1">This expense has no exact date yet — pick the expense date.</p>
+                    <p id="aeDateHint" class="hidden text-[11px] text-amber-600 mt-1">This expense has no exact date yet - pick the expense date.</p>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Amount (Rp) <span class="text-red-500">*</span></label>
@@ -2426,7 +2426,7 @@
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-base font-semibold text-gray-900">Saved — please review planning</h3>
+                    <h3 class="text-base font-semibold text-gray-900">Saved - please review planning</h3>
                     <p class="text-xs text-gray-500 mt-0.5">The contract dates were saved successfully.</p>
                 </div>
             </div>
@@ -2444,7 +2444,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- PLAN COST — ACTUAL DETAIL MODAL                               --}}
+{{-- PLAN COST - ACTUAL DETAIL MODAL                               --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="actualDetailModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PlanCost.closeActualDetailModal()"></div>
@@ -2652,7 +2652,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- PLAN COST — ATUR RELEASE COST MODAL                           --}}
+{{-- PLAN COST - ATUR RELEASE COST MODAL                           --}}
 {{-- Langkah 1: total release per item. Langkah 2: jadwal bulanan.  --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="releaseModal" class="fixed inset-0 z-50 hidden">
@@ -2767,10 +2767,10 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- RISK REGISTER — ADD / EDIT MODAL                              --}}
+{{-- RISK REGISTER - ADD / EDIT MODAL                              --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TERM OF PAYMENT (TOP) PLAN — ADD / EDIT MODAL                  --}}
+{{-- TERM OF PAYMENT (TOP) PLAN - ADD / EDIT MODAL                  --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="paymentTermModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PaymentTermPlan.closeModal()"></div>
@@ -2792,7 +2792,7 @@
                 <input type="hidden" id="paymentTermModalMode" value="create">
                 <input type="hidden" id="paymentTermModalId" value="">
 
-                {{-- Basis perhitungan — saling eksklusif:
+                {{-- Basis perhitungan - saling eksklusif:
                        % of Revenue   → hanya di TOP Type "% of Revenue" (dikunci di Contract Line Item)
                        % of Line Item → isi Payment %, Amount = % × nilai line item
                        Amount         → isi nominal, % terhadap line item dihitung otomatis --}}
@@ -2812,7 +2812,7 @@
                     <p id="pt_basis_hint" class="mt-1 text-xs text-gray-400"></p>
                 </div>
 
-                {{-- Line Item — wajib di mode Line Item --}}
+                {{-- Line Item - wajib di mode Line Item --}}
                 <div id="pt_line_item_wrap" class="hidden">
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Line Item <span class="text-red-500">*</span>
@@ -2831,7 +2831,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {{-- Payment % — terkunci saat basis Amount (menampilkan porsi terhadap line item) --}}
+                    {{-- Payment % - terkunci saat basis Amount (menampilkan porsi terhadap line item) --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Payment % <span id="pt_pct_req" class="text-red-500">*</span>
@@ -2846,7 +2846,7 @@
                         </div>
                     </div>
 
-                    {{-- Amount — auto dari revenue / nilai line item (basis %) atau diisi sendiri (basis Amount) --}}
+                    {{-- Amount - auto dari revenue / nilai line item (basis %) atau diisi sendiri (basis Amount) --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Amount <span id="pt_amount_req" class="text-red-500 hidden">*</span>
@@ -2862,7 +2862,7 @@
                     </div>
                 </div>
 
-                {{-- Period — label periode tagihan (mode Line Item) --}}
+                {{-- Period - label periode tagihan (mode Line Item) --}}
                 <div id="pt_period_wrap" class="hidden">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Period</label>
                     <input type="text" id="pt_period" maxlength="50" autocomplete="off"
@@ -2890,7 +2890,7 @@
                                placeholder="dd/mm/yyyy">
                     </div>
 
-                    {{-- Submit Invoice Date — wajib saat Status = Invoiced --}}
+                    {{-- Submit Invoice Date - wajib saat Status = Invoiced --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Submit Invoice Date <span id="pt_submit_invoice_req" class="text-red-500 hidden">*</span>
@@ -2902,7 +2902,7 @@
                     </div>
                 </div>
 
-                {{-- Invoice Number — wajib saat Submit Invoice Date terisi --}}
+                {{-- Invoice Number - wajib saat Submit Invoice Date terisi --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Invoice Number <span id="pt_invoice_number_req" class="text-red-500 hidden">*</span>
@@ -2914,7 +2914,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {{-- Paid Date — wajib saat Status = Paid --}}
+                    {{-- Paid Date - wajib saat Status = Paid --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Paid Date <span id="pt_paid_date_req" class="text-red-500 hidden">*</span>
@@ -2954,7 +2954,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TERM OF PAYMENT (TOP) PLAN — EXPORT EXCEL MODAL                --}}
+{{-- TERM OF PAYMENT (TOP) PLAN - EXPORT EXCEL MODAL                --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- data-lock-exempt: export hanya membaca, tetap bisa dipakai walau project closed. --}}
 <div id="paymentTermExportModal" data-lock-exempt class="fixed inset-0 z-50 hidden">
@@ -3013,7 +3013,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TERM OF PAYMENT (TOP) PLAN — DELETE CONFIRMATION MODAL         --}}
+{{-- TERM OF PAYMENT (TOP) PLAN - DELETE CONFIRMATION MODAL         --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="paymentTermDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PaymentTermPlan.closeDeleteModal()"></div>
@@ -3044,7 +3044,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TOP — CONTRACT LINE ITEM ADD / EDIT MODAL                      --}}
+{{-- TOP - CONTRACT LINE ITEM ADD / EDIT MODAL                      --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="lineItemModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PaymentTermPlan.closeLineItemModal()"></div>
@@ -3136,7 +3136,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TOP — GENERATE SCHEDULE (LINE ITEM RECURRING) MODAL            --}}
+{{-- TOP - GENERATE SCHEDULE (LINE ITEM RECURRING) MODAL            --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="generateScheduleModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PaymentTermPlan.closeGenerateModal()"></div>
@@ -3210,7 +3210,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TOP — CONTRACT LINE ITEM DELETE CONFIRMATION MODAL             --}}
+{{-- TOP - CONTRACT LINE ITEM DELETE CONFIRMATION MODAL             --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="lineItemDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PaymentTermPlan.closeLineItemDeleteModal()"></div>
@@ -3241,7 +3241,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- RISK REGISTER — DELETE CONFIRMATION MODAL                      --}}
+{{-- RISK REGISTER - DELETE CONFIRMATION MODAL                      --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="riskDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="RiskRegister.closeDeleteModal()"></div>
@@ -3346,9 +3346,9 @@
                     <div class="sm:col-span-2">
                         <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                             <span class="text-sm text-gray-600 font-medium">Risk Score (P × I):</span>
-                            <span id="riskScorePreview" class="text-sm font-bold text-gray-400">—</span>
+                            <span id="riskScorePreview" class="text-sm font-bold text-gray-400">-</span>
                             <span class="text-sm text-gray-400 mx-1">→</span>
-                            <span id="riskLevelPreview" class="text-sm font-bold text-gray-400">—</span>
+                            <span id="riskLevelPreview" class="text-sm font-bold text-gray-400">-</span>
                         </div>
                     </div>
 
@@ -3447,7 +3447,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- RISK REGISTER — DASHBOARD MODAL                               --}}
+{{-- RISK REGISTER - DASHBOARD MODAL                               --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="riskDashboardModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="RiskRegister.closeDashboard()"></div>
@@ -3564,7 +3564,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- PLAN COST — JAVASCRIPT                                        --}}
+{{-- PLAN COST - JAVASCRIPT                                        --}}
 {{-- Axios harus di-load dulu sebelum script ini dieksekusi        --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -3581,13 +3581,13 @@
 
     // ── Formatter ──────────────────────────────────────────────────
     function fmt(val) {
-        if (val === null || val === undefined) return '—';
+        if (val === null || val === undefined) return '-';
         return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(val);
     }
 
-    /** Tampil dengan prefix "Rp " — untuk sel tabel */
+    /** Tampil dengan prefix "Rp " - untuk sel tabel */
     function fmtRp(val) {
-        if (val === null || val === undefined) return '—';
+        if (val === null || val === undefined) return '-';
         return 'Rp ' + new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(val);
     }
 
@@ -3638,7 +3638,7 @@
     let _view         = 'plan';
     let _monthlyStale = true;
 
-    // Izin section (UI saja — penegakan di middleware route).
+    // Izin section (UI saja - penegakan di middleware route).
     const _section   = document.getElementById('plancost');
     const CAN_EDIT   = _section?.dataset.permEdit === '1';
     const CAN_MANAGE = _section?.dataset.permManage === '1';
@@ -3799,7 +3799,7 @@
         const wrap = document.getElementById('planCostSummaryCards');
         if (!wrap) return;
 
-        // Inline SVG (heroicons-outline) — jangan pakai emoji literal (mojibake via HTTP).
+        // Inline SVG (heroicons-outline) - jangan pakai emoji literal (mojibake via HTTP).
         const icon = (path) =>
             `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">`
             + `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${path}"/></svg>`;
@@ -3868,8 +3868,8 @@
 
         const abEl = document.getElementById('previewAvailBudget');
         const arEl = document.getElementById('previewAvailRelease');
-        abEl.textContent = ab !== null ? `Rp ${fmt(ab)}` : '—';
-        arEl.textContent = ar !== null ? `Rp ${fmt(ar)}` : '—';
+        abEl.textContent = ab !== null ? `Rp ${fmt(ab)}` : '-';
+        arEl.textContent = ar !== null ? `Rp ${fmt(ar)}` : '-';
         abEl.className = `font-semibold ml-1 ${ab !== null && ab < 0 ? 'text-red-600' : 'text-green-700'}`;
         arEl.className = `font-semibold ml-1 ${ar !== null && ar < 0 ? 'text-red-600' : 'text-teal-700'}`;
     }
@@ -3901,7 +3901,7 @@
 
         openAddParentModal() {
             resetForm();
-            // Default title — updates dynamically when type is changed
+            // Default title - updates dynamically when type is changed
             const defaultParent = _costs.find(c => c.cost_type === 'direct' && c.parent_id === null);
             const defaultName   = defaultParent ? defaultParent.name : 'Direct Cost';
             document.getElementById('costModalTitle').textContent = `Add Item to ${defaultName}`;
@@ -3946,7 +3946,7 @@
             const aggregateNotice = document.getElementById('costAggregateNotice');
 
             if (item.has_children) {
-                // Parent-with-children: amounts are aggregated — hide inputs, show notice
+                // Parent-with-children: amounts are aggregated - hide inputs, show notice
                 amountsSection.style.display  = 'none';
                 aggregateNotice.style.display = '';
             } else {
@@ -4017,7 +4017,7 @@
                 cost_type:      costType,
                 budget:         amountsHidden ? null : getRawVal('costBudgetInput'),
                 release_amount: amountsHidden ? null : getRawVal('costReleaseInput'),
-                // actual_amount is derived server-side from expense details — not sent here.
+                // actual_amount is derived server-side from expense details - not sent here.
                 _token:         getCsrf(),
             };
 
@@ -4028,7 +4028,7 @@
                 if (mode === 'create') {
                     await axios.post(BASE_URL, payload);
                 } else {
-                    // POST + X-HTTP-Method-Override:PUT — verb PUT diblokir sebagian edge production.
+                    // POST + X-HTTP-Method-Override:PUT - verb PUT diblokir sebagian edge production.
                     await axios.post(`${BASE_URL}/${id}`, payload, { headers: { 'X-HTTP-Method-Override': 'PUT' } });
                 }
                 _close();
@@ -4328,7 +4328,7 @@
                 if (file) fd.append('document', file);
                 if (_adEditRemoveDoc) fd.append('remove_document', '1');
 
-                // POST + X-HTTP-Method-Override:PUT — verb PUT diblokir sebagian edge
+                // POST + X-HTTP-Method-Override:PUT - verb PUT diblokir sebagian edge
                 // production; Laravel tetap merutekan ke updateItem() (lihat confirmDeleteExpense).
                 const res = await axios.post(
                     `${BASE_URL}/${_adCostId}/items/${_adEditId}`,
@@ -4625,7 +4625,7 @@
         }
     }
 
-    // ── Actual Detail Modal — private helpers ─────────────────────
+    // ── Actual Detail Modal - private helpers ─────────────────────
 
     async function _adLoadItems() {
         const tbody = document.getElementById('actualDetailTableBody');
@@ -4726,7 +4726,7 @@
                    </svg>
                    <span class="truncate">${_esc(name)}</span>
                </a>`
-            : `<span class="text-gray-300 text-xs">—</span>`;
+            : `<span class="text-gray-300 text-xs">-</span>`;
     }
 
     // Update an existing row (cells + cached dataset) after an edit.
@@ -4748,16 +4748,16 @@
     // ── Period helpers ────────────────────────────────────────────
     const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    /** "2026-10" (atau "2026-10-04") → "Okt 2026"; kosong (expense lama) → "—". */
+    /** "2026-10" (atau "2026-10-04") → "Okt 2026"; kosong (expense lama) → "-". */
     function _fmtPeriod(period) {
-        if (!period) return '—';
+        if (!period) return '-';
         const [y, m] = String(period).split('-');
         return `${MONTHS_SHORT[Number(m) - 1] ?? m} ${y}`;
     }
 
     /** "2026-11-04" → "04/11/2026". */
     function _fmtDate(date) {
-        if (!date) return '—';
+        if (!date) return '-';
         const [y, m, d] = String(date).split('-');
         return `${d}/${m}/${y}`;
     }
@@ -4850,8 +4850,8 @@
         if (!icon || !btn) return;
         const state = {
             default: ['⇅', 'text-gray-400', 'Sort by period: newest first'],
-            desc:    ['↓', 'text-blue-600', 'Newest first — click for oldest first'],
-            asc:     ['↑', 'text-blue-600', 'Oldest first — click to restore input order'],
+            desc:    ['↓', 'text-blue-600', 'Newest first - click for oldest first'],
+            asc:     ['↑', 'text-blue-600', 'Oldest first - click to restore input order'],
         }[_adSort];
         icon.textContent = state[0];
         icon.className   = `text-[11px] leading-none ${state[1]}`;
@@ -4934,7 +4934,7 @@
 
     // ── Attach currency formatters & init ─────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
-        // Setup axios CSRF header — dilakukan di sini agar axios sudah tersedia
+        // Setup axios CSRF header - dilakukan di sini agar axios sudah tersedia
         axios.defaults.headers.common['X-CSRF-TOKEN'] = getCsrf();
 
         ['costBudgetInput', 'costReleaseInput', 'adAmountInput', 'aeAmountInput', 'rlTotalInput', 'rlAmountInput'].forEach(id => {
@@ -4959,7 +4959,7 @@
 
      Modal hanya dirender bila role-nya berhak. Ini penting: lapisan read-only
      `data-perm-edit` hanya mengunci field DI DALAM <section>, sedangkan modal
-     berada di luar section — tanpa @if di bawah, form-nya jadi tak terkunci
+     berada di luar section - tanpa @if di bawah, form-nya jadi tak terkunci
      sama sekali. --}}
 @if($can('delivery-project.general.edit'))
     @include('delivery.project.projects.partials.modal-general-info')
@@ -5038,7 +5038,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-900 mb-1">
                                 Employee Type
-                                <span class="text-xs text-gray-400 font-normal">— from employee data</span>
+                                <span class="text-xs text-gray-400 font-normal">- from employee data</span>
                             </label>
                             <input type="text" id="employee_type_display" readonly
                                    placeholder="Select a consultant first"
@@ -5047,7 +5047,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-900 mb-1">
                                 Module
-                                <span class="text-xs text-gray-400 font-normal">— from consultant qualification</span>
+                                <span class="text-xs text-gray-400 font-normal">- from consultant qualification</span>
                             </label>
                             {{-- Nilai akhir (nama modul dipisah koma) dikirim lewat hidden input ini. --}}
                             <input type="hidden" name="module" id="modul">
@@ -5069,7 +5069,7 @@
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-900 mb-1">
                                 Vendor <span class="text-red-500">*</span>
-                                <span class="text-xs text-gray-400 font-normal">— from Business Partner (type Vendor)</span>
+                                <span class="text-xs text-gray-400 font-normal">- from Business Partner (type Vendor)</span>
                             </label>
                             <select name="vendor_id" id="vendor_id" data-searchable="true" disabled
                                     class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus">
@@ -5079,7 +5079,7 @@
                                 @endforeach
                             </select>
                             @if($vendors->isEmpty())
-                                <p class="text-xs text-amber-600 mt-1">No Business Partner of type Vendor yet — add one in Master → Business Partner.</p>
+                                <p class="text-xs text-amber-600 mt-1">No Business Partner of type Vendor yet - add one in Master → Business Partner.</p>
                             @endif
                         </div>
                         <div>
@@ -5089,13 +5089,13 @@
                                    placeholder="Vendor consultant name">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-900 mb-1">Position <span class="text-xs text-gray-400 font-normal">— optional</span></label>
+                            <label class="block text-sm font-medium text-gray-900 mb-1">Position <span class="text-xs text-gray-400 font-normal">- optional</span></label>
                             <input type="text" name="member_position" id="member_position" disabled maxlength="255"
                                    class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus"
                                    placeholder="e.g. SAP Consultant">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-900 mb-1">Module <span class="text-xs text-gray-400 font-normal">— optional, comma separated</span></label>
+                            <label class="block text-sm font-medium text-gray-900 mb-1">Module <span class="text-xs text-gray-400 font-normal">- optional, comma separated</span></label>
                             <input type="text" name="vendor_module" id="vendor_module" disabled maxlength="255"
                                    class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus"
                                    placeholder="e.g. FI, CO">
@@ -5123,13 +5123,13 @@
                                    class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus cursor-pointer">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-900 mb-1">End Date <span class="text-xs text-gray-400 font-normal">— optional</span></label>
+                            <label class="block text-sm font-medium text-gray-900 mb-1">End Date <span class="text-xs text-gray-400 font-normal">- optional</span></label>
                             <input type="text" name="end_date" id="add_end_date" readonly
                                    placeholder="Select End Date"
                                    class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus cursor-pointer">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-900 mb-1">Notes <span class="text-xs text-gray-400 font-normal">— optional</span></label>
+                            <label class="block text-sm font-medium text-gray-900 mb-1">Notes <span class="text-xs text-gray-400 font-normal">- optional</span></label>
                             <textarea name="notes" id="add_notes" rows="2"
                                       class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus"
                                       placeholder="Additional notes for this assignment…"></textarea>
@@ -5213,7 +5213,7 @@
                         {{-- End Date (editable) --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-900 mb-1">
-                                End Date <span class="text-xs text-gray-400 font-normal">— optional</span>
+                                End Date <span class="text-xs text-gray-400 font-normal">- optional</span>
                             </label>
                             <input type="text" name="end_date" id="edit_end_date" readonly
                                    placeholder="Select End Date"
@@ -5222,7 +5222,7 @@
                         {{-- Notes (editable) --}}
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-900 mb-1">
-                                Notes <span class="text-xs text-gray-400 font-normal">— optional</span>
+                                Notes <span class="text-xs text-gray-400 font-normal">- optional</span>
                             </label>
                             <textarea name="notes" id="edit_notes" rows="2"
                                       class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus"
@@ -5330,7 +5330,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Document Name
-                        <span class="text-xs font-normal text-gray-400 ml-1">(optional — default: file name)</span>
+                        <span class="text-xs font-normal text-gray-400 ml-1">(optional - default: file name)</span>
                     </label>
                     <input type="text" id="doc_name"
                            class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm primary-focus text-sm"
@@ -5400,7 +5400,7 @@
 
 {{-- Issue Modal --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- ISSUE LOG — DELETE CONFIRMATION MODAL                          --}}
+{{-- ISSUE LOG - DELETE CONFIRMATION MODAL                          --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="issueDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="IssueLog.closeDeleteModal()"></div>
@@ -5431,7 +5431,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- ISSUE LOG — ADD / EDIT MODAL                                   --}}
+{{-- ISSUE LOG - ADD / EDIT MODAL                                   --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="issueModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="IssueLog.closeModal()"></div>
@@ -5475,7 +5475,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Project Risk ID</label>
                         <select id="issue_risk_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                            <option value="">— None —</option>
+                            <option value="">- None -</option>
                         </select>
                     </div>
 
@@ -5598,7 +5598,7 @@
 
 @if($can('delivery-project.wricef.view'))
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- WRICEF LOG — DELETE CONFIRMATION MODAL                         --}}
+{{-- WRICEF LOG - DELETE CONFIRMATION MODAL                         --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="wricefDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="WricefLog.closeDeleteModal()"></div>
@@ -5629,16 +5629,16 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- WRICEF LOG — ADD / EDIT MODAL                                  --}}
+{{-- WRICEF LOG - ADD / EDIT MODAL                                  --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- PITFALL: modal dirender DI LUAR <section>, jadi lapisan izin
      `data-perm-*` tidak menjangkaunya. Kontrol tulis di sini harus
      dipagari @if($can(...)) sendiri (lihat delivery/partials/section-permissions). --}}
 @php
     // PIC tiap tahap harus anggota tim yang mengerjakan, jadi sengaja memakai
-    // $teamPeople (tanpa AE & Project Owner — itu $projectPeople).
+    // $teamPeople (tanpa AE & Project Owner - itu $projectPeople).
     $wricefPeople  = $teamPeople;
-    $wricefCompany = $project->client->basicData->name_1 ?? '—';
+    $wricefCompany = $project->client->basicData->name_1 ?? '-';
 @endphp
 <div id="wricefModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="WricefLog.closeModal()"></div>
@@ -5664,7 +5664,7 @@
                 <div>
                     <h4 class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">Object</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {{-- Company — mengikuti customer project, tidak disimpan per baris --}}
+                        {{-- Company - mengikuti customer project, tidak disimpan per baris --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
                             <input type="text" value="{{ $wricefCompany }}" readonly
@@ -5695,7 +5695,7 @@
                             </select>
                         </div>
 
-                        {{-- Obj ID — dibuat otomatis oleh server --}}
+                        {{-- Obj ID - dibuat otomatis oleh server --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Obj ID</label>
                             <input type="text" id="wricef_obj_id_preview" readonly
@@ -5933,7 +5933,7 @@
 
 @if($can('delivery-project.stakeholder.view'))
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- STAKEHOLDER REGISTER — DELETE CONFIRMATION MODAL               --}}
+{{-- STAKEHOLDER REGISTER - DELETE CONFIRMATION MODAL               --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="stakeholderDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="StakeholderRegister.closeDeleteModal()"></div>
@@ -5964,7 +5964,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- STAKEHOLDER REGISTER — ADD / EDIT MODAL                        --}}
+{{-- STAKEHOLDER REGISTER - ADD / EDIT MODAL                        --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- PITFALL: modal dirender DI LUAR <section>, jadi lapisan izin
      `data-perm-*` tidak menjangkaunya. Kontrol tulis di sini dipagari
@@ -6087,7 +6087,7 @@
                         </div>
                     </div>
 
-                    {{-- Power/Interest Grid — referensi matriks 2x2 (Panduan).
+                    {{-- Power/Interest Grid - referensi matriks 2x2 (Panduan).
                          Sel yang cocok dengan Power + Interest terpilih di-highlight
                          oleh StakeholderRegister.refreshQuadrant(). "Tinggi" = sisi
                          high; "Sedang" & "Rendah" = sisi low. --}}
@@ -6297,7 +6297,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">
                             Replace File
-                            <span class="text-xs font-normal text-gray-400 ml-1">(optional — leave empty to keep the current file)</span>
+                            <span class="text-xs font-normal text-gray-400 ml-1">(optional - leave empty to keep the current file)</span>
                         </label>
                         <div id="editDocDropZone"
                              class="border-2 border-dashed border-gray-300 rounded-lg py-5 px-4 text-center cursor-pointer hover:border-red-300 hover:bg-red-50/30 transition-all duration-200"
@@ -6578,7 +6578,7 @@
 @if($can('delivery-project.close-project'))
 {{-- Confirm modal untuk Close / Reopen Project (pengganti confirm() native) --}}
 {{-- data-lock-exempt: satu-satunya modal yang harus tetap aktif saat project
-     closed — dari sinilah project di-Reopen. --}}
+     closed - dari sinilah project di-Reopen. --}}
 <div id="projectStateModal" data-lock-exempt class="fixed inset-0 z-[9998] hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50 z-[9998]" onclick="closeModal('projectStateModal')"></div>
     <div class="fixed inset-0 flex items-center justify-center p-4 z-[9999]">
@@ -6601,7 +6601,7 @@
     </div>
 </div>
 <script>
-    // Modal konfirmasi Close/Reopen — submit form tersembunyi saat dikonfirmasi.
+    // Modal konfirmasi Close/Reopen - submit form tersembunyi saat dikonfirmasi.
     let _projectStateForm = null;
     function openProjectStateModal(mode) {
         const title = document.getElementById('projectStateTitle');
@@ -6776,7 +6776,7 @@ function scrollToSection(sectionId) {
 // ✅ Update Active Tab
 function updateActiveTab(sectionId) {
     // Delivery Data section tersendiri tapi berbagi tab "Delivery Info", jadi
-    // dinormalkan di sini — berlaku baik saat dipanggil scrollToSection maupun
+    // dinormalkan di sini - berlaku baik saat dipanggil scrollToSection maupun
     // scroll-spy.
     if (sectionId === 'delivery-data') sectionId = 'delivery';
     document.querySelectorAll('.section-tab').forEach(tab => {
@@ -7128,7 +7128,7 @@ function handleRowSelection(type) {
     updateSelectionToolbar(type);
 }
 
-// Izin hapus per jenis baris yang bisa dipilih di tabel. Ini lapisan UI saja —
+// Izin hapus per jenis baris yang bisa dipilih di tabel. Ini lapisan UI saja -
 // penegakan sebenarnya ada di middleware `menu:` pada route hapus masing-masing
 // (delivery-project.team.delete / delivery-project.documents.manage).
 const DELETE_PERMISSION = {
@@ -7300,19 +7300,19 @@ function openEditDocumentModal(checkbox) {
     document.getElementById('edit_document_id').value   = checkbox.dataset.id;
     document.getElementById('edit_document_name').value = checkbox.dataset.name;
 
-    // Populate type — handle "Others: xxx" values stored in DB
+    // Populate type - handle "Others: xxx" values stored in DB
     const rawType    = checkbox.dataset.type || '';
     const knownTypes = ['TOR', 'KAK', 'Surat Pengikatan', 'BA Negosiasi', 'Surat Penetapan', 'SPK / SPMK', 'Kontrak', 'PO', 'Others'];
     const selectEl   = document.getElementById('edit_document_type');
     if (rawType === '') {
-        // No type set — show placeholder so user must choose
+        // No type set - show placeholder so user must choose
         selectEl.value = '';
         document.getElementById('edit_doc_others_text').value = '';
     } else if (knownTypes.includes(rawType)) {
         selectEl.value = rawType;
         document.getElementById('edit_doc_others_text').value = '';
     } else {
-        // Custom / legacy type stored in DB — map to "Others" + show the text
+        // Custom / legacy type stored in DB - map to "Others" + show the text
         selectEl.value = 'Others';
         document.getElementById('edit_doc_others_text').value = rawType;
     }
@@ -7345,7 +7345,7 @@ function onDocTypeChange() {
 function updateEditPosition(select) {
     const opt = select.options[select.selectedIndex];
     const posEl = document.getElementById('edit_position_display');
-    if (posEl) posEl.textContent = opt?.dataset?.position || '—';
+    if (posEl) posEl.textContent = opt?.dataset?.position || '-';
 }
 
 function openEditTeamMemberModal(checkbox) {
@@ -7374,7 +7374,7 @@ function openEditTeamMemberModal(checkbox) {
 
     // Populate disabled fields
     document.getElementById('edit_employee_name_display').value = employeeName;
-    document.getElementById('edit_module_display').value  = module || '—';
+    document.getElementById('edit_module_display').value  = module || '-';
     document.getElementById('edit_emptype_display').value = employeeType;
 
     // Vendor name: tampilkan field hanya jika ada
@@ -7396,7 +7396,7 @@ function openEditTeamMemberModal(checkbox) {
             document.getElementById('edit_startdate_display').value = startDate;
         }
     } else {
-        document.getElementById('edit_startdate_display').value = '—';
+        document.getElementById('edit_startdate_display').value = '-';
     }
 
     // Set role langsung (native <select>, tidak butuh rAF)
@@ -7463,7 +7463,7 @@ document.getElementById('editTeamMemberForm')?.addEventListener('submit', async 
 });
 
 // ============================================
-// ADD TEAM MEMBER (AJAX — form POST biasa tidak beri notifikasi instan)
+// ADD TEAM MEMBER (AJAX - form POST biasa tidak beri notifikasi instan)
 // ============================================
 document.getElementById('addTeamMemberForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -7479,7 +7479,7 @@ document.getElementById('addTeamMemberForm')?.addEventListener('submit', async f
     try {
         const payload = new FormData(form);
 
-        // Mode vendor: modulnya free text (input terpisah) — pindahkan ke field
+        // Mode vendor: modulnya free text (input terpisah) - pindahkan ke field
         // `module` yang dibaca server.
         if (document.getElementById('member_source')?.value === 'vendor') {
             payload.set('module', document.getElementById('vendor_module')?.value || '');
@@ -7724,7 +7724,7 @@ function openDeleteModal(projectId, projectName) {
 let projectDeleteInProgress = false;
 async function executeProjectDelete(projectId) {
     // Guard against double-submit: the confirm button is shared between flows and a
-    // rapid double-click previously fired two DELETE requests — the first deleted the
+    // rapid double-click previously fired two DELETE requests - the first deleted the
     // project, the second hit an already-gone row and showed a "No query results" error.
     if (projectDeleteInProgress) return;
     projectDeleteInProgress = true;
@@ -7788,7 +7788,7 @@ document.addEventListener('keydown', function(e) {
 // ============================================
 // FLASH NOTIFICATIONS (DOMContentLoaded agar showNotification sudah terdefinisi)
 //
-// JANGAN tampilkan session('success')/('error')/('warning') di sini — layout
+// JANGAN tampilkan session('success')/('error')/('warning') di sini - layout
 // dashboard.blade.php SUDAH memunculkannya untuk semua halaman. Menambahkannya
 // lagi membuat toast dobel (mis. "Project closed successfully." muncul 2x).
 // Yang tersisa di bawah adalah $errors (validasi), yang tidak ditangani layout.
@@ -7835,7 +7835,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (host) { host.classList.add('hidden'); document.body.style.overflow = ''; }
                     showNotification(data.message || fallbackSuccess, 'success');
                     // A clear, acknowledged warning when the save left planning outside the
-                    // contract window — shown in a styled modal (consistent with the rest of
+                    // contract window - shown in a styled modal (consistent with the rest of
                     // the page) instead of a native alert(). Reload happens when dismissed.
                     if (data.warning) {
                         showContractWarningModal(data.warning);
@@ -7872,7 +7872,7 @@ function showContractWarningModal(warning) {
     const modal = document.getElementById('contractWarningModal');
     const body  = document.getElementById('contractWarningBody');
     if (!modal || !body) {            // graceful fallback if markup missing
-        showAlert(typeof warning === 'string' ? warning : 'Saved with warnings — please review planning.', 'Saved with Warnings').then(() => location.reload());
+        showAlert(typeof warning === 'string' ? warning : 'Saved with warnings - please review planning.', 'Saved with Warnings').then(() => location.reload());
         return;
     }
 
@@ -8029,7 +8029,7 @@ function setTeamMemberSource(source) {
     if (hint) {
         hint.textContent = isVendor
             ? 'Vendor is taken from Master Business Partner (type Vendor); the consultant details are typed in manually.'
-            : 'Consultant comes from Master Employee — Employee Type and Module follow their data.';
+            : 'Consultant comes from Master Employee - Employee Type and Module follow their data.';
     }
 }
 
@@ -8039,7 +8039,7 @@ document.getElementById('employee_id')?.addEventListener('change', function() {
     const picked  = selectedOption && selectedOption.value ? selectedOption : null;
     renderTeamModuleOptions(picked ? (picked.dataset.modules || '') : null);
     document.getElementById('whatsapp_number').value = picked?.dataset.whatsapp || '';
-    // Employee Type murni turunan data employee (Internal / External) — read-only.
+    // Employee Type murni turunan data employee (Internal / External) - read-only.
     document.getElementById('employee_type_display').value = picked ? (picked.dataset.employeeType || 'Internal') : '';
 });
 
@@ -8061,7 +8061,7 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleAEFields();
 });
 
-// ── Account Executive (Sales Data) — konsisten dengan halaman create ──────────
+// ── Account Executive (Sales Data) - konsisten dengan halaman create ──────────
 // Contact map: full_name → { phone, email } untuk auto-fill saat AE Internal dipilih.
 const aeEmployeeContacts = {
 @foreach($employees as $employee)
@@ -8246,7 +8246,7 @@ async function submitDocumentUpload() {
     label.textContent = 'Preparing upload...';
 
     try {
-        // Step 1: get upload session URL from server (no file data — tiny request)
+        // Step 1: get upload session URL from server (no file data - tiny request)
         const sessionRes = await fetch('/projects/{{ $project->id }}/documents/create-upload-session', {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
@@ -8270,7 +8270,7 @@ async function submitDocumentUpload() {
 
         if (!itemId) throw new Error('Upload completed but no item ID returned.');
 
-        // Step 3: finalize — server creates share link and saves to DB
+        // Step 3: finalize - server creates share link and saves to DB
         label.textContent = 'Finalizing...';
         const finalRes = await fetch('/projects/{{ $project->id }}/documents/finalize-upload', {
             method: 'POST',
@@ -8523,7 +8523,7 @@ async function refreshProjectFolderLink() {
         if (data.link_warning) {
             showNotification(data.link_warning, 'error');
         } else {
-            showNotification('Folder link refreshed — anyone with the link can open it.', 'success');
+            showNotification('Folder link refreshed - anyone with the link can open it.', 'success');
         }
     } catch (err) {
         showNotification('Error: ' + err.message, 'error');
@@ -8557,7 +8557,7 @@ function copyFolderLink() {
 {{-- Flatpickr + HolidayCalendar untuk semua date picker di halaman ini --}}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
-// Definisi HolidayCalendar (singleton — tidak re-define jika sudah ada dari halaman lain)
+// Definisi HolidayCalendar (singleton - tidak re-define jika sudah ada dari halaman lain)
 window.HolidayCalendar = window.HolidayCalendar || (function () {
     var _set  = new Set();
     var _meta = {};
@@ -8618,7 +8618,7 @@ window.HolidayCalendar = window.HolidayCalendar || (function () {
 // Inisialisasi semua picker setelah holidays di-load
 document.addEventListener('DOMContentLoaded', function () {
     HolidayCalendar.load().then(function () {
-        // Contract dates (General Information) — start = lower bound of end, end = upper bound of start
+        // Contract dates (General Information) - start = lower bound of end, end = upper bound of start
         var _csEl = document.getElementById('contract_start_date');
         var _ceEl = document.getElementById('contract_end_date');
         if (_csEl && _ceEl) {
@@ -8639,12 +8639,12 @@ document.addEventListener('DOMContentLoaded', function () {
         // Edit Team Member modal (hanya end_date yang editable)
         window._fpEditEnd   = HolidayCalendar.initPicker(document.getElementById('edit_end_date'));
 
-        // Issue Log modal — Date Identified / Estimated Closed / Closed Date
+        // Issue Log modal - Date Identified / Estimated Closed / Closed Date
         window._fpIssueIdentified = HolidayCalendar.initPicker(document.getElementById('issue_date_identified'));
         window._fpIssueEstClosed  = HolidayCalendar.initPicker(document.getElementById('issue_estimated_closed'));
         window._fpIssueClosed     = HolidayCalendar.initPicker(document.getElementById('issue_closed_date'));
 
-        // WRICEF modal — Request/Approved + Start & End tiap tahap.
+        // WRICEF modal - Request/Approved + Start & End tiap tahap.
         // Disimpan dalam satu map supaya reset/isi ulang bisa di-loop.
         window._fpWricef = {};
         [
@@ -8657,22 +8657,22 @@ document.addEventListener('DOMContentLoaded', function () {
             if (el) window._fpWricef[key] = HolidayCalendar.initPicker(el);
         });
 
-        // Stakeholder Register modal — Tanggal Identifikasi / Update Terakhir.
+        // Stakeholder Register modal - Tanggal Identifikasi / Update Terakhir.
         window._fpStakeholder = {};
         ['identified_date', 'last_updated_date'].forEach(function (key) {
             const el = document.getElementById('stakeholder_' + key);
             if (el) window._fpStakeholder[key] = HolidayCalendar.initPicker(el);
         });
 
-        // Location Information — Valid From / Valid To
+        // Location Information - Valid From / Valid To
         window._fpLocFrom = HolidayCalendar.initPicker(document.getElementById('loc_valid_from'));
         window._fpLocTo   = HolidayCalendar.initPicker(document.getElementById('loc_valid_to'));
 
-        // Risk Register — Target Date & Actual End Date
+        // Risk Register - Target Date & Actual End Date
         window._fpRiskTarget    = HolidayCalendar.initPicker(document.getElementById('risk_target_date'));
         window._fpRiskActualEnd = HolidayCalendar.initPicker(document.getElementById('risk_actual_end_date'));
 
-        // Term Of Payment Plan — Estimated / Submit Invoice / Paid Date
+        // Term Of Payment Plan - Estimated / Submit Invoice / Paid Date
         window._fpPtEstimated     = HolidayCalendar.initPicker(document.getElementById('pt_estimated_date'));
         window._fpPtSubmitInvoice = HolidayCalendar.initPicker(document.getElementById('pt_submit_invoice_date'), {
             onChange: function () {
@@ -8683,7 +8683,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         window._fpPtPaid          = HolidayCalendar.initPicker(document.getElementById('pt_paid_date'));
 
-        // TOP mode Line Item — jadwal Contract Line Item & Generate Schedule
+        // TOP mode Line Item - jadwal Contract Line Item & Generate Schedule
         // Jadwal kontrak boleh jatuh di hari libur (mis. 1 Jan) → jangan disable tanggal apa pun.
         const ptPreview = (fn) => ({
             disable : [],
@@ -8698,7 +8698,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- RISK REGISTER — JAVASCRIPT                                    --}}
+{{-- RISK REGISTER - JAVASCRIPT                                    --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <script>
 window.RiskRegister = (function () {
@@ -8750,7 +8750,7 @@ window.RiskRegister = (function () {
             return '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Opportunity</span>';
         if (type === 'Threat')
             return '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Threat</span>';
-        return '—';
+        return '-';
     }
 
     // Repopulate Response Strategy <select> based on selected Risk Type,
@@ -8837,19 +8837,19 @@ window.RiskRegister = (function () {
             <td class="px-3 py-3 text-center whitespace-nowrap">${typeBadge(r.risk_type)}</td>
             <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(r.category)}</td>
             <td class="px-3 py-3 text-xs text-gray-800 max-w-[200px]"><div class="line-clamp-3">${esc(r.description)}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(r.cause) || '—'}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(r.project_impact) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(r.cause) || '-'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(r.project_impact) || '-'}</div></td>
             <td class="px-3 py-3 text-center text-sm font-semibold text-gray-700">${r.probability}</td>
             <td class="px-3 py-3 text-center text-sm font-semibold text-gray-700">${r.impact}</td>
             <td class="px-3 py-3 text-center text-sm font-bold text-gray-800">${score}</td>
             <td class="px-3 py-3 text-center">${levelBadge(level)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(r.response_strategy) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px]"><div class="line-clamp-3">${esc(r.mitigation_plan) || '—'}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(r.risk_owner) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(r.response_strategy) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px]"><div class="line-clamp-3">${esc(r.mitigation_plan) || '-'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(r.risk_owner) || '-'}</td>
             <td class="px-3 py-3 text-center">${statusBadge(r.status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(r.target_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(r.actual_end_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 max-w-[140px]"><div class="line-clamp-2">${esc(r.notes) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(r.target_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(r.actual_end_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 max-w-[140px]"><div class="line-clamp-2">${esc(r.notes) || '-'}</div></td>
             <td class="px-3 py-3 text-center whitespace-nowrap">
                 <button onclick="RiskRegister.openEdit(${r.id})"
                         class="inline-flex items-center p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition" title="Edit">
@@ -8884,8 +8884,8 @@ window.RiskRegister = (function () {
         if (window._fpRiskTarget) window._fpRiskTarget.clear();
         populateResponseStrategies('');         // reset strategy options (none until type chosen)
         onStatusChange();                        // hide & clear Actual End Date
-        document.getElementById('riskScorePreview').textContent  = '—';
-        document.getElementById('riskLevelPreview').textContent  = '—';
+        document.getElementById('riskScorePreview').textContent  = '-';
+        document.getElementById('riskLevelPreview').textContent  = '-';
         document.getElementById('riskLevelPreview').className    = 'text-sm font-bold text-gray-400';
         document.getElementById('riskScorePreview').className    = 'text-sm font-bold text-gray-400';
     }
@@ -8906,7 +8906,7 @@ window.RiskRegister = (function () {
         resetForm();
         document.getElementById('riskModalMode').value  = 'edit';
         document.getElementById('riskModalId').value    = id;
-        document.getElementById('riskModalTitle').textContent = `Edit Risk — ${r.risk_id_label}`;
+        document.getElementById('riskModalTitle').textContent = `Edit Risk - ${r.risk_id_label}`;
 
         document.getElementById('risk_type').value               = r.risk_type ?? '';
         document.getElementById('risk_category').value           = r.category ?? '';
@@ -8951,9 +8951,9 @@ window.RiskRegister = (function () {
         const levelEl = document.getElementById('riskLevelPreview');
 
         if (!p || !i) {
-            scoreEl.textContent = '—';
+            scoreEl.textContent = '-';
             scoreEl.className   = 'text-sm font-bold text-gray-400';
-            levelEl.textContent = '—';
+            levelEl.textContent = '-';
             levelEl.className   = 'text-sm font-bold text-gray-400';
             return;
         }
@@ -9141,7 +9141,7 @@ window.RiskRegister = (function () {
 </script>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- ISSUE LOG — JAVASCRIPT                                         --}}
+{{-- ISSUE LOG - JAVASCRIPT                                         --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <script>
 window.IssueLog = (function () {
@@ -9194,7 +9194,7 @@ window.IssueLog = (function () {
             'Low':    { letter: 'L', cls: 'bg-green-100 text-green-700' },
         };
         const p = map[priority];
-        if (!p) return '—';
+        if (!p) return '-';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-bold ${p.cls}" title="${esc(priority)}">${p.letter}</span>`;
     }
 
@@ -9218,7 +9218,7 @@ window.IssueLog = (function () {
             risks = [];
         }
         const prev = keepValue ?? sel.value;
-        sel.innerHTML = '<option value="">— None —</option>' +
+        sel.innerHTML = '<option value="">- None -</option>' +
             risks.map(r => `<option value="${r.id}">${esc(r.risk_id_label)}</option>`).join('');
         if (prev) sel.value = String(prev);
     }
@@ -9262,19 +9262,19 @@ window.IssueLog = (function () {
         return `<tr class="hover:bg-gray-50 align-top">
             <td class="px-3 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">${esc(i.issue_id_label)}</td>
             <td class="px-3 py-3 text-xs text-gray-800 max-w-[220px]"><div class="line-clamp-3">${esc(i.issue_description)}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.module) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.date_identified_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.closed_date_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.module) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.date_identified_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.closed_date_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${statusBadge(i.status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(i.risk_to_project) || '—'}</div></td>
-            <td class="px-3 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">${esc(i.risk_id_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(i.risk_to_project) || '-'}</div></td>
+            <td class="px-3 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">${esc(i.risk_id_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${priorityBadge(i.priority)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.originator) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.owner) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.estimated_closed_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.originator) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.owner) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.estimated_closed_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${escalationBadge(i.escalation_needed)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(i.impact_of_issue) || '—'}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px]"><div class="line-clamp-3">${esc(i.tracking_comments) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(i.impact_of_issue) || '-'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px]"><div class="line-clamp-3">${esc(i.tracking_comments) || '-'}</div></td>
             <td class="px-3 py-3 text-center whitespace-nowrap">
                 <button onclick="IssueLog.openEdit(${i.id})"
                         class="inline-flex items-center p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition" title="Edit">
@@ -9330,7 +9330,7 @@ window.IssueLog = (function () {
         resetForm();
         document.getElementById('issueModalMode').value  = 'edit';
         document.getElementById('issueModalId').value    = id;
-        document.getElementById('issueModalTitle').textContent = `Edit Issue — ${i.issue_id_label}`;
+        document.getElementById('issueModalTitle').textContent = `Edit Issue - ${i.issue_id_label}`;
 
         document.getElementById('issue_description').value       = i.issue_description ?? '';
         document.getElementById('issue_module').value            = i.module ?? '';
@@ -9482,7 +9482,7 @@ window.IssueLog = (function () {
 </script>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- WRICEF LOG — JAVASCRIPT                                        --}}
+{{-- WRICEF LOG - JAVASCRIPT                                        --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 @if($can('delivery-project.wricef.view'))
 <script>
@@ -9492,7 +9492,7 @@ window.WricefLog = (function () {
     const PROJECT_ID = {{ $project->id }};
     const BASE_URL   = `/projects/${PROJECT_ID}/wricefs`;
 
-    // Huruf Obj_Id per kategori — harus sama dengan
+    // Huruf Obj_Id per kategori - harus sama dengan
     // App\Models\DeliveryProjectWricef::CATEGORY_LETTERS (server tetap yang
     // menentukan nilai final; ini cuma pratinjau prefix di modal).
     const CATEGORY_LETTERS = @json(\App\Models\DeliveryProjectWricef::CATEGORY_LETTERS);
@@ -9551,7 +9551,7 @@ window.WricefLog = (function () {
             'In Progress': 'bg-blue-100 text-blue-800',
             'Closed':      'bg-green-100 text-green-800',
         };
-        if (!status) return '—';
+        if (!status) return '-';
         const cls = map[status] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${esc(status)}</span>`;
     }
@@ -9567,7 +9567,7 @@ window.WricefLog = (function () {
             'Develop':          'bg-amber-100 text-amber-800',
             'Develop Scenario': 'bg-amber-100 text-amber-800',
         };
-        if (!status) return '<span class="text-gray-300">—</span>';
+        if (!status) return '<span class="text-gray-300">-</span>';
         const cls = map[status] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${cls}">${esc(status)}</span>`;
     }
@@ -9578,21 +9578,21 @@ window.WricefLog = (function () {
             'Medium': 'bg-orange-100 text-orange-700',
             'Low':    'bg-green-100 text-green-700',
         };
-        if (!priority) return '—';
+        if (!priority) return '-';
         const cls = map[priority] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-bold ${cls}">${esc(priority)}</span>`;
     }
 
     function fmtMandays(v) {
-        if (v === null || v === undefined || v === '') return '—';
+        if (v === null || v === undefined || v === '') return '-';
         const num = Number(v);
-        if (isNaN(num)) return '—';
+        if (isNaN(num)) return '-';
         return formatMd(num).replace('.', ',');
     }
 
-    // Capability boleh multi-baris (lihat contoh CSV) — pertahankan barisnya.
+    // Capability boleh multi-baris (lihat contoh CSV) - pertahankan barisnya.
     function multiline(text) {
-        if (!text) return '—';
+        if (!text) return '-';
         return esc(text).replace(/\r?\n/g, '<br>');
     }
 
@@ -9639,38 +9639,38 @@ window.WricefLog = (function () {
 
     function rowHtml(w) {
         return `<tr class="hover:bg-gray-50 align-top">
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.company) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.company) || '-'}</td>
             <td class="px-3 py-3 text-xs text-center font-semibold text-gray-700 whitespace-nowrap">${esc(w.sap_module)}</td>
             <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.category)}</td>
             <td class="px-3 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">${esc(w.obj_id)}</td>
             <td class="px-3 py-3 text-xs text-gray-800 max-w-[240px]"><div class="line-clamp-3">${esc(w.obj_name)}</div></td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[240px]"><div class="line-clamp-4">${multiline(w.capability)}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.tcode) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.tcode) || '-'}</td>
             <td class="px-3 py-3 text-center">${priorityBadge(w.priority)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.requestor) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.request_date_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.requestor) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.request_date_label) || '-'}</td>
             <td class="px-3 py-3 text-xs text-right text-gray-700 whitespace-nowrap">${fmtMandays(w.effort_mandays)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.approved_by) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.approved_date_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.approved_by) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.approved_date_label) || '-'}</td>
             <td class="px-3 py-3 text-center border-r border-gray-200">${statusBadge(w.status)}</td>
 
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.fsd_pic) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.fsd_start_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.fsd_end_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.fsd_pic) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.fsd_start_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.fsd_end_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${stageBadge(w.fsd_status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.fsd_remarks) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.fsd_remarks) || '-'}</div></td>
 
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.dev_pic) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.dev_start_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.dev_end_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.dev_pic) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.dev_start_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.dev_end_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${stageBadge(w.dev_status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.dev_remarks) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.dev_remarks) || '-'}</div></td>
 
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.test_pic) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.test_start_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.test_end_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.test_pic) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.test_start_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.test_end_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${stageBadge(w.test_status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.test_remarks) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.test_remarks) || '-'}</div></td>
 
             <td class="px-3 py-3 text-center whitespace-nowrap">
                 <button onclick="WricefLog.openEdit(${w.id})"
@@ -9752,7 +9752,7 @@ window.WricefLog = (function () {
         document.getElementById('wricefModalMode').value = 'edit';
         document.getElementById('wricefModalId').value   = id;
         resetForm();
-        document.getElementById('wricefModalTitle').textContent = `Edit WRICEF — ${w.obj_id}`;
+        document.getElementById('wricefModalTitle').textContent = `Edit WRICEF - ${w.obj_id}`;
 
         TEXT_FIELDS.forEach(function (key) {
             const node = el(key);
@@ -9907,7 +9907,7 @@ window.WricefLog = (function () {
 @endif
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- STAKEHOLDER REGISTER — JAVASCRIPT                              --}}
+{{-- STAKEHOLDER REGISTER - JAVASCRIPT                              --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 @if($can('delivery-project.stakeholder.view'))
 <script>
@@ -9917,7 +9917,7 @@ window.StakeholderRegister = (function () {
     const PROJECT_ID = {{ $project->id }};
     const BASE_URL   = `/projects/${PROJECT_ID}/stakeholders`;
 
-    // Label kuadran — harus sama dengan
+    // Label kuadran - harus sama dengan
     // App\Models\DeliveryProjectStakeholder::QUADRANTS. Server tetap yang
     // menentukan nilai final; ini hanya pratinjau di modal & grid.
     const QUADRANTS = {
@@ -9968,7 +9968,7 @@ window.StakeholderRegister = (function () {
     }
 
     function multiline(text) {
-        if (!text) return '<span class="text-gray-300">—</span>';
+        if (!text) return '<span class="text-gray-300">-</span>';
         return esc(text).replace(/\r?\n/g, '<br>');
     }
 
@@ -9991,13 +9991,13 @@ window.StakeholderRegister = (function () {
             'Sedang': 'bg-amber-100 text-amber-800',
             'Rendah': 'bg-gray-100 text-gray-600',
         };
-        if (!level) return '<span class="text-gray-300">—</span>';
+        if (!level) return '<span class="text-gray-300">-</span>';
         const cls = map[level] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${esc(level)}</span>`;
     }
 
     function categoryBadge(cat) {
-        if (!cat) return '—';
+        if (!cat) return '-';
         const cls = cat === 'Internal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${esc(cat)}</span>`;
     }
@@ -10010,7 +10010,7 @@ window.StakeholderRegister = (function () {
             'Supportive': 'bg-green-100 text-green-800',
             'Leading':    'bg-emerald-100 text-emerald-800',
         };
-        if (!att) return '<span class="text-gray-300">—</span>';
+        if (!att) return '<span class="text-gray-300">-</span>';
         const cls = map[att] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${cls}">${esc(att)}</span>`;
     }
@@ -10021,7 +10021,7 @@ window.StakeholderRegister = (function () {
             'Tidak Aktif': 'bg-gray-100 text-gray-600',
             'Selesai':     'bg-blue-100 text-blue-800',
         };
-        if (!status) return '—';
+        if (!status) return '-';
         const cls = map[status] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${esc(status)}</span>`;
     }
@@ -10055,27 +10055,27 @@ window.StakeholderRegister = (function () {
         return `<tr class="hover:bg-gray-50 align-top">
             <td class="px-3 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">${esc(s.stakeholder_id)}</td>
             <td class="px-3 py-3 text-xs font-semibold text-gray-800 whitespace-nowrap">${esc(s.name)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.role_title) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.organization) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.role_title) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.organization) || '-'}</td>
             <td class="px-3 py-3 text-center">${categoryBadge(s.category)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.classification) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(s.email) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(s.phone) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.classification) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(s.email) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(s.phone) || '-'}</td>
             <td class="px-3 py-3 text-center">${levelBadge(s.power)}</td>
             <td class="px-3 py-3 text-center">${levelBadge(s.interest)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700">${esc(quadrant) || '<span class="text-gray-300">—</span>'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700">${esc(quadrant) || '<span class="text-gray-300">-</span>'}</td>
             <td class="px-3 py-3 text-center">${attitudeBadge(s.current_attitude)}</td>
             <td class="px-3 py-3 text-center">${attitudeBadge(s.expected_attitude)}</td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[240px]"><div class="line-clamp-3">${multiline(s.key_expectations)}</div></td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[240px]"><div class="line-clamp-3">${multiline(s.information_needs)}</div></td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[240px]"><div class="line-clamp-3">${multiline(s.engagement_strategy)}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.communication_frequency) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700">${esc(s.communication_method) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.pic_internal) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.communication_frequency) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700">${esc(s.communication_method) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.pic_internal) || '-'}</td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[220px]"><div class="line-clamp-3">${multiline(s.stakeholder_risk)}</div></td>
             <td class="px-3 py-3 text-center">${statusBadge(s.status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(s.identified_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(s.last_updated_date_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(s.identified_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(s.last_updated_date_label) || '-'}</td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[200px]"><div class="line-clamp-3">${multiline(s.notes)}</div></td>
             <td class="px-3 py-3 text-center whitespace-nowrap">
                 <button onclick="StakeholderRegister.openEdit(${s.id})"
@@ -10145,19 +10145,19 @@ window.StakeholderRegister = (function () {
     }
 
     function openEdit(id) {
-        // id dari onclick bisa Number, id di _rows bisa Number — samakan sbagai string.
+        // id dari onclick bisa Number, id di _rows bisa Number - samakan sbagai string.
         const s = _rows.find(x => String(x.id) === String(id));
         if (!s) return;
 
         document.getElementById('stakeholderModalMode').value = 'edit';
         document.getElementById('stakeholderModalId').value   = s.id;
         resetForm();
-        document.getElementById('stakeholderModalTitle').textContent = `Edit Stakeholder — ${s.stakeholder_id}`;
+        document.getElementById('stakeholderModalTitle').textContent = `Edit Stakeholder - ${s.stakeholder_id}`;
 
         const sid = document.getElementById('stakeholder_sid_preview');
         if (sid) sid.value = s.stakeholder_id;
 
-        // Semua field diisi ulang dari data baris — teks, textarea, DAN setiap
+        // Semua field diisi ulang dari data baris - teks, textarea, DAN setiap
         // <select> (Kategori, Tipe/Klasifikasi, Power, Interest, Sikap, Frekuensi,
         // PIC Internal, Status). Nilai yang tidak lagi ada di daftar opsi
         // disisipkan oleh setSelectValue() supaya tetap tampil.
@@ -10179,7 +10179,7 @@ window.StakeholderRegister = (function () {
             if (s[key] && window._fpStakeholder && window._fpStakeholder[key]) {
                 window._fpStakeholder[key].setDate(s[key], false, 'Y-m-d');
             } else {
-                // Flatpickr belum siap — isi nilai mentah supaya tetap tersimpan.
+                // Flatpickr belum siap - isi nilai mentah supaya tetap tersimpan.
                 node.value = s[key] || '';
             }
         });
@@ -10303,7 +10303,7 @@ window.StakeholderRegister = (function () {
 @endif
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TERM OF PAYMENT (TOP) PLAN — JAVASCRIPT                        --}}
+{{-- TERM OF PAYMENT (TOP) PLAN - JAVASCRIPT                        --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <script>
 window.PaymentTermPlan = (function () {
@@ -10421,7 +10421,7 @@ window.PaymentTermPlan = (function () {
         const pill = (cls, text) => `<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${cls}">${text}</span>`;
         const head = `Revenue in Sales Data: <span class="font-semibold text-gray-700">${fmtRp(revenue)}</span>`;
         if (revenue <= 0) {
-            return head + pill('bg-gray-100 text-gray-600', 'Revenue is empty — cannot compare');
+            return head + pill('bg-gray-100 text-gray-600', 'Revenue is empty - cannot compare');
         }
         const diff = total - revenue;
         if (Math.abs(diff) < 1) {
@@ -10451,7 +10451,7 @@ window.PaymentTermPlan = (function () {
         let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
         while (cursor <= end && periods.length < 120) {
             const pEnd = new Date(cursor.getFullYear(), cursor.getMonth() + months - 1, 1);
-            periods.push(months === 1 ? monthLabel(cursor) : `${monthLabel(cursor)} – ${monthLabel(pEnd)}`);
+            periods.push(months === 1 ? monthLabel(cursor) : `${monthLabel(cursor)} - ${monthLabel(pEnd)}`);
             cursor = new Date(cursor.getFullYear(), cursor.getMonth() + months, 1);
         }
         return periods;
@@ -10651,7 +10651,7 @@ window.PaymentTermPlan = (function () {
             html += visible.map(t => rowHtml(t)).join('');
 
             if (terms.length >= COLLAPSE_AT) {
-                const range = hidden.length ? `${hidden[0].period || hidden[0].payment_term} – ${hidden[hidden.length - 1].period || hidden[hidden.length - 1].payment_term}` : '';
+                const range = hidden.length ? `${hidden[0].period || hidden[0].payment_term} - ${hidden[hidden.length - 1].period || hidden[hidden.length - 1].payment_term}` : '';
                 html += `<tr><td colspan="${span}" class="px-3 py-2 text-center text-xs">
                     <button type="button" data-perm-keep onclick="PaymentTermPlan.toggleGroup(${key})" class="text-gray-500 hover:text-gray-800 underline-offset-2 hover:underline">
                         ${collapse ? `… ${hidden.length} more term${hidden.length > 1 ? 's' : ''} (${esc(range)}) · Show all` : 'Show less'}
@@ -10682,7 +10682,7 @@ window.PaymentTermPlan = (function () {
         const totalPct = revTerms.reduce((s, t) => s + (Number(t.payment_percentage) || 0), 0);
         const pctCell  = _mode === 'percentage' && revTerms.length
             ? `<td class="px-3 py-3 text-center ${totalPct > 100 ? 'text-red-600' : 'text-gray-700'}">${fmtPct(totalPct)}</td>`
-            : `<td class="px-3 py-3 text-center text-gray-400">—</td>`;
+            : `<td class="px-3 py-3 text-center text-gray-400">-</td>`;
 
         // Rincian status penagihan (dari total TOP).
         const byStatus = s => _terms.filter(t => t.status === s).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
@@ -10719,14 +10719,14 @@ window.PaymentTermPlan = (function () {
         return `<tr class="hover:bg-gray-50 align-top">
             <td class="px-3 py-3 text-center text-xs font-mono text-gray-600">${t.term_number}</td>
             <td class="px-3 py-3 text-xs text-gray-800"><div class="line-clamp-3">${esc(t.payment_term)}</div></td>
-            ${_mode === 'line_item' ? `<td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(t.period) || '—'}</td>` : ''}
+            ${_mode === 'line_item' ? `<td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(t.period) || '-'}</td>` : ''}
             <td class="px-3 py-3 text-center text-xs font-semibold text-gray-700">${pctCell}</td>
             <td class="px-3 py-3 text-right text-xs font-semibold text-gray-800 whitespace-nowrap">${fmtRp(t.amount)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[260px]"><div class="line-clamp-3">${esc(t.requirements) || '—'}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.estimated_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.submit_invoice_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(t.invoice_number) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.paid_date_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[260px]"><div class="line-clamp-3">${esc(t.requirements) || '-'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.estimated_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.submit_invoice_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(t.invoice_number) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.paid_date_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${statusBadge(t.status)}</td>
             <td class="px-3 py-3 text-center whitespace-nowrap">
                 <button type="button" onclick="PaymentTermPlan.openEdit(${t.id})"
@@ -10755,7 +10755,7 @@ window.PaymentTermPlan = (function () {
         if (mode === _mode) return;
 
         const question = mode === 'line_item'
-            ? 'Existing % of Revenue terms stay as they are. New payment terms must be linked to a contract line item and take their amount from it — "% of Revenue" is locked.'
+            ? 'Existing % of Revenue terms stay as they are. New payment terms must be linked to a contract line item and take their amount from it - "% of Revenue" is locked.'
             : 'Contract line items are kept but hidden. Only possible when no term takes its amount from a line item.';
         const title = mode === 'line_item'
             ? 'Switch TOP Type to "Contract Line Item"?'
@@ -10787,7 +10787,7 @@ window.PaymentTermPlan = (function () {
 
     function round2(n) { return Math.round(n * 100) / 100; }
 
-    // Porsi (%) nilai line item yang belum masuk TOP — prefill Payment %.
+    // Porsi (%) nilai line item yang belum masuk TOP - prefill Payment %.
     function remainingShare(li) {
         if (!li || !(li.total > 0)) return 0;
         const editId = document.getElementById('paymentTermModalMode').value === 'edit'
@@ -10821,7 +10821,7 @@ window.PaymentTermPlan = (function () {
             btn.classList.toggle('text-gray-700', !active && allowed);
             btn.classList.toggle('text-gray-400', !active && !allowed);
             btn.classList.toggle('bg-gray-100', !active && !allowed);
-            // Type "% of Revenue" hanya punya satu basis — tombol lain disembunyikan.
+            // Type "% of Revenue" hanya punya satu basis - tombol lain disembunyikan.
             if (b !== 'percentage') btn.classList.toggle('hidden', _mode !== 'line_item');
         });
 
@@ -10846,8 +10846,8 @@ window.PaymentTermPlan = (function () {
 
         document.getElementById('pt_basis_hint').textContent = {
             percentage: `Amount = Payment % × revenue in Sales Data (${fmtRp(currentRevenue())}).`,
-            line_item:  'Fill in Payment % — Amount = Payment % × the selected line item value.',
-            fixed:      'Fill in the Amount — its share (%) of the selected line item value is calculated automatically.',
+            line_item:  'Fill in Payment % - Amount = Payment % × the selected line item value.',
+            fixed:      'Fill in the Amount - its share (%) of the selected line item value is calculated automatically.',
         }[basis];
 
         // Pertahankan nilai yang sudah terisi saat berpindah Payment % ↔ Amount.
@@ -10865,13 +10865,13 @@ window.PaymentTermPlan = (function () {
     function populateLineItemSelect(selectedId) {
         const sel = document.getElementById('pt_line_item');
         if (!sel) return;
-        sel.innerHTML = `<option value="">— Select line item —</option>` +
+        sel.innerHTML = `<option value="">- Select line item -</option>` +
             _lineItems.map(li => `<option value="${li.id}">${esc(li.name)} · ${esc(li.type_label)} · ${
                 li.type === 'recurring' ? fmtRp(li.amount) + ' / period' : fmtRp(li.total)}</option>`).join('');
         sel.value = selectedId ? String(selectedId) : '';
     }
 
-    // Prefill dari line item yang dipilih — tetap bisa diubah:
+    // Prefill dari line item yang dipilih - tetap bisa diubah:
     //   Amount    → nominal line item (per periode untuk recurring)
     //   Payment % → sisa porsi line item yang belum masuk TOP
     function onLineItemChange(fromBasisSwitch) {
@@ -10945,7 +10945,7 @@ window.PaymentTermPlan = (function () {
         }
 
         box.classList.toggle('hidden', !msgs.length);
-        box.innerHTML = msgs.map(m => `<p>⚠ ${esc(m)}</p>`).join('') + (msgs.length ? '<p class="mt-1 text-amber-700/80">You can still save — this is only a notification.</p>' : '');
+        box.innerHTML = msgs.map(m => `<p>⚠ ${esc(m)}</p>`).join('') + (msgs.length ? '<p class="mt-1 text-amber-700/80">You can still save - this is only a notification.</p>' : '');
     }
 
     // Toggle indikator "wajib" pada Invoice Number sesuai isi Submit Invoice Date
@@ -11004,7 +11004,7 @@ window.PaymentTermPlan = (function () {
     function openAdd(lineItemId) {
         // Amount diambil dari Contract Line Item → line item wajib ada dulu.
         if (_mode === 'line_item' && !_lineItems.length) {
-            showNotification('Add a contract line item first — payment terms in Contract Line Item mode must be linked to one.', 'warning');
+            showNotification('Add a contract line item first - payment terms in Contract Line Item mode must be linked to one.', 'warning');
             openAddLineItem();
             return;
         }
@@ -11090,7 +11090,7 @@ window.PaymentTermPlan = (function () {
         if (status === 'Paid' && !paidDate) { showNotification('Paid Date is required when Status is Paid.', 'error'); return; }
 
         // Guard: total termin basis % of Revenue tidak boleh melebihi 100% / revenue.
-        // Basis line item tidak diblokir — hanya diperingatkan (lihat checkOver()).
+        // Basis line item tidak diblokir - hanya diperingatkan (lihat checkOver()).
         const editId = mode === 'edit' ? parseInt(document.getElementById('paymentTermModalId').value, 10) : null;
         if (_basis === 'percentage') {
             const otherPct = _terms.reduce((s, t) => (t.id === editId || t.basis !== 'percentage' ? s : s + (Number(t.payment_percentage) || 0)), 0);
@@ -11204,7 +11204,7 @@ window.PaymentTermPlan = (function () {
         const amount = parseAmount(document.getElementById('li_amount').value) || 0;
 
         if (document.getElementById('li_type').value === 'milestone') {
-            box.textContent = `Contract value: ${fmtRp(amount)} — billed in several terms (milestones). Add each term with "Payment %" of this line item.`;
+            box.textContent = `Contract value: ${fmtRp(amount)} - billed in several terms (milestones). Add each term with "Payment %" of this line item.`;
             return;
         }
         if (document.getElementById('li_type').value !== 'recurring') {
@@ -11360,9 +11360,9 @@ window.PaymentTermPlan = (function () {
         if (!periods.length) {
             box.textContent = 'Fill in the start and end date to see the schedule.';
         } else if (!fresh.length) {
-            box.textContent = `All ${periods.length} period(s) already have a payment term — nothing to generate.`;
+            box.textContent = `All ${periods.length} period(s) already have a payment term - nothing to generate.`;
         } else {
-            box.textContent = `Will create ${fresh.length} payment term(s) (${li.name} – ${fresh[0]} to ${li.name} – ${fresh[fresh.length - 1]}), total ${fmtRp((amount || 0) * fresh.length)}.`
+            box.textContent = `Will create ${fresh.length} payment term(s) (${li.name} - ${fresh[0]} to ${li.name} - ${fresh[fresh.length - 1]}), total ${fmtRp((amount || 0) * fresh.length)}.`
                 + (skipped ? ` ${skipped} existing period(s) will be skipped.` : '');
         }
 

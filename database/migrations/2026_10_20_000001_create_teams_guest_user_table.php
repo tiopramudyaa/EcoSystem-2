@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
  * `users('...')`, dan UPN guest bukan alamat emailnya
  * (`nama_gmail.com#EXT#@tenant.onmicrosoft.com`). Resolusi email -> id lewat
  * GET /users juga tertutup (app ini tidak punya User.Read.All). Satu-satunya
- * sumber id adalah respons POST /invitations — jadi id itu dicatat sekali di
+ * sumber id adalah respons POST /invitations - jadi id itu dicatat sekali di
  * sini, dan undangan tidak dikirim ulang ke orang yang sama tiap tiket baru.
  */
 return new class extends Migration
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->string('aad_object_id', 64);
 
             // Status dari respons undangan (PendingAcceptance / Completed).
-            // Tidak diperbarui setelah orangnya menerima undangan — Graph tidak
+            // Tidak diperbarui setelah orangnya menerima undangan - Graph tidak
             // memberi tahu, dan membacanya butuh User.Read.All. Informatif saja.
             $table->string('invite_status', 32)->nullable();
 

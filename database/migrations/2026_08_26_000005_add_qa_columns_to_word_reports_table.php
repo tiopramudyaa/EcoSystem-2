@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Dukungan "AI boleh bertanya balik" saat proses generate — status baru
+ * Dukungan "AI boleh bertanya balik" saat proses generate - status baru
  * `awaiting_input` (lihat WordReport::STATUS_AWAITING_INPUT). `question`
  * menyimpan pertanyaan yang sedang menunggu jawaban; `qa_log` riwayat
  * seluruh tanya-jawab putaran ini (dipakai buildPrompt() supaya generate

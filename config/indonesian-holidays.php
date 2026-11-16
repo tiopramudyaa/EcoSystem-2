@@ -8,7 +8,7 @@
 | Source: SKB 3 Menteri (Menag, Menaker, MenPAN-RB) tiap tahun.
 | Update array di bawah setiap kali kalender resmi tahun baru terbit
 | (biasanya akhir tahun sebelumnya). Tahun yang belum di-list akan
-| diabaikan oleh HolidayService — tanggal tidak akan di-disable di date
+| diabaikan oleh HolidayService - tanggal tidak akan di-disable di date
 | picker, jadi pastikan tahun-tahun aktif sudah dicover.
 |
 | Type: 'national' (libur nasional) atau 'cuti_bersama'

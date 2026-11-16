@@ -69,27 +69,27 @@
     <div id="coStats" class="hidden grid grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total Outlook</p>
-            <p id="coStatTotal" class="text-2xl font-bold primary-text">—</p>
+            <p id="coStatTotal" class="text-2xl font-bold primary-text">-</p>
             <p class="text-xs text-gray-400 mt-0.5">All billings in range</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Paid</p>
-            <p id="coStatPaid" class="text-2xl font-bold text-green-700">—</p>
-            <p id="coStatPaidCount" class="text-xs text-gray-400 mt-0.5">—</p>
+            <p id="coStatPaid" class="text-2xl font-bold text-green-700">-</p>
+            <p id="coStatPaidCount" class="text-xs text-gray-400 mt-0.5">-</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Invoiced</p>
-            <p id="coStatInvoiced" class="text-2xl font-bold text-blue-700">—</p>
-            <p id="coStatInvoicedCount" class="text-xs text-gray-400 mt-0.5">—</p>
+            <p id="coStatInvoiced" class="text-2xl font-bold text-blue-700">-</p>
+            <p id="coStatInvoicedCount" class="text-xs text-gray-400 mt-0.5">-</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Not Invoiced</p>
-            <p id="coStatUnpaid" class="text-2xl font-bold text-amber-600">—</p>
-            <p id="coStatUnpaidCount" class="text-xs text-gray-400 mt-0.5">—</p>
+            <p id="coStatUnpaid" class="text-2xl font-bold text-amber-600">-</p>
+            <p id="coStatUnpaidCount" class="text-xs text-gray-400 mt-0.5">-</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Payment Terms</p>
-            <p id="coStatTerms" class="text-2xl font-bold text-gray-800">—</p>
+            <p id="coStatTerms" class="text-2xl font-bold text-gray-800">-</p>
             <p class="text-xs text-gray-400 mt-0.5">Billing rows shown</p>
         </div>
     </div>
@@ -151,8 +151,8 @@
         <div id="coModalHeader" class="px-6 py-4 border-b border-gray-100 flex items-start justify-between gap-4">
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Term Of Payment Details</p>
-                <h3 id="coModalTitle" class="text-lg font-bold text-gray-900 mt-0.5">—</h3>
-                <p id="coModalSub" class="text-xs text-gray-500 mt-0.5">—</p>
+                <h3 id="coModalTitle" class="text-lg font-bold text-gray-900 mt-0.5">-</h3>
+                <p id="coModalSub" class="text-xs text-gray-500 mt-0.5">-</p>
             </div>
             <button onclick="closeCoDetail()" class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
                 <i class="fas fa-times"></i>
@@ -163,33 +163,33 @@
             <div class="rounded-xl bg-gray-50 border border-gray-100 p-4 flex items-center justify-between gap-4">
                 <div>
                     <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Billing Amount</p>
-                    <p id="coDetAmount" class="text-2xl font-bold text-gray-900 mt-0.5">—</p>
-                    <p id="coDetPct" class="text-xs text-gray-500 mt-0.5">—</p>
+                    <p id="coDetAmount" class="text-2xl font-bold text-gray-900 mt-0.5">-</p>
+                    <p id="coDetPct" class="text-xs text-gray-500 mt-0.5">-</p>
                 </div>
-                <span id="coDetStatus" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold">—</span>
+                <span id="coDetStatus" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold">-</span>
             </div>
 
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">TOP Information</p>
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-4 text-sm">
-                    <div><dt class="text-xs text-gray-400">Support</dt><dd id="coDetProject" class="text-gray-800 font-medium">—</dd></div>
-                    <div><dt class="text-xs text-gray-400">Client</dt><dd id="coDetClient" class="text-gray-800 font-medium">—</dd></div>
-                    <div><dt class="text-xs text-gray-400">IO Number</dt><dd id="coDetIo" class="text-gray-800 font-medium">—</dd></div>
-                    <div><dt class="text-xs text-gray-400">Term No.</dt><dd id="coDetTermNo" class="text-gray-800 font-medium">—</dd></div>
-                    <div class="sm:col-span-2"><dt class="text-xs text-gray-400">Term Name</dt><dd id="coDetTermName" class="text-gray-800 font-medium">—</dd></div>
-                    <div><dt class="text-xs text-gray-400">Percentage</dt><dd id="coDetPctRow" class="text-gray-800 font-medium">—</dd></div>
-                    <div><dt class="text-xs text-gray-400">Support Revenue</dt><dd id="coDetRevenue" class="text-gray-800 font-medium">—</dd></div>
-                    <div class="sm:col-span-2"><dt class="text-xs text-gray-400">Requirements</dt><dd id="coDetReq" class="text-gray-800 whitespace-pre-line">—</dd></div>
+                    <div><dt class="text-xs text-gray-400">Support</dt><dd id="coDetProject" class="text-gray-800 font-medium">-</dd></div>
+                    <div><dt class="text-xs text-gray-400">Client</dt><dd id="coDetClient" class="text-gray-800 font-medium">-</dd></div>
+                    <div><dt class="text-xs text-gray-400">IO Number</dt><dd id="coDetIo" class="text-gray-800 font-medium">-</dd></div>
+                    <div><dt class="text-xs text-gray-400">Term No.</dt><dd id="coDetTermNo" class="text-gray-800 font-medium">-</dd></div>
+                    <div class="sm:col-span-2"><dt class="text-xs text-gray-400">Term Name</dt><dd id="coDetTermName" class="text-gray-800 font-medium">-</dd></div>
+                    <div><dt class="text-xs text-gray-400">Percentage</dt><dd id="coDetPctRow" class="text-gray-800 font-medium">-</dd></div>
+                    <div><dt class="text-xs text-gray-400">Support Revenue</dt><dd id="coDetRevenue" class="text-gray-800 font-medium">-</dd></div>
+                    <div class="sm:col-span-2"><dt class="text-xs text-gray-400">Requirements</dt><dd id="coDetReq" class="text-gray-800 whitespace-pre-line">-</dd></div>
                 </dl>
             </div>
 
             <div id="coDetailView">
                 <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">Invoice Information</p>
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-4 text-sm">
-                    <div><dt class="text-xs text-gray-400">Estimated Date</dt><dd id="coDetEst" class="text-gray-800 font-medium">—</dd></div>
-                    <div><dt class="text-xs text-gray-400">Submit Invoice Date</dt><dd id="coDetSubmit" class="text-gray-800 font-medium">—</dd></div>
-                    <div><dt class="text-xs text-gray-400">Invoice Number</dt><dd id="coDetInvNo" class="text-gray-800 font-medium">—</dd></div>
-                    <div><dt class="text-xs text-gray-400">Paid Date</dt><dd id="coDetPaid" class="text-gray-800 font-medium">—</dd></div>
+                    <div><dt class="text-xs text-gray-400">Estimated Date</dt><dd id="coDetEst" class="text-gray-800 font-medium">-</dd></div>
+                    <div><dt class="text-xs text-gray-400">Submit Invoice Date</dt><dd id="coDetSubmit" class="text-gray-800 font-medium">-</dd></div>
+                    <div><dt class="text-xs text-gray-400">Invoice Number</dt><dd id="coDetInvNo" class="text-gray-800 font-medium">-</dd></div>
+                    <div><dt class="text-xs text-gray-400">Paid Date</dt><dd id="coDetPaid" class="text-gray-800 font-medium">-</dd></div>
                 </dl>
             </div>
 
@@ -371,7 +371,7 @@ function populateTypeFilter(options) {
     sel.dataset.populated = '1';
 }
 
-// Batasan periode — sinkron dengan ReportingController::COLLECTION_OUTLOOK_* (server tetap memvalidasi ulang).
+// Batasan periode - sinkron dengan ReportingController::COLLECTION_OUTLOOK_* (server tetap memvalidasi ulang).
 const CO_PAST_YEARS   = {{ \App\Http\Controllers\ReportingController::COLLECTION_OUTLOOK_PAST_YEARS }};
 const CO_FUTURE_YEARS = {{ \App\Http\Controllers\ReportingController::COLLECTION_OUTLOOK_FUTURE_YEARS }};
 const CO_MAX_MONTHS   = {{ \App\Http\Controllers\ReportingController::COLLECTION_OUTLOOK_MAX_MONTHS }};
@@ -396,7 +396,7 @@ function coRangeError() {
         return `From period (${label(fm, fy)}) is after To period (${label(tm, ty)}). Choose a From period that is the same as or earlier than To.`;
     }
     if (months > CO_MAX_MONTHS) {
-        return `Selected period ${label(fm, fy)} – ${label(tm, ty)} spans ${months} months, exceeding the maximum of ${CO_MAX_MONTHS} months (${CO_MAX_MONTHS / 12} years). Please narrow the period.`;
+        return `Selected period ${label(fm, fy)} - ${label(tm, ty)} spans ${months} months, exceeding the maximum of ${CO_MAX_MONTHS} months (${CO_MAX_MONTHS / 12} years). Please narrow the period.`;
     }
     return null;
 }
@@ -463,7 +463,7 @@ function renderOutlook() {
         coMonths.map(m => `<th class="co-th text-right" style="min-width:130px;">${escHtml(monthHeadLabel(m))}</th>`).join('');
 
     document.getElementById('coRangeLabel').textContent = coMonths.length
-        ? `Period ${monthHeadLabel(coMonths[0])} – ${monthHeadLabel(coMonths[coMonths.length - 1])} (${coMonths.length} ${coMonths.length === 1 ? 'month' : 'months'})`
+        ? `Period ${monthHeadLabel(coMonths[0])} - ${monthHeadLabel(coMonths[coMonths.length - 1])} (${coMonths.length} ${coMonths.length === 1 ? 'month' : 'months'})`
         : "Planned billing based on each support's Term Of Payment";
 
     if (coRows.length === 0) {
@@ -493,7 +493,7 @@ function renderOutlook() {
             }
         });
 
-        const clientName = r.client_name || '—';
+        const clientName = r.client_name || '-';
         html += `<tr>
             <td class="co-td co-sticky-cust text-left text-gray-600"><span class="co-name" title="${escAttr(clientName)}">${escHtml(clientName)}</span></td>
             <td class="co-td co-sticky-proj text-left font-medium text-gray-800"><span class="co-name" title="${escAttr(r.support_name)}">${escHtml(r.support_name)}</span></td>
@@ -527,7 +527,7 @@ function coBucket(r) {
 }
 
 // TOP yang tidak punya Estimated / Paid / Submit Invoice Date tidak bisa
-// ditempatkan di kolom bulan mana pun — tampilkan supaya bisa dilengkapi.
+// ditempatkan di kolom bulan mana pun - tampilkan supaya bisa dilengkapi.
 function renderUndated(list) {
     const box = document.getElementById('coUndated');
     if (!box) return;
@@ -535,7 +535,7 @@ function renderUndated(list) {
 
     const items = list.slice(0, 10).map(u =>
         `<li><a href="/delivery/support/${u.support_id}#financial" class="font-semibold underline hover:text-amber-900">${escHtml(u.support_name)}</a>
-         — TOP #${u.term_number} ${escHtml(u.payment_term || '')} (${escHtml(formatFullIDR(u.amount))})</li>`
+         - TOP #${u.term_number} ${escHtml(u.payment_term || '')} (${escHtml(formatFullIDR(u.amount))})</li>`
     ).join('');
     const more = list.length > 10 ? `<li>… and ${list.length - 10} more</li>` : '';
 
@@ -552,17 +552,17 @@ function monthHeadLabel(m) {
 function amountCell(r) {
     const val = formatShortIDR(r.amount);
     if (r.status === 'Paid') {
-        return `<button type="button" onclick="openCoDetail(${r.term_id})" class="co-amount-btn co-paid" title="Paid — click for details">
+        return `<button type="button" onclick="openCoDetail(${r.term_id})" class="co-amount-btn co-paid" title="Paid - click for details">
             <i class="fas fa-check-circle text-[11px]"></i>${escHtml(val)}
         </button>`;
     }
     if (coBucket(r) === 'invoiced') {
-        return `<button type="button" onclick="openCoDetail(${r.term_id})" class="co-amount-btn co-invoiced" title="Invoiced, awaiting payment — click for details">
+        return `<button type="button" onclick="openCoDetail(${r.term_id})" class="co-amount-btn co-invoiced" title="Invoiced, awaiting payment - click for details">
             <i class="fas fa-file-invoice text-[11px]"></i>${escHtml(val)}
         </button>`;
     }
     const cls = r.status === 'Delay' ? 'co-delay' : 'co-open';
-    const title = r.status === 'Delay' ? 'Delayed — click for details' : 'Not invoiced yet — click for details';
+    const title = r.status === 'Delay' ? 'Delayed - click for details' : 'Not invoiced yet - click for details';
     return `<button type="button" onclick="openCoDetail(${r.term_id})" class="co-amount-btn ${cls}" title="${title}">${escHtml(val)}</button>`;
 }
 
@@ -573,7 +573,7 @@ function openCoDetail(termId) {
     coActiveRow = r;
     if (CO_CAN_EDIT) cancelCoEdit();
 
-    document.getElementById('coModalTitle').textContent = r.support_name || '—';
+    document.getElementById('coModalTitle').textContent = r.support_name || '-';
     document.getElementById('coModalSub').textContent   = `TOP #${r.term_number} · ${r.payment_term || '-'}`;
 
     document.getElementById('coDetAmount').textContent = formatFullIDR(r.amount);
@@ -588,19 +588,19 @@ function openCoDetail(termId) {
     st.textContent = r.status;
     st.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ' + statusClasses(r.status);
 
-    document.getElementById('coDetProject').textContent  = r.support_name || '—';
-    document.getElementById('coDetClient').textContent   = r.client_name || '—';
-    document.getElementById('coDetIo').textContent       = r.io_number || '—';
+    document.getElementById('coDetProject').textContent  = r.support_name || '-';
+    document.getElementById('coDetClient').textContent   = r.client_name || '-';
+    document.getElementById('coDetIo').textContent       = r.io_number || '-';
     document.getElementById('coDetTermNo').textContent   = r.term_number;
-    document.getElementById('coDetTermName').textContent = r.payment_term || '—';
+    document.getElementById('coDetTermName').textContent = r.payment_term || '-';
     document.getElementById('coDetPctRow').textContent   = basisTxt;
     document.getElementById('coDetRevenue').textContent  = formatFullIDR(r.support_revenue);
-    document.getElementById('coDetReq').textContent      = r.requirements || '—';
+    document.getElementById('coDetReq').textContent      = r.requirements || '-';
 
-    document.getElementById('coDetEst').textContent    = r.estimated_date || '—';
-    document.getElementById('coDetSubmit').textContent = r.submit_invoice_date || '—';
-    document.getElementById('coDetInvNo').textContent  = r.invoice_number || '—';
-    document.getElementById('coDetPaid').textContent   = r.paid_date || '—';
+    document.getElementById('coDetEst').textContent    = r.estimated_date || '-';
+    document.getElementById('coDetSubmit').textContent = r.submit_invoice_date || '-';
+    document.getElementById('coDetInvNo').textContent  = r.invoice_number || '-';
+    document.getElementById('coDetPaid').textContent   = r.paid_date || '-';
 
     document.getElementById('coDetailModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -641,7 +641,7 @@ function cancelCoEdit() {
     document.getElementById('coSaveBtn').classList.add('hidden');
 }
 
-// Paid Date wajib saat status Paid — cerminan aturan TOP Plan di Financial Information.
+// Paid Date wajib saat status Paid - cerminan aturan TOP Plan di Financial Information.
 // Invoiced → Submit Invoice Date wajib.
 function toggleCoPaidDate() {
     const status = document.getElementById('coEditStatus').value;

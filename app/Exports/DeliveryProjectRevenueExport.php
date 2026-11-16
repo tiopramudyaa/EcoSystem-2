@@ -8,10 +8,10 @@ use Maatwebsite\Excel\Concerns\WithPreCalculateFormulas;
 /**
  * Export revenue SELURUH Delivery Project (menu "Project Revenue" pada
  * tombol Export Excel di halaman list project):
- *   1. "Project Revenue" — satu baris per project: revenue, plan/actual cost,
+ *   1. "Project Revenue" - satu baris per project: revenue, plan/actual cost,
  *                          gross profit, dan posisi penagihan TOP
  *                          (invoiced / paid / unbilled / receivable).
- *   2. "Revenue Summary" — rekap per Category, Project Type, dan Customer.
+ *   2. "Revenue Summary" - rekap per Category, Project Type, dan Customer.
  *
  * Baris disiapkan DeliveryProjectController::exportRevenue().
  *

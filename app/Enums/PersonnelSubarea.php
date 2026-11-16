@@ -4,7 +4,7 @@ namespace App\Enums;
 
 /**
  * Personnel Subarea. Label murni, daftar pendek & stabil, sehingga cukup
- * enum PHP (bukan tabel) — sama pola dengan EmployeeSubgroup/HomeBase.
+ * enum PHP (bukan tabel) - sama pola dengan EmployeeSubgroup/HomeBase.
  *
  * Penggunaan:
  *   PersonnelSubarea::options()   // ['Support', 'Project', 'Administrasi', 'Other']

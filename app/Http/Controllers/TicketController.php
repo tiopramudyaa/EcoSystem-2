@@ -94,23 +94,23 @@ class TicketController extends Controller
     private const SLA_CALC_VERSION = 1;
 
     /**
-     * Live SLA summary for ticket-list endpoints (index/myTickets/unassignedTickets) — uses
+     * Live SLA summary for ticket-list endpoints (index/myTickets/unassignedTickets) - uses
      * the same live-recompute methods as the admin SLA report (SlaService::responseDurationHours()
      * etc.) instead of reading the stored validation_duration_hours/net_resolution_hours/
      * response_status/resolution_status columns, which are frozen at the time they were
      * written and won't reflect a later calcHours() formula change for historical tickets.
      * Pass $pauses (batch-fetched per ticket_id) to avoid an N+1 query per ticket. Pass
      * $ticket too (it's already loaded by the caller) and it gets wired onto $sla's
-     * `ticket` relation manually — Eloquent doesn't auto-populate the inverse belongsTo
+     * `ticket` relation manually - Eloquent doesn't auto-populate the inverse belongsTo
      * when eager-loading Ticket::with('sla'), so without this, liveResolutionMetrics()'s
      * `$sla->ticket?->status` check would lazy-load a query per row (N+1 on an unbounded list).
      *
      * calcHours() walks day-by-day for business-hours policies, which measured out as the
-     * single biggest cost on /api/tickets (~700ms-2s across ~1300 tickets) — bigger than the
-     * SQL query itself — because it's recomputed from scratch on every request, including the
+     * single biggest cost on /api/tickets (~700ms-2s across ~1300 tickets) - bigger than the
+     * SQL query itself - because it's recomputed from scratch on every request, including the
      * 20s poll every open tab fires. Its inputs (sla_start_at/first_responded_at/resolved_at,
      * each pause's started_at/ended_at) are immutable once written, so the result is cached
-     * keyed on $sla->updated_at + a pause fingerprint — any edit to either naturally busts the
+     * keyed on $sla->updated_at + a pause fingerprint - any edit to either naturally busts the
      * key. TTL is bounded (not forever) so a formula change still self-heals even without
      * remembering to bump SLA_CALC_VERSION.
      */
@@ -159,7 +159,7 @@ class TicketController extends Controller
     }
 
     /**
-     * Rank maps mirroring PRIORITY_RANK/SCALE_RANK in ticket/index.blade.php — kept in one
+     * Rank maps mirroring PRIORITY_RANK/SCALE_RANK in ticket/index.blade.php - kept in one
      * place so the SQL CASE expressions in applyTicketListSort() stay in sync with the
      * client's old in-memory sort order.
      */
@@ -169,7 +169,7 @@ class TicketController extends Controller
     /**
      * Server-side equivalent of the column filters + keyword search that ticket/index.blade.php
      * used to apply in-memory over the full unpaginated list (getColumnFilteredBase()). Has to
-     * live here now that /api/tickets is paginated — filtering after paginate() would only
+     * live here now that /api/tickets is paginated - filtering after paginate() would only
      * search within whatever page happened to be loaded instead of the whole table.
      */
     /**
@@ -217,7 +217,7 @@ class TicketController extends Controller
 
     private function applyTicketListFilters($query, Request $request)
     {
-        // Columns are qualified with "ticket." throughout — applyTicketListSort() may add a
+        // Columns are qualified with "ticket." throughout - applyTicketListSort() may add a
         // leftJoin to customer/ticket_sla (both of which also have customer_id/created_at/etc.),
         // so an unqualified column here would become ambiguous once that join is present.
         if ($request->filled('customer_id')) {
@@ -248,7 +248,7 @@ class TicketController extends Controller
         // Module (comma-separated, multi-select). Lewat relasi modules() (bukan
         // whereIn('module_id', ...) langsung) supaya tiket yang punya modul ini
         // sebagai salah satu dari beberapa modulnya tetap ketemu, bukan cuma
-        // yang modul UTAMA-nya persis cocok — sama seperti filter di exportToExcel().
+        // yang modul UTAMA-nya persis cocok - sama seperti filter di exportToExcel().
         if ($request->filled('module')) {
             $moduleIds = array_filter(explode(',', $request->input('module')), fn ($v) => $v !== '');
             if (!empty($moduleIds)) {
@@ -256,7 +256,7 @@ class TicketController extends Controller
             }
         }
 
-        // Kolom "Assign Delivery" — tiket terhubung ke Delivery Support lewat
+        // Kolom "Assign Delivery" - tiket terhubung ke Delivery Support lewat
         // delivery_support_activities. Dipakai whereExists (bukan join) supaya
         // satu tiket yang punya beberapa activity pada support yang sama tidak
         // menghasilkan baris ganda pada listing.
@@ -292,7 +292,7 @@ class TicketController extends Controller
             }
         }
 
-        // Tanggal dibaca sebagai kalender Asia/Jakarta (WIB) — sama seperti versi lama di
+        // Tanggal dibaca sebagai kalender Asia/Jakarta (WIB) - sama seperti versi lama di
         // browser (`new Date(dateFrom + 'T00:00:00+07:00')`).
         if ($request->filled('date_from')) {
             $query->where('ticket.created_at', '>=', \Carbon\Carbon::parse($request->input('date_from') . ' 00:00:00', 'Asia/Jakarta'));
@@ -312,7 +312,7 @@ class TicketController extends Controller
     }
 
     /**
-     * "Card status" filter — separate from the `status` column filter above because
+     * "Card status" filter - separate from the `status` column filter above because
      * updateStats() intentionally excludes this one when counting badge totals (clicking
      * the "Closed" card shouldn't make every other card's count collapse to 0). Kept as its
      * own step so callers can capture stats between the two.
@@ -330,7 +330,7 @@ class TicketController extends Controller
     /**
      * Aggregate counts per status for the status-card badges (Open/In Process/.../Closed),
      * scoped to whatever column filters + search are active but NOT the card_status filter
-     * itself — mirrors the old client-side updateStats(base) semantics where `base` was the
+     * itself - mirrors the old client-side updateStats(base) semantics where `base` was the
      * column-filtered set before the currentFilter card was applied. Pattern follows
      * ActivityLogController::getData()'s separate $statsQuery.
      */
@@ -400,7 +400,7 @@ class TicketController extends Controller
                 $cases = collect(self::SCALE_RANK)->map(fn ($rank, $val) => "WHEN '$val' THEN $rank")->implode(' ');
                 return $query->orderByRaw("CASE scale $cases ELSE 0 END $dir");
             case 'status':
-                // status is a MySQL ENUM — plain ORDER BY sorts by declaration ordinal, not
+                // status is a MySQL ENUM - plain ORDER BY sorts by declaration ordinal, not
                 // alphabetically. Cast to CHAR to match the old JS localeCompare() ordering.
                 return $query->orderByRaw("CAST(ticket.status AS CHAR) $dir");
             case 'type':
@@ -412,7 +412,7 @@ class TicketController extends Controller
     }
 
     /**
-     * Lightweight endpoint untuk polling — kembalikan timestamp update terakhir dari DB lokal.
+     * Lightweight endpoint untuk polling - kembalikan timestamp update terakhir dari DB lokal.
      * Tidak menyentuh Graph API, aman dipanggil dari browser setiap 10 detik.
      */
     public function latestUpdate()
@@ -427,7 +427,7 @@ class TicketController extends Controller
 
     /**
      * Distinct customers/PICs/Delivery Supports that actually have a (visible) ticket, for
-     * the Customer/PIC/Assign Delivery filter dropdowns in ticket/index.blade.php. Needed once the ticket list is paginated —
+     * the Customer/PIC/Assign Delivery filter dropdowns in ticket/index.blade.php. Needed once the ticket list is paginated -
      * the dropdowns used to be populated by scanning every ticket already loaded client-side,
      * which only ever contained the current page after pagination. Cheap DISTINCT query,
      * much lighter than fetching full ticket rows just to read two columns off them.
@@ -454,7 +454,7 @@ class TicketController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Opsi kolom "Assign Delivery" — hanya Delivery Support yang benar-benar
+        // Opsi kolom "Assign Delivery" - hanya Delivery Support yang benar-benar
         // punya tiket, supaya daftarnya tidak dipenuhi pilihan yang pasti kosong.
         // Label disamakan dengan yang tampil di kolomnya: "<nama> (<customer>)".
         $deliveries = DB::table('delivery_support_activities as dsa')
@@ -504,7 +504,7 @@ class TicketController extends Controller
             $isRestrictedExternal = $isExternalEmployee && $sessionUser['role']['id'] !== RoleId::EC_ADMINISTRATOR->value;
 
             // "All Tickets" tab is gated by the 'ticket.all-tickets' menu permission in Role & Menu
-            // Access for every internal role (including Admin/Head/Helpdesk) — restricted external
+            // Access for every internal role (including Admin/Head/Helpdesk) - restricted external
             // employees don't use this tab at all, they only ever see their own PIC/member tickets.
             $employee = null;
             if (!$isRestrictedExternal) {
@@ -600,7 +600,7 @@ class TicketController extends Controller
                 }
             }
 
-            // "Ticket Modul" tab — dibatasi ke tiket yang lead/member-nya adalah
+            // "Ticket Modul" tab - dibatasi ke tiket yang lead/member-nya adalah
             // konsultan dari module yang dipimpin employee ini (module_leads).
             // Diterapkan di atas query yang sudah dibangun per-role di atas, supaya
             // tidak perlu duplikasi logic di tiap cabang role.
@@ -609,7 +609,7 @@ class TicketController extends Controller
                 $ledModuleIds = ModuleLead::where('employee_id', $employeeId)->pluck('module_id');
 
                 if ($ledModuleIds->isEmpty()) {
-                    // Bukan lead module manapun — tab ini seharusnya tidak tampil
+                    // Bukan lead module manapun - tab ini seharusnya tidak tampil
                     // di UI untuk employee ini, tapi kalau tetap diakses langsung
                     // lewat API, jangan bocorkan tiket siapa pun.
                     $query->whereRaw('1 = 0');
@@ -659,7 +659,7 @@ class TicketController extends Controller
             $progressMap = \App\Http\Controllers\ConsultantWorkloadController::progressMapForTickets($ticketIds);
 
             // Tiket yang sudah dibaca oleh employee yang sedang login (hanya jika role punya fungsi istimewa ticket.read)
-            // Reuse $employee dari cek 'All Tickets' di atas kalau sudah di-load — hindari Employee::find() dua kali.
+            // Reuse $employee dari cek 'All Tickets' di atas kalau sudah di-load - hindari Employee::find() dua kali.
             $employee ??= Employee::find($sessionUser['id']);
             $canReadFeature = (bool) $employee?->hasPermission('ticket.read');
             $readAtMap = $canReadFeature
@@ -696,7 +696,7 @@ class TicketController extends Controller
             });
 
             // Batch load approved customer mandays (sum of every approved version per
-            // ticket — a ticket can have several independently-approved versions,
+            // ticket - a ticket can have several independently-approved versions,
             // e.g. an addendum proposed after the first one was already approved).
             $customerMandaysMap = \App\Models\CustomerMandays::whereIn('ticket_id', $ticketIds)
                 ->where('status', 'approved')
@@ -706,7 +706,7 @@ class TicketController extends Controller
 
             // Latest activity date logged against each ticket's support timesheets
             // (user-entered "when did the work happen", separate from the timesheet's
-            // submit date). Excludes rejected entries — those aren't verified work.
+            // submit date). Excludes rejected entries - those aren't verified work.
             $activityDateMap = \App\Models\Timesheet::whereIn('ticket_id', $ticketIds)
                 ->whereNotNull('activity_date')
                 ->whereIn('status', ['draft', 'submitted', 'approved'])
@@ -721,7 +721,7 @@ class TicketController extends Controller
                 ->get()
                 ->groupBy('ticket_id');
 
-            // Batch-load SLA pause history (untuk liveSlaSummary() — hindari N+1)
+            // Batch-load SLA pause history (untuk liveSlaSummary() - hindari N+1)
             $pausesByTicket = \App\Models\TicketSlaPause::whereIn('ticket_id', $ticketIds)
                 ->get()
                 ->groupBy('ticket_id');
@@ -748,7 +748,7 @@ class TicketController extends Controller
                     'ticket_type' => $ticket->ticket_type,
                     'document_status' => $documentStatusMap[$ticket->ticket_id] ?? null,
                     // module_names = semua modul tiket digabung koma (bukan cuma modul
-                    // utama) — tiket boleh menyentuh lebih dari satu modul sekarang.
+                    // utama) - tiket boleh menyentuh lebih dari satu modul sekarang.
                     'module' => $ticket->module_names,
                     'module_id' => $ticket->module_id,
                     'scale' => $ticket->scale,
@@ -850,11 +850,11 @@ class TicketController extends Controller
             ->whereNull('is_hidden')
             ->orderBy('ticket_id', 'asc');
 
-        // Status — dari card filter
+        // Status - dari card filter
         if ($request->filled('card_status')) {
             $query->where('status', $request->card_status);
         }
-        // Status — dari column filter (bisa bersamaan dengan card_status; comma-separated untuk multi-select)
+        // Status - dari column filter (bisa bersamaan dengan card_status; comma-separated untuk multi-select)
         if ($request->filled('status')) {
             $query->whereIn('status', explode(',', $request->status));
         }
@@ -880,7 +880,7 @@ class TicketController extends Controller
             $moduleIds = explode(',', $request->module);
             $query->whereHas('modules', fn ($q) => $q->whereIn('module_id', $moduleIds));
         }
-        // Assign Delivery (comma-separated, multi-select + '__unassigned__') — sama
+        // Assign Delivery (comma-separated, multi-select + '__unassigned__') - sama
         // seperti filter di applyTicketListFilters(), lewat whereExists supaya tiket
         // dengan beberapa activity pada support yang sama tidak menghasilkan baris ganda.
         if ($request->filled('delivery_support_id')) {
@@ -919,12 +919,12 @@ class TicketController extends Controller
         if ($request->filled('description')) {
             $query->where('description', 'like', '%' . $request->description . '%');
         }
-        // Date range — cocokkan created_at, sama persis dengan applyTicketListFilters()
+        // Date range - cocokkan created_at, sama persis dengan applyTicketListFilters()
         // (filter list di layar) supaya jumlah tiket yang di-export selalu sinkron dengan
         // yang tampil di layar untuk filter yang sama. Sebelumnya di sini menyaring by
-        // start_date — kolom itu artinya "kapan Ticket Lead pertama kali di-assign", BUKAN
+        // start_date - kolom itu artinya "kapan Ticket Lead pertama kali di-assign", BUKAN
         // kapan tiket dibuat (lihat assignTicketLead(), start_date di-set now() cuma saat
-        // first assign) — jadi tiket yang sempat unassigned lama bisa lolos filter di layar
+        // first assign) - jadi tiket yang sempat unassigned lama bisa lolos filter di layar
         // (created_at-nya masih dalam rentang) tapi hilang dari export (start_date sudah
         // melenceng ke bulan lain).
         if ($request->filled('date_from')) {
@@ -933,7 +933,7 @@ class TicketController extends Controller
         if ($request->filled('date_to')) {
             $query->where('created_at', '<=', \Carbon\Carbon::parse($request->input('date_to') . ' 23:59:59', 'Asia/Jakarta'));
         }
-        // Customer — filter kolom di ticket/index.blade.php sekarang mengirim customer_id
+        // Customer - filter kolom di ticket/index.blade.php sekarang mengirim customer_id
         // (bukan nama) sejak dropdown-nya diisi dari /api/tickets/filter-options.
         if ($request->filled('customer_id')) {
             $query->where('customer_id', (int) $request->input('customer_id'));
@@ -944,7 +944,7 @@ class TicketController extends Controller
                 $q->whereRaw('LOWER(name_1) = LOWER(?)', [$customerName]);
             });
         }
-        // Ticket Lead / PIC — sama, sekarang berbasis employee_id.
+        // Ticket Lead / PIC - sama, sekarang berbasis employee_id.
         if ($request->filled('pic_id')) {
             $pic = $request->input('pic_id');
             if ($pic === 'unassigned') {
@@ -974,7 +974,7 @@ class TicketController extends Controller
             ->groupBy('ticket_id')
             ->map(fn($g) => $g->sum('total_mandays'));
 
-        // Same lookup used by myTickets() — a ticket's assigned Delivery Support
+        // Same lookup used by myTickets() - a ticket's assigned Delivery Support
         // (name + client), via delivery_support_activities.
         $deliverySupportMap = \App\Models\DeliverySupportActivity::with(['deliverySupport.client.basicData'])
             ->whereIn('ticket_id', $ticketIds)
@@ -1009,7 +1009,7 @@ class TicketController extends Controller
             $sla = $this->liveSlaSummary($ticket->sla, $ticket, $pausesByTicket->get($ticket->ticket_id));
 
             // Tutup tiket: end_date, atau (tiket closed lama yang end_date-nya kosong)
-            // resolved_at SLA lalu updated_at — sama dengan kolom Close Date di list.
+            // resolved_at SLA lalu updated_at - sama dengan kolom Close Date di list.
             $isFinal  = in_array($ticket->status, ['closed', 'cancelled'], true);
             $closedAt = $ticket->end_date
                 ?? ($ticket->status === 'closed' ? ($sla['resolved_at'] ?? $ticket->updated_at) : null);
@@ -1078,7 +1078,7 @@ class TicketController extends Controller
             $body  = $validated['body'] ?? null;
             $files = $request->file('attachments', []);
 
-            // "To" HANYA dari input manual — TIDAK auto-baca company email.
+            // "To" HANYA dari input manual - TIDAK auto-baca company email.
             // Default kosong (mis. EWA): email dikirim hanya ke CC contact.
             // Bisa lebih dari satu penerima, pisah koma (mirror perilaku CC).
             // Primary = elemen pertama; sisanya jadi additional toRecipients.
@@ -1149,7 +1149,7 @@ class TicketController extends Controller
                         // walau To dikosongkan saat create (bisa diisi manual saat balas).
                         'channel'            => 'email',
                         'email_thread_id'    => $conversationId,
-                        // Simpan HANYA "To" manual (nullable) — bukan company email.
+                        // Simpan HANYA "To" manual (nullable) - bukan company email.
                         // submitted_by_email = primary; to_emails = seluruh daftar To
                         // (primary + tambahan) agar reply berikutnya tetap ke semua penerima.
                         'submitted_by_email' => $toEmail !== '' ? $toEmail : null,
@@ -1157,7 +1157,7 @@ class TicketController extends Controller
                         'cc_emails'          => !empty($ccList) ? $ccList : null,
                     ]);
 
-                    // module_id ditulis lewat syncModules(), bukan langsung di atas —
+                    // module_id ditulis lewat syncModules(), bukan langsung di atas -
                     // terima module_ids[] (baru) atau module_id tunggal (lama) supaya
                     // caller yang belum diupdate ke array tidak ikut rusak.
                     $ticket->syncModules($validated['module_ids'] ?? array_filter([$validated['module_id'] ?? null]));
@@ -1226,7 +1226,7 @@ class TicketController extends Controller
                     }
                 }
 
-                // Group chat Teams + kartu flow 5 — sama seperti tiket yang
+                // Group chat Teams + kartu flow 5 - sama seperti tiket yang
                 // divalidasi dari staging. Dipanggil SETELAH attachment tersimpan
                 // supaya pesan pertama yang diteruskan ke grup membawa berkasnya.
                 // Non-fatal: tiket sudah tersimpan apa pun hasilnya.
@@ -1306,7 +1306,7 @@ class TicketController extends Controller
             ], 422);
         }
 
-        // "To" HANYA dari input manual — TIDAK auto-baca company email ($customer->email).
+        // "To" HANYA dari input manual - TIDAK auto-baca company email ($customer->email).
         // Default kosong (mis. EWA): email hanya dikirim ke CC contact terdaftar.
         // Bisa lebih dari satu penerima, pisah koma (mirror perilaku CC).
         // Primary = elemen pertama; sisanya jadi additional toRecipients.
@@ -1382,7 +1382,7 @@ class TicketController extends Controller
                     // walau To dikosongkan saat create (bisa diisi manual saat balas).
                     'channel'            => 'email',
                     'email_thread_id'    => $conversationId,
-                    // Simpan HANYA "To" manual (nullable) — bukan company email — supaya
+                    // Simpan HANYA "To" manual (nullable) - bukan company email - supaya
                     // balasan berikutnya juga tidak otomatis tertuju ke company email.
                     // submitted_by_email = primary; to_emails = seluruh daftar To
                     // (primary + tambahan) agar reply berikutnya tetap ke semua penerima.
@@ -1393,7 +1393,7 @@ class TicketController extends Controller
                     'last_agent_reply_at'=> now(),
                 ]);
 
-                // module_id ditulis lewat syncModules(), bukan langsung di atas —
+                // module_id ditulis lewat syncModules(), bukan langsung di atas -
                 // terima module_ids[] (baru) atau module_id tunggal (lama).
                 $ticket->syncModules($validated['module_ids'] ?? array_filter([$validated['module_id'] ?? null]));
 
@@ -1448,7 +1448,7 @@ class TicketController extends Controller
                 }
             }
 
-            // Group chat Teams + kartu flow 5 — sama seperti tiket yang
+            // Group chat Teams + kartu flow 5 - sama seperti tiket yang
             // divalidasi dari staging. Dipanggil SETELAH attachment tersimpan
             // supaya pesan pertama yang diteruskan ke grup membawa berkasnya.
             // Non-fatal: tiket sudah tersimpan apa pun hasilnya.
@@ -1766,7 +1766,7 @@ class TicketController extends Controller
                     ];
                 });
 
-            // Batch-load SLA pause history (untuk liveSlaSummary() — hindari N+1)
+            // Batch-load SLA pause history (untuk liveSlaSummary() - hindari N+1)
             $myPausesByTicket = \App\Models\TicketSlaPause::whereIn('ticket_id', $myTicketIds)
                 ->get()
                 ->groupBy('ticket_id');
@@ -1803,7 +1803,7 @@ class TicketController extends Controller
                     'ticket_type' => $ticket->ticket_type,
                     'document_status' => $documentStatusMap[$ticket->ticket_id] ?? null,
                     // module_names = semua modul tiket digabung koma (bukan cuma modul
-                    // utama) — tiket boleh menyentuh lebih dari satu modul sekarang.
+                    // utama) - tiket boleh menyentuh lebih dari satu modul sekarang.
                     'module' => $ticket->module_names,
                     'module_id' => $ticket->module_id,
                     'scale' => $ticket->scale,
@@ -1886,7 +1886,7 @@ class TicketController extends Controller
      * (lead/member, or a DS Manager's managed delivery tickets), but restricted to
      * tickets where the employee still has remaining mandays quota (approved quota
      * minus consumed > 0). A ticket the employee has no approved mandays proposal
-     * for is excluded — there's no quota to log time against. If a Head later
+     * for is excluded - there's no quota to log time against. If a Head later
      * approves additional mandays, remaining goes back above 0 and the ticket
      * reappears on its own (this is computed live, not cached).
      */
@@ -1903,7 +1903,7 @@ class TicketController extends Controller
             }
 
             // When editing an existing draft timesheet, its ticket must stay selectable
-            // even if remaining is now 0 — this timesheet's own md_consumed is part of
+            // even if remaining is now 0 - this timesheet's own md_consumed is part of
             // that 0, so hiding it would make an already-valid selection un-editable.
             $includeTicketId = $request->filled('include_ticket_id') ? (int) $request->input('include_ticket_id') : null;
 
@@ -2019,7 +2019,7 @@ class TicketController extends Controller
     }
 
     /**
-     * Get unassigned tickets (no ticket lead yet) — its own tab/filter,
+     * Get unassigned tickets (no ticket lead yet) - its own tab/filter,
      * separate from "My Ticket" and "All Ticket". Gated by the
      * 'ticket.unassigned' menu permission in Role & Menu Access.
      */
@@ -2108,7 +2108,7 @@ class TicketController extends Controller
                     ];
                 });
 
-            // Batch-load SLA pause history (untuk liveSlaSummary() — hindari N+1)
+            // Batch-load SLA pause history (untuk liveSlaSummary() - hindari N+1)
             $pausesByTicket = \App\Models\TicketSlaPause::whereIn('ticket_id', $ticketIds)
                 ->get()
                 ->groupBy('ticket_id');
@@ -2301,7 +2301,7 @@ class TicketController extends Controller
                 auditableId: $confirmationId,
                 event: 'created',
                 recordLabel: "Confirmation for Ticket #{$ticket->ticket_number}",
-                description: "requested to take Ticket — Ticket #{$ticket->ticket_number}",
+                description: "requested to take Ticket - Ticket #{$ticket->ticket_number}",
                 old: null,
                 new: [
                     'ticket_id' => $id,
@@ -2365,7 +2365,7 @@ class TicketController extends Controller
 
             // Decode member_ids for each confirmation, then bulk-load ALL member
             // names in one query instead of one query per confirmation row (was
-            // N+1 — each pending confirmation triggered its own employee lookup).
+            // N+1 - each pending confirmation triggered its own employee lookup).
             foreach ($confirmations as $confirmation) {
                 $confirmation->member_ids = json_decode($confirmation->member_ids, true) ?? [];
             }
@@ -2431,7 +2431,7 @@ class TicketController extends Controller
         }
 
         // Orang yang baru masuk tiket lewat konfirmasi ini, untuk ditarik ke
-        // group chat Teams SETELAH commit — bukan di dalam transaksi, supaya
+        // group chat Teams SETELAH commit - bukan di dalam transaksi, supaya
         // rollback tidak meninggalkan orang yang terlanjur diundang.
         $teamsTicket  = null;
         $teamsPic     = null;
@@ -2462,7 +2462,7 @@ class TicketController extends Controller
                     'start_date'     => now(),
                 ]);
 
-                // Attach members — sync() is a pivot-table operation, it never instantiates
+                // Attach members - sync() is a pivot-table operation, it never instantiates
                 // TicketMember or fires its model events, so it needs an explicit audit call below.
                 $memberIds = json_decode($confirmation->member_ids, true);
                 $oldMemberIds = $ticket->members()->pluck('employee.employee_id')->all();
@@ -2493,7 +2493,7 @@ class TicketController extends Controller
                         auditableId: $ticket->ticket_id,
                         event: 'updated',
                         recordLabel: "Ticket #{$ticket->ticket_number} members",
-                        description: "confirmed assignment and synced members on Ticket — Ticket #{$ticket->ticket_number}",
+                        description: "confirmed assignment and synced members on Ticket - Ticket #{$ticket->ticket_number}",
                         old: ['member_ids' => $oldMemberIds],
                         new: ['member_ids' => $memberIds],
                     );
@@ -2505,7 +2505,7 @@ class TicketController extends Controller
                     auditableId: $confirmationId,
                     event: 'updated',
                     recordLabel: "Confirmation for Ticket #{$ticket->ticket_number}",
-                    description: "confirmed take-ticket request on Ticket — Ticket #{$ticket->ticket_number}",
+                    description: "confirmed take-ticket request on Ticket - Ticket #{$ticket->ticket_number}",
                     old: ['status' => 'pending'],
                     new: ['status' => 'confirmed', 'confirmed_by' => $sessionUser['id']],
                 );
@@ -2527,7 +2527,7 @@ class TicketController extends Controller
                     auditableId: $confirmationId,
                     event: 'updated',
                     recordLabel: $rejectedTicket ? "Confirmation for Ticket #{$rejectedTicket->ticket_number}" : "Confirmation #{$confirmationId}",
-                    description: 'rejected take-ticket request' . ($rejectedTicket ? " on Ticket — Ticket #{$rejectedTicket->ticket_number}" : ''),
+                    description: 'rejected take-ticket request' . ($rejectedTicket ? " on Ticket - Ticket #{$rejectedTicket->ticket_number}" : ''),
                     old: ['status' => 'pending'],
                     new: ['status' => 'rejected', 'confirmed_by' => $sessionUser['id']],
                 );
@@ -2564,7 +2564,7 @@ class TicketController extends Controller
     }   
 
     /**
-     * Cek permission slug user saat ini (role-agnostic — sumbernya sama dengan $can() di Blade,
+     * Cek permission slug user saat ini (role-agnostic - sumbernya sama dengan $can() di Blade,
      * lihat ShareMenuPermissions middleware). Dipakai controller API yang tidak punya akses ke $can().
      */
     private function sessionUserCan(array $sessionUser, string $slug): bool
@@ -2575,7 +2575,7 @@ class TicketController extends Controller
     }
 
     /**
-     * Get available Ticket Leads (employees with DSM qualification) — for admin/helpdesk/head assign
+     * Get available Ticket Leads (employees with DSM qualification) - for admin/helpdesk/head assign
      */
     public function getAvailableTicketLeads(Request $request)
     {
@@ -2622,7 +2622,7 @@ class TicketController extends Controller
     }
 
     /**
-     * Assign Ticket Lead directly — gated by the ticket.assign-pic permission (same as the
+     * Assign Ticket Lead directly - gated by the ticket.assign-pic permission (same as the
      * "Assign Ticket Lead" button in the ticket detail sidebar).
      */
     public function assignTicketLead(Request $request, $id)
@@ -2650,7 +2650,7 @@ class TicketController extends Controller
         }
 
         // Employee nonaktif / diblokir / ditandai untuk dihapus tidak boleh jadi
-        // Ticket Lead — dicek di sini juga (bukan cuma filter dropdown) supaya
+        // Ticket Lead - dicek di sini juga (bukan cuma filter dropdown) supaya
         // request langsung ke API tidak bisa membypass.
         if (!TicketTeamAccess::isEligibleEmployee((int) $request->ticket_lead_id)) {
             return response()->json([
@@ -2660,7 +2660,7 @@ class TicketController extends Controller
         }
 
         // Ticket Lead / Module Lead hanya boleh menunjuk lead dari anggota module tiket ini.
-        // (Hanya berlaku untuk tiket yang sudah punya modul — bisa lebih dari satu.)
+        // (Hanya berlaku untuk tiket yang sudah punya modul - bisa lebih dari satu.)
         if ($isLeadPath && $ticket->module_id
             && !in_array((int) $request->ticket_lead_id, TicketTeamAccess::moduleCandidateIds($ticket->modules->pluck('id')->all()), true)) {
             return response()->json([
@@ -2695,7 +2695,7 @@ class TicketController extends Controller
             $ticket->syncDraftResolutionMembers();
 
             // PIC baru ikut ditarik ke channel Teams tiket ini. Hanya saat
-            // orangnya benar-benar berganti — menyimpan ulang PIC yang sama
+            // orangnya benar-benar berganti - menyimpan ulang PIC yang sama
             // tidak perlu memanggil flow.
             if ($previousLeadId !== (int) $request->ticket_lead_id) {
                 $this->notifyTeamsTicketPerson($ticket, (int) $request->ticket_lead_id, 'pic', $sessionUser);
@@ -2861,7 +2861,7 @@ class TicketController extends Controller
                 'file_log' => $ticket->file_log,
                 // Link folder deliverable OneDrive (scoped ke folder ticket saja).
                 // Ini anonymous edit-link yang dibuat pada folder ticket di
-                // TicketDeliverableController::store — customer yang membuka link
+                // TicketDeliverableController::store - customer yang membuka link
                 // hanya melihat isi folder ticket ini (tidak bisa naik ke folder
                 // customer/CUSTOMER DELIVERABLE, sehingga tidak melihat customer lain).
                 // Null selama belum ada file deliverable yang diupload (folder lazy-create).
@@ -2924,12 +2924,12 @@ class TicketController extends Controller
 
         // Otorisasi edit field murni dari Manajemen → Roles/Permissions, tidak ada lagi
         // grup role hardcode (dulu RoleId::EC_ADMINISTRATOR / TICKET_MANAGER_GROUP) sebagai
-        // fallback — role manapun harus di-assign permission ini agar bisa edit.
+        // fallback - role manapun harus di-assign permission ini agar bisa edit.
         $canEditFields  = $this->sessionUserCan($sessionUser, 'ui.ticket.edit-fields');
         $canEditAddInfo = $this->sessionUserCan($sessionUser, 'ui.ticket.edit-additional-info');
 
         // Pengecualian employee_type (external/internal) tetap hardcode karena bukan bagian
-        // dari menu Roles/Permissions — EC Administrator dikecualikan dari batasan ini.
+        // dari menu Roles/Permissions - EC Administrator dikecualikan dari batasan ini.
         $isAdmin = ($sessionUser['role']['id'] ?? 0) === RoleId::EC_ADMINISTRATOR->value;
         $isExternalEmployee = strtolower($sessionUser['employee_type'] ?? 'internal') === 'external';
         if ($isExternalEmployee && !$isAdmin) {
@@ -3046,7 +3046,7 @@ class TicketController extends Controller
                     $ticket->syncDraftResolutionMembers();
                 }
 
-                // Priority/scale/type menentukan SLA policy — tanpa ini ticket_slas tetap
+                // Priority/scale/type menentukan SLA policy - tanpa ini ticket_slas tetap
                 // menunjuk policy lama (mis. target 24 jam padahal sekarang Medium/Medium = 48).
                 if ($ticket->wasChanged(['ticket_priority', 'scale', 'ticket_type'])) {
                     app(\App\Services\SlaService::class)->syncPolicy($ticket, null, null, true);
@@ -3063,7 +3063,7 @@ class TicketController extends Controller
             }
 
             // module_id/modules ditulis lewat syncModules(), terpisah dari $updateData
-            // di atas — module_ids bisa jadi SATU-SATUNYA field yang berubah (mis. cuma
+            // di atas - module_ids bisa jadi SATU-SATUNYA field yang berubah (mis. cuma
             // ganti modul tanpa menyentuh field lain), jadi tidak boleh terikat pada
             // !empty($updateData). Terima module_ids[] (baru) atau module_id tunggal
             // (lama, termasuk string kosong "-- none --" → clear semua modul).
@@ -3202,10 +3202,10 @@ class TicketController extends Controller
 
     /**
      * Resolve email PELAPOR tiket dari berbagai sumber (urutan prioritas):
-     * 1. ticket.submitted_by_email          — diisi saat tiket dibuat via email (initiateEmail) / import CSV
-     * 2. staging_tickets.submitted_by_email — dari Jarvies / email masuk yang sudah diapprove
-     * 3. ticket_message.sender_email        — pesan pertama customer (fallback tiket email)
-     * 4. customer.email                     — Company Email (fallback terakhir)
+     * 1. ticket.submitted_by_email          - diisi saat tiket dibuat via email (initiateEmail) / import CSV
+     * 2. staging_tickets.submitted_by_email - dari Jarvies / email masuk yang sudah diapprove
+     * 3. ticket_message.sender_email        - pesan pertama customer (fallback tiket email)
+     * 4. customer.email                     - Company Email (fallback terakhir)
      *
      * Sinkron dengan TicketMessageController::resolveCustomerEmail().
      */
@@ -3240,7 +3240,7 @@ class TicketController extends Controller
     }
 
     /**
-     * Update ticket status — unified single field
+     * Update ticket status - unified single field
      * Admin / Helpdesk only
      */
     public function updateTicketStatus(Request $request, $id)
@@ -3280,7 +3280,7 @@ class TicketController extends Controller
         try {
             $ticket = Ticket::findOrFail($id);
 
-            // Track when the ticket actually closed — needed for the "Close Date" column
+            // Track when the ticket actually closed - needed for the "Close Date" column
             // (independent of updated_at, which changes on any later edit, not just closing).
             // Cleared on reopen so a stale close date doesn't linger.
             $ticket->update([
@@ -3288,7 +3288,7 @@ class TicketController extends Controller
                 'end_date' => $request->status === 'closed' ? now() : ($ticket->status === 'closed' ? null : $ticket->end_date),
             ]);
 
-            // Notifikasi bell Jarvies — status berubah
+            // Notifikasi bell Jarvies - status berubah
             if ($ticket->customer_id) {
                 $statusLabel = match ($request->status) {
                     'closed'      => 'Closed',
@@ -3417,7 +3417,7 @@ class TicketController extends Controller
                 ->orderBy('member_change_requests.created_at', 'desc')
                 ->get();
 
-            // Decode member_ids and get names — bulk-load in one query instead
+            // Decode member_ids and get names - bulk-load in one query instead
             // of one query per pending change request (was N+1).
             foreach ($memberChanges as $change) {
                 $change->member_ids = json_decode($change->member_ids, true) ?? [];
@@ -3475,7 +3475,7 @@ class TicketController extends Controller
      * @param  'member'|'pic'  $role
      */
     /**
-     * {@see notifyTeamsTicketPerson()} untuk beberapa member sekaligus — jalur
+     * {@see notifyTeamsTicketPerson()} untuk beberapa member sekaligus - jalur
      * yang menambah member secara massal (updateMembers, konfirmasi Take Ticket,
      * approval member change request). Internal maupun eksternal ditangani di
      * notifyTeamsTicketPerson(), jadi tidak ada cabang guest di sini.
@@ -3500,7 +3500,7 @@ class TicketController extends Controller
      * pemilik DS baru tidak pernah masuk grup tiket yang kini jadi tanggung
      * jawabnya. Yang dilewati: tim DS lama (sudah di grup sejak validasi), PIC,
      * dan member aktif tiket (sudah masuk lewat jalurnya sendiri). Anggota tim
-     * DS lama TIDAK dikeluarkan — riwayat diskusinya tetap relevan, dan Graph
+     * DS lama TIDAK dikeluarkan - riwayat diskusinya tetap relevan, dan Graph
      * app ini memang tidak dipakai untuk mengeluarkan orang dari chat.
      *
      * Internal maupun eksternal ditangani notifyTeamsTicketPerson().
@@ -3553,7 +3553,7 @@ class TicketController extends Controller
                 return;
             }
 
-            // Tanpa email kerja, konektor Teams tidak bisa menemukan orangnya —
+            // Tanpa email kerja, konektor Teams tidak bisa menemukan orangnya -
             // lebih baik flow tidak dipanggil sama sekali daripada gagal separuh.
             $person = $powerAutomate->employeeContact($employeeId);
             if (!$person) {
@@ -3612,7 +3612,7 @@ class TicketController extends Controller
             }
 
             // Orang yang baru masuk grup juga diberi hak baca folder berkas chat
-            // tiket ini di OneDrive — tanpa itu kartu berkas yang sudah ada di
+            // tiket ini di OneDrive - tanpa itu kartu berkas yang sudah ada di
             // grup tampil baginya tetapi tidak bisa dibuka. Setelah response,
             // dan kegagalannya ditelan di dalam grantForTicket().
 
@@ -3668,7 +3668,7 @@ class TicketController extends Controller
             }
 
             // Ticket Lead / Module Lead hanya boleh menambah member dari anggota module tiket ini.
-            // (Hanya berlaku untuk tiket yang sudah punya modul — bisa lebih dari satu.)
+            // (Hanya berlaku untuk tiket yang sudah punya modul - bisa lebih dari satu.)
             if ($isLeadPath && $ticket->module_id
                 && !in_array($empId, TicketTeamAccess::moduleCandidateIds($ticket->modules->pluck('id')->all()), true)) {
                 return response()->json([
@@ -3722,14 +3722,14 @@ class TicketController extends Controller
                 : "Employee #{$empId}";
 
             // is_active raw update / pivot attach() above never fires TicketMember's model
-            // events, so AuditObserver never runs for it — log it explicitly here instead.
+            // events, so AuditObserver never runs for it - log it explicitly here instead.
             AuditLog::recordAction(
                 module: 'Ticket',
                 auditableType: 'TicketMember',
                 auditableId: $ticket->ticket_id,
                 event: $isReactivation ? 'updated' : 'created',
                 recordLabel: "{$addedName} on Ticket #{$ticket->ticket_number}",
-                description: ($isReactivation ? 'reactivated member ' : 'added member ') . "{$addedName} on Ticket — Ticket #{$ticket->ticket_number}",
+                description: ($isReactivation ? 'reactivated member ' : 'added member ') . "{$addedName} on Ticket - Ticket #{$ticket->ticket_number}",
                 old: $isReactivation ? ['employee_id' => $empId, 'is_active' => false] : null,
                 new: ['employee_id' => $empId, 'is_active' => true],
             );
@@ -3752,7 +3752,7 @@ class TicketController extends Controller
 
     /**
      * Format allMembers collection untuk response JSON.
-     * Ticket lead ditampilkan terpisah sebagai PIC — row ticket_member miliknya
+     * Ticket lead ditampilkan terpisah sebagai PIC - row ticket_member miliknya
      * (kalau ada, aktif/nonaktif) tidak diikutkan agar UI tidak menampilkan tombol
      * "aktifkan kembali" yang pasti gagal karena PIC tidak boleh jadi member.
      */
@@ -3898,7 +3898,7 @@ class TicketController extends Controller
         }
 
         try {
-            // Sync members (akan replace existing) — sync() is a pivot-table operation,
+            // Sync members (akan replace existing) - sync() is a pivot-table operation,
             // it never fires TicketMember's model events, so it needs an explicit audit call.
             $oldMemberIds = $ticket->members()->pluck('employee.employee_id')->all();
             $ticket->members()->sync($request->member_ids);
@@ -3911,7 +3911,7 @@ class TicketController extends Controller
                 auditableId: $ticket->ticket_id,
                 event: 'updated',
                 recordLabel: "Ticket #{$ticket->ticket_number} members",
-                description: "updated members on Ticket — Ticket #{$ticket->ticket_number}",
+                description: "updated members on Ticket - Ticket #{$ticket->ticket_number}",
                 old: ['member_ids' => $oldMemberIds],
                 new: ['member_ids' => $request->member_ids],
             );
@@ -4038,7 +4038,7 @@ class TicketController extends Controller
                 ? trim(($member->basicData->first_name ?? '') . ' ' . ($member->basicData->last_name ?? ''))
                 : null;
 
-            // Nonaktifkan — tidak dihapus agar bisa direaktivasi
+            // Nonaktifkan - tidak dihapus agar bisa direaktivasi
             DB::table('ticket_member')
                 ->where('ticket_id', $ticket->ticket_id)
                 ->where('employee_id', $employeeId)
@@ -4050,7 +4050,7 @@ class TicketController extends Controller
                 auditableId: $ticket->ticket_id,
                 event: 'updated',
                 recordLabel: ($memberName ?? "Employee #{$employeeId}") . " on Ticket #{$ticket->ticket_number}",
-                description: 'deactivated member ' . ($memberName ?? "#{$employeeId}") . " on Ticket — Ticket #{$ticket->ticket_number}",
+                description: 'deactivated member ' . ($memberName ?? "#{$employeeId}") . " on Ticket - Ticket #{$ticket->ticket_number}",
                 old: ['employee_id' => (int) $employeeId, 'is_active' => true],
                 new: ['employee_id' => (int) $employeeId, 'is_active' => false],
             );
@@ -4183,7 +4183,7 @@ class TicketController extends Controller
                 $memberIds = json_decode($changeRequest->member_ids, true);
 
                 // Employee yang di-request bisa saja sudah di-block / ditandai untuk
-                // dihapus / dinonaktifkan SETELAH request diajukan — cek ulang di sini
+                // dihapus / dinonaktifkan SETELAH request diajukan - cek ulang di sini
                 // supaya approval tidak menghidupkan kembali membership employee semacam itu.
                 if ($changeRequest->change_type === 'update') {
                     $ineligible = array_values(array_filter(
@@ -4236,7 +4236,7 @@ class TicketController extends Controller
                     auditableId: $ticket->ticket_id,
                     event: 'updated',
                     recordLabel: "Ticket #{$ticket->ticket_number} members",
-                    description: "approved member change request ({$changeRequest->change_type}) on Ticket — Ticket #{$ticket->ticket_number}",
+                    description: "approved member change request ({$changeRequest->change_type}) on Ticket - Ticket #{$ticket->ticket_number}",
                     old: ['active_employee_ids' => $oldActiveMemberIds],
                     new: [
                         'change_type' => $changeRequest->change_type,
@@ -4409,7 +4409,7 @@ class TicketController extends Controller
                 ->orderBy('delivery_support.created_at', 'desc')
                 ->get();
 
-            // Count tickets per support — 1 query groupBy, bukan 1 query per baris support
+            // Count tickets per support - 1 query groupBy, bukan 1 query per baris support
             $ticketCounts = DB::table('delivery_support_activities')
                 ->whereIn('delivery_support_id', $supports->pluck('id'))
                 ->select('delivery_support_id', DB::raw('count(*) as total'))
@@ -4480,7 +4480,7 @@ class TicketController extends Controller
             $ticket = Ticket::findOrFail($id);
             $supportId = $request->support_id;
 
-            // Dibaca SEBELUM link activity lama dilepas di bawah — dipakai untuk
+            // Dibaca SEBELUM link activity lama dilepas di bawah - dipakai untuk
             // menentukan siapa dari tim DS baru yang belum ada di group chat.
             $previousSupportId = app(\App\Services\PowerAutomateService::class)
                 ->deliverySupportIdForTicket((int) $ticket->ticket_id);

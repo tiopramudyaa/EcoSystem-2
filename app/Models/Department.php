@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Department employee — referensi tunggal untuk opsi dropdown Department.
+ * Department employee - referensi tunggal untuk opsi dropdown Department.
  * Lihat migration create_departments_table.
  */
 class Department extends Model
@@ -20,7 +20,7 @@ class Department extends Model
     ];
 
     /**
-     * Daftar nama department aktif (urut sort_order) — dipakai untuk render dropdown.
+     * Daftar nama department aktif (urut sort_order) - dipakai untuk render dropdown.
      *
      * @return string[]
      */

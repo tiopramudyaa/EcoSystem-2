@@ -325,7 +325,7 @@ function closeTbmPopovers() {
 
 // Closing a text-search popover doesn't close open custom-dd panels (and
 // vice versa) because both sides call stopPropagation() on their trigger
-// click — this capture-phase listener runs before that and bridges the two.
+// click - this capture-phase listener runs before that and bridges the two.
 document.getElementById('tbmToolbar')?.addEventListener('click', (e) => {
     if (e.target.closest('.custom-dd-btn')) closeTbmPopovers();
 }, true);
@@ -489,19 +489,19 @@ const TBM_STATUS_MAP = {
 
 function ticketRow(ticket, moduleName) {
     const created = ticket.created_at;
-    const dateStr = created ? new Date(created).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    const dateStr = created ? new Date(created).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
     const dayOnClose = tbmDayOnClose(created);
-    const sInfo = TBM_STATUS_MAP[ticket.status] || { label: ticket.status_label || ticket.status || '—', cls: 'bg-gray-100 text-gray-500' };
+    const sInfo = TBM_STATUS_MAP[ticket.status] || { label: ticket.status_label || ticket.status || '-', cls: 'bg-gray-100 text-gray-500' };
 
     return `
     <tr class="cursor-pointer hover:bg-gray-50" onclick="window.location='/ticket/${ticket.ticket_id}'">
-        <td class="tbm-td text-sm font-semibold text-gray-700">${escHtml(ticket.ticket_number || '—')}</td>
-        <td class="tbm-td tbm-td-desc text-sm text-gray-700">${escHtml(ticket.description || '—')}</td>
+        <td class="tbm-td text-sm font-semibold text-gray-700">${escHtml(ticket.ticket_number || '-')}</td>
+        <td class="tbm-td tbm-td-desc text-sm text-gray-700">${escHtml(ticket.description || '-')}</td>
         <td class="tbm-td"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${sInfo.cls}">${escHtml(sInfo.label)}</span></td>
         <td class="tbm-td text-sm text-gray-700">${ticket.lead_name ? escHtml(ticket.lead_name) : '<span class="text-gray-300 italic">Unassigned</span>'}</td>
         <td class="tbm-td text-sm text-gray-700">${escHtml(moduleName)}</td>
         <td class="tbm-td text-xs text-gray-500">${dateStr}</td>
-        <td class="tbm-td text-right text-sm font-semibold text-gray-700">${dayOnClose < 0 ? '—' : dayOnClose}</td>
+        <td class="tbm-td text-right text-sm font-semibold text-gray-700">${dayOnClose < 0 ? '-' : dayOnClose}</td>
     </tr>`;
 }
 

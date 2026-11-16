@@ -8,9 +8,9 @@ use ReflectionClass;
 
 /**
  * Pure-logic coverage for AiTicketAnalyzerService's response parsing and
- * sanitization — the parts that don't touch the database or a real AI
+ * sanitization - the parts that don't touch the database or a real AI
  * provider. resolveAssignees() (DB-bound: Module/EmployeeQualification/
- * Employee/ConsultantWorkloadController) is deliberately NOT covered here —
+ * Employee/ConsultantWorkloadController) is deliberately NOT covered here -
  * this app's Feature test harness has never been verified against the
  * sqlite :memory: DB phpunit.xml configures (tests/Feature/ExampleTest.php
  * fails today on an unrelated redirect, and RefreshDatabase is commented out

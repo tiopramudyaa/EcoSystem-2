@@ -3,10 +3,10 @@
 namespace App\Support;
 
 /**
- * Katalog tema musiman (Natal, lalu Tahun Baru/Lebaran menyusul) — sumber
+ * Katalog tema musiman (Natal, lalu Tahun Baru/Lebaran menyusul) - sumber
  * kebenaran TUNGGAL untuk visual apa saja yang tersedia. Ini murni katalog
  * tema yang bisa dirender (none/natal/...); bukan tempat konsep "ikut admin"
- * ('default') — itu ditangani SettingsController::ALLOWED_VALUES dan
+ * ('default') - itu ditangani SettingsController::ALLOWED_VALUES dan
  * App\Support\SeasonalThemeResolver, supaya kelas ini tetap hanya berisi
  * tema yang benar-benar bisa dirender oleh partial.
  *
@@ -21,11 +21,11 @@ namespace App\Support;
  *
  * Menambah tema baru (Tahun Baru, Lebaran) berarti menambah satu entri di
  * CATALOG dan satu literal di SettingsController::ALLOWED_VALUES['seasonal_theme']
- * — bukan menulis ulang controller/route/JS. Field `decoration` adalah tag
+ * - bukan menulis ulang controller/route/JS. Field `decoration` adalah tag
  * yang dibaca partial resources/views/partials/seasonal-theme.blade.php lewat
  * @switch untuk memilih efek animasi jatuhnya (mis. 'snow' untuk Natal).
  * Field `accents` adalah emoji dekorasi statis (bukan animasi) yang
- * ditampilkan berbarengan — dipakai Unicode emoji, bukan nama ikon Font
+ * ditampilkan berbarengan - dipakai Unicode emoji, bukan nama ikon Font
  * Awesome, karena Font Awesome Free 6.4 tidak punya ikon Santa/pohon-natal
  * yang bisa dipastikan tersedia tanpa cek manual; emoji tidak butuh aset
  * atau library tambahan dan tidak pernah render "kotak kosong" bila salah nama.

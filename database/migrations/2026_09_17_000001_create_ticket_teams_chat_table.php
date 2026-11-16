@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Satu baris per tiket yang punya group chat Teams.
  *
- * TANPA foreign key ke `ticket` — tabel itu dibagi dengan repo Jarvies, dan
+ * TANPA foreign key ke `ticket` - tabel itu dibagi dengan repo Jarvies, dan
  * rancangan ini menetapkan tidak ada perubahan struktur pada tabel bersama
  * (docs/teams-chat-sync-design.md §2). Integritasnya dijaga di sisi aplikasi.
  *
@@ -28,7 +28,7 @@ return new class extends Migration
             // id chat Teams, bentuknya "19:xxxxx@thread.v2".
             $table->string('chat_id', 255)->unique();
 
-            // Nama grup saat dibuat. Untuk diagnosa saja — pencarian chat SELALU
+            // Nama grup saat dibuat. Untuk diagnosa saja - pencarian chat SELALU
             // lewat chat_id, tidak pernah dengan mencocokkan topic (itu pola
             // rapuh yang ditinggalkan bersama flow 5).
             $table->string('topic', 255)->nullable();

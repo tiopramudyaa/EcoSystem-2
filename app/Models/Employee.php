@@ -94,7 +94,7 @@ class Employee extends Model
 
     /**
      * Scope: filter employee yang salah satu role-nya diberi izin (can_view) atas menu slug
-     * tertentu — dipakai untuk eligibility dropdown (mis. siapa saja yang boleh muncul sebagai
+     * tertentu - dipakai untuk eligibility dropdown (mis. siapa saja yang boleh muncul sebagai
      * pilihan Ticket Lead / Ticket Member), bukan hardcode role_id.
      */
     public function scopeWithMenuPermission(\Illuminate\Database\Eloquent\Builder $query, string $slug): \Illuminate\Database\Eloquent\Builder
@@ -106,7 +106,7 @@ class Employee extends Model
 
     /**
      * Scope: employee aktif dan tidak diblokir/ditandai untuk dihapus di Basic
-     * Data — dipakai di semua daftar kandidat Ticket Lead / Ticket Member supaya
+     * Data - dipakai di semua daftar kandidat Ticket Lead / Ticket Member supaya
      * employee yang di-block atau kena deletion_flag tidak lagi bisa dipilih.
      * Employee tanpa basic data dianggap eligible (tidak ada alasan untuk
      * dikecualikan hanya karena basic data-nya belum diisi).

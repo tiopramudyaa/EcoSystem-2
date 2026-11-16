@@ -14,7 +14,7 @@ use Illuminate\Support\Carbon;
  */
 trait HasOneDriveShareLink
 {
-    /** Ambang "akan kedaluwarsa" — link dianggap perlu diperbarui. */
+    /** Ambang "akan kedaluwarsa" - link dianggap perlu diperbarui. */
     public static int $shareLinkExpiryWarningDays = 7;
 
     /**
@@ -65,14 +65,14 @@ trait HasOneDriveShareLink
         }
 
         if (!OneDriveService::isShareLinkUrl($this->onedrive_folder_url)) {
-            return 'This is a direct OneDrive path, not a sharing link — external recipients will hit "Request access". Refresh the link.';
+            return 'This is a direct OneDrive path, not a sharing link - external recipients will hit "Request access". Refresh the link.';
         }
 
         if ($this->onedrive_link_is_expired) {
             return 'The sharing link expired on ' . $this->onedrive_link_expires_at->format('d M Y') . '. Refresh the link before sharing it again.';
         }
 
-        // Link lama (dibuat sebelum metadata dicatat) — jangan bikin panik, cukup diam.
+        // Link lama (dibuat sebelum metadata dicatat) - jangan bikin panik, cukup diam.
         if ($this->onedrive_link_scope === null) {
             return null;
         }

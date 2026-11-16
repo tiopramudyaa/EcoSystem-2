@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Position employee — referensi tunggal untuk opsi dropdown Position.
+ * Position employee - referensi tunggal untuk opsi dropdown Position.
  * Lihat migration create_positions_table.
  */
 class Position extends Model
@@ -20,7 +20,7 @@ class Position extends Model
     ];
 
     /**
-     * Daftar nama position aktif (urut sort_order) — dipakai untuk render dropdown.
+     * Daftar nama position aktif (urut sort_order) - dipakai untuk render dropdown.
      *
      * @return string[]
      */

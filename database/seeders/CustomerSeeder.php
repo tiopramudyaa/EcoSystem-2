@@ -1571,7 +1571,7 @@ class CustomerSeeder extends Seeder
                     'updated_at' => Carbon::now(),
                 ]));
 
-                // Buat auth_users untuk customer (digunakan Jarvies — portal customer)
+                // Buat auth_users untuk customer (digunakan Jarvies - portal customer)
                 // EcoSystem dan Jarvies berbagi database yang sama
                 $authExists = DB::table('auth_users')
                     ->where('email', $cust['email'])

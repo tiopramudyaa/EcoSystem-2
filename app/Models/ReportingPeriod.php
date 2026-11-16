@@ -61,7 +61,7 @@ class ReportingPeriod extends Model
 
     // ── Computed helpers ──────────────────────────────────────────────────────
 
-    /** Human-readable period label, e.g. "March 2026 (21 Feb 2026 – 20 Mar 2026)" */
+    /** Human-readable period label, e.g. "March 2026 (21 Feb 2026 - 20 Mar 2026)" */
     public function getLabel(): string
     {
         static $short = [
@@ -75,14 +75,14 @@ class ReportingPeriod extends Model
         if ($this->start_date && $this->end_date) {
             $s = Carbon::parse($this->start_date);
             $e = Carbon::parse($this->end_date);
-            $range = "{$s->day} {$short[$s->month]} {$s->year} – {$e->day} {$short[$e->month]} {$e->year}";
+            $range = "{$s->day} {$short[$s->month]} {$s->year} - {$e->day} {$short[$e->month]} {$e->year}";
             return "{$name} ({$range})";
         }
 
         // Fallback: compute from convention (21st prev month → 20th current month)
         $sm = $this->month === 1 ? 12 : $this->month - 1;
         $sy = $this->month === 1 ? $this->year - 1 : $this->year;
-        return "{$name} (21 {$short[$sm]} {$sy} – 20 {$short[$this->month]} {$this->year})";
+        return "{$name} (21 {$short[$sm]} {$sy} - 20 {$short[$this->month]} {$this->year})";
     }
 
     /** Is the period globally active (open)? */
@@ -127,12 +127,12 @@ class ReportingPeriod extends Model
      * Compute the period (year, month) for a given date.
      *
      * Convention (revised):
-     *   - Day 1–20  of month M  → Period M   (e.g. Jan 15  → Period January)
-     *   - Day 21–31 of month M  → Period M+1 (e.g. Dec 25  → Period January of next year)
+     *   - Day 1-20  of month M  → Period M   (e.g. Jan 15  → Period January)
+     *   - Day 21-31 of month M  → Period M+1 (e.g. Dec 25  → Period January of next year)
      *
      * Examples:
-     *   Dec 21 – Jan 20 → Period January
-     *   Jan 21 – Feb 20 → Period February
+     *   Dec 21 - Jan 20 → Period January
+     *   Jan 21 - Feb 20 → Period February
      */
     public static function periodFor(Carbon $date): array
     {

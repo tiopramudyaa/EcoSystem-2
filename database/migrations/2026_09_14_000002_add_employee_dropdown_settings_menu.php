@@ -5,7 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Menu Management → Employee → Dropdown Settings — the admin CRUD page for
+ * Menu Management → Employee → Dropdown Settings - the admin CRUD page for
  * the generic dropdown master data (see create_dropdown_configs_tables).
  *
  * This is a full page (needs a route_name for the sidebar link), so unlike

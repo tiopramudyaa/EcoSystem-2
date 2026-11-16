@@ -8,13 +8,13 @@ use Illuminate\Support\Facades\DB;
  * Menu "Master Ticket Settings" (group, baru) → "Document Type" (page) di
  * bawah Management. Barisnya butuh insert manual untuk grup-nya sendiri
  * karena MenuRegistrar::register() hanya bisa membuat menu di bawah parent
- * yang SUDAH ada (lihat catatan di migrasi AI Assistant/AI Research) — sekali
+ * yang SUDAH ada (lihat catatan di migrasi AI Assistant/AI Research) - sekali
  * grup-nya ada, child "document-type" baru lewat register() biasa.
  *
  * order_seq 7 dipilih karena children `management` yang sudah ada memakai
  * 1-6 (lihat MenuSeeder + 2026_08_19_000006_add_module_group_menu).
  *
- * Grant admin-only sesuai aturan baku MenuRegistrar — role lain menyusul
+ * Grant admin-only sesuai aturan baku MenuRegistrar - role lain menyusul
  * lewat Control Center → Menu Access.
  */
 return new class extends Migration

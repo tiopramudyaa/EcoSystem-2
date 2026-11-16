@@ -8,8 +8,8 @@ use Maatwebsite\Excel\Concerns\WithPreCalculateFormulas;
 /**
  * Export global Term Of Payment yang sudah ber-Invoice No, dari SELURUH
  * Delivery Project (tombol Export di halaman list project):
- *   1. "Invoiced TOP"        — satu baris per termin ber-invoice.
- *   2. "Summary by Project"  — total invoiced / paid / unpaid per project,
+ *   1. "Invoiced TOP"        - satu baris per termin ber-invoice.
+ *   2. "Summary by Project"  - total invoiced / paid / unpaid per project,
  *                              plus ringkasan per status.
  *
  * Baris disiapkan DeliveryProjectPaymentTermController::exportInvoiced()

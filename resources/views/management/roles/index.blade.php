@@ -271,7 +271,7 @@ async function deleteRole(id, name) {
 
 async function openEmployeesModal(id) {
     const role = rolesData.find(r => r.id === id);
-    document.getElementById('membersModalTitle').textContent = `Members — ${role?.name ?? ''}`;
+    document.getElementById('membersModalTitle').textContent = `Members - ${role?.name ?? ''}`;
     document.getElementById('membersModalBody').innerHTML = '<p class="text-gray-400 text-sm text-center">Loading...</p>';
     openModal('membersModal');
 
@@ -315,7 +315,7 @@ let savingMenu = {};
 
 async function openMenuAccessModal(id, roleName) {
     currentRoleId = id;
-    document.getElementById('menuAccessTitle').textContent = `Menu Access — ${roleName}`;
+    document.getElementById('menuAccessTitle').textContent = `Menu Access - ${roleName}`;
     document.getElementById('menuAccessList').innerHTML = '<div class="px-4 py-8 text-center text-gray-400 text-sm">Loading...</div>';
     openModal('menuAccessModal');
 
@@ -381,7 +381,7 @@ function renderMenuNode(node, depth, container, search, parentAccessible = true)
     const div = document.createElement('div');
     div.className = `flex items-center gap-2 px-4 py-2.5 transition-colors border-b border-gray-100 ${typeStyle.bg} ${rowOpacity} ${isDisabled ? '' : 'hover:bg-blue-50/30'}`;
     div.style.paddingLeft = `${16 + depth * 22}px`;
-    if (isDisabled) div.title = 'Parent menu is inactive — enable the parent first';
+    if (isDisabled) div.title = 'Parent menu is inactive - enable the parent first';
 
     div.innerHTML = `
         ${hasChildren
@@ -433,7 +433,7 @@ async function toggleMenuAccess(menuId, checkbox) {
 
     const grant = checkbox.checked;
     const menuName = checkbox.title || 'menu ini';
-    const roleName = document.getElementById('menuAccessTitle').textContent.replace('Menu Access — ', '');
+    const roleName = document.getElementById('menuAccessTitle').textContent.replace('Menu Access - ', '');
     const node = findMenuNode(menuTree, menuId);
     const hasChildren = !!(node?.children?.length);
 

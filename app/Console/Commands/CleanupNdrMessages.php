@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
  * TERLANJUR tersimpan sebagai bubble chat sebelum intercept di EmailController aktif.
  *
  * Laporan tsb ter-match ke thread ticket via conversationId/References lalu tersimpan
- * sebagai TicketMessage dengan pengirim "Microsoft Outlook" / MicrosoftExchange... —
+ * sebagai TicketMessage dengan pengirim "Microsoft Outlook" / MicrosoftExchange... -
  * body-nya berupa tabel/HTML laporan yang merusak tampilan room chat.
  *
  * Untuk tiap NDR yang ditemukan, command ini:
@@ -61,8 +61,8 @@ class CleanupNdrMessages extends Command
         foreach ($ndrs as $ndr) {
             $recipient = $this->extractRecipientFromBody($ndr->message_html ?: (string) $ndr->message);
             $reason    = $recipient
-                ? "Email could not be delivered to {$recipient} — the address was not found or rejected by the destination server. Check the recipient's spelling and resend."
-                : 'Email could not be delivered — the destination address was not found or rejected by the server. Check the recipient list and resend.';
+                ? "Email could not be delivered to {$recipient} - the address was not found or rejected by the destination server. Check the recipient's spelling and resend."
+                : 'Email could not be delivered - the destination address was not found or rejected by the server. Check the recipient list and resend.';
 
             // Pesan email keluar terakhir sebelum NDR ini → yang paling mungkin bounce.
             $outgoing = TicketMessage::where('ticket_id', $ndr->ticket_id)
@@ -73,7 +73,7 @@ class CleanupNdrMessages extends Command
                 ->orderBy('created_at', 'desc')
                 ->first();
 
-            $markInfo = '—';
+            $markInfo = '-';
             if ($doMark && $outgoing) {
                 if ($outgoing->email_status === 'failed') {
                     $markInfo = "msg #{$outgoing->id} (sudah failed)";
@@ -100,7 +100,7 @@ class CleanupNdrMessages extends Command
         if ($apply) {
             $this->info("Selesai. Bubble NDR dihapus: {$deleted}. Pesan keluar ditandai 'Tidak terkirim': {$marked}.");
         } else {
-            $this->warn("DRY-RUN — belum ada perubahan. Jalankan ulang dengan --apply untuk menerapkan.");
+            $this->warn("DRY-RUN - belum ada perubahan. Jalankan ulang dengan --apply untuk menerapkan.");
             $this->line("Akan menghapus {$deleted} bubble NDR" . ($doMark ? " & menandai {$marked} pesan keluar." : '.'));
         }
 
@@ -123,7 +123,7 @@ class CleanupNdrMessages extends Command
     }
 
     /**
-     * Ambil alamat tujuan yang gagal dari body laporan NDR (best effort) — alamat email
+     * Ambil alamat tujuan yang gagal dari body laporan NDR (best effort) - alamat email
      * pertama yang BUKAN milik akun sendiri / postmaster / domain sendiri.
      */
     private function extractRecipientFromBody(string $body): ?string

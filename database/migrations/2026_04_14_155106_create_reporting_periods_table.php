@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('reporting_periods', function (Blueprint $table) {
             $table->id();
             $table->smallInteger('year')->unsigned();
-            $table->tinyInteger('month')->unsigned(); // 1–12: period = day 21 of month → day 20 of next month
+            $table->tinyInteger('month')->unsigned(); // 1-12: period = day 21 of month → day 20 of next month
             $table->timestamp('closed_at')->nullable();
             $table->unsignedBigInteger('closed_by')->nullable(); // employee_id
             $table->timestamps();

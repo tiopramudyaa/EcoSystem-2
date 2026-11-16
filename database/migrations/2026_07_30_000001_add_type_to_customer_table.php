@@ -27,7 +27,7 @@ return new class extends Migration
             $table->index('type');
         });
 
-        // Eksplisit walau default sudah mengisi — jaga-jaga bila ada baris dengan
+        // Eksplisit walau default sudah mengisi - jaga-jaga bila ada baris dengan
         // nilai NULL dari mode SQL yang longgar.
         DB::table('customer')->whereNull('type')->update(['type' => 'Customer']);
     }

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Kirim notifikasi ke customer Jarvies.
- * Dipanggil dari EcoSystem — ditulis ke shared DB sehingga Jarvies bisa membacanya.
+ * Dipanggil dari EcoSystem - ditulis ke shared DB sehingga Jarvies bisa membacanya.
  */
 class CustomerNotificationService
 {
@@ -31,7 +31,7 @@ class CustomerNotificationService
         }
 
         // Choke point: tiket ber-type Internal dan tiket yang di-hide tidak boleh
-        // memicu notifikasi ke customer — kalau lolos, customer dapat notifikasi
+        // memicu notifikasi ke customer - kalau lolos, customer dapat notifikasi
         // bell untuk tiket yang tidak bisa ia buka (link-nya akan 403 di Jarvies).
         if ($ticketId) {
             $ticket = Ticket::select('ticket_type', 'is_hidden')->find($ticketId);

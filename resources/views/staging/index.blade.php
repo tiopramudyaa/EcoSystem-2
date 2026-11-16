@@ -10,7 +10,7 @@ const canRejectStaging  = {{ $can('staging.reject')  ? 'true' : 'false' }};
 </script>
 
 <style>
-    /* AI Analyzer: bar INDETERMINATE (bukan lagi persentase karangan — lihat
+    /* AI Analyzer: bar INDETERMINATE (bukan lagi persentase karangan - lihat
        runAiAnalysis()/#aiAnalysisStatusText untuk status ASLI dari stream).
        Sengaja tidak mengklaim seberapa jauh prosesnya, cuma menunjukkan
        "masih berjalan". */
@@ -68,21 +68,21 @@ const canRejectStaging  = {{ $can('staging.reject')  ? 'true' : 'false' }};
             <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
             <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Pending</p>
         </div>
-        <p class="text-2xl font-bold text-amber-600 leading-none" id="statUnvalidated">—</p>
+        <p class="text-2xl font-bold text-amber-600 leading-none" id="statUnvalidated">-</p>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 px-4 py-3.5 hover:shadow-md hover:border-green-200 transition-all duration-200">
         <div class="flex items-center gap-1.5 mb-2">
             <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
             <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Approved</p>
         </div>
-        <p class="text-2xl font-bold text-green-600 leading-none" id="statApproved">—</p>
+        <p class="text-2xl font-bold text-green-600 leading-none" id="statApproved">-</p>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 px-4 py-3.5 hover:shadow-md hover:border-red-200 transition-all duration-200">
         <div class="flex items-center gap-1.5 mb-2">
             <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
             <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Rejected</p>
         </div>
-        <p class="text-2xl font-bold text-red-600 leading-none" id="statRejected">—</p>
+        <p class="text-2xl font-bold text-red-600 leading-none" id="statRejected">-</p>
     </div>
 </div>
 
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchEmailInbox(true);                              // fetch sekali saat halaman dibuka, tidak perlu ditunggu
 
     // Baseline latest_update BARU direkam SETELAH list/stats di atas selesai
-    // dimuat (bukan ditembak paralel) — supaya tidak ada celah balapan: kalau
+    // dimuat (bukan ditembak paralel) - supaya tidak ada celah balapan: kalau
     // ditembak bersamaan, satu perubahan yang masuk PERSIS di antara kedua
     // request bisa membuat baseline lebih baru dari data yang benar-benar
     // ditampilkan, dan polling berikutnya diam-diam menganggap "tidak ada
@@ -198,14 +198,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // interval sempat jalan sekali lalu balik lagi, visibilitychange tidak
     // memanggil checkStagingUpdates() untuk PERTAMA KALINYA saat itu (yang
     // kalau _isFirstStagingPoll masih true, cuma simpan baseline lalu
-    // berhenti — TIDAK jadi refresh, persis kasus yang harusnya ditangani
+    // berhenti - TIDAK jadi refresh, persis kasus yang harusnya ditangani
     // "sinkron ulang segera begitu tab aktif" di bawah). Pola dasarnya sama
     // dengan startEmailPolling() di ticket/index.blade.php (checkTicketUpdates()
     // dipanggil sekali di awal, bukan ditunda sampai event pertama).
     await Promise.all([loadStats(), loadStagingTickets()]);
     checkStagingUpdates();
 
-    // Skip kerja polling selagi tab di-background/minimize — fetchEmailInbox()
+    // Skip kerja polling selagi tab di-background/minimize - fetchEmailInbox()
     // manggil Microsoft Graph (bukan cuma DB lokal) tiap 60 detik. Kalau staff
     // buka banyak tab, biaya jaringan itu berlipat tanpa ada yang benar-benar
     // melihat hasilnya. Begitu tab aktif lagi, sinkron ulang segera (bukan
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // -------------------------------------------------------------------------
 // Polling ringan: cek /latest-update (satu MAX(updated_at), tidak sentuh
 // Graph API) tiap 30 detik, dan cuma tarik ulang list+stats PENUH kalau
-// nilainya benar-benar berubah dari polling sebelumnya — sama seperti pola
+// nilainya benar-benar berubah dari polling sebelumnya - sama seperti pola
 // checkTicketUpdates() di ticket/index.blade.php. Tanpa ini, tiap tick 30
 // detik selalu re-fetch seluruh halaman (list + 4 relasi eager-load) walau
 // tidak ada satu pun staging ticket yang berubah sejak polling terakhir.
@@ -239,7 +239,7 @@ async function checkStagingUpdates() {
         const latest = data.latest_update ?? null;
 
         if (_isFirstStagingPoll) {
-            // Simpan baseline — jangan reload (loadStats/loadStagingTickets sudah
+            // Simpan baseline - jangan reload (loadStats/loadStagingTickets sudah
             // dipanggil saat DOMContentLoaded).
             _lastStagingUpdate = latest;
             _isFirstStagingPoll = false;
@@ -358,13 +358,13 @@ function renderTable(rows) {
     };
 
     tbody.innerHTML = rows.map(s => {
-        const date  = s.created_at ? new Date(s.created_at).toLocaleDateString('en-GB', { timeZone: 'Asia/Jakarta', day:'2-digit', month:'short', year:'numeric' }) : '—';
-        const short = s.description ? (s.description.length > 65 ? s.description.substring(0, 65) + '…' : s.description) : '—';
+        const date  = s.created_at ? new Date(s.created_at).toLocaleDateString('en-GB', { timeZone: 'Asia/Jakarta', day:'2-digit', month:'short', year:'numeric' }) : '-';
+        const short = s.description ? (s.description.length > 65 ? s.description.substring(0, 65) + '…' : s.description) : '-';
 
         const pCfg = prioCfg[s.ticket_priority];
         const prioBadge = pCfg
             ? badge(s.ticket_priority, pCfg.cls, pCfg.dot)
-            : `<span class="text-gray-300 text-xs">—</span>`;
+            : `<span class="text-gray-300 text-xs">-</span>`;
 
         const chBadge = s.channel === 'email'
             ? badge('<i class="fas fa-envelope text-[9px]"></i>&nbsp;Email', 'bg-blue-50 text-blue-700')
@@ -415,7 +415,7 @@ function renderPagination() {
     area.classList.remove('hidden');
     area.classList.add('flex');
     document.getElementById('pageInfo').textContent =
-        `${Math.min((currentPage-1)*meta.per_page+1, meta.total)}–${Math.min(currentPage*meta.per_page, meta.total)} of ${meta.total}`;
+        `${Math.min((currentPage-1)*meta.per_page+1, meta.total)}-${Math.min(currentPage*meta.per_page, meta.total)} of ${meta.total}`;
     document.getElementById('btnPrev').disabled = currentPage <= 1;
     document.getElementById('btnNext').disabled = currentPage >= meta.last_page;
 }
@@ -462,7 +462,7 @@ function fillModal(s) {
     // ── Helpers ──
     const dateStr = s.created_at
         ? new Date(s.created_at).toLocaleString('en-GB', { timeZone: 'Asia/Jakarta', day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }) + ' WIB'
-        : '—';
+        : '-';
 
     const statusMap = {
         unvalidated: { cls: 'bg-amber-100 text-amber-700',  icon: 'fas fa-clock',       label: 'Pending Validation' },
@@ -503,16 +503,16 @@ function fillModal(s) {
     if (isEmail) {
         const fromDisplay = s.sender_name
             ? `<span class="font-semibold">${escHtml(s.sender_name)}</span> <span class="text-gray-400 text-xs">&lt;${escHtml(s.submitted_by_email ?? '')}&gt;</span>`
-            : `<span class="text-gray-700">${escHtml(s.submitted_by_email ?? '—')}</span>`;
+            : `<span class="text-gray-700">${escHtml(s.submitted_by_email ?? '-')}</span>`;
         const rows = [
             metaRow('From', fromDisplay),
             metaRow('Date', `<span class="text-gray-500 text-xs">${dateStr}</span>`),
             ccDisplay ? metaRow('CC', `<span class="text-gray-600 text-xs">${ccDisplay}</span>`) : '',
-            metaRow('Subject', `<span class="font-semibold">${escHtml(s.description ?? '—')}</span>`),
+            metaRow('Subject', `<span class="font-semibold">${escHtml(s.description ?? '-')}</span>`),
         ].join('');
         metaHtml = `<div class="border border-gray-200 rounded-xl overflow-hidden mb-5"><table class="w-full">${rows}</table></div>`;
     } else {
-        const custName = s.customer_name ?? s.sender_name ?? '—';
+        const custName = s.customer_name ?? s.sender_name ?? '-';
         const senderEmail = s.submitted_by_email
             ? ` <span class="text-gray-400 text-xs">&lt;${escHtml(s.submitted_by_email)}&gt;</span>` : '';
         const unidentified = !s.customer_name && s.submitted_by_email
@@ -526,7 +526,7 @@ function fillModal(s) {
             metaRow('From', `<span class="font-semibold">${escHtml(custName)}</span>${senderEmail}${unidentified}`),
             metaRow('Date', `<span class="text-gray-500 text-xs">${dateStr}</span>`),
             ccDisplay ? metaRow('CC', `<span class="text-gray-600 text-xs">${ccDisplay}</span>`) : '',
-            metaRow('Subject', `<span class="font-semibold">${escHtml(s.description ?? '—')}</span>`),
+            metaRow('Subject', `<span class="font-semibold">${escHtml(s.description ?? '-')}</span>`),
             ...extraFields.map(([k,v]) => metaRow(k, escHtml(v))),
         ].join('');
         metaHtml = `<div class="border border-gray-200 rounded-xl overflow-hidden mb-5"><table class="w-full">${rows}</table></div>`;
@@ -558,7 +558,7 @@ function fillModal(s) {
                 <i class="fas fa-align-left text-gray-400 text-xs"></i>
                 <span class="text-xs font-semibold text-gray-500">Description</span>
             </div>
-            <div class="px-4 py-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">${escHtml(s.description ?? '—')}</div>
+            <div class="px-4 py-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">${escHtml(s.description ?? '-')}</div>
         </div>`;
     }
 
@@ -568,7 +568,7 @@ function fillModal(s) {
     if (webAttachments.length > 0) {
         attachmentsHtml = buildAttachmentsBlock(webAttachments, 'local');
     } else if (s.graph_message_id) {
-        // Placeholder — email attachments loaded lazily after DOM insert
+        // Placeholder - email attachments loaded lazily after DOM insert
         attachmentsHtml = `<div id="emailAttachmentsBlock" class="border border-gray-200 rounded-xl overflow-hidden mb-5">
             <div class="px-4 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
                 <i class="fas fa-paperclip text-gray-400 text-xs"></i>
@@ -599,7 +599,7 @@ function fillModal(s) {
             <div class="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
                 <i class="fas fa-clipboard-check text-gray-500 text-xs"></i>
                 <span class="text-xs font-semibold text-gray-600">Ticket Classification</span>
-                <span class="text-xs text-gray-400 ml-1">— required before approving</span>
+                <span class="text-xs text-gray-400 ml-1">- required before approving</span>
             </div>
             <div class="px-4 py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
@@ -653,14 +653,14 @@ function fillModal(s) {
                 </div>
                 <p id="dsError" class="hidden mt-1 text-xs text-red-500">Delivery support is required.</p>
                 ${dsRequired && dsOptions.length > 1
-                    ? '<p class="mt-1 text-[11px] text-gray-400">This customer has ' + dsOptions.length + ' delivery supports — choose the right one.</p>'
+                    ? '<p class="mt-1 text-[11px] text-gray-400">This customer has ' + dsOptions.length + ' delivery supports - choose the right one.</p>'
                     : ''}
             </div>
             <div id="forCustomerWrap" class="hidden border-t border-gray-100 px-4 pt-3 pb-3">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">For customer <span class="text-gray-400 font-normal">(end-customer under this parent)</span></label>
                 <select id="approveEndCustomer"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent transition-all">
-                    <option value="">— On behalf of the parent itself —</option>
+                    <option value="">- On behalf of the parent itself -</option>
                 </select>
                 <p class="mt-1 text-[11px] text-gray-400">This email was routed to the parent customer. Choose which end-customer it is actually for.</p>
             </div>
@@ -680,7 +680,7 @@ function fillModal(s) {
                                placeholder="Phone number">
                     </div>
                     <div>
-                        {{-- Pilihan modul TERSTRUKTUR — beda dari teks bebas "Module" di atas
+                        {{-- Pilihan modul TERSTRUKTUR - beda dari teks bebas "Module" di atas
                              (yang cuma diketik pengirim, tidak divalidasi). Ini yang benar-benar
                              tersimpan ke ticket_module saat tiket dibuat; boleh pilih lebih dari
                              satu. Pre-fill dari saran AI lihat autoFillEmptyFromAi(). --}}
@@ -751,7 +751,7 @@ function fillModal(s) {
         metaHtml + validationHtml + rejectAreaHtml + contentHtml + attachmentsHtml;
 
     // custom-dd (dipakai widget "Module(s)") cuma di-wire sekali saat
-    // DOMContentLoaded, sebelum modalBody ini punya isi apa pun — tanpa
+    // DOMContentLoaded, sebelum modalBody ini punya isi apa pun - tanpa
     // panggilan ulang di sini, dropdown yang baru saja disuntikkan lewat
     // innerHTML di atas tidak pernah dapat click listener-nya sama sekali
     // (initCustomDropdowns() sendiri sudah idempotent lewat flag _ddInited,
@@ -845,7 +845,7 @@ function fillModal(s) {
             if (scaleEl) scaleEl.value = s.scale;
         }
 
-        // Delivery support: kalau customer hanya punya satu, langsung pilihkan —
+        // Delivery support: kalau customer hanya punya satu, langsung pilihkan -
         // validator tetap jalan, tapi user tak perlu memilih manual.
         if (dsOptions.length === 1) {
             selectStagingDs(dsOptions[0].id, dsOptions[0].name);
@@ -855,7 +855,7 @@ function fillModal(s) {
         // bisa memicu ulang manual lewat tombol Re-analyze (lihat komentar di
         // aiAnalysisPanelHtml()). Kalau sudah ada hasil tersimpan, isi field
         // yang masih kosong. Kalau belum pernah dicoba sama sekali (status
-        // null), picu sekarang — panel sudah terlanjur nampilin state loading
+        // null), picu sekarang - panel sudah terlanjur nampilin state loading
         // dari aiAnalysisPanelHtml() di atas. Status 'pending'/'failed' TIDAK
         // memicu apa pun di sini secara otomatis (lihat catatan di aiAnalysisPanelHtml()).
         _lastAiAnalysis = s.ai_analysis || null;
@@ -876,23 +876,23 @@ function fillModal(s) {
 // ─── AI Ticket Analyzer ───────────────────────────────────────────────────────
 
 // Analisa AI otomatis dipicu saat modal validasi dibuka (fillModal() →
-// runAiAnalysis()) — tapi admin juga bisa memicu ulang secara sengaja lewat
+// runAiAnalysis()) - tapi admin juga bisa memicu ulang secara sengaja lewat
 // tombol "Re-analyze" (muncul begitu ada hasil atau status failed) yang
 // memanggil runAiAnalysis(id, true).
 //
 // Urutan prioritas SENGAJA begini, bukan sekadar dua flag independen:
 //   1. status === 'pending'  → SEDANG berjalan (request ini atau tab/admin
-//      lain) — SELALU tampil loading & tombol Re-analyze disembunyikan,
+//      lain) - SELALU tampil loading & tombol Re-analyze disembunyikan,
 //      APAPUN isi s.ai_analysis. Awalnya urutan ini kebalik (hasResult
-//      dicek duluan) — akibatnya re-analyze pada tiket yang sudah punya
+//      dicek duluan) - akibatnya re-analyze pada tiket yang sudah punya
 //      hasil lama tetap menampilkan hasil lama itu SELAMA request berjalan,
 //      dan tombol Re-analyze tetap bisa diklik. User yang tidak melihat
 //      indikasi apa pun sedang terjadi lalu klik dua kali, dan klik kedua
 //      itu yang menabrak klaim atomic pertama (lihat
 ///     StagingTicketController::analyze()) dengan pesan "already running".
 //   2. s.ai_analysis ada     → hasil tersedia (status completed, ATAU staging
-//      lama dari sebelum kolom ai_analysis_status ditambahkan — migration
-//      2026_08_24_000002 — yang punya ai_analysis terisi tapi status masih
+//      lama dari sebelum kolom ai_analysis_status ditambahkan - migration
+//      2026_08_24_000002 - yang punya ai_analysis terisi tapi status masih
 //      NULL, lihat staging #316).
 //   3. status === 'failed'   → gagal, tombol Re-analyze tersedia.
 //   4. lainnya (null, belum ada hasil) → belum dicoba, akan dipicu fillModal.
@@ -904,7 +904,7 @@ function aiAnalysisPanelHtml(s) {
         ? `<span class="text-[11px] text-gray-400 ml-2">Analyzed ${timeAgo(s.ai_analysis_generated_at)}</span>`
         : '';
     // ai_analysis_restricted (lihat StagingTicketController::canViewAiAnalysis()):
-    // hasResult sengaja tetap FALSE untuk kasus ini (bukan bug) — tombol
+    // hasResult sengaja tetap FALSE untuk kasus ini (bukan bug) - tombol
     // Re-analyze TIDAK ditampilkan supaya validator yang tidak punya izin
     // credential tidak bisa tanpa sengaja menimpa analisa lama yang lebih
     // lengkap (analisa baru dari akun ini tidak akan menyertakan catatan
@@ -916,7 +916,7 @@ function aiAnalysisPanelHtml(s) {
         : '';
 
     // Analisa AI di sini TIDAK auto-invalidate seperti AI Summarize (sidik
-    // jari isi tiket) — memicu ulang Opus-5 + Agent Skill otomatis tiap kali
+    // jari isi tiket) - memicu ulang Opus-5 + Agent Skill otomatis tiap kali
     // staging ticket diedit terlalu mahal. Ini cukup peringatan pasif: kalau
     // tiketnya diperbarui SETELAH analisis dibuat (lihat
     // StagingTicketController::isAiAnalysisStale()), validator diberi tahu
@@ -924,11 +924,11 @@ function aiAnalysisPanelHtml(s) {
     const staleNotice = (hasResult && s.ai_analysis_stale) ? `
         <div class="px-4 py-2 bg-amber-50 border-b border-amber-100 text-[11px] text-amber-700 flex items-center gap-1.5">
             <i class="fas fa-triangle-exclamation"></i>
-            Ticket details changed since this analysis was generated — consider clicking Re-analyze.
+            Ticket details changed since this analysis was generated - consider clicking Re-analyze.
         </div>` : '';
 
     // Sesi tanya-jawab baru setiap kali panel ini dibangun ulang dengan hasil
-    // (modal baru dibuka, ATAU Re-analyze selesai) — lihat blok JS "Tanya-jawab
+    // (modal baru dibuka, ATAU Re-analyze selesai) - lihat blok JS "Tanya-jawab
     // AI Analyzer" di bawah untuk alasan kenapa ini SENGAJA tidak dipertahankan
     // lintas render, beda dari conversation id di halaman AI Assistant.
     if (hasResult) {
@@ -940,7 +940,7 @@ function aiAnalysisPanelHtml(s) {
         bodyHtml = renderAiAnalysisBody(s.ai_analysis);
     } else if (s.ai_analysis_restricted) {
         // Analisa SUDAH ada (status completed), tapi disembunyikan dari viewer
-        // ini — bukan "belum dianalisa" (jangan tampilkan spinner/Connecting…
+        // ini - bukan "belum dianalisa" (jangan tampilkan spinner/Connecting…
         // yang menyesatkan seolah masih berjalan).
         bodyHtml = `
             <div class="flex items-start gap-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg px-3.5 py-3">
@@ -954,7 +954,7 @@ function aiAnalysisPanelHtml(s) {
         bodyHtml = `<p class="text-sm text-red-600"><i class="fas fa-circle-exclamation"></i> AI analysis failed for this ticket. Click Re-analyze to try again, or fill in the classification (Type/Priority/Scale/Module) manually.</p>`;
     } else {
         // null (belum dicoba, akan dipicu fillModal) atau pending (sedang jalan).
-        // Bar-nya INDETERMINATE (bukan lagi persentase karangan) — status di
+        // Bar-nya INDETERMINATE (bukan lagi persentase karangan) - status di
         // #aiAnalysisStatusText diisi label ASLI dari event SSE 'status' yang
         // dikirim StagingTicketController::analyze() (lihat runAiAnalysis()),
         // bukan animasi berbasis waktu yang tidak berhubungan dengan proses
@@ -970,7 +970,7 @@ function aiAnalysisPanelHtml(s) {
     }
 
     // Widget tanya-jawab: hanya tampil kalau sudah ada hasil untuk ditanyakan
-    // (lihat AiTicketQaService — konteksnya dibangun dari ai_analysis).
+    // (lihat AiTicketQaService - konteksnya dibangun dari ai_analysis).
     const qaWidget = hasResult ? `
         <div class="border-t border-indigo-100 px-4 py-3">
             <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
@@ -1005,7 +1005,7 @@ function aiAnalysisPanelHtml(s) {
 }
 
 // Satu pola visual dipakai berulang di semua section supaya konsisten
-// (sebelumnya tiap section pakai ukuran/struktur beda-beda — itu yang bikin
+// (sebelumnya tiap section pakai ukuran/struktur beda-beda - itu yang bikin
 // panel ini terlihat berantakan).
 const AI_LABEL_CLS = 'text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5';
 const AI_BODY_CLS  = 'text-sm text-gray-700 leading-relaxed';
@@ -1025,7 +1025,7 @@ function renderAiAnalysisBody(data) {
     // ── Ringkasan saran klasifikasi + confidence, sebagai chip di paling atas ──
     const chip = (text, cls) => text
         ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${cls}">${escHtml(text)}</span>` : '';
-    // Satu chip per modul yang disarankan — tiket boleh menyentuh lebih dari satu.
+    // Satu chip per modul yang disarankan - tiket boleh menyentuh lebih dari satu.
     const moduleChips = (data.suggested_module_names || [])
         .map(name => chip(`Module: ${name}`, 'bg-white text-gray-600 border-gray-200'));
     const chipsHtml = [
@@ -1058,7 +1058,7 @@ function renderAiAnalysisBody(data) {
 
     // ── Kandidat paling cocok: diranking dari modul + pernah menangani isu
     //    serupa + workload (lihat AiTicketAnalyzerService::resolveAssignees())
-    //    — urutan array INI ADALAH rank-nya, makanya diberi nomor 1..N. ──
+    //    - urutan array INI ADALAH rank-nya, makanya diberi nomor 1..N. ──
     const assignees = data.suggested_assignees || [];
     let assigneesInner;
     if (assignees.length) {
@@ -1105,7 +1105,7 @@ function renderAiAnalysisBody(data) {
     }
 
     // ── Tiket lama dengan isu serupa (pencocokan kata kunci, bukan pencarian
-    //    semantik — lihat AiTicketAnalyzerService::resolveSimilarTickets()) ──
+    //    semantik - lihat AiTicketAnalyzerService::resolveSimilarTickets()) ──
     const similarTickets = data.similar_tickets || [];
     let similarInner;
     if (similarTickets.length) {
@@ -1143,15 +1143,15 @@ function renderAiAnalysisBody(data) {
 // yang belum pernah dianalisa, dan juga dipanggil MANUAL dari tombol
 // "Re-analyze" di panel (force=true) untuk memicu ulang setelah completed/
 // failed. Endpoint-nya sendiri yang menegakkan aturan klaim (lihat
-// StagingTicketController::analyze()) — force cuma dikirim sebagai niat,
+// StagingTicketController::analyze()) - force cuma dikirim sebagai niat,
 // server tetap menolak kalau ternyata sedang 'pending' di request lain.
 //
 // _aiAnalysisInFlight menjaga tab INI sendiri tidak menembak dua request
-// sekaligus buat tiket yang sama — insiden nyata: staging #316 dan #317
+// sekaligus buat tiket yang sama - insiden nyata: staging #316 dan #317
 // sama-sama sukses dianalisa (ada di audit log), TAPI ai_analysis_status
 // balik lagi ke 'pending' segera sesudahnya dan macet berjam-jam, pola yang
 // paling cocok dengan klik Re-analyze kedua menembak SELAGI klik pertama
-// masih berjalan (server sisi klaim atomic tetap benar — masalahnya baris
+// masih berjalan (server sisi klaim atomic tetap benar - masalahnya baris
 // ini yang membiarkan tab yang sama memicu request kedua sama sekali).
 // Ini pelengkap, bukan pengganti, klaim atomic & stale-reclaim di server:
 // kalau tab LAIN atau admin lain yang memicu bersamaan, itu tetap ditangani
@@ -1159,7 +1159,7 @@ function renderAiAnalysisBody(data) {
 let _aiAnalysisInFlight = null;
 
 /**
- * Loop parsing SSE (event:/data: frame, dipisah "\n\n") — port kecil dari
+ * Loop parsing SSE (event:/data: frame, dipisah "\n\n") - port kecil dari
  * pola yang sama dipakai di resources/views/ticket/show.blade.php
  * (consumeSse). Disalin, bukan di-share lintas file: kedua Blade view ini
  * tidak punya modul JS bersama.
@@ -1209,9 +1209,9 @@ async function runAiAnalysis(id, force = false) {
 
     try {
         // StagingTicketController::analyze() kadang balas JSON biasa (langsung
-        // instan — sudah completed/pending/failed dari klaim atomic sisi
+        // instan - sudah completed/pending/failed dari klaim atomic sisi
         // server, TIDAK berubah dari sebelumnya) dan kadang SSE (baru mulai
-        // memanggil AI, bisa menitan) — dibedakan lewat Content-Type, bukan
+        // memanggil AI, bisa menitan) - dibedakan lewat Content-Type, bukan
         // dua endpoint terpisah.
         const res = await fetch(`/api/staging-tickets/${id}/analyze`, {
             method: 'POST',
@@ -1247,7 +1247,7 @@ async function runAiAnalysis(id, force = false) {
                 const err = new Error(json.message || 'Request failed');
                 // 'restricted' (lihat StagingTicketController::analyze()): analisa
                 // SUDAH ada, cuma disembunyikan dari actor ini karena izin
-                // credential — beda dari kegagalan AI sungguhan, jangan ditandai
+                // credential - beda dari kegagalan AI sungguhan, jangan ditandai
                 // status 'failed' (itu akan memunculkan tombol Re-analyze yang,
                 // kalau diklik, justru MENIMPA analisa lengkap yang sudah ada
                 // dengan versi baru tanpa konteks credential).
@@ -1263,7 +1263,7 @@ async function runAiAnalysis(id, force = false) {
             currentStagingData.ai_analysis_status = 'completed';
             currentStagingData.ai_analysis_generated_at = new Date().toISOString();
             // Analisa baru saja dibuat dari isi tiket SAAT INI, jadi per
-            // definisi tidak basi lagi — lihat StagingTicketController::
+            // definisi tidak basi lagi - lihat StagingTicketController::
             // isAiAnalysisStale() untuk perhitungan aslinya (di server, saat
             // panel dibuka lagi/di-refresh dari daftar).
             currentStagingData.ai_analysis_stale = false;
@@ -1274,13 +1274,13 @@ async function runAiAnalysis(id, force = false) {
         const isRestricted = 'restricted' === e.status;
         if (currentStagingData && currentStagingData.id === id) {
             // 'restricted': status SEBENARNYA masih 'completed' di server (ada
-            // hasil, cuma disembunyikan) — jangan ditimpa 'failed', supaya
+            // hasil, cuma disembunyikan) - jangan ditimpa 'failed', supaya
             // tombol Re-analyze (yang bisa menimpa analisa lengkap yang sudah
             // ada) tidak ikut muncul untuk actor yang tidak berhak lihat itu.
             currentStagingData.ai_analysis_status = isRestricted ? 'completed' : 'failed';
             if (isRestricted) currentStagingData.ai_analysis_restricted = true;
         }
-        // Refresh dulu (supaya header ikut ter-render ulang — kalau tidak,
+        // Refresh dulu (supaya header ikut ter-render ulang - kalau tidak,
         // tombol Re-analyze tetap hilang karena disembunyikan saat status
         // sempat 'pending' di atas), baru timpa isi body dengan pesan
         // spesifik dari server (mis. rate limit/config) alih-alih pesan
@@ -1299,7 +1299,7 @@ async function runAiAnalysis(id, force = false) {
     }
 }
 
-// Render ulang seluruh panel (header dengan tombol Re-analyze + body) —
+// Render ulang seluruh panel (header dengan tombol Re-analyze + body) -
 // dipakai setelah status berubah supaya tombol Re-analyze langsung
 // tampil/hilang sesuai status terbaru, bukan cuma isi body-nya.
 function refreshAiAnalysisPanel(id) {
@@ -1312,7 +1312,7 @@ function refreshAiAnalysisPanel(id) {
    Beda dari halaman AI Assistant: sesi ini SENGAJA TIDAK dipertahankan lintas
    buka-tutup modal atau lintas Re-analyze. stagingQaSessionId dibuat ulang
    setiap kali aiAnalysisPanelHtml() membangun panel dengan hasil (lihat di
-   atas) — supaya thread yang tampil kosong di layar tidak pernah diam-diam
+   atas) - supaya thread yang tampil kosong di layar tidak pernah diam-diam
    menyambung ke sesi lama di server (AiTicketQaService::cacheKey() memakai id
    ini), dan supaya konteks yang dipakai model selalu mengikuti ai_analysis
    yang sedang tampil, bukan versi lama sebelum Re-analyze.
@@ -1382,7 +1382,7 @@ function stagingQaResolve(id, errorText) {
 
 /**
  * SATU-SATUNYA titik sentuh backend untuk widget ini. Streaming Server-Sent
- * Events dari POST /api/staging-tickets/{id}/ask — bentuk framingnya sama
+ * Events dari POST /api/staging-tickets/{id}/ask - bentuk framingnya sama
  * persis dengan aiSendToBackend() di halaman AI Assistant (event delta/done/
  * error), cuma parsingnya ditulis ulang di sini karena file ini tidak berbagi
  * script dengan halaman itu.
@@ -1465,7 +1465,7 @@ async function stagingQaSend(stagingId) {
     }
 }
 
-// Isi field klasifikasi HANYA yang masih kosong — tidak menimpa input admin.
+// Isi field klasifikasi HANYA yang masih kosong - tidak menimpa input admin.
 function autoFillEmptyFromAi(data) {
     [
         ['approveTicketType', data.suggested_ticket_type],
@@ -1477,7 +1477,7 @@ function autoFillEmptyFromAi(data) {
         if (el && !el.value) el.value = val;
     });
 
-    // Widget modul terstruktur (multi-select) — cuma diisi kalau validator
+    // Widget modul terstruktur (multi-select) - cuma diisi kalau validator
     // belum memilih apa-apa, sama seperti field lain di atas.
     const moduleIdsEl = document.getElementById('approveModuleIds');
     if (moduleIdsEl && !moduleIdsEl.value && Array.isArray(data.suggested_module_ids) && data.suggested_module_ids.length) {
@@ -1591,7 +1591,7 @@ function buildAttachmentsBlock(files, source = 'local') {
             ? `<img src="${url}" alt="${name}" class="max-h-32 max-w-full rounded object-contain border border-gray-200 mt-2" onerror="this.remove()">`
             : '';
         // Image/PDF: browser punya viewer bawaan, buka di tab baru. Tipe lain (docx, xlsx, zip, dst):
-        // browser tidak bisa render inline, jadi paksa download dengan nama file yang benar —
+        // browser tidak bisa render inline, jadi paksa download dengan nama file yang benar -
         // tanpa atribut `download` ini, sebagian browser fallback ke nama dari URL (rusak/acak).
         const linkAttrs = (isImage || isPdf) ? 'target="_blank" rel="noopener"' : `download="${name}"`;
         return `<div class="border-b border-gray-100 last:border-0">
@@ -1701,10 +1701,10 @@ async function submitApprove(id) {
             name:                 name   || null,
             no_hp:                noHp   || null,
             // `module`/`module_id` (teks bebas + FK singular legacy) SENGAJA tidak
-            // dikirim di sini — tidak ada lagi kontrol UI untuk itu (dulu ada
+            // dikirim di sini - tidak ada lagi kontrol UI untuk itu (dulu ada
             // dropdown "Module" terpisah, sudah dihapus karena tidak pernah
             // mempengaruhi modul tiket yang sebenarnya). "Module(s)" di bawah
-            // (module_ids) adalah SATU-SATUNYA cara mengatur modul tiket — lihat
+            // (module_ids) adalah SATU-SATUNYA cara mengatur modul tiket - lihat
             // Ticket::syncModules(). Modul teks bebas asli dari staging (kalau
             // ada, dari submission awal) otomatis ikut ke tiket tanpa perlu
             // ditulis ulang di sini.
@@ -1886,7 +1886,7 @@ async function fetchEmailInbox(silent = false) {
 
     } catch (err) {
         const now = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false });
-        console.error(`[FetchEmail] ${ts} — Unhandled exception:`, err);
+        console.error(`[FetchEmail] ${ts} - Unhandled exception:`, err);
         if (!silent) showNotif('Failed to connect to email server.', 'error');
         if (status) status.textContent = `Error ${now} (WIB)`;
     } finally {
@@ -1898,7 +1898,7 @@ async function fetchEmailInbox(silent = false) {
 
 const DELIVERY_SUPPORTS = @json($deliverySupportsJson);
 
-// Type/Priority/Scale enums — sumbernya App\Support\TicketClassification (PHP),
+// Type/Priority/Scale enums - sumbernya App\Support\TicketClassification (PHP),
 // dikirim lewat controller supaya <option> di sini tidak jadi salinan lepas yang
 // bisa diam-diam beda dari validasi server / schema AI Ticket Analyzer.
 const TICKET_TYPES      = @json($ticketClassification['types']);
@@ -1953,7 +1953,7 @@ document.addEventListener('click', function (e) {
 
 
 </script>
-{{-- Load custom-dd component (sama dengan halaman admin lain) — minified
+{{-- Load custom-dd component (sama dengan halaman admin lain) - minified
      build (~63% smaller after gzip); regenerate via `npm run minify:js`
      whenever public/js/custom-dropdown.js changes.
      filemtime cache buster supaya production auto-invalidate setiap deploy. --}}

@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
  * Menentukan tema musiman DEFAULT untuk seluruh user (dashboard) + halaman
  * login. BUKAN dipaksakan ke semua orang: user yang preferensinya sendiri
  * sudah eksplisit ('none' atau tema tertentu di Settings > Appearance) tidak
- * ikut berubah — lihat App\Support\SeasonalThemeResolver, satu-satunya
+ * ikut berubah - lihat App\Support\SeasonalThemeResolver, satu-satunya
  * tempat aturan "default ikut admin, user boleh menimpa" ditegakkan.
  *
  * Sengaja TIDAK hardcode role id, sama seperti AiSettingsController: akses
@@ -36,9 +36,9 @@ class SeasonalThemeSettingsController extends Controller
             'activeVolume' => $settings['volume'],
             'catalog' => SeasonalThemes::catalog(),
             // Admin memilih dari file yang BENAR-BENAR ADA di public/sounds/,
-            // bukan mengetik bebas — daftar ini juga yang jadi acuan whitelist
+            // bukan mengetik bebas - daftar ini juga yang jadi acuan whitelist
             // di GlobalSeasonalTheme::sanitizeSound(). Ini folder yang sama
-            // dipakai fitur Notif Sounds (AdminNotificationSoundController) —
+            // dipakai fitur Notif Sounds (AdminNotificationSoundController) -
             // sengaja tidak dipisah folder supaya admin tidak perlu ingat 2
             // tempat upload berbeda untuk hal yang sama-sama "file suara".
             'availableSounds' => collect(glob(public_path('sounds/*.{mp3,wav,ogg,aac}'), GLOB_BRACE))
@@ -61,7 +61,7 @@ class SeasonalThemeSettingsController extends Controller
         // Validasi sebenarnya (apakah key dikenal SeasonalThemes, apakah file
         // sound benar-benar ada di public/sounds/, volume dalam rentang wajar)
         // ada di GlobalSeasonalTheme::sanitize()/sanitizeSound()/sanitizeVolume(),
-        // bukan diduplikasi di sini — supaya cuma ada satu tempat yang
+        // bukan diduplikasi di sini - supaya cuma ada satu tempat yang
         // menentukan apa yang "valid". SEMUA field DIKIRIM BERSAMA (lihat
         // catatan di GlobalSeasonalTheme::save()) supaya tidak ada yang
         // diam-diam ke-reset ke default.
@@ -100,7 +100,7 @@ class SeasonalThemeSettingsController extends Controller
      * Upload lagu baru KHUSUS untuk musik latar musiman.
      *
      * Sengaja MENIRU validasi & folder tujuan AdminNotificationSoundController::store()
-     * persis (sama-sama public/sounds/, sama-sama wav/mp3/ogg/aac maks 3MB) —
+     * persis (sama-sama public/sounds/, sama-sama wav/mp3/ogg/aac maks 3MB) -
      * itu permintaan eksplisit user ("sesuaikan dengan notifikasi itu"), satu
      * folder upload untuk SEMUA file suara di app ini, bukan dua tempat
      * berbeda yang harus diingat admin. TAPI sengaja TIDAK membuat baris
@@ -132,6 +132,6 @@ class SeasonalThemeSettingsController extends Controller
 
         return redirect()
             ->route('admin.seasonal-theme')
-            ->with('success', "Uploaded \"{$filename}\" — select it below and save to make it active.");
+            ->with('success', "Uploaded \"{$filename}\" - select it below and save to make it active.");
     }
 }

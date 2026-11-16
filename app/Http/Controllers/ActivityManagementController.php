@@ -119,7 +119,7 @@ class ActivityManagementController extends Controller
 
             Log::info('Validation passed', ['validated' => $validated]);
 
-            // Contract window guard — planning dates must stay inside the contract period.
+            // Contract window guard - planning dates must stay inside the contract period.
             $isGroupForRange = $validated['is_group'] ?? false;
             if (!$isGroupForRange) {
                 $rangeError = $this->contractRangeViolation(
@@ -260,7 +260,7 @@ class ActivityManagementController extends Controller
                     $planning->activity_id = $activity->id;
                     $planning->save();
 
-                    // Go-Live marker (exclusive — clears any other go-live leaf).
+                    // Go-Live marker (exclusive - clears any other go-live leaf).
                     $this->applyGoLiveFlag($project, $planning, (bool) ($validated['is_golive'] ?? false));
                 }
 
@@ -349,7 +349,7 @@ class ActivityManagementController extends Controller
                 $leaf->is_golive = true;
                 $leaf->save(); // triggers go_live_estimated recompute
             } else {
-                // Already flagged but a sibling may have been cleared above — force recompute.
+                // Already flagged but a sibling may have been cleared above - force recompute.
                 $project->refresh()->updateFromPlanning();
             }
         } elseif ($leaf->is_golive) {
@@ -578,7 +578,7 @@ class ActivityManagementController extends Controller
                 }
             }
 
-            // Contract window guard — planning dates must stay inside the contract period.
+            // Contract window guard - planning dates must stay inside the contract period.
             if (array_key_exists('start_date', $validated) || array_key_exists('end_date', $validated)) {
                 $rangeError = $this->contractRangeViolation(
                     $project,
@@ -689,7 +689,7 @@ class ActivityManagementController extends Controller
                             }
                         }
 
-                        // Go-Live marker — apply to the linked planning leaf when submitted.
+                        // Go-Live marker - apply to the linked planning leaf when submitted.
                         if ($planningRecord && array_key_exists('is_golive', $validated)) {
                             $this->applyGoLiveFlag($project, $planningRecord, (bool) $validated['is_golive']);
                         }
@@ -750,7 +750,7 @@ class ActivityManagementController extends Controller
 
                     $planning->save();
 
-                    // Go-Live marker — apply to this leaf when submitted (ignored for groups).
+                    // Go-Live marker - apply to this leaf when submitted (ignored for groups).
                     if (array_key_exists('is_golive', $validated)) {
                         $this->applyGoLiveFlag($project, $planning, (bool) $validated['is_golive']);
                     }

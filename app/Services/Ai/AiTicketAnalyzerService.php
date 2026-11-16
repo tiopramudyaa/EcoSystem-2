@@ -23,26 +23,26 @@ use Throwable;
 
 /**
  * Triage satu staging ticket lewat AI (Claude via Agent Skill custom
- * "sap-ticket-analyzer", atau GPT — lihat TicketAnalysisDriver/AiDriverFactory
+ * "sap-ticket-analyzer", atau GPT - lihat TicketAnalysisDriver/AiDriverFactory
  * untuk provider mana yang benar-benar dipanggil): overview, dugaan akar
  * masalah, langkah penyelesaian, dan saran klasifikasi (Type/Priority/Scale/
- * Module). Saran "siapa yang di-assign" TIDAK berasal dari AI — dihitung
+ * Module). Saran "siapa yang di-assign" TIDAK berasal dari AI - dihitung
  * deterministik dari tiga sinyal: (1) Module Lead + EmployeeQualification,
  * (2) histori pernah menangani tiket dengan isu serupa di modul yang sama
  * (lihat resolveAssignees()/countSimilarIssuesHandled()), (3) workload aktif
- * via ConsultantWorkloadController sebagai penentu akhir — supaya hasilnya
+ * via ConsultantWorkloadController sebagai penentu akhir - supaya hasilnya
  * bisa dipertanggungjawabkan dan tidak berhalusinasi nama orang.
  *
  * Dipicu OTOMATIS sekali saat admin membuka staging ticket unvalidated untuk
- * divalidasi (bukan tombol manual) — lihat StagingTicketController::analyze(),
+ * divalidasi (bukan tombol manual) - lihat StagingTicketController::analyze(),
  * yang meng-klaim ai_analysis_status='pending' secara atomic sebelum memanggil
  * method ini, supaya cuma ada TEPAT SATU pemanggilan API otomatis per tiket.
  * Admin bisa memicu ulang secara sengaja lewat tombol Re-analyze di panel
- * (klaim ulang lewat parameter force di controller) — pemanggilan itu tetap
+ * (klaim ulang lewat parameter force di controller) - pemanggilan itu tetap
  * lewat method analyze() yang sama, cukup menimpa ai_analysis yang lama.
  * Karena tidak ada retry OTOMATIS dari sisi sistem, satu kegagalan transient
  * (rate limit/server sibuk/koneksi putus) tidak boleh langsung menghabiskan
- * jatah — analyze() sendiri retry SEKALI untuk kelas error itu sebelum benar-
+ * jatah - analyze() sendiri retry SEKALI untuk kelas error itu sebelum benar-
  * benar menyerah (lihat callDriverWithRetry()).
  */
 class AiTicketAnalyzerService
@@ -54,7 +54,7 @@ class AiTicketAnalyzerService
     private const RETRY_DELAY_SECONDS = 2;
 
     /**
-     * Urutan seniority dari employee_qualification.qualification_level — dipakai
+     * Urutan seniority dari employee_qualification.qualification_level - dipakai
      * buat ranking "siapa yang paling cocok", BUKAN workload. Nilai tak dikenal
      * (termasuk null) jatuh ke 0 lewat null-coalesce di pemanggilnya.
      */
@@ -74,7 +74,7 @@ class AiTicketAnalyzerService
 
     /**
      * Kata umum yang dibuang saat menokenisasi deskripsi untuk pencarian tiket
-     * serupa (lihat resolveSimilarTickets()) — tanpa ini kata seperti "yang"/
+     * serupa (lihat resolveSimilarTickets()) - tanpa ini kata seperti "yang"/
      * "tidak"/"bisa" akan cocok dengan HAMPIR SEMUA tiket dan bikin daftar
      * "serupa" tidak berarti apa-apa. Dicampur ID/EN karena deskripsi tiket di
      * sistem ini bercampur dua bahasa.
@@ -100,7 +100,7 @@ class AiTicketAnalyzerService
     }
 
     /**
-     * Kelas exception yang dianggap transient (worth 1x retry internal) —
+     * Kelas exception yang dianggap transient (worth 1x retry internal) -
      * daftar ini SENGAJA sejajar dengan catch chain di
      * StagingTicketController::analyze() (bagian "retryable: true"). Kalau
      * salah satu diubah, cek yang satunya juga.
@@ -161,7 +161,7 @@ class AiTicketAnalyzerService
 
         // Token & ID tiket yang cocok dihitung SEKALI di sini dan dibagi ke
         // resolveAssignees() + resolveSimilarTickets(), supaya "isu serupa"
-        // berarti PERSIS hal yang sama di kedua tempat — dan supaya pemindaian
+        // berarti PERSIS hal yang sama di kedua tempat - dan supaya pemindaian
         // LIKE '%token%' non-index terhadap ticket.description (bagian paling
         // mahal di sini) cuma dijalankan SEKALI, bukan tiga kali seperti
         // sebelumnya (resolveSimilarTickets() + dua query di
@@ -182,7 +182,7 @@ class AiTicketAnalyzerService
             'resolution_steps' => $this->sanitizeStringList($parsed['resolution_steps'] ?? []),
             'risks' => $this->sanitizeStringList($parsed['risks'] ?? []),
             'confidence' => $confidence,
-            // Singular = modul PERTAMA yang disarankan — dipertahankan untuk
+            // Singular = modul PERTAMA yang disarankan - dipertahankan untuk
             // kompatibilitas mundur (siapa pun yang masih baca field tunggal
             // ini, mis. arsip lama). Sumber kebenaran sekarang array di bawah.
             'suggested_module_id' => $moduleIds[0] ?? null,
@@ -228,11 +228,11 @@ class AiTicketAnalyzerService
      * memaksa admin klik ulang secara manual.
      *
      * SEJAK DRIVER JADI STREAMING: retry di atas HANYA aman selama belum ada
-     * satu pun event yang terkirim ke klien — begitu status pertama sudah
+     * satu pun event yang terkirim ke klien - begitu status pertama sudah
      * tampil di layar validator, browser sudah "melihat" giliran ini
      * berjalan, dan mengulang dari nol akan terlihat seperti macet/reset
      * alih-alih pulih. Preseden di ResearchDriver/AnthropicChatDriver malah
-     * TIDAK retry sama sekali begitu streaming mulai — di sini kompromi:
+     * TIDAK retry sama sekali begitu streaming mulai - di sini kompromi:
      * $hasStarted dijaga lewat wrapper $onEvent, retry cuma jalan kalau
      * gagalnya terjadi SEBELUM event pertama (kasus paling umum untuk rate
      * limit/connection error yang gagal duluan sebelum sempat streaming apa
@@ -278,7 +278,7 @@ class AiTicketAnalyzerService
             sleep(self::RETRY_DELAY_SECONDS);
 
             // Kalau retry ini juga gagal, biarkan exception-nya menjalar apa
-            // adanya — tidak ada retry kedua.
+            // adanya - tidak ada retry kedua.
             return $driver->analyze(
                 model: $model,
                 systemPrompt: $systemPrompt,
@@ -304,11 +304,11 @@ class AiTicketAnalyzerService
         return <<<PROMPT
             Anda adalah SAP support triage analyst untuk tim Delivery Support EcoSystem.
             Tugas Anda: menganalisa satu tiket masuk yang BELUM divalidasi, memberi overview
-            singkat, dugaan akar masalah, dan langkah penyelesaian awal — pakai pengetahuan
+            singkat, dugaan akar masalah, dan langkah penyelesaian awal - pakai pengetahuan
             dari skill yang sudah dimuat di container ini.
 
             Daftar modul SAP yang terdaftar di sistem (pakai ID persis ini untuk
-            suggested_module_ids — array, boleh lebih dari satu ID kalau tiket ini
+            suggested_module_ids - array, boleh lebih dari satu ID kalau tiket ini
             memang menyentuh beberapa modul sekaligus; array kosong [] kalau tidak
             ada yang cocok):
             {$moduleList}
@@ -355,7 +355,7 @@ class AiTicketAnalyzerService
         $lines[] = $body !== '' ? $body : '(tidak ada isi tambahan)';
 
         // Hanya ada kalau actor yang memicu analisa ini punya izin
-        // 'customer.section.credential.view' — lihat resolveCredentialContext().
+        // 'customer.section.credential.view' - lihat resolveCredentialContext().
         // Ditempel sebagai blok terpisah, bukan disisipkan ke body, supaya
         // jelas ini konteks tambahan sistem, bukan bagian dari pesan pengirim.
         if (null !== $credentialContext) {
@@ -414,7 +414,7 @@ class AiTicketAnalyzerService
 
     /**
      * @return int[] ID unik, sudah divalidasi ada di $modules, urutan dipertahankan
-     * (elemen pertama = modul yang jadi "modul utama" — lihat analyze()).
+     * (elemen pertama = modul yang jadi "modul utama" - lihat analyze()).
      */
     private function sanitizeModuleIds(mixed $value, Collection $modules): array
     {
@@ -441,22 +441,22 @@ class AiTicketAnalyzerService
 
     /**
      * Kandidat paling cocok untuk mengerjakan tiket ini, diranking dari TIGA
-     * sinyal — persis tiga yang diminta: (1) kecocokan modul (module lead
+     * sinyal - persis tiga yang diminta: (1) kecocokan modul (module lead
      * lebih dulu, lalu level kualifikasi), (2) histori pernah menangani isu
      * SERUPA (dihitung dari $searchTokens yang SAMA dengan yang membentuk
-     * "Similar Past Tickets" — lihat resolveSimilarTickets()), (3) workload
-     * sebagai penentu akhir. Hasilnya array TERURUT 1..N — array_values()
+     * "Similar Past Tickets" - lihat resolveSimilarTickets()), (3) workload
+     * sebagai penentu akhir. Hasilnya array TERURUT 1..N - array_values()
      * di ujung berarti urutan itu SENDIRI adalah rank-nya, tidak perlu kolom
      * rank terpisah.
      *
      * Workload SENGAJA tetap penentu TERAKHIR, bukan filter yang membuang
-     * kandidat overload dari daftar — kandidat yang paling cocok dari sisi
+     * kandidat overload dari daftar - kandidat yang paling cocok dari sisi
      * modul & pengalaman isu serupa tetap harus terlihat, dengan warning,
      * bukan hilang diam-diam. Itu keputusan yang sudah diambil sebelum
      * sinyal isu-serupa ditambahkan, dan tetap dipertahankan di sini.
      *
-     * @param int[] $moduleIds modul yang disarankan AI — kandidat adalah UNION lintas semuanya
-     * @param int[] $matchingTicketIds hasil findMatchingTicketIds() — sama dengan yang dipakai resolveSimilarTickets()
+     * @param int[] $moduleIds modul yang disarankan AI - kandidat adalah UNION lintas semuanya
+     * @param int[] $matchingTicketIds hasil findMatchingTicketIds() - sama dengan yang dipakai resolveSimilarTickets()
      */
     private function resolveAssignees(array $moduleIds, array $matchingTicketIds): array
     {
@@ -464,18 +464,18 @@ class AiTicketAnalyzerService
             return [];
         }
 
-        // ModuleLead::module_leads adalah tabel pivot murni — pluck langsung dari
+        // ModuleLead::module_leads adalah tabel pivot murni - pluck langsung dari
         // sana (bukan lewat leadEmployees()) supaya tidak ambigu dengan kolom
         // employee_id yang juga ada di tabel employee saat di-join. Union lintas
         // SEMUA modul yang disarankan, bukan cuma satu.
         $leadIds = ModuleLead::whereIn('module_id', $moduleIds)->pluck('employee_id')->unique()->all();
 
-        // Tidak difilter ke qualification_type tertentu — di data real, kompetensi
+        // Tidak difilter ke qualification_type tertentu - di data real, kompetensi
         // modul dicatat di berbagai type ('Certification', dst), bukan cuma 'Skill'
         // literal (lihat juga ConsultantWorkloadController::modulesMapForEmployees(),
         // yang punya masalah sama dan sudah tidak filter by type). Yang penting cuma
         // employee itu punya catatan kualifikasi di SALAH SATU modul ini & belum
-        // kedaluwarsa. qualification_level dipakai sebagai sinyal "seberapa cocok" —
+        // kedaluwarsa. qualification_level dipakai sebagai sinyal "seberapa cocok" -
         // employee bisa punya >1 baris (beda modul, atau beda tahun modul yang sama),
         // ambil level TERTINGGI di antara semuanya.
         $levelByEmployee = [];
@@ -493,7 +493,7 @@ class AiTicketAnalyzerService
             return [];
         }
 
-        // eligibleForTicketTeam() (bukan cuma is_active) — supaya AI tidak menyarankan
+        // eligibleForTicketTeam() (bukan cuma is_active) - supaya AI tidak menyarankan
         // employee yang sudah di-block/ditandai untuk dihapus, sinkron dengan
         // gerbang yang sama dipakai TicketController::assignTicketLead()/addMember()
         // saat saran ini benar-benar diklik oleh validator.
@@ -536,9 +536,9 @@ class AiTicketAnalyzerService
                     'warning_message' => $highWorkload ? "Workload sedang tinggi ({$pct}%)" : null,
                 ];
             })
-            // Tiga tingkat, sesuai urutan yang diminta: (1) kecocokan modul —
+            // Tiga tingkat, sesuai urutan yang diminta: (1) kecocokan modul -
             // module lead dulu, lalu level kualifikasi; (2) pernah menangani
-            // isu serupa — lebih banyak menang; (3) workload — lebih ringan
+            // isu serupa - lebih banyak menang; (3) workload - lebih ringan
             // menang, HANYA sebagai penentu akhir kalau dua sinyal di atas
             // seri, bukan filter yang membuang kandidat overload.
             ->sort(function (array $a, array $b) {
@@ -567,14 +567,14 @@ class AiTicketAnalyzerService
     /**
      * Berapa kali tiap kandidat (lead ATAU member aktif) pernah mengerjakan
      * tiket di SALAH SATU modul ini yang deskripsinya cocok dengan token
-     * pencarian — sinyal "pernah menangani isu serupa atau mirip" yang
+     * pencarian - sinyal "pernah menangani isu serupa atau mirip" yang
      * diminta secara eksplisit untuk ranking assignee, terpisah dari daftar
      * "Similar Past Tickets" yang cuma menampilkan 5 tiket teratas lintas
      * SEMUA konsultan.
      *
      * $matchingTicketIds sudah menggabungkan filter modul+token (lihat
      * findMatchingTicketIds()), jadi di sini tinggal whereIn(ticket_id) yang
-     * murah — tidak menjalankan ulang pemindaian LIKE non-index.
+     * murah - tidak menjalankan ulang pemindaian LIKE non-index.
      *
      * @param int[] $candidateIds
      * @param int[] $matchingTicketIds hasil findMatchingTicketIds()
@@ -615,10 +615,10 @@ class AiTicketAnalyzerService
     // ─── Konteks tambahan: credential, konsultan customer, tiket serupa ───────
 
     /**
-     * Catatan credential/akses customer ini, untuk ditempel ke prompt AI —
+     * Catatan credential/akses customer ini, untuk ditempel ke prompt AI -
      * TIDAK PERNAH ditulis ke $result/ai_analysis, cuma input sekali pakai.
      * Gerbang izin & query-nya ada di CustomerCredential::contextNotesFor()
-     * (dipakai bersama dengan AiTicketQaService) — bukan izin "boleh
+     * (dipakai bersama dengan AiTicketQaService) - bukan izin "boleh
      * validasi staging ticket", yang tidak otomatis berarti boleh melihat
      * credential customer. Validator tanpa izin ini diam-diam tidak dapat
      * konteksnya, bukan error.
@@ -632,14 +632,14 @@ class AiTicketAnalyzerService
     }
 
     /**
-     * Konsultan yang pernah mengerjakan tiket customer ini — lead ATAU member
-     * aktif (lihat Ticket::members(), yang sudah memfilter is_active) — supaya
+     * Konsultan yang pernah mengerjakan tiket customer ini - lead ATAU member
+     * aktif (lihat Ticket::members(), yang sudah memfilter is_active) - supaya
      * validator tahu siapa yang sudah familiar dengan customer ini, bukan
      * cuma siapa yang cocok dari sisi kualifikasi modul (itu tugas
-     * resolveAssignees()). Deterministik, murni dari histori tiket — tidak
+     * resolveAssignees()). Deterministik, murni dari histori tiket - tidak
      * lewat AI, jadi tidak bisa berhalusinasi nama orang.
      *
-     * ticket_team SENGAJA tidak dipakai di sini — tabel itu tidak terpakai di
+     * ticket_team SENGAJA tidak dipakai di sini - tabel itu tidak terpakai di
      * mana pun di aplikasi (lihat riset), ticket_member adalah sumber nyata.
      */
     private function resolveCustomerConsultants(StagingTicket $staging): array
@@ -653,7 +653,7 @@ class AiTicketAnalyzerService
             return [];
         }
 
-        // Dibatasi ke N tiket TERBARU (bukan seluruh histori) — customer lama
+        // Dibatasi ke N tiket TERBARU (bukan seluruh histori) - customer lama
         // dengan ribuan tiket cuma perlu sinyal "siapa yang baru-baru ini
         // menangani customer ini" untuk saran assignee, bukan seluruh riwayat.
         // orderByDesc di atas sudah memastikan yang dibuang adalah yang paling
@@ -733,17 +733,17 @@ class AiTicketAnalyzerService
 
     /**
      * Tiket lama yang deskripsinya bertumpang-tindak kata kunci dengan tiket
-     * ini (dan salah satu modul yang sama, kalau AI berhasil menebaknya) —
+     * ini (dan salah satu modul yang sama, kalau AI berhasil menebaknya) -
      * supaya validator bisa lihat siapa yang pernah menangani isu serupa. Ini
      * heuristik LIKE sederhana, BUKAN pencarian semantik: tidak ada
      * infrastruktur fulltext/embedding di sistem ini, jadi ini yang paling
-     * jujur bisa dilakukan tanpa menambah dependensi baru — daftarnya bisa
+     * jujur bisa dilakukan tanpa menambah dependensi baru - daftarnya bisa
      * meleset kalau deskripsinya pendek/generik, dan itu keterbatasan yang
      * disadari, bukan bug.
      *
      * $matchingTicketIds dihitung SEKALI di analyze() lewat
      * findMatchingTicketIds() dan dibagi ke sini DAN ke resolveAssignees()
-     * (lewat countSimilarIssuesHandled()) — supaya "isu serupa" berarti
+     * (lewat countSimilarIssuesHandled()) - supaya "isu serupa" berarti
      * kriteria yang sama persis di kedua daftar, TANPA menjalankan ulang
      * pemindaian LIKE-nya.
      *
@@ -781,7 +781,7 @@ class AiTicketAnalyzerService
 
     /**
      * ID tiket yang deskripsinya cocok dengan salah satu $tokens (dan salah
-     * satu $moduleIds kalau ada) — pemindaian LIKE '%token%' non-index yang
+     * satu $moduleIds kalau ada) - pemindaian LIKE '%token%' non-index yang
      * jadi bagian PALING MAHAL dari resolveAssignees()+resolveSimilarTickets()
      * gabungan. Dihitung SEKALI di analyze() dan hasilnya (ID, bukan model)
      * dibagi ke countSimilarIssuesHandled() dan resolveSimilarTickets() lewat
@@ -798,7 +798,7 @@ class AiTicketAnalyzerService
             return [];
         }
 
-        // Dibatasi + diurutkan ke yang paling baru — endpoint ini jalan OTOMATIS
+        // Dibatasi + diurutkan ke yang paling baru - endpoint ini jalan OTOMATIS
         // tiap kali admin membuka staging ticket, jadi full-table LIKE scan tanpa
         // batas jadi makin mahal seiring tabel ticket membesar. Tiket TERBARU
         // yang mirip lebih relevan untuk "similar issues"/saran assignee

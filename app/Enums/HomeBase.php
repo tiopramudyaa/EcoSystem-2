@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * Home Base (lokasi kantor) employee. Label murni — tidak membawa data harga,
+ * Home Base (lokasi kantor) employee. Label murni - tidak membawa data harga,
  * sehingga cukup enum PHP (bukan tabel). Bila kelak tarif bergantung lokasi,
  * naikkan ke tabel referensi seperti Grade.
  *

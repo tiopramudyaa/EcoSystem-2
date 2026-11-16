@@ -37,7 +37,7 @@ class DeliveryInvoicedTopSummarySheet implements WithTitle, WithEvents
                 $text  = fn (string $cell, $value) => $sheet->setCellValueExplicit($cell, (string) ($value ?? ''), DataType::TYPE_STRING);
                 $num   = fn (string $cell, $value) => $sheet->setCellValueExplicit($cell, (float) $value, DataType::TYPE_NUMERIC);
 
-                $text('A1', 'INVOICED TERM OF PAYMENT — SUMMARY BY PROJECT');
+                $text('A1', 'INVOICED TERM OF PAYMENT - SUMMARY BY PROJECT');
                 $sheet->mergeCells('A1:I1');
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
 

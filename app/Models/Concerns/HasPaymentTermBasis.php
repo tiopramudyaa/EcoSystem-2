@@ -5,7 +5,7 @@ namespace App\Models\Concerns;
 use App\Models\DeliveryProjectPaymentTerm;
 
 /**
- * Basis amount sebuah termin TOP — dipakai bersama oleh Delivery Project
+ * Basis amount sebuah termin TOP - dipakai bersama oleh Delivery Project
  * (DeliveryProjectPaymentTerm) dan Delivery Support (DeliverySupportPaymentTerm).
  * Rumusnya satu sumber: DeliveryProjectPaymentTerm::amountFor().
  *

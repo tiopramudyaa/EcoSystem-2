@@ -5,13 +5,13 @@ order: 50
 title: Sign in and account security
 summary: How to sign in with a password or with Microsoft, change your password and keep your account safe.
 requires: []
-updated: 2026-11-12
+updated: 2026-11-15
 ---
 This topic explains how to sign in to EcoSystem with your password or with your Microsoft work account, where to change your password, and the habits that keep your account safe.
 
 ## Who uses this
 
-Everyone who signs in to EcoSystem. The part about setting up Microsoft 365 login is only for an EC Administrator.
+Everyone who signs in to EcoSystem.
 
 ## Before you start
 
@@ -81,21 +81,6 @@ To remove the connection, select `Disconnect` and confirm. You can still sign in
 
 If the section says `Sign in with Microsoft is not enabled yet`, an EC Administrator has not turned it on.
 
-### Set up Microsoft 365 login (EC Administrator only)
-
-Only an EC Administrator sees the `Microsoft 365 tenant configuration` box in the `Microsoft account` section.
-
-![The Microsoft 365 tenant configuration box with the tenant ID, client ID, client secret, redirect URI and the enable option](images/guide/settings-microsoft-config.png)
-
-*Screenshot with sample data.*
-
-1. In Microsoft Entra, open the app registration of the company and add a `Web` redirect URI with the exact address shown in `Web redirect URI` (use `Copy`).
-2. Make sure the app registration allows the basic sign-in permissions and that an administrator has approved them for the organization.
-3. In EcoSystem fill in `Directory (tenant) ID`, `Application (client) ID` and `Client secret value`. Use the secret Value, not the secret ID.
-4. Tick `Enable Microsoft 365 login` and select `Save M365 configuration`.
-
-Leave `Client secret value` empty to keep the secret that is already stored. The secret is stored encrypted and is never shown again. Empty ID fields use the shared Microsoft app registration of the server, if there is one.
-
 ### Check where you are signed in
 
 The `Active sessions` section of the `Security` tab lists the sessions of your account. The line marked `Current session` is the browser you are using now.
@@ -109,7 +94,7 @@ The `Active sessions` section of the `Security` tab lists the sessions of your a
 ## Rules to know
 
 - Sign in with Microsoft is an extra option. Sign in with password stays available and unchanged.
-- Only an EC Administrator can turn it on or change its settings. It is off until then. The button appears on the sign-in page only when it is turned on and the tenant ID, client ID and client secret are all complete.
+- Only an EC Administrator can turn it on or change its settings. It is off until then. The button appears on the sign-in page only after it is turned on.
 - Only accounts of the configured Microsoft organization can sign in this way.
 - EcoSystem never creates an account from a Microsoft sign-in. The Microsoft account must belong to an existing, active EcoSystem employee account.
 - The first time, the Microsoft work email is matched to the email of the EcoSystem account. After that the connection is by the Microsoft account itself, so a changed email does not break it. An EcoSystem account that is already connected to one Microsoft account cannot be taken over by a different one.
@@ -118,8 +103,7 @@ The `Active sessions` section of the `Security` tab lists the sessions of your a
 - Two-step verification is not skipped. If it is on for your account, the code is asked after Microsoft sign-in, the same as after a password.
 - `Keep me signed in` does not apply to Microsoft sign-in. Your session ends as a normal one.
 - A Microsoft sign-in must be finished within 10 minutes after you select `Sign in with Microsoft`. After that, start again.
-- Connecting and disconnecting a Microsoft account, and every change of the configuration, are written to the Audit Log. The client secret is never written there.
-- The tenant ID and the client ID must look like `00000000-0000-0000-0000-000000000000`. Login cannot be turned on while any of the three values is missing.
+- Connecting and disconnecting a Microsoft account is written to the Audit Log.
 
 ## What happens next
 

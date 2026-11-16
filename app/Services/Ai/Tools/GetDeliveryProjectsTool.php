@@ -14,7 +14,7 @@ class GetDeliveryProjectsTool implements AiTool
             'description' => 'Look up delivery (implementation) projects and their schedule status. Use this for questions '
                 . 'like "which projects are behind schedule" or "what is the progress of project X for client Y". The '
                 . 'status field already reflects the project\'s Schedule Performance Index band (On Track / At Risk / '
-                . 'At Critical) — do not try to recompute it. Do not use this for ticket or SLA questions.',
+                . 'At Critical) - do not try to recompute it. Do not use this for ticket or SLA questions.',
             'input_schema' => [
                 'type' => 'object',
                 'properties' => [

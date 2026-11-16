@@ -9,7 +9,7 @@ use Throwable;
 
 /**
  * Exact COUNT/SUM/AVG/MIN/MAX over a table, optionally grouped by one or
- * more columns — for "how many", "total", "average" questions that
+ * more columns - for "how many", "total", "average" questions that
  * query_data structurally cannot answer (it returns at most 100 rows, which
  * is a sample, not a total).
  *
@@ -31,7 +31,7 @@ class AggregateDataTool implements AiTool
     {
         return [
             'name' => 'aggregate_data',
-            'description' => 'Get an exact COUNT, SUM, AVG, MIN, or MAX over a database table — use this for "how '
+            'description' => 'Get an exact COUNT, SUM, AVG, MIN, or MAX over a database table - use this for "how '
                 . 'many", "total", "average" questions instead of query_data, which only returns a capped sample of '
                 . 'rows and cannot give an accurate total. Optionally group by one or more columns to get the '
                 . 'aggregate per group in a single call (e.g. ticket count per status) instead of querying each '

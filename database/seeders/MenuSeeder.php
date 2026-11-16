@@ -74,7 +74,7 @@ class MenuSeeder extends Seeder
                         'slug'        => $section['base'] . '.' . $action,
                         // Label boleh dioverride per section (mis. Team Members
                         // memakai "Create" karena "Delete"-nya slug terpisah).
-                        'name'        => $section['name'] . ' — ' . ($section['labels'][$action] ?? self::ACTION_LABEL[$action]),
+                        'name'        => $section['name'] . ' - ' . ($section['labels'][$action] ?? self::ACTION_LABEL[$action]),
                         'type'        => 'function',
                         'parent_slug' => $parent,
                         'route_name'  => null,
@@ -283,7 +283,7 @@ class MenuSeeder extends Seeder
 
         // ── Upsert menus (idempotent) ────────────────────────────────────────────
         $inserted = [];
-        $newSlugs = []; // slug yang baru lahir di run ini — cuma ini yang boleh dapat default matrix di bawah
+        $newSlugs = []; // slug yang baru lahir di run ini - cuma ini yang boleh dapat default matrix di bawah
         foreach ($menus as $menu) {
             $parentId = isset($menu['parent_slug']) && $menu['parent_slug']
                 ? ($inserted[$menu['parent_slug']] ?? null)
@@ -334,11 +334,11 @@ class MenuSeeder extends Seeder
         $matrix = [
             // Home
             'dashboard'                   => [self::ADMIN=>$v,    self::EMPLOYEE=>$v,   self::INTERN=>$v,   self::HOP=>$v,    self::HOS=>$v,    self::HELPDESK=>$v,   self::RPMO=>$v],
-            // AI Assistant — menu baru: admin saja, role lain lewat Menu Access.
+            // AI Assistant - menu baru: admin saja, role lain lewat Menu Access.
             'ai-assistant'                => [self::ADMIN=>$v],
-            // AI Research — menu baru: admin saja, role lain lewat Menu Access.
+            // AI Research - menu baru: admin saja, role lain lewat Menu Access.
             'ai-research'                 => [self::ADMIN=>$v],
-            // Word Report Generator — menu baru: admin saja, role lain lewat Menu Access.
+            // Word Report Generator - menu baru: admin saja, role lain lewat Menu Access.
             'word-report-generator'       => [self::ADMIN=>$v],
             // Calendar
             'calendar'              => [self::ADMIN=>$vced, self::EMPLOYEE=>$v,   self::INTERN=>$v,   self::HOP=>$v,    self::HOS=>$v,    self::HELPDESK=>$v,   self::RPMO=>$v],
@@ -366,7 +366,7 @@ class MenuSeeder extends Seeder
             'reporting.ticket-by-module'   => [self::ADMIN=>$v, self::EMPLOYEE=>$v, self::HOP=>$v, self::HOS=>$v, self::HELPDESK=>$v, self::RPMO=>$v],
             'reporting.log-shifting'       => [self::ADMIN=>$vced, self::HOS=>$vce, self::HELPDESK=>$vce, self::RPMO=>$vce],
             // Employee ikut diberi akses (bukan cuma Admin/HOS/Helpdesk/RPMO) karena
-            // module lead yang mengisi recon ini biasanya role Delivery Support User —
+            // module lead yang mengisi recon ini biasanya role Delivery Support User -
             // pembatasan "hanya modul yang dia pimpin" dilakukan di
             // WeeklyConsolidationController (data-driven), bukan di sini.
             'reporting.weekly-consolidation' => [self::ADMIN=>$vced, self::EMPLOYEE=>$vce, self::HOS=>$vce, self::HELPDESK=>$vce, self::RPMO=>$vce, self::MODUL_LEAD=>$vce],
@@ -407,7 +407,7 @@ class MenuSeeder extends Seeder
             'ticket.approve-resolution-days'    => [self::ADMIN=>$v, self::HOS=>$v],
             'ticket.eligible-ticket-lead'       => [self::EMPLOYEE=>$v],
             'ticket.eligible-ticket-member'     => [self::EMPLOYEE=>$v],
-            // Tombol shortcut di headbar room chat — Helpdesk saja (+ Admin).
+            // Tombol shortcut di headbar room chat - Helpdesk saja (+ Admin).
             'ticket.sla-log'                    => [self::ADMIN=>$v, self::HELPDESK=>$v],
             'ticket.shifting-log'               => [self::ADMIN=>$v, self::HELPDESK=>$v],
             // Room Chat
@@ -511,13 +511,13 @@ class MenuSeeder extends Seeder
         // Seeder ini rutin dijalankan ulang di production tiap kali ada slug baru
         // (lihat MULTI_ROLE_SYSTEM.md). Matrix di atas cuma boleh diterapkan untuk
         // slug yang BARU LAHIR di run ini ($newSlugs). Slug yang sudah ada sebelum
-        // run ini SAMA SEKALI tidak disentuh lagi — bukan cuma soal tidak menimpa
+        // run ini SAMA SEKALI tidak disentuh lagi - bukan cuma soal tidak menimpa
         // baris yang ada, tapi juga tidak mengisi baris yang HILANG karena role
         // tersebut sengaja "Revoke Access" via Control Center → Menu Access.
         // Revoke di UI itu men-detach() baris role_menu (dihapus, bukan
         // can_view=false), jadi kalau matrix tetap diterapkan ke slug lama,
         // baris yang hilang itu akan dianggap "belum ada" dan diisi ulang dengan
-        // nilai baku — persis gejala "slug balik ke default padahal sudah
+        // nilai baku - persis gejala "slug balik ke default padahal sudah
         // dicabut" yang dilaporkan. Aturannya sama seperti App\Support\
         // MenuRegistrar: sekali sebuah slug lahir, Control Center adalah satu-
         // satunya sumber kebenaran untuk role_menu-nya.

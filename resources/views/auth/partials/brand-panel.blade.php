@@ -3,8 +3,8 @@
     Mirrors the login page's split-screen aesthetic.
 
     Optional variables:
-      $brandHeadline (string|null) — overrides the default headline (HTML allowed)
-      $brandSub      (string|null) — overrides the default subheading
+      $brandHeadline (string|null) - overrides the default headline (HTML allowed)
+      $brandSub      (string|null) - overrides the default subheading
 --}}
 <style>
     /* ── Variables ─────────────────────────────────────────────── */

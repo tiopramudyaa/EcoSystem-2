@@ -101,7 +101,7 @@ class DeliveryProjectPaymentTermExport implements WithTitle, WithEvents, WithPre
                 $last  = $col['status'];
 
                 // ── Judul + info project ──────────────────────────────
-                $text('A1', $this->scope === 'invoiced' ? 'TERM OF PAYMENT PLAN — INVOICED' : 'TERM OF PAYMENT PLAN');
+                $text('A1', $this->scope === 'invoiced' ? 'TERM OF PAYMENT PLAN - INVOICED' : 'TERM OF PAYMENT PLAN');
                 $sheet->mergeCells("A1:{$last}1");
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
 
@@ -112,7 +112,7 @@ class DeliveryProjectPaymentTermExport implements WithTitle, WithEvents, WithPre
                     'TOP Type'     => $lineItemMode ? 'Contract Line Item' : '% of Revenue',
                     'Revenue (Sales Data)' => (float) $this->plan['project_revenue'],
                     'Export Scope' => $this->scope === 'invoiced'
-                        ? 'Invoiced only — terms that already have an Invoice No'
+                        ? 'Invoiced only - terms that already have an Invoice No'
                         : 'All payment terms',
                     'Exported At'  => now()->format('d M Y H:i'),
                 ];

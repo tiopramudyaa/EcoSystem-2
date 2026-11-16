@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Master data "Project Type" (delivery_projects.project_type) dan "Support
- * Type" (delivery_support.type) — dulu hardcoded di banyak tempat:
+ * Type" (delivery_support.type) - dulu hardcoded di banyak tempat:
  *   - resources/views/delivery/project/projects/create.blade.php
  *   - resources/views/delivery/project/projects/partials/modal-general-info.blade.php
  *   - App\Http\Controllers\DeliveryProjectController (Rule::in ...)
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  *   - App\Http\Controllers\Delivery\DeliverySupportController (Rule::in ...)
  *
  * Dipindah ke master data (menu Management > Master Delivery Settings) supaya
- * admin bisa menambah/menonaktifkan tipe tanpa deploy kode — mirror pola
+ * admin bisa menambah/menonaktifkan tipe tanpa deploy kode - mirror pola
  * Deliverable Document Type (2026_09_07_000001).
  *
  * Kedua kolom sumber (project_type & type) tetap string biasa (bukan FK), jadi

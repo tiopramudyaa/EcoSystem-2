@@ -45,7 +45,7 @@ class SendDeliverableReminders extends Command
 
         if (!$dryRun && !$powerAutomate->isFlowReady(PowerAutomateService::FLOW_TICKET_DELIVERABLE_REMINDER)) {
             // Bukan error: begini caranya fitur ini dimatikan.
-            $this->line('Flow ticket_deliverable_reminder tidak aktif — tidak ada yang dikirim.');
+            $this->line('Flow ticket_deliverable_reminder tidak aktif - tidak ada yang dikirim.');
             return self::SUCCESS;
         }
 
@@ -98,7 +98,7 @@ class SendDeliverableReminders extends Command
                     $payload['ticket']['number'],
                     $payload['reminder']['closed_date'],
                     implode(', ', $missing),
-                    $pics === [] ? '(tanpa PIC — tanpa mention)' : implode(', ', array_column($pics, 'teams_id')),
+                    $pics === [] ? '(tanpa PIC - tanpa mention)' : implode(', ', array_column($pics, 'teams_id')),
                     $count
                 ));
                 $sent++;
@@ -170,7 +170,7 @@ class SendDeliverableReminders extends Command
     /**
      * PIC tiket (ticket_lead_id) dalam bentuk siap mention. Kosong kalau tiket
      * belum punya PIC, PIC-nya tanpa email kerja, atau guest yang belum pernah
-     * diundang — pesannya tetap dikirim, hanya tanpa mention.
+     * diundang - pesannya tetap dikirim, hanya tanpa mention.
      *
      * Guest TIDAK diundang dari sini: PIC yang sudah ada di grup pasti sudah
      * punya baris teams_guest_users; reminder bukan tempat memulai undangan.
@@ -235,7 +235,7 @@ class SendDeliverableReminders extends Command
             . 'Reminder ini dikirim setiap hari sampai semua dokumen mandatory lengkap (reminder ke-' . $count . ').';
 
         $picLine = $pics === []
-            ? 'PIC tiket belum ditentukan — mohon tim menentukan PIC dan melengkapi dokumennya.'
+            ? 'PIC tiket belum ditentukan - mohon tim menentukan PIC dan melengkapi dokumennya.'
             : 'PIC: ' . ($pics[0]['name'] ?? $pics[0]['email']);
 
         $message     = 'Reminder Dokumen Deliverable · EcoSystem' . "\n" . self::DIVIDER . "\n" . $picLine . "\n\n" . $body;
@@ -280,7 +280,7 @@ class SendDeliverableReminders extends Command
     }
 
     /**
-     * Jendela "HH:MM"–"HH:MM" dalam zona waktu aplikasi. Nilai yang tidak bisa
+     * Jendela "HH:MM"-"HH:MM" dalam zona waktu aplikasi. Nilai yang tidak bisa
      * dibaca diabaikan (dianggap tanpa batas) daripada mematikan reminder
      * secara diam-diam.
      */
@@ -295,7 +295,7 @@ class SendDeliverableReminders extends Command
                 return false;
             }
         } catch (\Throwable $e) {
-            $this->warn('POWER_AUTOMATE_DELIVERABLE_REMINDER_FROM/UNTIL tidak valid — jendela jam diabaikan.');
+            $this->warn('POWER_AUTOMATE_DELIVERABLE_REMINDER_FROM/UNTIL tidak valid - jendela jam diabaikan.');
         }
 
         return true;
@@ -311,7 +311,7 @@ class SendDeliverableReminders extends Command
         try {
             return Carbon::parse($value);
         } catch (\Throwable $e) {
-            $this->warn("POWER_AUTOMATE_DELIVERABLE_REMINDER_SINCE tidak valid ('{$value}') — batas tanggal diabaikan.");
+            $this->warn("POWER_AUTOMATE_DELIVERABLE_REMINDER_SINCE tidak valid ('{$value}') - batas tanggal diabaikan.");
             return null;
         }
     }

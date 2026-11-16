@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 /**
  * Master data "Deliverable Document Type" (menu Management > Master Ticket
  * Settings > Document Type). Menggantikan daftar hardcoded lama di
- * TicketDeliverableController::DOC_TYPES — dipakai untuk mengisi dropdown
+ * TicketDeliverableController::DOC_TYPES - dipakai untuk mengisi dropdown
  * "Doc Type" di modal "New Document" pada Deliverable Panel ticket.
  *
  * Halaman ini juga mengelola DEFAULT mandatory/optional per ticket type
@@ -24,7 +24,7 @@ class DeliverableDocumentTypeController extends Controller
     public function page()
     {
         return view('management.ticket.document-type.index', [
-            // Full ticket_type enum (includes "Internal") — NOT
+            // Full ticket_type enum (includes "Internal") - NOT
             // TicketClassification::TYPES, which is deliberately scoped to
             // just the AI/staging classification flow and excludes it.
             'ticketTypes' => Ticket::types(),
@@ -143,7 +143,7 @@ class DeliverableDocumentTypeController extends Controller
         $type = DeliverableDocumentType::findOrFail($id);
 
         // doc_type di ticket_deliverables adalah kolom string biasa (bukan FK),
-        // jadi menghapus tipe di sini tidak mengubah dokumen yang sudah ada —
+        // jadi menghapus tipe di sini tidak mengubah dokumen yang sudah ada -
         // hanya menghilangkannya dari pilihan dropdown ke depan. Beri tahu
         // jumlahnya supaya admin tidak kaget bila tipe ini masih dipakai.
         $inUseCount = TicketDeliverable::where('doc_type', $type->name)->count();

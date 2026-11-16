@@ -50,7 +50,7 @@
             </div>
         </div>
 
-        {{-- Search Bar — selaras dengan style index lain --}}
+        {{-- Search Bar - selaras dengan style index lain --}}
         <div class="p-4">
             <input type="search" id="searchInput"
                    placeholder="Search by support name, client..."

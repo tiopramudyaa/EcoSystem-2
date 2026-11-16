@@ -12,7 +12,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 /**
- * Sheet "Release Schedule" — jadwal release bulanan per cost item
+ * Sheet "Release Schedule" - jadwal release bulanan per cost item
  * (data dari ProjectMonthlyCostReport::releaseSchedules()).
  *
  *   1. Rekap per cost item: Total Release, Terjadwal, Belum Dijadwalkan.

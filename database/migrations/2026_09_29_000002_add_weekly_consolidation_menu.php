@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
  *
  * Beda dari kebanyakan menu baru lain: fitur ini memang harus bisa diakses
  * oleh module lead biasa (role Delivery Support User), bukan cuma Admin/HOS/
- * Helpdesk/RPMO — pembatasan "hanya modul yang dia pimpin" dilakukan di
+ * Helpdesk/RPMO - pembatasan "hanya modul yang dia pimpin" dilakukan di
  * WeeklyConsolidationController (data-driven lewat module_leads), BUKAN lewat
  * menu permission ini. Jadi setelah grant admin-only baku, grant diperluas
  * lewat grantToAdminAndRoles ke role-role terkait.

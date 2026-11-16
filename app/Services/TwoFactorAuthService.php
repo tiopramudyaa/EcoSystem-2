@@ -239,7 +239,7 @@ class TwoFactorAuthService
     // Password is still checked on every login. This only lets a login that
     // just proved the password skip the OTP prompt, for a fixed window after
     // the last time this device actually completed a TOTP/recovery-code
-    // check — mirrors how most sites' 2FA behaves (not the same as
+    // check - mirrors how most sites' 2FA behaves (not the same as
     // remember-me, which skips the password check entirely and is why that
     // stays disabled for 2FA accounts; see AuthController::finalizeEmployeeLogin).
     // The window is intentionally NOT extended by a skip - only a fresh code
@@ -282,7 +282,7 @@ class TwoFactorAuthService
         return hash_equals($authUser->two_factor_trusted_token, hash('sha256', $rawToken));
     }
 
-    /** Invalidates any standing device trust — call on 2FA disable/re-enroll. */
+    /** Invalidates any standing device trust - call on 2FA disable/re-enroll. */
     public static function clearTrust(int $authUserId): void
     {
         DB::table('auth_users')->where('id', $authUserId)->update([

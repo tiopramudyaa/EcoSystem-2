@@ -1,5 +1,5 @@
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- PLAN COST — ADD / EDIT COST ITEM MODAL                         --}}
+{{-- PLAN COST - ADD / EDIT COST ITEM MODAL                         --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="costModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="SupportPlanCost.closeModal()"></div>
@@ -86,11 +86,11 @@
                     <div class="mt-3 bg-gray-50 rounded-lg p-3 text-xs text-gray-600 grid grid-cols-2 gap-2">
                         <div>
                             <span class="font-medium text-green-700">Avail. Budget</span> (Budget − Release):
-                            <span id="previewAvailBudget" class="font-semibold ml-1 text-green-700">—</span>
+                            <span id="previewAvailBudget" class="font-semibold ml-1 text-green-700">-</span>
                         </div>
                         <div>
                             <span class="font-medium text-teal-700">Avail. Release</span> (Release − Actual):
-                            <span id="previewAvailRelease" class="font-semibold ml-1 text-teal-700">—</span>
+                            <span id="previewAvailRelease" class="font-semibold ml-1 text-teal-700">-</span>
                         </div>
                     </div>
                 </div>
@@ -195,7 +195,7 @@
                     <label class="block text-xs font-medium text-gray-600 mb-1">Period <span class="text-red-500">*</span></label>
                     <input type="date" id="aeDateInput"
                            class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400">
-                    <p id="aeDateHint" class="hidden text-[11px] text-amber-600 mt-1">This expense has no exact date yet — pick the expense date.</p>
+                    <p id="aeDateHint" class="hidden text-[11px] text-amber-600 mt-1">This expense has no exact date yet - pick the expense date.</p>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Amount (Rp) <span class="text-red-500">*</span></label>
@@ -254,7 +254,7 @@
     </div>
 </div>
 
-{{-- PLAN COST — ACTUAL DETAIL MODAL --}}
+{{-- PLAN COST - ACTUAL DETAIL MODAL --}}
 <div id="actualDetailModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="SupportPlanCost.closeActualDetailModal()"></div>
     <div class="fixed inset-0 flex items-center justify-center p-4">
@@ -396,7 +396,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- PLAN COST — ATUR RELEASE COST MODAL                           --}}
+{{-- PLAN COST - ATUR RELEASE COST MODAL                           --}}
 {{-- Langkah 1: total release per item. Langkah 2: jadwal bulanan.  --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="releaseModal" class="fixed inset-0 z-50 hidden">
@@ -511,7 +511,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TERM OF PAYMENT (TOP) — ADD / EDIT MODAL                       --}}
+{{-- TERM OF PAYMENT (TOP) - ADD / EDIT MODAL                       --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="paymentTermModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="SupportPaymentTermPlan.closeModal()"></div>
@@ -533,7 +533,7 @@
                 <input type="hidden" id="paymentTermModalMode" value="create">
                 <input type="hidden" id="paymentTermModalId" value="">
 
-                {{-- Basis perhitungan — saling eksklusif:
+                {{-- Basis perhitungan - saling eksklusif:
                        % of Revenue   → hanya di TOP Type "% of Revenue" (dikunci di Contract Line Item)
                        % of Line Item → isi Payment %, Amount = % × nilai line item
                        Amount         → isi nominal, % terhadap line item dihitung otomatis --}}
@@ -553,7 +553,7 @@
                     <p id="pt_basis_hint" class="mt-1 text-xs text-gray-400"></p>
                 </div>
 
-                {{-- Line Item — wajib di mode Line Item --}}
+                {{-- Line Item - wajib di mode Line Item --}}
                 <div id="pt_line_item_wrap" class="hidden">
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Line Item <span class="text-red-500">*</span>
@@ -572,7 +572,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {{-- Payment % — terkunci saat basis Amount (menampilkan porsi terhadap line item) --}}
+                    {{-- Payment % - terkunci saat basis Amount (menampilkan porsi terhadap line item) --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Payment % <span id="pt_pct_req" class="text-red-500">*</span>
@@ -587,7 +587,7 @@
                         </div>
                     </div>
 
-                    {{-- Amount — auto dari revenue / nilai line item (basis %) atau diisi sendiri (basis Amount) --}}
+                    {{-- Amount - auto dari revenue / nilai line item (basis %) atau diisi sendiri (basis Amount) --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Amount <span id="pt_amount_req" class="text-red-500 hidden">*</span>
@@ -603,7 +603,7 @@
                     </div>
                 </div>
 
-                {{-- Period — label periode tagihan (mode Line Item) --}}
+                {{-- Period - label periode tagihan (mode Line Item) --}}
                 <div id="pt_period_wrap" class="hidden">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Period</label>
                     <input type="text" id="pt_period" maxlength="50" autocomplete="off"
@@ -631,7 +631,7 @@
                                placeholder="dd/mm/yyyy">
                     </div>
 
-                    {{-- Submit Invoice Date — wajib saat Status = Invoiced --}}
+                    {{-- Submit Invoice Date - wajib saat Status = Invoiced --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Submit Invoice Date <span id="pt_submit_invoice_req" class="text-red-500 hidden">*</span>
@@ -643,7 +643,7 @@
                     </div>
                 </div>
 
-                {{-- Invoice Number — wajib saat Submit Invoice Date terisi --}}
+                {{-- Invoice Number - wajib saat Submit Invoice Date terisi --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Invoice Number <span id="pt_invoice_number_req" class="text-red-500 hidden">*</span>
@@ -655,7 +655,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {{-- Paid Date — wajib saat Status = Paid --}}
+                    {{-- Paid Date - wajib saat Status = Paid --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Paid Date <span id="pt_paid_date_req" class="text-red-500 hidden">*</span>
@@ -695,7 +695,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TERM OF PAYMENT (TOP) — DELETE CONFIRMATION MODAL         --}}
+{{-- TERM OF PAYMENT (TOP) - DELETE CONFIRMATION MODAL         --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="paymentTermDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="SupportPaymentTermPlan.closeDeleteModal()"></div>
@@ -726,7 +726,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TOP — CONTRACT LINE ITEM ADD / EDIT MODAL                      --}}
+{{-- TOP - CONTRACT LINE ITEM ADD / EDIT MODAL                      --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="lineItemModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="SupportPaymentTermPlan.closeLineItemModal()"></div>
@@ -818,7 +818,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TOP — GENERATE SCHEDULE (LINE ITEM RECURRING) MODAL            --}}
+{{-- TOP - GENERATE SCHEDULE (LINE ITEM RECURRING) MODAL            --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="generateScheduleModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="SupportPaymentTermPlan.closeGenerateModal()"></div>
@@ -892,7 +892,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TOP — CONTRACT LINE ITEM DELETE CONFIRMATION MODAL             --}}
+{{-- TOP - CONTRACT LINE ITEM DELETE CONFIRMATION MODAL             --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="lineItemDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="SupportPaymentTermPlan.closeLineItemDeleteModal()"></div>

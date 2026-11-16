@@ -36,7 +36,7 @@ class DeliveryProjectCostReleaseSchedule extends Model
         return $this->belongsTo(DeliveryProjectCost::class, 'delivery_project_cost_id');
     }
 
-    /** Jadwal tidak menyimpan FK project — ambil lewat cost induknya. */
+    /** Jadwal tidak menyimpan FK project - ambil lewat cost induknya. */
     protected function projectIdForActivity()
     {
         return DeliveryProjectCost::whereKey($this->delivery_project_cost_id)->value('delivery_projects_id');

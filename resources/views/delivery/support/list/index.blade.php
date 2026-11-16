@@ -7,7 +7,7 @@
 <style>
     .primary-focus:focus { border-color: var(--primary-color) !important; box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15) !important; outline: none !important; }
 
-    /* Summary tiles — clickable, men-drive filter tabel yang sama dengan header kolom */
+    /* Summary tiles - clickable, men-drive filter tabel yang sama dengan header kolom */
     .stat-tile {
         display: block; width: 100%; text-align: left;
         padding: 0.875rem 1rem;
@@ -80,14 +80,14 @@
 
         $progressOf = fn($s) => (float) ($s->calculated_progress ?? 0);
 
-        // Bucket progress — nilai ini juga dipakai sebagai data-bucket & value filter.
+        // Bucket progress - nilai ini juga dipakai sebagai data-bucket & value filter.
         $bucketOf = function ($s) use ($progressOf) {
             $p = $progressOf($s);
             if ($p >= 100) return 'completed';
             return $p > 0 ? 'in progress' : 'not started';
         };
 
-        // Timeline flag — eksklusif (tepat satu label per baris) supaya angka tile
+        // Timeline flag - eksklusif (tepat satu label per baris) supaya angka tile
         // tidak saling tumpang tindih. Support yang sudah Completed tidak dihitung
         // sebagai overdue/ending soon karena pekerjaannya memang sudah selesai.
         $timelineOf = function ($s) use ($today, $soonLimit, $progressOf) {
@@ -234,7 +234,7 @@
             </div>
         </div>
 
-        {{-- Search Bar — selaras dengan style input pada Create form (rounded-lg + border eksplisit + padding seragam) --}}
+        {{-- Search Bar - selaras dengan style input pada Create form (rounded-lg + border eksplisit + padding seragam) --}}
         <div class="p-4">
             <input type="search" id="support-search"
                 placeholder="Search by client, ticket ID, or description..."
@@ -603,7 +603,7 @@
             .filter(Boolean);
 
         if (!ids.length) {
-            if (typeof showToast === 'function') showToast('No support items match the current filter — nothing to export.', 'warning');
+            if (typeof showToast === 'function') showToast('No support items match the current filter - nothing to export.', 'warning');
             return;
         }
 
@@ -673,7 +673,7 @@
     }
     document.addEventListener('click', function (e) {
         // .se-panel / .se-wrap: dropdown hasil select-enhance.js. Panelnya di-detach
-        // ke <body> (mode fixed) sehingga bukan lagi turunan .sup-panel — tanpa
+        // ke <body> (mode fixed) sehingga bukan lagi turunan .sup-panel - tanpa
         // guard ini, klik di dalamnya menutup panel filter.
         if (e.target.closest('.sup-th-btn') || e.target.closest('.sup-panel')
             || e.target.closest('.se-panel') || e.target.closest('.se-wrap')) return;

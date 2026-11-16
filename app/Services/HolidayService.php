@@ -8,11 +8,11 @@ use Carbon\Carbon;
 class HolidayService
 {
     /**
-     * Per-request memoization keyed by "yearFrom-yearTo" — isNonWorkingDay() is called once
+     * Per-request memoization keyed by "yearFrom-yearTo" - isNonWorkingDay() is called once
      * per calendar day inside SlaService's calcHours()/addWorkingHours() loops, which run
      * per ticket in list endpoints (e.g. TicketController::index() over 1000+ tickets). Without
      * this cache, a single request re-queries the `holidays` table for every day of every
-     * ticket's lifetime — thousands of redundant queries that can exceed max_execution_time.
+     * ticket's lifetime - thousands of redundant queries that can exceed max_execution_time.
      * Static so it survives across the many short-lived SlaService/HolidayService instances
      * app(SlaService::class) creates per ticket; safe since it only lives for one PHP request.
      */

@@ -40,7 +40,7 @@ class DeliverySupportRecons extends Model
         'submitted_at' => 'datetime',
     ];
 
-    /** Label untuk audit log — nomor recons lebih informatif dari description. */
+    /** Label untuk audit log - nomor recons lebih informatif dari description. */
     public function auditRecordLabel(): string
     {
         return $this->recons_number ?: ('Recons #' . $this->getKey());
@@ -101,7 +101,7 @@ class DeliverySupportRecons extends Model
      * ulang. Nomor berformat lain (mis. data lama RCN-*) diabaikan.
      *
      * Catatan konkurensi: pemanggil wajib menyiapkan retry, karena dua
-     * penyimpanan bersamaan bisa menghasilkan counter yang sama — kebentrokan
+     * penyimpanan bersamaan bisa menghasilkan counter yang sama - kebentrokan
      * itu ditangkap oleh unique index `uniq_recons_number`.
      */
     public static function nextNumberFor(DeliverySupport $support, ?\DateTimeInterface $date = null): string
@@ -150,7 +150,7 @@ class DeliverySupportRecons extends Model
      * (`customer.customer_code`), dipakai **apa adanya**.
      *
      * Tidak di-uppercase, tidak disingkat, dan tidak ada karakter yang dibuang
-     * — hanya spasi di ujung yang dirapikan. Ketentuan pemilik sistem: "tulis
+     * - hanya spasi di ujung yang dirapikan. Ketentuan pemilik sistem: "tulis
      * apa adanya berdasarkan apa yang ada di customer code business partner,
      * jangan diubah atau disingkat".
      *

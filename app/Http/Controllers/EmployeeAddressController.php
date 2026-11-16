@@ -624,11 +624,11 @@ class EmployeeAddressController extends Controller
         $taken = DB::table('auth_users')->where('email', $emailWork)
             ->where('id', '!=', $authUser->id)->exists();
         if ($taken) {
-            Log::warning('Email work sync skipped — email already used by another account', [
+            Log::warning('Email work sync skipped - email already used by another account', [
                 'employee_id' => $employeeId,
                 'email' => $emailWork,
             ]);
-            return "Email \"{$emailWork}\" is already used by another account — the login email (used for password reset) was not changed.";
+            return "Email \"{$emailWork}\" is already used by another account - the login email (used for password reset) was not changed.";
         }
 
         DB::table('auth_users')->where('id', $authUser->id)

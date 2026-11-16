@@ -10,21 +10,21 @@ use Illuminate\Support\Facades\DB;
  * `employee.section.{key}.view|update` dan `customer.section.{key}.view|update`
  * di bawah Master > Employee / Business Partner, TAPI:
  *
- *   1. tidak ada satu baris kode pun yang membaca slug tsb — halaman detail
+ *   1. tidak ada satu baris kode pun yang membaca slug tsb - halaman detail
  *      selalu tampil dan selalu bisa diedit berapa pun checkbox dimatikan;
- *   2. tidak ada satu pun grant di `role_menu` — bahkan EC Administrator
+ *   2. tidak ada satu pun grant di `role_menu` - bahkan EC Administrator
  *      tidak memilikinya.
  *
  * Sejak sekarang slug tsb ditegakkan (EmployeeController::show,
  * CustomerController::show, middleware employee.section/customer.section).
  * Karena poin 2, menegakkannya tanpa backfill akan menyembunyikan SELURUH
  * section dari SEMUA orang. Migrasi ini karena itu memberi view+update ke
- * role yang HARI INI sudah bisa membuka halaman Master-nya — status quo
+ * role yang HARI INI sudah bisa membuka halaman Master-nya - status quo
  * dipertahankan, lalu admin mencabut sendiri lewat Control Center.
  *
  * Ini bukan pelanggaran aturan "slug baru = admin-only" (App\Support\MenuRegistrar):
  * slug-slug ini bukan izin baru, dan grant di sini tidak menambah kemampuan
- * siapa pun — hanya merekam kemampuan yang sudah mereka punya supaya tidak
+ * siapa pun - hanya merekam kemampuan yang sudah mereka punya supaya tidak
  * hilang mendadak saat gate-nya dinyalakan.
  *
  * Catatan: `master.employee.action` / `master.customer.action` SENGAJA tidak
@@ -44,7 +44,7 @@ return new class extends Migration
         'credential', 'history', 'attachment',
     ];
 
-    /** Slug yang tidak pernah dibaca kode mana pun — menyesatkan admin. */
+    /** Slug yang tidak pernah dibaca kode mana pun - menyesatkan admin. */
     private array $deadSlugs = [
         'delivery-support.edit-type',
         'ticket.confirm-assignment',
@@ -167,7 +167,7 @@ return new class extends Migration
     }
 
     /**
-     * Buang cache `perm_slugs_{employee_id}` milik anggota role terdampak —
+     * Buang cache `perm_slugs_{employee_id}` milik anggota role terdampak -
      * tanpa ini perubahan baru terasa setelah TTL 60 menit habis.
      * Lihat App\Http\Middleware\ShareMenuPermissions.
      */

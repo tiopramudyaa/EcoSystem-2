@@ -30,7 +30,7 @@ class MandaysController extends Controller
      * Can this employee review/approve Resolution Days regardless of ticket participation?
      * 'ticket.head-mandays' = Head of Support (also grants the ticket-detail review UI).
      * 'ticket.approve-resolution-days' = separate slug for the Resolution Days report list
-     * (granted to Admin) — kept distinct so granting it doesn't also surface the
+     * (granted to Admin) - kept distinct so granting it doesn't also surface the
      * Head-only ticket-detail sidebar sections for roles that shouldn't see those.
      */
     private function canReviewResolutionDays(?Employee $employee): bool
@@ -166,7 +166,7 @@ class MandaysController extends Controller
     }
 
     // =========================================================================
-    // CUSTOMER MANDAYS — PIC ENDPOINTS
+    // CUSTOMER MANDAYS - PIC ENDPOINTS
     // =========================================================================
 
     /**
@@ -335,7 +335,7 @@ class MandaysController extends Controller
             'customer_mandays_proposed',
             $fromName,
             $fromId,
-            "Ticket #{$ticketNum} — Customer mandays proposal submitted for review",
+            "Ticket #{$ticketNum}: Customer mandays proposal submitted for review",
             "/ticket/{$ticketId}"
         );
 
@@ -378,7 +378,7 @@ class MandaysController extends Controller
             $proposal->delete();
 
             // If an earlier (canceled/approved) version still exists, that version
-            // becomes latest again — reflect its status instead of wiping history.
+            // becomes latest again - reflect its status instead of wiping history.
             $previous = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
             $newStatus = $previous ? ($previous->status === 'draft' ? 'pic_draft' : $previous->status) : 'none';
             $ticket->update(['mandays_proposal_status' => $newStatus]);
@@ -398,7 +398,7 @@ class MandaysController extends Controller
     }
 
     // =========================================================================
-    // CUSTOMER MANDAYS — HELPDESK ENDPOINTS
+    // CUSTOMER MANDAYS - HELPDESK ENDPOINTS
     // =========================================================================
 
     /**
@@ -556,7 +556,7 @@ class MandaysController extends Controller
             'last_agent_reply_at' => now(),
         ]);
 
-        // Coba kirim email ke customer (non-fatal jika gagal — pesan sudah tersimpan di chat)
+        // Coba kirim email ke customer (non-fatal jika gagal - pesan sudah tersimpan di chat)
         $emailSent    = false;
         $emailWarning = null;
         $emailTo      = null;
@@ -676,7 +676,7 @@ class MandaysController extends Controller
         $ticket   = Ticket::where('ticket_id', $ticketId)->firstOrFail();
         $proposal = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
 
-        // Sending to the customer chat is no longer required before approving —
+        // Sending to the customer chat is no longer required before approving -
         // Helpdesk can approve directly from pending_helpdesk, or from sent_to_chat
         // if it was sent anyway.
         if (!$proposal || !in_array($proposal->status, ['pending_helpdesk', 'sent_to_chat'])) {
@@ -713,10 +713,10 @@ class MandaysController extends Controller
         $latestProposal = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
 
         // Target a specific (possibly already-superseded) version via mandays_id, or
-        // default to the latest version — covers both "cancel the current draft/
+        // default to the latest version - covers both "cancel the current draft/
         // pending proposal" and "cancel an older version a newer one has since
         // superseded" (that older version, since it's superseded, is always already
-        // 'approved' — a version only gets superseded once the prior one was
+        // 'approved' - a version only gets superseded once the prior one was
         // approved or canceled).
         $mandaysId = $request->input('mandays_id');
         $proposal  = $mandaysId
@@ -730,7 +730,7 @@ class MandaysController extends Controller
         $isLatest = $latestProposal && $proposal->id === $latestProposal->id;
 
         // Cancelling an already-approved proposal reverses something the customer
-        // already signed off on (approval happens on their side via JARVIES) — gated
+        // already signed off on (approval happens on their side via JARVIES) - gated
         // behind a separate permission on top of the base cancel permission. Also
         // required whenever a non-latest version is targeted, since that version is
         // always already-approved by definition. No automated customer notification
@@ -750,7 +750,7 @@ class MandaysController extends Controller
             'canceled_at'     => now(),
         ]);
 
-        // ticket.mandays_proposal_status mirrors the LATEST version's status only —
+        // ticket.mandays_proposal_status mirrors the LATEST version's status only -
         // cancelling an older, already-superseded version must not overwrite it with
         // a stale 'canceled' while the actual latest version is still active/approved.
         if ($isLatest) {
@@ -761,7 +761,7 @@ class MandaysController extends Controller
         $fromName  = $sessionUser['name'] ?? 'Helpdesk';
         $ticketNum = $ticket->ticket_number ?? $ticketId;
         $versionNote = !$isLatest ? " (Version {$proposal->version})" : '';
-        $preview   = "Ticket #{$ticketNum} — Customer mandays proposal{$versionNote} has been canceled"
+        $preview   = "Ticket #{$ticketNum}: Customer mandays proposal{$versionNote} has been canceled"
                    . ($cancelNotes ? ': ' . mb_substr($cancelNotes, 0, 80) : '');
         $link      = "/ticket/{$ticketId}";
 
@@ -791,7 +791,7 @@ class MandaysController extends Controller
     }
 
     // =========================================================================
-    // RESOLUTION MANDAYS — PIC + HEAD OF SUPPORT
+    // RESOLUTION MANDAYS - PIC + HEAD OF SUPPORT
     // =========================================================================
 
     /**
@@ -897,7 +897,7 @@ class MandaysController extends Controller
                 ]);
             } else {
                 $proposal = $existing;
-                // PIC can keep refining the proposal while it's pending Head approval —
+                // PIC can keep refining the proposal while it's pending Head approval -
                 // status stays pending_head so it's still visible in the Head's queue
                 // without needing to resubmit. An already-approved proposal that gets
                 // edited falls back to draft (needs re-approval); draft/needs_revision/
@@ -926,7 +926,7 @@ class MandaysController extends Controller
                     $existingDetail = $existingDetails->get($empId);
 
                     if ($existingDetail) {
-                        // Update mandays saja — progress_percentage/progress_note tetap
+                        // Update mandays saja - progress_percentage/progress_note tetap
                         $existingDetail->update([
                             'module'             => $d['module'] ?? null,
                             'mandays'            => $d['mandays'] ?? 0,
@@ -964,7 +964,7 @@ class MandaysController extends Controller
 
         $message = match (true) {
             !$dataChanged                       => 'Saved. No changes detected.',
-            $ticketStatus === 'pending_head'    => 'Updated — still pending Head approval, no need to resubmit.',
+            $ticketStatus === 'pending_head'    => 'Updated - still pending Head approval, no need to resubmit.',
             default                              => 'Draft saved. Submit to Head Support for approval.',
         };
 
@@ -1024,7 +1024,7 @@ class MandaysController extends Controller
 
         // Resolution Days can be drafted freely, but on Change Request tickets, submitting
         // to Head requires the Customer Mandays proposal to already be approved by Helpdesk
-        // first — customer's own approval is not required at this point, only Helpdesk's.
+        // first - customer's own approval is not required at this point, only Helpdesk's.
         // Other ticket types keep the original unrestricted flow.
         if ($ticket->ticket_type === 'Change Request') {
             $customerProposal = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
@@ -1054,7 +1054,7 @@ class MandaysController extends Controller
             'resolution_days_proposed',
             $fromName,
             $fromId,
-            "Ticket #{$ticketNum} — Resolution days proposal submitted for your review",
+            "Ticket #{$ticketNum}: Resolution days proposal submitted for your review",
             "/ticket/{$ticketId}"
         );
 
@@ -1077,7 +1077,7 @@ class MandaysController extends Controller
             return response()->json(['success' => false, 'message' => 'Only Head of Support or Admin can approve resolution days proposals.'], 403);
         }
 
-        // approved_details is required (not just nullable) — Approved Days is a per-employee
+        // approved_details is required (not just nullable) - Approved Days is a per-employee
         // judgment call the Head must actually make, so approval can't go through with no
         // numbers submitted at all (mirrors the "must be filled" check on the review modal).
         $request->validate([
@@ -1100,7 +1100,7 @@ class MandaysController extends Controller
         }
 
         // On Change Request tickets only: Head can only approve Resolution Days once the
-        // Customer Mandays proposal has been approved — either by the customer via chat,
+        // Customer Mandays proposal has been approved - either by the customer via chat,
         // or directly by Helpdesk. Team lead can keep editing the resolution proposal
         // freely up until this point (saveResolutionProposal has no status gate), this
         // only blocks the final Head approval action.
@@ -1116,7 +1116,7 @@ class MandaysController extends Controller
 
         // PIC can keep editing this proposal right up until approval (see
         // saveResolutionProposal()), so the numbers Head is about to lock in here may
-        // already have outpaced what employees logged. Warn before finalizing —
+        // already have outpaced what employees logged. Warn before finalizing -
         // require an explicit confirm_negative=true resend to proceed anyway.
         if (!$request->boolean('confirm_negative')) {
             $warnings = $this->findNegativeRemainingWarnings($ticket, $proposal, $request->input('approved_details', []));
@@ -1132,7 +1132,7 @@ class MandaysController extends Controller
 
         // Snapshot "before" approved_mandays/approved_additional for every detail about to be
         // touched. The update below is an Eloquent mass update via query builder
-        // ($proposal->details()->where(...)->update(...)) — Laravel never fires model events
+        // ($proposal->details()->where(...)->update(...)) - Laravel never fires model events
         // for that (only single-instance $model->save() does), so AuditObserver (wired via
         // ConsultantMandaysDetail's Auditable trait) never sees it. This is the actual
         // approved-mandays billing number, so it's logged manually below once the
@@ -1184,12 +1184,12 @@ class MandaysController extends Controller
         }
 
         // Audit trail: one row per employee whose approved_mandays/approved_additional was
-        // just locked in — recordAction() is fire-and-forget, so a logging hiccup here can
+        // just locked in - recordAction() is fire-and-forget, so a logging hiccup here can
         // never affect the approval that already committed above.
         foreach ($request->approved_details as $ad) {
             $beforeDetail = $detailsBeforeUpdate->get((int) $ad['employee_id']);
             if (!$beforeDetail) {
-                continue; // employee_id isn't part of this proposal's details — the update above was a no-op
+                continue; // employee_id isn't part of this proposal's details - the update above was a no-op
             }
 
             $employeeName = trim(
@@ -1699,7 +1699,7 @@ class MandaysController extends Controller
     }
 
     /**
-     * Format mandays value — up to 2 decimal places, trailing zeros stripped.
+     * Format mandays value - up to 2 decimal places, trailing zeros stripped.
      * 0.25 → "0.25", 0.5 → "0.5", 1.0 → "1"
      */
     private function fmtMd(float $val): string

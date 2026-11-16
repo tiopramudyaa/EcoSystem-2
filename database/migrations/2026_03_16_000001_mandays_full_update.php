@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         // ====================================================================
-        // 1. TICKET — tambah mandays_proposal_status & internal_mandays_status
+        // 1. TICKET - tambah mandays_proposal_status & internal_mandays_status
         // ====================================================================
         Schema::table('ticket', function (Blueprint $table) {
             if (!Schema::hasColumn('ticket', 'mandays_proposal_status')) {
@@ -26,7 +26,7 @@ return new class extends Migration
         });
 
         // ====================================================================
-        // 2. CUSTOMER_MANDAYS — update enum status + tambah kolom baru
+        // 2. CUSTOMER_MANDAYS - update enum status + tambah kolom baru
         // ====================================================================
         // Ubah status ENUM ke nilai baru (MySQL: ALTER COLUMN)
         DB::statement("ALTER TABLE customer_mandays MODIFY COLUMN status ENUM(
@@ -40,7 +40,7 @@ return new class extends Migration
                 $table->dropUnique('idx_cm_ticket_version');
             });
         } catch (\Exception $e) {
-            // constraint mungkin sudah dihapus atau namanya berbeda — abaikan
+            // constraint mungkin sudah dihapus atau namanya berbeda - abaikan
         }
 
         Schema::table('customer_mandays', function (Blueprint $table) {
@@ -56,7 +56,7 @@ return new class extends Migration
         });
 
         // ====================================================================
-        // 3. CUSTOMER_MANDAYS_DETAIL — tambah kolom activity
+        // 3. CUSTOMER_MANDAYS_DETAIL - tambah kolom activity
         // ====================================================================
         Schema::table('customer_mandays_detail', function (Blueprint $table) {
             if (!Schema::hasColumn('customer_mandays_detail', 'activity')) {
@@ -65,7 +65,7 @@ return new class extends Migration
         });
 
         // ====================================================================
-        // 4. CONSULTANT_MANDAYS — update enum + tambah helpdesk_notes + drop unique
+        // 4. CONSULTANT_MANDAYS - update enum + tambah helpdesk_notes + drop unique
         // ====================================================================
         // Ubah status ENUM ke nilai baru (tambah needs_revision)
         DB::statement("ALTER TABLE consultant_mandays MODIFY COLUMN status ENUM(

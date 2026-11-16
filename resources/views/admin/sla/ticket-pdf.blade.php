@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SLA Report — Ticket #{{ $ticket->ticket_number }}</title>
+    <title>SLA Report - Ticket #{{ $ticket->ticket_number }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #1f2937; line-height: 1.5; }
@@ -74,27 +74,27 @@
         </div>
         <div class="meta-row">
             <span class="meta-label">Customer</span>
-            <span class="meta-value">{{ optional(optional($ticket->customer)->basicData)->name_1 ?? '—' }}</span>
+            <span class="meta-value">{{ optional(optional($ticket->customer)->basicData)->name_1 ?? '-' }}</span>
         </div>
         <div class="meta-row">
             <span class="meta-label">Ticket Type</span>
-            <span class="meta-value">{{ $ticket->ticket_type ?? '—' }}</span>
+            <span class="meta-value">{{ $ticket->ticket_type ?? '-' }}</span>
         </div>
         <div class="meta-row">
             <span class="meta-label">Priority</span>
-            <span class="meta-value">{{ $ticket->ticket_priority ?? '—' }}</span>
+            <span class="meta-value">{{ $ticket->ticket_priority ?? '-' }}</span>
         </div>
         <div class="meta-row">
             <span class="meta-label">Scale</span>
-            <span class="meta-value">{{ $ticket->scale ?? '—' }}</span>
+            <span class="meta-value">{{ $ticket->scale ?? '-' }}</span>
         </div>
         <div class="meta-row">
             <span class="meta-label">SLA Mode</span>
-            <span class="meta-value">{{ $sla?->sla_mode ?? '—' }}</span>
+            <span class="meta-value">{{ $sla?->sla_mode ?? '-' }}</span>
         </div>
         <div class="meta-row">
             <span class="meta-label">SLA Started</span>
-            <span class="meta-value">{{ $sla?->sla_start_at?->format('d M Y H:i') ?? '—' }}</span>
+            <span class="meta-value">{{ $sla?->sla_start_at?->format('d M Y H:i') ?? '-' }}</span>
         </div>
         <div class="meta-row">
             <span class="meta-label">Description</span>
@@ -113,11 +113,11 @@
             <div class="label">Response SLA</div>
             @php $rClass = match($responseStatusLive) { 'met' => 'status-met', 'breached' => 'status-breached', default => 'status-pending' }; @endphp
             <div class="value {{ $rClass }}">
-                {{ $responseActualHours !== null ? number_format($responseActualHours, 2) : '—' }} hrs
+                {{ $responseActualHours !== null ? number_format($responseActualHours, 2) : '-' }} hrs
             </div>
             <div class="sub">
-                Target: {{ $policy ? $policy->response_hours : '—' }} hrs &bull;
-                Deadline: {{ $responseDueAt?->format('d M Y H:i') ?? '—' }}<br>
+                Target: {{ $policy ? $policy->response_hours : '-' }} hrs &bull;
+                Deadline: {{ $responseDueAt?->format('d M Y H:i') ?? '-' }}<br>
                 Status: <strong>{{ strtoupper($responseStatusLive) }}</strong>
             </div>
         </div>
@@ -128,11 +128,11 @@
             @if($sla->sla_mode === 'full')
                 @php $resClass = match($resolutionStatusLive) { 'met' => 'status-met', 'breached' => 'status-breached', 'paused' => 'status-paused', default => 'status-pending' }; @endphp
                 <div class="value {{ $resClass }}">
-                    {{ $resolutionNetHours !== null ? number_format($resolutionNetHours, 2) : '—' }} hrs (net)
+                    {{ $resolutionNetHours !== null ? number_format($resolutionNetHours, 2) : '-' }} hrs (net)
                 </div>
                 <div class="sub">
-                    Target: {{ $policy ? $policy->resolution_hours : '—' }} hrs &bull;
-                    Deadline: {{ $sla->resolution_due_at?->format('d M Y H:i') ?? '—' }}<br>
+                    Target: {{ $policy ? $policy->resolution_hours : '-' }} hrs &bull;
+                    Deadline: {{ $sla->resolution_due_at?->format('d M Y H:i') ?? '-' }}<br>
                     Status: <strong>{{ strtoupper($resolutionStatusLive) }}</strong>
                 </div>
             @else
@@ -191,9 +191,9 @@
             <tr>
                 <td>{{ $pause->started_at?->format('d M Y H:i') }}</td>
                 <td>{{ $pause->ended_at?->format('d M Y H:i') ?? 'Still active' }}</td>
-                <td>{{ $pause->duration_hours !== null ? number_format($pause->duration_hours, 2) . ' hrs' : '—' }}</td>
+                <td>{{ $pause->duration_hours !== null ? number_format($pause->duration_hours, 2) . ' hrs' : '-' }}</td>
                 <td>{{ str_replace('_', ' ', $pause->pause_reason) }}</td>
-                <td>{{ $pause->triggered_by_status ?? '—' }}</td>
+                <td>{{ $pause->triggered_by_status ?? '-' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -221,9 +221,9 @@
             <tr>
                 <td style="white-space:nowrap">{{ $event->event_at?->format('d M Y H:i') }}</td>
                 <td>{{ $event->event_label }}</td>
-                <td>{{ $event->jarvis_status ?? '—' }}</td>
-                <td style="text-align:right">{{ $event->waiting_hours !== null ? number_format($event->waiting_hours, 2) . ' h' : '—' }}</td>
-                <td style="text-align:right">{{ $event->resolution_hours !== null ? number_format($event->resolution_hours, 2) . ' h' : '—' }}</td>
+                <td>{{ $event->jarvis_status ?? '-' }}</td>
+                <td style="text-align:right">{{ $event->waiting_hours !== null ? number_format($event->waiting_hours, 2) . ' h' : '-' }}</td>
+                <td style="text-align:right">{{ $event->resolution_hours !== null ? number_format($event->resolution_hours, 2) . ' h' : '-' }}</td>
                 <td>{{ $event->notes }}</td>
             </tr>
             @endforeach

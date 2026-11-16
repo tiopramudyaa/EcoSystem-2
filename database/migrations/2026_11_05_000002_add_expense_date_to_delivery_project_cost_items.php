@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
  * subtotal per bulan, dan report Monthly Cost).
  *
  * Nullable: expense lama hanya punya period (atau tidak sama sekali) dan
- * sengaja TIDAK di-backfill — tanggal persisnya memang tidak diketahui.
+ * sengaja TIDAK di-backfill - tanggal persisnya memang tidak diketahui.
  */
 return new class extends Migration
 {

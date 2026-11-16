@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * MASALAH: backfill itu memakai "tidak punya baris di `staging_tickets`" sebagai
  * tanda tiket internal EcoSystem. Asumsi itu salah untuk tiket LAMA hasil import
- * dari sistem sebelumnya — tiket tersebut tidak pernah lewat staging, dan
+ * dari sistem sebelumnya - tiket tersebut tidak pernah lewat staging, dan
  * pengecualian `channel = 'imported'` tidak menolongnya karena kolom `channel`
  * pada data import terisi 'email'. Akibatnya 181 tiket customer asli (tertua
  * Maret 2025) hilang dari JARVIES, mis. ticket_number 8000003989 milik ENDO.

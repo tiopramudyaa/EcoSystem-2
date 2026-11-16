@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class LiteEmployeeController extends Controller
 {
     /**
-     * Autocomplete @mention di internal note — mirror dari
+     * Autocomplete @mention di internal note - mirror dari
      * EmployeeController::getMentionable() (aplikasi web), diadaptasi ke
      * konvensi auth/response Lite. Employee dibatasi 10 hasil (vs 20 di web).
      *
@@ -60,7 +60,7 @@ class LiteEmployeeController extends Controller
                     'id'         => (int) $e->id,
                     'name'       => $e->name,
                     'email'      => $e->email,
-                    // Belum ada kolom foto/avatar di employee/employee_basic_data — selalu null untuk saat ini.
+                    // Belum ada kolom foto/avatar di employee/employee_basic_data - selalu null untuk saat ini.
                     'avatar_url' => null,
                     'role_name'  => $e->role_name,
                 ]);

@@ -56,7 +56,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-4 border-b-2 border-gray-100">
         <div>
             <h2 class="text-2xl font-bold text-gray-900">MD Validation</h2>
-            <p class="text-sm text-gray-500 mt-0.5">Approved support timesheets — MD quota vs consumed per employee</p>
+            <p class="text-sm text-gray-500 mt-0.5">Approved support timesheets - MD quota vs consumed per employee</p>
         </div>
         @if($canManage)
         <div class="flex flex-wrap items-center gap-2">
@@ -67,7 +67,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                <span id="periodLabel">—</span>
+                <span id="periodLabel">-</span>
                 <span id="periodStatus" class="font-semibold"></span>
             </div>
             {{-- Export Excel --}}
@@ -329,7 +329,7 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Tutup panel saat ada scroll di luar panel atau window di-resize —
+// Tutup panel saat ada scroll di luar panel atau window di-resize -
 // panel pakai posisi absolute terhadap header, scroll bikin tidak sinkron.
 window.addEventListener('scroll', function(e) {
     const t = e.target;
@@ -609,12 +609,12 @@ function renderRptTable() {
         if (status === 'Match') return `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Match</span>`;
         if (status === 'Less')  return `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Less</span>`;
         if (status === 'Over')  return `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Over</span>`;
-        return `<span class="text-xs text-gray-400">—</span>`;
+        return `<span class="text-xs text-gray-400">-</span>`;
     };
 
-    const fmt     = (v) => v != null ? formatMd(v) : '—';
+    const fmt     = (v) => v != null ? formatMd(v) : '-';
     const fmtDate = (d) => {
-        if (!d) return '—';
+        if (!d) return '-';
         const [y, m, day] = String(d).split('-');
         return `${day}/${m}/${y}`;
     };
@@ -664,7 +664,7 @@ function renderRptTable() {
                 #${escRpt(row.ticket_number || row.ticket_id)}
             </span>
         </td>
-        <td class="px-4 py-3 text-xs text-gray-600 max-w-[140px] truncate" title="${escRpt(row.customer_name)}">${escRpt(row.customer_name) || '<span class="text-gray-300">—</span>'}</td>
+        <td class="px-4 py-3 text-xs text-gray-600 max-w-[140px] truncate" title="${escRpt(row.customer_name)}">${escRpt(row.customer_name) || '<span class="text-gray-300">-</span>'}</td>
         <td class="px-4 py-3 text-center">
             <span class="text-sm font-bold text-gray-900">${fmt(row.md_consumed)}</span>
             <span class="text-[10px] text-gray-400 block leading-none">MD</span>

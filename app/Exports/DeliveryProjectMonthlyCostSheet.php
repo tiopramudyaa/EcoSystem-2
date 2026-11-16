@@ -15,7 +15,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 /**
- * Sheet "Monthly Cost" — report Monthly Cost vs TOP Invoiced, sama dengan
+ * Sheet "Monthly Cost" - report Monthly Cost vs TOP Invoiced, sama dengan
  * tampilan toggle "Monthly Cost vs TOP Invoiced" di section Plan Cost
  * (data dari ProjectMonthlyCostReport::build()).
  */

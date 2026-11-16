@@ -167,7 +167,7 @@
 window.ReconsDetail = (function () {
     'use strict';
 
-    // URL relatif — konsisten dengan section lain & aman di belakang proxy HTTPS.
+    // URL relatif - konsisten dengan section lain & aman di belakang proxy HTTPS.
     const BASE_URL   = `/delivery/support/{{ $support->id }}/recons/{{ $recons->id }}`;
     const SUBMIT_URL = `${BASE_URL}/submit`;
     const CANCEL_URL = `${BASE_URL}/cancel`;
@@ -227,7 +227,7 @@ window.ReconsDetail = (function () {
         }
     }
 
-    /** Batalkan submit — status kembali ke Draft sehingga bisa diedit lagi. */
+    /** Batalkan submit - status kembali ke Draft sehingga bisa diedit lagi. */
     async function cancel() {
         const ok = await showConfirm(
             @json('Cancel recons ' . $recons->recons_number . "? Its status returns to Draft so the header and ticket list can be edited again.\n\n"

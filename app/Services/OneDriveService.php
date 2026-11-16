@@ -30,7 +30,7 @@ class OneDriveService
      * collapses whitespace, and trims. Falls back to a safe default if empty.
      *
      * Nama yang ditolak SharePoint TIDAK dijawab Graph sebagai "nama tidak valid",
-     * melainkan error menyesatkan seperti `itemNotFound` — contoh: customer
+     * melainkan error menyesatkan seperti `itemNotFound` - contoh: customer
      * "PT ADHI KARYA (PERSERO) TBK." (titik di ujung) membuat folder customer
      * tidak pernah terbuat dan setiap upload deliverable gagal. Karena itu
      * semua aturan nama SharePoint dibersihkan di sini:
@@ -75,7 +75,7 @@ class OneDriveService
      *
      * WAJIB dipakai sebelum menyentuh Graph. Selain karakter ilegal ( \ / : * ? " < > | )
      * ditolak SharePoint, karakter ":" juga MERUSAK path-addressing Graph
-     * (`/drive/items/{id}:/{nama}:/content`) — request jadi diarahkan ke entitas
+     * (`/drive/items/{id}:/{nama}:/content`) - request jadi diarahkan ke entitas
      * driveItem, dan Graph menjawab dengan error yang menyesatkan:
      *   "Entity only allows writes with a JSON Content-Type header"  (PUT /content)
      *   "invalidRequest / Invalid request"                            (createUploadSession)
@@ -237,7 +237,7 @@ class OneDriveService
         if (!$response->successful()) {
             $errorCode = $response->json('error.code', '');
 
-            // Folder belum dibuat — return kosong, bukan error
+            // Folder belum dibuat - return kosong, bukan error
             if ($response->status() === 404 && in_array($errorCode, ['itemNotFound', 'ItemNotFound'])) {
                 return [];
             }
@@ -265,7 +265,7 @@ class OneDriveService
     public function findOrCreateFolderInPath(string $parentPath, string $folderName): string
     {
         // Sanitasi SEBELUM mencari, supaya nama yang dicocokkan sama dengan
-        // nama yang benar-benar dibuat — kalau tidak, upload berikutnya tidak
+        // nama yang benar-benar dibuat - kalau tidak, upload berikutnya tidak
         // menemukan foldernya dan membuat duplikat ("... 1").
         $folderName = self::sanitizeSegment($folderName);
         $children   = $this->listFolderChildrenByPath($parentPath);
@@ -277,7 +277,7 @@ class OneDriveService
             }
         }
 
-        // Not found — create it
+        // Not found - create it
         return $this->createFolderInPath($folderName, $parentPath);
     }
 
@@ -393,7 +393,7 @@ class OneDriveService
 
         return [
             'id'          => $response->json('id'),
-            // Nama final di OneDrive — bisa berbeda dari nama asli (disanitasi, atau
+            // Nama final di OneDrive - bisa berbeda dari nama asli (disanitasi, atau
             // di-rename otomatis saat bentrok). Caller sebaiknya menyimpan ini.
             'name'        => $response->json('name', $fileName),
             'webUrl'      => $response->json('webUrl'),
@@ -403,7 +403,7 @@ class OneDriveService
 
     /**
      * Permanently delete any drive item (file OR folder) by its item ID.
-     * Sudah hilang (404) dianggap sukses — pemanggil hanya peduli "tidak ada lagi".
+     * Sudah hilang (404) dianggap sukses - pemanggil hanya peduli "tidak ada lagi".
      */
     public function deleteItem(string $itemId): void
     {
@@ -514,7 +514,7 @@ class OneDriveService
             }
         }
 
-        // Not found — create it
+        // Not found - create it
         return $this->createSubFolder($parentFolderId, $folderName);
     }
 
@@ -591,7 +591,7 @@ class OneDriveService
         // Anonymous ditolak (kebijakan tenant/site) → coba scope organization agar
         // pengguna internal tetap dapat link yang berfungsi; caller diberi tahu.
         if (!$response->successful() && $scope === 'anonymous') {
-            Log::warning('OneDrive createLink anonymous rejected — falling back to organization scope', [
+            Log::warning('OneDrive createLink anonymous rejected - falling back to organization scope', [
                 'item_id' => $itemId,
                 'type'    => $type,
                 'status'  => $response->status(),
@@ -763,7 +763,7 @@ class OneDriveService
                 '@microsoft.graph.conflictBehavior' => 'fail',
             ]);
 
-            // 409 = proses lain membuatnya di sela GET dan POST kita — ambil saja.
+            // 409 = proses lain membuatnya di sela GET dan POST kita - ambil saja.
             if ($created->status() === 409) {
                 $created = Http::withToken($token)->get(
                     "{$this->driveBase}/drive/root:/{$encoded}",
@@ -824,7 +824,7 @@ class OneDriveService
      *
      * Selalu lewat upload session, berapa pun ukurannya: satu jalur kode untuk
      * berkas kecil dan besar, dan createUploadSession() memakai
-     * conflictBehavior=rename — PUT `:/content` biasa MENIMPA berkas bernama
+     * conflictBehavior=rename - PUT `:/content` biasa MENIMPA berkas bernama
      * sama, padahal dua note berbeda sangat mungkin melampirkan "image.png".
      *
      * @param  resource  $stream
@@ -967,7 +967,7 @@ class OneDriveService
      * Bedakan share link (`/:f:/g/...`, `/:w:/g/...`) dari webUrl langsung
      * (`.../Documents/...` atau `_layouts/15/onedrive.aspx?id=...`).
      *
-     * webUrl langsung HANYA bisa dibuka akun yang punya izin item tersebut —
+     * webUrl langsung HANYA bisa dibuka akun yang punya izin item tersebut -
      * kalau URL semacam itu tersimpan sebagai "share link", penerima eksternal
      * pasti kena halaman "Request access".
      */

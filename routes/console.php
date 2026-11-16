@@ -58,10 +58,10 @@ Schedule::command('notifications:project-reminders')
 
 // Reminder harian 15:00 untuk konsultan (position SAP CONSULTANT) yang belum mengisi
 // timesheet hari ini (draft sudah dihitung terisi). Tidak jalan di akhir pekan /
-// tanggal merah — command-nya sendiri yang mengecek HolidayService.
+// tanggal merah - command-nya sendiri yang mengecek HolidayService.
 Schedule::command('notifications:timesheet-reminders')->dailyAt('15:00');
 
-// Periksa & perbaiki share link OneDrive tiap hari 02:30 — link bisa mati sendiri
+// Periksa & perbaiki share link OneDrive tiap hari 02:30 - link bisa mati sendiri
 // (kebijakan expiry "Anyone links", scope diturunkan tenant, izin dicabut manual)
 // dan tanpa ini kegagalannya baru ketahuan saat customer melapor tidak bisa akses.
 Schedule::command('onedrive:audit-links --fix')
@@ -71,13 +71,13 @@ Schedule::command('onedrive:audit-links --fix')
 
 // Buang percakapan AI yang kedaluwarsa. Cache file Laravel hanya menghapus entri
 // kedaluwarsa saat kuncinya dibaca lagi, jadi percakapan yang ditinggalkan (tab
-// ditutup, tidak pernah kembali) menetap di disk selamanya — termasuk lampiran
+// ditutup, tidak pernah kembali) menetap di disk selamanya - termasuk lampiran
 // gambarnya yang ikut tersimpan di dalam riwayat.
 //
 // DUA KALI SEHARI, bukan sekali (20 Agu 2026): TTL konteks naik dari 1 jam ke
 // 12 jam, jadi berkasnya hidup 12× lebih lama DAN mati di jam yang tersebar
 // sepanjang hari. Dengan jadwal harian, percakapan yang kedaluwarsa pukul 16:00
-// baru dibersihkan pukul 03:00 esoknya — belasan jam memegang byte gambar yang
+// baru dibersihkan pukul 03:00 esoknya - belasan jam memegang byte gambar yang
 // sudah tidak ada gunanya. Pemangkasan arsip DB yang menumpang command ini
 // berumur bulan, jadi ikut jalan dua kali sehari sama sekali tidak masalah.
 Schedule::command('ai:prune-conversations --apply')

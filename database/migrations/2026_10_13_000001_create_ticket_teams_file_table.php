@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  * berkas asli di group chat Teams (docs/teams-sync-parity-design.md §6c).
  *
  * Kenapa tabel pendamping dan bukan kolom di `ticket_attachment`: tabel itu
- * dibagi dengan repo JARVIES dan tidak boleh ditambah kolom — pagar yang sama
+ * dibagi dengan repo JARVIES dan tidak boleh ditambah kolom - pagar yang sama
  * dengan `ticket` dan `ticket_message` (design §2).
  *
  * Gunanya dua:
@@ -30,14 +30,14 @@ return new class extends Migration
 
             $table->string('drive_item_id', 255);
 
-            // GUID berkas di SharePoint — yang dipakai Teams sebagai `id`
+            // GUID berkas di SharePoint - yang dipakai Teams sebagai `id`
             // lampiran bertipe `reference`.
             $table->string('attachment_guid', 64);
 
             // URL langsung berkasnya (webDavUrl), BUKAN share link.
             $table->text('content_url');
 
-            // Nama final di OneDrive — bisa berbeda dari nama asli (disanitasi,
+            // Nama final di OneDrive - bisa berbeda dari nama asli (disanitasi,
             // atau diberi akhiran saat bentrok).
             $table->string('name', 255);
 

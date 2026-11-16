@@ -13,7 +13,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 /**
- * Export daftar Delivery Support — satu baris per support.
+ * Export daftar Delivery Support - satu baris per support.
  *
  * Baris sudah disiapkan oleh DeliverySupportController::export(); kelas ini
  * hanya memetakannya ke kolom + merapikan format.

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * Sebelumnya hanya URL yang disimpan, sehingga aplikasi tidak punya pegangan
  * untuk (a) membuat ulang share link anonim dan (b) menghapus file lama saat
- * dokumen diganti/dihapus — file yatim menumpuk di folder "Plan Cost".
+ * dokumen diganti/dihapus - file yatim menumpuk di folder "Plan Cost".
  */
 return new class extends Migration
 {

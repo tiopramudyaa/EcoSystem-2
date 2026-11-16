@@ -296,7 +296,7 @@
             const panel = document.getElementById('moduleDropdownPanel');
             if (!data.success) return;
 
-            // Jangan pakai panel.innerHTML = ... — itu akan menghapus search box
+            // Jangan pakai panel.innerHTML = ... - itu akan menghapus search box
             // (+empty-state) yang sudah di-inject custom-dropdown.js saat init.
             // Cukup buang item lama, lalu append item baru; wrap search tetap
             // di posisi awal (sticky) dan empty-state tetap di akhir.
@@ -537,7 +537,7 @@
 
                 setModuleDropdownValue(qual.module_id || '', qual.module || '');
                 setCustomDropdownValue('qualificationLanguage', qual.language || '');
-                // Isi kedua varian Level (text & dropdown) — cuma yang relevan dgn
+                // Isi kedua varian Level (text & dropdown) - cuma yang relevan dgn
                 // type saat ini yang tervisibel & terpakai saat save.
                 document.getElementById('qualificationLevelText').value = qual.qualification_level || '';
                 setCustomDropdownValue('qualificationLevelDropdown', qual.qualification_level || '');

@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
  *  1. Kita jadi MEMEGANG chat_id. Flow 5 tidak bisa mengembalikan id chat ke
  *     EcoSystem (aksi HTTP untuk memanggil balik butuh lisensi Premium), jadi
  *     flow 6 terpaksa mencari chatnya lagi tiap kali lewat "List chats" +
- *     cocokkan `topic` — rapuh, dan langsung meleset begitu subject tiket
+ *     cocokkan `topic` - rapuh, dan langsung meleset begitu subject tiket
  *     diubah. Dengan chat_id tersimpan, pencocokan topic tidak diperlukan lagi.
  *  2. Sinkronisasi pesan masuk MUSTAHIL tanpa chat_id.
  *
@@ -56,7 +56,7 @@ class TeamsChatService
      * Buat group chat untuk sebuah tiket dan simpan chat_id-nya.
      *
      * Idempoten: tiket yang sudah punya chat mengembalikan baris yang ada tanpa
-     * memanggil Graph. Ini bukan kehati-hatian berlebihan — approve yang
+     * memanggil Graph. Ini bukan kehati-hatian berlebihan - approve yang
      * di-retry, atau dua helpdesk yang menekan Validate hampir bersamaan, akan
      * sampai ke sini dua kali.
      *
@@ -64,7 +64,7 @@ class TeamsChatService
      * adalah langkah tambahan di akhir approve tiket, dan tiket yang sudah
      * tervalidasi tidak boleh gagal gara-gara Teams.
      *
-     * Guest yang belum dikenal Teams tidak ikut di POST /chats — satu anggota
+     * Guest yang belum dikenal Teams tidak ikut di POST /chats - satu anggota
      * yang ditolak membuat SELURUH chat ditolak (Graph memakai
      * DisablePartialSuccess). Mereka diantre ke teams_pending_guest_member dan
      * dimasukkan susulan; pendingGuestEmails() menyebut siapa saja.
@@ -138,7 +138,7 @@ class TeamsChatService
             'created_via' => 'graph',
             // Kursor dimulai dari SEKARANG. Pesan sistem "members added" /
             // "chat renamed" yang dibuat Graph barusan sudah lewat titik ini,
-            // jadi tidak ikut terserap — dan riwayat sebelum chat ada memang
+            // jadi tidak ikut terserap - dan riwayat sebelum chat ada memang
             // tidak ada. Lihat design §7.
             'last_message_at' => now(),
         ]);
@@ -206,7 +206,7 @@ class TeamsChatService
     }
 
     /**
-     * Penolakan karena ada anggota yang tidak bisa dimasukkan ke roster —
+     * Penolakan karena ada anggota yang tidak bisa dimasukkan ke roster -
      * bentuk yang dikembalikan Graph untuk guest yang belum dikenal Teams:
      * 403 dengan innerError "DisablePartialSuccess-Create Thread: One or more
      * members cannot be added to the thread roster".
@@ -223,7 +223,7 @@ class TeamsChatService
      * Roster chat: AAD object id -> email + displayName.
      *
      * INI sumber identitas untuk pesan masuk, menggantikan GET /users/{id} yang
-     * dipakai rancangan awal — app registration ini tidak punya User.Read.All
+     * dipakai rancangan awal - app registration ini tidak punya User.Read.All
      * dan panggilan itu dijawab 403 (terbukti di spike 17 Sep 2026).
      *
      * Rosternya juga lebih tepat sasaran: isinya persis orang di chat tiket ini,
@@ -269,13 +269,13 @@ class TeamsChatService
      * Ini BUKAN sekadar kehati-hatian. Alamat itu sengaja ada di
      * POWER_AUTOMATE_TEAMS_EXCLUDE_MEMBERS, jadi ia PASTI tidak ada di daftar
      * yang datang dari ticketChatPayload(). Pengecualian itu benar untuk jalur
-     * lama — konektor Teams menambahkan pemilik koneksi sendiri saat ia yang
+     * lama - konektor Teams menambahkan pemilik koneksi sendiri saat ia yang
      * membuat grup, dan alamat yang ikut dua kali membuat seluruh permintaan
      * ditolak sebagai "Duplicate chat members".
      *
      * Graph tidak menambahkan siapa pun otomatis. Tanpa baris ini, grup terbentuk
      * tanpa akun koneksi di dalamnya dan flow 5 (Post card) maupun flow 7
-     * (Post message) gagal — keduanya memposting *Post as User* atas nama akun
+     * (Post message) gagal - keduanya memposting *Post as User* atas nama akun
      * itu, dan Teams menolak posting dari yang bukan anggota.
      *
      * @param  list<string>  $emails
@@ -286,7 +286,7 @@ class TeamsChatService
         $owner = trim((string) config('services.teams_sync.connection_email'));
 
         if ($owner === '') {
-            Log::warning('TeamsChat: services.teams_sync.connection_email kosong — '
+            Log::warning('TeamsChat: services.teams_sync.connection_email kosong - '
                 . 'grup akan dibuat tanpa akun koneksi Power Automate, dan flow tidak akan bisa memposting ke dalamnya.');
 
             return $emails;
@@ -312,14 +312,14 @@ class TeamsChatService
      * GET /users/{id} justru TIDAK tersedia untuk app ini (403, tanpa
      * User.Read.All). Jadi kolom email di `employee` sudah cukup.
      *
-     * Consultant eksternal (di luar TEAMS_INTERNAL_DOMAINS) TIDAK bisa begitu —
+     * Consultant eksternal (di luar TEAMS_INTERNAL_DOMAINS) TIDAK bisa begitu -
      * UPN guest bukan alamat emailnya. Mereka di-bind dengan object id dari
      * TeamsGuestService (diundang dulu kalau belum pernah). Yang tidak bisa
-     * di-resolve DIBUANG; yang baru diundang DITUNDA (isPropagating) — dua-duanya
+     * di-resolve DIBUANG; yang baru diundang DITUNDA (isPropagating) - dua-duanya
      * karena satu anggota yang ditolak membuat Graph menolak seluruh chat.
      *
      * Semua anggota diberi peran `owner` supaya siapa pun di grup bisa menamai
-     * ulang grup dan menambah orang — chat tiket adalah ruang kerja bersama,
+     * ulang grup dan menambah orang - chat tiket adalah ruang kerja bersama,
      * bukan milik satu orang.
      *
      * @param  list<string>  $emails
@@ -366,7 +366,7 @@ class TeamsChatService
      * Tambahkan consultant EKSTERNAL ke group chat tiket yang sudah ada.
      *
      * Jalur susulan untuk guest saja. Anggota internal tetap ditambahkan flow 6
-     * lewat aksi "Add a user to a chat" — aksi itu mencari orangnya dari email,
+     * lewat aksi "Add a user to a chat" - aksi itu mencari orangnya dari email,
      * dan untuk guest pencarian itu gagal. Di sini kita memegang chat_id dan
      * object id guest, jadi Graph bisa langsung dipanggil (terbukti di spike
      * 20 Okt 2026: POST /chats/{id}/members dengan role owner).
@@ -376,7 +376,7 @@ class TeamsChatService
      * disimpan dan baru dikirim begitu guest-nya benar-benar masuk grup.
      *
      * @return string  GUEST_ADDED = sudah masuk; pemanggil boleh langsung
-     *                 mengirim flow 6. GUEST_DEFERRED = jangan kirim — command
+     *                 mengirim flow 6. GUEST_DEFERRED = jangan kirim - command
      *                 yang akan mengirimnya. GUEST_FAILED = tidak ada yang
      *                 bisa dilakukan.
      */
@@ -426,7 +426,7 @@ class TeamsChatService
         $max = max(1, (int) config('services.teams_sync.guest_add_max_attempts', 10));
 
         if (!$this->chatForTicket((int) $row->ticket_id)) {
-            // Tidak akan pulih dengan menunggu — langsung berhenti.
+            // Tidak akan pulih dengan menunggu - langsung berhenti.
             $row->markAttemptFailed('Tiket tidak punya group chat Teams.', 1);
 
             return false;
@@ -504,7 +504,7 @@ class TeamsChatService
 
     /**
      * Riwayat chat dibuka penuh: consultant yang masuk belakangan perlu membaca
-     * konteks tiketnya dari awal — termasuk kartu flow 5 yang terkirim sebelum
+     * konteks tiketnya dari awal - termasuk kartu flow 5 yang terkirim sebelum
      * guest yang ditunda sempat masuk.
      *
      * Setelah berhasil, guest-nya diberi tahu lewat email berisi tautan chat.

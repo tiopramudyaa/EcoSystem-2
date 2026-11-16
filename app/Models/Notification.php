@@ -67,6 +67,21 @@ class Notification extends Model
         });
     }
 
+    /** Ganti em/en dash (termasuk data lama di DB) saat ditampilkan. */
+    public static function stripDashes(?string $text): ?string
+    {
+        if ($text === null) {
+            return null;
+        }
+        $text = preg_replace('/\s+[—–]\s+/u', ': ', $text);
+        return str_replace(['—', '–'], '-', $text);
+    }
+
+    public function getPreviewAttribute($value): ?string
+    {
+        return self::stripDashes($value);
+    }
+
     private static function buildTitle(self $n): string
     {
         $from = $n->from_name ?: 'Someone';
@@ -79,8 +94,8 @@ class Notification extends Model
             'late_exception_approved'      => 'Late Access Request approved',
             'late_exception_rejected'      => 'Late Access Request rejected',
             'customer_mandays_canceled'    => 'Mandays Proposal canceled',
-            'customer_mandays_proposed'    => 'Mandays Proposal — needs review',
-            'resolution_days_proposed'     => 'Resolution Days — needs review',
+            'customer_mandays_proposed'    => 'Mandays Proposal: needs review',
+            'resolution_days_proposed'     => 'Resolution Days: needs review',
             'ticket_member_added'          => $from . ' added you to a ticket',
             'ticket_member_removed'        => $from . ' removed a member from ticket',
             'ticket_member_reactivated'    => $from . ' re-added you to a ticket',

@@ -9,7 +9,7 @@ class HolidaySeeder extends Seeder
 {
     /**
      * Impor hari libur dari config/indonesian-holidays.php ke tabel `holidays`.
-     * Idempotent: updateOrCreate by (date, name) — aman dijalankan berulang.
+     * Idempotent: updateOrCreate by (date, name) - aman dijalankan berulang.
      */
     public function run(): void
     {

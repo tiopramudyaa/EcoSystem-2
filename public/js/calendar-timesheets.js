@@ -14,11 +14,11 @@ const TH = 'px-3 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase 
 let defaultTheadHTML = '';
 
 // Definitive flag: true when support spreadsheet layout is active in the thead.
-// Set synchronously wherever the thead is swapped — prevents renderTimesheetRows()
+// Set synchronously wherever the thead is swapped - prevents renderTimesheetRows()
 // from falling through to Branch 3 when condition flags mismatch.
 let supportLayoutActive = false;
 
-// Support-specific thead — exact same custom-dd / text-panel pattern as blade
+// Support-specific thead - exact same custom-dd / text-panel pattern as blade
 // (keep in sync with @elseif($lockedType === 'support') section in timesheets.blade.php)
 const CHEVRON_SVG = `<svg class="w-3.5 h-3.5 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>`;
 const DD_CHEVRON  = `<svg class="custom-dd-arrow w-3.5 h-3.5 text-gray-500 transition-all duration-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>`;
@@ -95,11 +95,11 @@ function _mkStatusDd() { return `<div class="custom-dd relative w-full" id="ddCo
 function _mkTypeDd()   { return `<div class="custom-dd relative w-full" id="ddColFilterTsType" data-fixed="true" data-onchange="applyColFilter"><button type="button" class="custom-dd-btn w-full flex items-center gap-1.5 px-3 py-2.5 cursor-pointer hover:bg-gray-100 transition-colors"><span class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">Type</span>${DD_CHEVRON}</button><input type="hidden" id="colFilterTsType" value=""><div class="custom-dd-panel hidden absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] py-1.5 overflow-y-auto" style="max-height:150px;min-width:140px;">${_TYPE_DD_ITEMS}</div></div>`; }
 function _mkMonthDd()  { return `<div class="custom-dd relative w-full" id="ddColFilterTsMonth" data-fixed="true" data-onchange="applyColFilter"><button type="button" class="custom-dd-btn w-full flex items-center gap-1.5 px-3 py-2.5 cursor-pointer hover:bg-gray-100 transition-colors"><span class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">Month</span>${DD_CHEVRON}</button><input type="hidden" id="colFilterTsMonth" value=""><div class="custom-dd-panel hidden absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] py-1.5 overflow-y-auto" style="max-height:240px;min-width:120px;">${_MONTH_DD_ITEMS}</div></div>`; }
 // Year dropdown: panel items are filled dynamically from the loaded data
-// (years vary by dataset, unlike Month's fixed 12-item list) — see _populateTsYearDd().
+// (years vary by dataset, unlike Month's fixed 12-item list) - see _populateTsYearDd().
 function _mkYearDd()   { return `<div class="custom-dd relative w-full" id="ddColFilterTsYear" data-fixed="true" data-onchange="applyColFilter"><button type="button" class="custom-dd-btn w-full flex items-center gap-1.5 px-3 py-2.5 cursor-pointer hover:bg-gray-100 transition-colors"><span class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">Year</span>${DD_CHEVRON}</button><input type="hidden" id="colFilterTsYear" value=""><div class="custom-dd-panel hidden absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] py-1.5 overflow-y-auto" style="max-height:240px;min-width:100px;"><button type="button" class="${DD_ITEM}" data-value="">All</button></div></div>`; }
 function _mkActivityTextTh() { return `<th class="${TH_FILT}" style="min-width:130px; position:relative;"><button type="button" onclick="toggleTsTextPanel(event,'ActivityType')" class="w-full flex items-center gap-1.5 px-3 py-2.5 cursor-pointer hover:bg-gray-100 transition-colors"><span class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">Activity</span>${CHEVRON_SVG}${FUNNEL_SVG('tsTextIcon_ActivityType')}</button>${_ACT_TEXT_PANEL}</th>`; }
 
-// Date range filter panel — pola sama dengan view ticket (From/To + Clear/Apply).
+// Date range filter panel - pola sama dengan view ticket (From/To + Clear/Apply).
 const _DATE_FILTER_PANEL = `<div id="tsDateFilterPanel" class="hidden absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] p-3" style="min-width:240px;">
     <div class="space-y-2">
         <div>
@@ -125,7 +125,7 @@ const SUPPORT_THEAD_HTML = `<tr>
     <th class="${TH_PLAIN}" style="min-width:110px;">Time</th>
     <th class="${TH_FILT}" style="min-width:85px;">${_mkMonthDd()}</th>
     <th class="${TH_FILT}" style="min-width:70px;">${_mkYearDd()}</th>
-    <th class="${TH_FILT}" style="min-width:150px; position:relative;"><button type="button" onclick="toggleTsTextPanel(event,'Employee')" class="w-full flex items-center gap-1.5 px-3 py-2.5 cursor-pointer hover:bg-gray-100 transition-colors"><span class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">Name</span>${CHEVRON_SVG}${FUNNEL_SVG('tsTextIcon_Employee')}<span id="tsSortEmpIcon" onclick="event.stopPropagation(); toggleTsEmpSort()" title="Click to toggle sort (A–Z ↔ Z–A)" class="cursor-pointer text-[10px] text-gray-300 font-bold shrink-0 ml-auto hover:text-red-500 transition-colors">⇅</span></button>${_EMP_TEXT_PANEL}</th>
+    <th class="${TH_FILT}" style="min-width:150px; position:relative;"><button type="button" onclick="toggleTsTextPanel(event,'Employee')" class="w-full flex items-center gap-1.5 px-3 py-2.5 cursor-pointer hover:bg-gray-100 transition-colors"><span class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">Name</span>${CHEVRON_SVG}${FUNNEL_SVG('tsTextIcon_Employee')}<span id="tsSortEmpIcon" onclick="event.stopPropagation(); toggleTsEmpSort()" title="Click to toggle sort (A-Z ↔ Z-A)" class="cursor-pointer text-[10px] text-gray-300 font-bold shrink-0 ml-auto hover:text-red-500 transition-colors">⇅</span></button>${_EMP_TEXT_PANEL}</th>
     <th class="${TH_FILT}" style="min-width:120px;">${_mkStatusDd()}</th>
     <th class="${TH_FILT}" style="min-width:150px; position:relative;"><button type="button" onclick="toggleTsTextPanel(event,'Ticket')" class="w-full flex items-center gap-1.5 px-3 py-2.5 cursor-pointer hover:bg-gray-100 transition-colors"><span class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">Ticket</span>${CHEVRON_SVG}${FUNNEL_SVG('tsTextIcon_Ticket')}</button>${_TKT_TEXT_PANEL}</th>
     <th class="${TH_PLAIN}" style="min-width:180px;">Description</th>
@@ -222,7 +222,7 @@ async function loadTsPeriodBadge() {
         const status = document.getElementById('tsBadgeStatus');
         if (!badge) return;
 
-        // No period is globally open at all (RPMO hasn't opened one yet) — distinct
+        // No period is globally open at all (RPMO hasn't opened one yet) - distinct
         // from "open" and "closed", so it must not silently render as either.
         if (p.status === 'not_open' || !p.month) {
             label.textContent  = 'No active period';
@@ -249,7 +249,7 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Tutup panel saat scroll di luar panel atau resize — panel pakai posisi
+// Tutup panel saat scroll di luar panel atau resize - panel pakai posisi
 // absolute terhadap header sehingga scroll bikin tidak sinkron dengan view.
 window.addEventListener('scroll', function(e) {
     const t = e.target;
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateBulkActionButtons();
                 });
             }
-            // Re-init custom-dd dropdowns (Month/Year/Status) — the initCustomDropdowns()
+            // Re-init custom-dd dropdowns (Month/Year/Status) - the initCustomDropdowns()
             // call above ran before this innerHTML swap, so those handlers were lost.
             if (typeof initCustomDropdowns === 'function') initCustomDropdowns(thead);
         }
@@ -501,7 +501,7 @@ async function confirmReject() {
 
 // ── Timesheet time inputs ─────────────────────────────────────────────────────
 // #timesheetStartTime / #timesheetEndTime are plain text fields with a custom
-// (app-styled) dropdown of preset times — see initTsTimePickers() below and the
+// (app-styled) dropdown of preset times - see initTsTimePickers() below and the
 // [data-ts-timepicker] markup in timesheets.blade.php. The user can type an HH:MM
 // value or pick one from the dropdown; tsNormalizeTimeInput() tidies loose input
 // ("8", "830", "8:5") into "HH:MM" on change/blur.
@@ -517,9 +517,9 @@ function _tsParseTime(v) {
 }
 
 // Time ranges (minutes since midnight, [s, e)) already used by the user's other
-// project timesheets on the form's date — set by loadProjectFormContext() in
+// project timesheets on the form's date - set by loadProjectFormContext() in
 // project mode, empty otherwise. Ranges that only touch are allowed
-// (08:00–12:00 then 12:00–…).
+// (08:00-12:00 then 12:00-…).
 let _tsBooked = [];
 
 const _tsToMins = p => p.h * 60 + p.m;
@@ -561,7 +561,7 @@ function _tsValidateTimeOrder() {
             msg = 'End time must be later than start time.';
         } else {
             const clash = _tsFindOverlap(_tsToMins(s), _tsToMins(e));
-            if (clash) msg = `This time overlaps another project timesheet (${_tsFmtMins(clash.s)}–${_tsFmtMins(clash.e)}${clash.label ? ', ' + clash.label : ''}).`;
+            if (clash) msg = `This time overlaps another project timesheet (${_tsFmtMins(clash.s)}-${_tsFmtMins(clash.e)}${clash.label ? ', ' + clash.label : ''}).`;
         }
     }
     const bad = !!msg;
@@ -584,8 +584,8 @@ function tsUpdateDuration() {
     if (!durationField) return;
 
     if (!s || !e) {
-        if (durationField.tagName === 'INPUT') durationField.value = '—';
-        else durationField.textContent = '—';
+        if (durationField.tagName === 'INPUT') durationField.value = '-';
+        else durationField.textContent = '-';
         return;
     }
 
@@ -635,7 +635,7 @@ function tsNormalizeTimeInput(el) {
     el.value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-// Render a picker panel: an hour column (00–23) and a minute column (00–59).
+// Render a picker panel: an hour column (00-23) and a minute column (00-59).
 // Times already used (project mode) are disabled; an hour is disabled when all
 // of its minutes are. Picking an hour keeps the panel open for the minute;
 // picking a minute commits and closes.
@@ -758,7 +758,7 @@ function _tsCloseAllTimePanels() {
     document.querySelectorAll('.ts-tp-panel:not(.hidden)').forEach(p => p.classList.add('hidden'));
 }
 
-// Initialize time inputs with the default working day (08:00 – 17:00)
+// Initialize time inputs with the default working day (08:00 - 17:00)
 function initializeTimePickers() {
     const startEl = document.getElementById('timesheetStartTime');
     const endEl   = document.getElementById('timesheetEndTime');
@@ -801,7 +801,7 @@ function tsCurrentPeriod() {
             : { month: nextM, year };
     } else {
         // Before the 21st we are in the CURRENT month's period
-        // e.g. Apr 1–20 → period ending Apr 20 → "April period" → month=4
+        // e.g. Apr 1-20 → period ending Apr 20 → "April period" → month=4
         return { month: m0 + 1, year };
     }
 }
@@ -822,7 +822,7 @@ function updateTsPeriodLabel() {
     const sm = month === 1 ? 12 : month - 1;
     const sy = month === 1 ? year - 1 : year;
     const el = document.getElementById('tsPeriodRange');
-    if (el) el.textContent = `${21} ${TS_MONTHS_SHORT[sm - 1]} ${sy} – ${20} ${TS_MONTHS_SHORT[month - 1]} ${year}`;
+    if (el) el.textContent = `${21} ${TS_MONTHS_SHORT[sm - 1]} ${sy} - ${20} ${TS_MONTHS_SHORT[month - 1]} ${year}`;
 }
 
 function initializeDateFilters() {
@@ -837,7 +837,7 @@ function initializeDateFilters() {
     }
     updateTsPeriodLabel();
 
-    // Do NOT restrict by date — load all timesheets by default
+    // Do NOT restrict by date - load all timesheets by default
     currentFilters.start_date = null;
     currentFilters.end_date   = null;
 }
@@ -910,7 +910,7 @@ function handleTimesheetTypeChange() {
                 <p class="text-xs text-amber-800">
                     <i class="fas fa-calendar-times mr-1"></i>
                     <span id="projectNonWorkingText">Today is a non-working day, so no project activity is running.</span>
-                    You can still log this timesheet without an activity — describe the work in <b>Activity Detail</b>.
+                    You can still log this timesheet without an activity - describe the work in <b>Activity Detail</b>.
                 </p>
                 <label class="mt-2 flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" id="timesheetWithoutActivity" class="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500">
@@ -972,21 +972,21 @@ function handleTimesheetTypeChange() {
                 </label>
                 <input type="date" id="supportActivityDate" required value="${formatDate(new Date())}"
                     class="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-red-700 focus:border-transparent bg-gray-50 hover:bg-white transition-colors">
-                <p class="mt-1 text-xs text-gray-400">When the work actually happened — any date, no period restriction.</p>
+                <p class="mt-1 text-xs text-gray-400">When the work actually happened - any date, no period restriction.</p>
             </div>
 
             <div class="grid grid-cols-3 gap-2">
                 <div class="bg-gray-50 rounded-lg border border-gray-200 p-2.5">
                     <p class="text-xs font-semibold text-gray-400 mb-0.5">Customer</p>
-                    <p class="text-xs font-semibold text-gray-700 truncate" id="supportCustomer">—</p>
+                    <p class="text-xs font-semibold text-gray-700 truncate" id="supportCustomer">-</p>
                 </div>
                 <div class="bg-gray-50 rounded-lg border border-gray-200 p-2.5">
                     <p class="text-xs font-semibold text-gray-400 mb-0.5">Quota MD</p>
-                    <p class="text-xs font-semibold text-gray-700" id="supportJatahMd">—</p>
+                    <p class="text-xs font-semibold text-gray-700" id="supportJatahMd">-</p>
                 </div>
                 <div class="bg-gray-50 rounded-lg border border-gray-200 p-2.5">
                     <p class="text-xs font-semibold text-gray-400 mb-0.5">Remaining</p>
-                    <p class="text-xs font-bold text-gray-700" id="supportRemainingMd">—</p>
+                    <p class="text-xs font-bold text-gray-700" id="supportRemainingMd">-</p>
                 </div>
             </div>
 
@@ -1077,7 +1077,7 @@ function handleTimesheetTypeChange() {
 // Project timesheets are always dated today (an edit keeps its original date).
 // Flow: context (non-working day + used time slots) → Project → Activity (only
 // ones assigned to the user AND running on that date). On a weekend / public
-// holiday no activity runs, so the user ticks "Log without activity" instead —
+// holiday no activity runs, so the user ticks "Log without activity" instead -
 // likewise on a working day when the user is not assigned to any activity of
 // the chosen project.
 // The device GPS location is mandatory for a new project timesheet; an edit
@@ -1127,7 +1127,7 @@ function initProjectForm() {
     }
     document.getElementById('timesheetDateHint')?.classList.toggle('hidden', _tsEditingProjectLike());
 
-    // A late-exception period choice would move the date — not for project.
+    // A late-exception period choice would move the date - not for project.
     const periodSel = document.getElementById('timesheetPeriodSelect');
     if (periodSel) periodSel.value = '';
 
@@ -1188,7 +1188,7 @@ function loadProjectFormContext(date) {
     return _tsProjectCtxReq;
 }
 
-// "Already used: 08:00–12:00 (Project A · Activity) …" under the time picker.
+// "Already used: 08:00-12:00 (Project A · Activity) …" under the time picker.
 function renderBookedTimes() {
     const el = document.getElementById('timesheetBookedTimes');
     if (!el) return;
@@ -1198,7 +1198,7 @@ function renderBookedTimes() {
         return;
     }
     el.innerHTML = '<span class="font-semibold text-gray-600"><i class="fas fa-lock mr-1 text-gray-400"></i>Already used:</span> '
-        + _tsBooked.map(b => `<span class="inline-block mr-2">${_tsFmtMins(b.s)}–${_tsFmtMins(b.e)}${b.label ? ` <span class="text-gray-400">(${escapeHtml(b.label)})</span>` : ''}</span>`).join('');
+        + _tsBooked.map(b => `<span class="inline-block mr-2">${_tsFmtMins(b.s)}-${_tsFmtMins(b.e)}${b.label ? ` <span class="text-gray-400">(${escapeHtml(b.label)})</span>` : ''}</span>`).join('');
     el.classList.remove('hidden');
 }
 
@@ -1225,7 +1225,7 @@ async function loadMyProjectsForTimesheet() {
         panel.innerHTML = '<button type="button" class="custom-dd-item w-full px-3 py-2 text-left text-sm text-gray-500 hover:bg-gray-50" data-value="">Select a Project</button>'
             + projects.map(p => {
                 const client = p.client?.basic_data?.name_1 || '';
-                return `<button type="button" class="custom-dd-item w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50" data-value="${p.id}">${escapeHtml(p.name || ('Project #' + p.id))}${client ? ` <span class="text-gray-400">— ${escapeHtml(client)}</span>` : ''}</button>`;
+                return `<button type="button" class="custom-dd-item w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50" data-value="${p.id}">${escapeHtml(p.name || ('Project #' + p.id))}${client ? ` <span class="text-gray-400">- ${escapeHtml(client)}</span>` : ''}</button>`;
             }).join('');
 
         if (includeId) {
@@ -1458,7 +1458,7 @@ async function loadTicketsForDropdown() {
 
     try {
         // Keep the currently-edited ticket selectable even if its remaining MD is now 0
-        // (its own consumption is part of that 0) — the endpoint always includes it.
+        // (its own consumption is part of that 0) - the endpoint always includes it.
         const includeParam = _pendingTicketPreselect ? `?include_ticket_id=${encodeURIComponent(_pendingTicketPreselect)}` : '';
         const response = await fetch(`/api/tickets/my-for-timesheet${includeParam}`, {
             method: 'GET',
@@ -1495,7 +1495,7 @@ async function loadTicketsForDropdown() {
                     });
                 }
 
-                // Rebuild only the item buttons — a plain `panel.innerHTML = itemsHtml`
+                // Rebuild only the item buttons - a plain `panel.innerHTML = itemsHtml`
                 // would also wipe out the sticky search box + empty-state that
                 // _injectSearch() wired up at dropdown init, silently killing search
                 // the moment tickets finish loading. Preserve those nodes instead.
@@ -1528,7 +1528,7 @@ async function loadTicketsForDropdown() {
 }
 
 // Auto-fill Customer, Jatah MD, and Remaining MD when a support ticket is selected.
-// Called via data-onchange (no argument) — reads ticket ID from the hidden input.
+// Called via data-onchange (no argument) - reads ticket ID from the hidden input.
 async function onSupportTicketSelected() {
     const ticketId = document.getElementById('timesheetTicket')?.value || null;
 
@@ -1539,9 +1539,9 @@ async function onSupportTicketSelected() {
     const setText = (el, val) => { if (el) el.textContent = val; };
 
     // Reset
-    setText(customerEl,  '—');
-    setText(jatahMdEl,   '—');
-    setText(remainingEl, '—');
+    setText(customerEl,  '-');
+    setText(jatahMdEl,   '-');
+    setText(remainingEl, '-');
     if (remainingEl) remainingEl.className = 'text-xs font-bold text-gray-700';
     _currentTicketRemainingMd = null;
 
@@ -1550,7 +1550,7 @@ async function onSupportTicketSelected() {
     // Customer from cache
     const ticket = myTicketsCache.find(t => String(t.ticket_id) === String(ticketId));
     if (ticket && customerEl) {
-        customerEl.textContent = ticket.customer?.customer_name || '—';
+        customerEl.textContent = ticket.customer?.customer_name || '-';
     }
 
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -1563,13 +1563,13 @@ async function onSupportTicketSelected() {
         if (!data?.success) return;
         const d = data.data;
 
-        // Quota MD — per-user allocation (approved_mandays + approved_additional for this employee)
-        setText(jatahMdEl, d.quota !== null ? formatMdTrim(d.quota) : '—');
+        // Quota MD - per-user allocation (approved_mandays + approved_additional for this employee)
+        setText(jatahMdEl, d.quota !== null ? formatMdTrim(d.quota) : '-');
 
         // Remaining MD
         if (!remainingEl) return;
         const rem = d.remaining;
-        if (rem === null) { remainingEl.textContent = '—'; return; }
+        if (rem === null) { remainingEl.textContent = '-'; return; }
         remainingEl.textContent = formatMdTrim(rem);
         remainingEl.className   = rem < 0
             ? 'text-xs font-bold text-red-600'
@@ -1650,7 +1650,7 @@ async function loadPeriodSelector() {
             container.classList.remove('hidden');
 
         } else {
-            // No exceptions — show active period as info
+            // No exceptions - show active period as info
             const activePeriod = await fetch('/api/periods/active', {
                 headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
                 credentials: 'same-origin'
@@ -1684,7 +1684,7 @@ function onPeriodSelected(select) {
     const dateField = document.getElementById('timesheetDate');
     if (!dateField || !endDate) return;
 
-    // Project timesheets are always dated today — a late period doesn't apply.
+    // Project timesheets are always dated today - a late period doesn't apply.
     if (['project', 'non_project'].includes(document.querySelector('input[name="timesheetType"]:checked')?.value)) {
         select.value = '';
         showNotification('Project and Non Project timesheets are always logged on today\'s date.', 'info');
@@ -1695,10 +1695,10 @@ function onPeriodSelected(select) {
     const isActive = !select.value; // empty value = active period
 
     if (isActive) {
-        // Active period — keep today's date if it falls in the range, else use today
+        // Active period - keep today's date if it falls in the range, else use today
         dateField.value = today;
     } else {
-        // Late exception period — set to end date of that period
+        // Late exception period - set to end date of that period
         dateField.value = endDate;
     }
 }
@@ -1751,7 +1751,7 @@ function updateStatCards(all) {
 
 // Fill the Year column dropdown with the distinct years present in the loaded
 // data (newest first). Month is a fixed 12-item list, but the available years
-// depend on the dataset — so they are built here and refreshed on each render.
+// depend on the dataset - so they are built here and refreshed on each render.
 // Rebuild is skipped when the year set is unchanged to avoid churn while the
 // user interacts with other filters. Any prior selection is preserved.
 let _tsYearDdSig = '';
@@ -1767,7 +1767,7 @@ function _populateTsYearDd() {
         .sort((a, b) => b - a);
 
     // Skip rebuild only when both the year set AND the rendered options are
-    // already current — a fresh thead swap leaves just the "All" item, which
+    // already current - a fresh thead swap leaves just the "All" item, which
     // must still be repopulated even if the underlying year set is unchanged.
     const sig = years.join(',');
     if (sig === _tsYearDdSig && panel.querySelectorAll('.custom-dd-item').length === years.length + 1) return;
@@ -1804,7 +1804,7 @@ function applyStatusFilter() {
         result = result.filter(t => t.status === currentFilters.status);
     }
 
-    // 3. Column filters — read from new IDs
+    // 3. Column filters - read from new IDs
     const colEmp      = (document.getElementById('colFilterTsEmployee')?.value    || '').toLowerCase().trim();
     const colStatus   =  document.getElementById('colFilterTsStatus')?.value      || '';
     const colActType  = (document.getElementById('colFilterTsActivityType')?.value || '').toLowerCase().trim();
@@ -1825,7 +1825,7 @@ function applyStatusFilter() {
     if (colYear)     result = result.filter(t => String(t.period_year) === colYear);
     if (colType)     result = result.filter(t => t.ticket_id && (colType === 'internal' ? t.ticket_type === 'Internal' : t.ticket_type !== 'Internal'));
 
-    // Date range filter (Date column From/To — sama seperti view ticket)
+    // Date range filter (Date column From/To - sama seperti view ticket)
     const dateFrom = document.getElementById('tsDateFrom')?.value || '';
     const dateTo   = document.getElementById('tsDateTo')?.value   || '';
     if (dateFrom) result = result.filter(t => (t.date || '').slice(0, 10) >= dateFrom);
@@ -1854,7 +1854,7 @@ function applyStatusFilter() {
 // Support-only summary cards: Total Quota MD (unique per ticket+employee, so a
 // ticket with several timesheet rows doesn't get its quota counted more than once)
 // and Total MD Consumed (summed across every filtered row). Rejected rows are
-// excluded from both — always recomputed from filteredTimesheets, so it tracks
+// excluded from both - always recomputed from filteredTimesheets, so it tracks
 // whatever the table's current filters (search/status/date/etc.) are showing.
 function updateSupportMdSummary(activeType) {
     const wrap = document.getElementById('supportMdSummary');
@@ -1888,7 +1888,7 @@ function updateSupportMdSummary(activeType) {
     if (consumedEl) consumedEl.textContent = formatMdTrim(consumed);
 }
 
-// 12 → "12", 12.5 → "12.5", 12.25 → "12.25" — round to 2 decimals first (avoids
+// 12 → "12", 12.5 → "12.5", 12.25 → "12.25" - round to 2 decimals first (avoids
 // floating-point noise like 12.299999999996) then drop trailing zeros.
 function formatMdTrim(num) {
     return parseFloat((Number(num) || 0).toFixed(2)).toString();
@@ -2209,7 +2209,7 @@ function resetFilters() {
         activeCard.classList.add('border-2', 'border-red-600');
     }
 
-    // 4. Single fetch — triggers exactly one render via applyStatusFilter()
+    // 4. Single fetch - triggers exactly one render via applyStatusFilter()
     if (window.isApprovalMode || window.isHoSMode) {
         loadSubmittedTimesheets();
     } else {
@@ -2218,7 +2218,7 @@ function resetFilters() {
 }
 
 // Apakah ada filter/search kolom yang sedang aktif? Dipakai untuk memilih pesan
-// "no result" — kalau ada filter, user butuh tombol Clear Filters, bukan ajakan
+// "no result" - kalau ada filter, user butuh tombol Clear Filters, bukan ajakan
 // membuat timesheet baru.
 function tsHasActiveFilters() {
     const ids = ['colFilterTsEmployee', 'colFilterTsTicket', 'colFilterTsCustomer', 'colFilterTsActivityType', 'colFilterTsProject',
@@ -2295,7 +2295,7 @@ function renderTimesheetRows() {
     const pageItems = filteredTimesheets.slice(start, end);
     updatePagination(total, start + 1, end);
 
-    // Resolve active type — same logic as applyStatusFilter() so they always agree
+    // Resolve active type - same logic as applyStatusFilter() so they always agree
     const activeType = currentFilters.type_filter || window.lockedType || '';
 
     // ── Support spreadsheet layout ──
@@ -2513,7 +2513,7 @@ function renderTimesheetRows() {
             if (isProject) {
                 activityCell = projCells.activityCell;
             } else if (isSupport) {
-                const mdVal = timesheet.md_consumed != null ? formatMdTrim(timesheet.md_consumed) : '—';
+                const mdVal = timesheet.md_consumed != null ? formatMdTrim(timesheet.md_consumed) : '-';
                 const onSiteBadge = timesheet.presence === 'onsite'
                     ? '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[10px] font-semibold"><i class="fas fa-map-marker-alt"></i>On Site</span>'
                     : '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-semibold"><i class="fas fa-wifi"></i>Remote</span>';
@@ -2611,7 +2611,7 @@ function renderTimesheetRows() {
         if (isProject) {
             activityCell = projCells.activityCell;
         } else if (isSupport) {
-            const mdVal      = timesheet.md_consumed != null ? formatMdTrim(timesheet.md_consumed) : '—';
+            const mdVal      = timesheet.md_consumed != null ? formatMdTrim(timesheet.md_consumed) : '-';
             const onSite     = timesheet.presence === 'onsite';
             const presenceBadge = onSite
                 ? '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[10px] font-semibold"><i class="fas fa-map-marker-alt"></i>On Site</span>'
@@ -2730,23 +2730,23 @@ function tsFmtTime(t) {
     return t ? String(t).slice(0, 5) : '';
 }
 
-// "HH:MM – HH:MM" for a timesheet's start/end, or "-" when either side is missing.
+// "HH:MM - HH:MM" for a timesheet's start/end, or "-" when either side is missing.
 function tsTimeRange(ts) {
     const s = tsFmtTime(ts && ts.start_time);
     const e = tsFmtTime(ts && ts.end_time);
-    return (s && e) ? `${s} – ${e}` : '-';
+    return (s && e) ? `${s} - ${e}` : '-';
 }
 
 /**
  * Compute the reporting period month/year from a date object.
  * Rule: day 21 of month M → day 20 of month M+1 = Period M.
- * Dates 1–20 belong to the previous month's period.
+ * Dates 1-20 belong to the previous month's period.
  */
 function getPeriodInfo(d) {
     if (d.getDate() >= 21) {
         return { month: d.getMonth() + 1, year: d.getFullYear() };
     }
-    // Dates 1–20 → previous month's period
+    // Dates 1-20 → previous month's period
     if (d.getMonth() === 0) {
         return { month: 12, year: d.getFullYear() - 1 };
     }
@@ -2878,7 +2878,7 @@ function openTimesheetModal() {
         handleTimesheetTypeChange();
     }, 50);
 
-    // Load period selector (async — shows after modal is visible)
+    // Load period selector (async - shows after modal is visible)
     loadPeriodSelector();
 }
 
@@ -3050,7 +3050,7 @@ async function openSubmitModal(id) {
                 }
             }
         } catch (e) {
-            // Network error — backend will validate
+            // Network error - backend will validate
         }
     }
 
@@ -3148,7 +3148,7 @@ function updateBulkActionButtons() {
     } else {
         bulkActions.classList.add('hidden');
         bulkActions.classList.remove('flex');
-        // Table body is rebuilt fresh on every reload — its row checkboxes are already
+        // Table body is rebuilt fresh on every reload - its row checkboxes are already
         // unchecked, but the header "select all" checkbox lives outside tbody and keeps
         // its own state, so it can be left showing checked with nothing actually selected.
         const selectAllCb = document.getElementById('selectAll');
@@ -3256,7 +3256,7 @@ async function openBulkSubmitModal() {
                 const data = await res.json();
                 if (data?.success) {
                     const rem = data.data?.remaining;
-                    // null means no approved proposal — store -Infinity so it is treated as over-quota
+                    // null means no approved proposal - store -Infinity so it is treated as over-quota
                     remainingByTicket[ticketId] = (rem !== null && rem !== undefined) ? Number(rem) : -Infinity;
                 }
             } catch (e) {}
@@ -3354,10 +3354,10 @@ async function confirmBulkSubmit() {
         showNotification(`Submitted ${successCount} timesheet(s) successfully${failCount > 0 ? `, ${failCount} failed` : ''}!`, 'success');
     }
     if (failCount > 0) {
-        // Surface the actual backend reason(s) instead of a blank generic message —
-        // e.g. "Customer Mandays status is not approved yet" — so users know what to
-        // fix instead of just seeing a dead-end failure.
-        const reasonText = Array.from(failReasons).join(' — ');
+        // Surface the actual backend reason(s) instead of a blank generic message -
+        // e.g. "quota exceeded" - so users know what to fix instead of just seeing a
+        // dead-end failure.
+        const reasonText = Array.from(failReasons).join(' - ');
         showNotification(`Failed to submit ${failCount} timesheet(s): ${reasonText}`, 'error');
     }
 }
@@ -3465,15 +3465,15 @@ async function handleFormSubmit(e) {
         const withoutActivity = noActivityMode && !!document.getElementById('timesheetWithoutActivity')?.checked;
 
         if (!projectId) return fail('Please select a project.');
-        if (nonWorkingDay && !withoutActivity) return fail('Today is a non-working day — tick "Log without activity" to continue.');
-        if (_tsNotAssigned && !withoutActivity) return fail('You are not assigned to any activity in this project — tick "Log without activity" to continue.');
+        if (nonWorkingDay && !withoutActivity) return fail('Today is a non-working day - tick "Log without activity" to continue.');
+        if (_tsNotAssigned && !withoutActivity) return fail('You are not assigned to any activity in this project - tick "Log without activity" to continue.');
         if (!noActivityMode && !activityId) return fail('Please select an activity.');
         if (!_tsValidateTimeOrder()) return fail(document.getElementById('timesheetTimeError')?.textContent || 'Invalid time range.');
 
         if (_tsNeedsGps() && !_tsGps) {
             if (_tsGpsState !== 'pending') requestTimesheetGps();
             return fail(_tsGpsState === 'pending'
-                ? 'Still getting your device location — please wait a moment and save again.'
+                ? 'Still getting your device location - please wait a moment and save again.'
                 : 'Your device location is required. Please enable location access for this site.');
         }
 
@@ -3526,7 +3526,7 @@ async function handleFormSubmit(e) {
         const onSite = document.getElementById('supportOnSite')?.checked;
         const mdConsumedVal = document.getElementById('supportMdConsumed')?.value;
 
-        // Client-side fast-fail for NEW timesheets only — edit mode leaves this to the
+        // Client-side fast-fail for NEW timesheets only - edit mode leaves this to the
         // backend, since remaining shown there already includes this draft's own MD
         // consumption and a correct client-side re-check would need to add it back.
         if (!timesheetId?.value && _currentTicketRemainingMd !== null) {
@@ -3581,7 +3581,7 @@ async function handleFormSubmit(e) {
         } else {
             showNotification('Failed to save timesheet: ' + (data.message || 'Unknown error'), 'error');
             if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Timesheet'; }
-            // Another save may have taken the slot meanwhile — refresh the used times.
+            // Another save may have taken the slot meanwhile - refresh the used times.
             if ((selectedType === 'project' || selectedType === 'non_project') && timesheetData.date) loadProjectFormContext(timesheetData.date);
         }
     } catch (error) {

@@ -10,7 +10,7 @@ use Throwable;
  *
  * Berbeda dari RuntimeException generik: pesan (getMessage) pada exception ini
  * sudah berupa ALASAN yang ramah pengguna (Bahasa Inggris), siap ditampilkan
- * di bubble chat — mis. "The destination email address is invalid or was not found."
+ * di bubble chat - mis. "The destination email address is invalid or was not found."
  *
  * Detail teknis mentah dari Graph disimpan di $rawDetail untuk log/debug.
  */
@@ -19,7 +19,7 @@ class EmailSendException extends RuntimeException
     /** Detail error teknis mentah (body response Graph) untuk log. */
     public readonly ?string $rawDetail;
 
-    /** Alamat tujuan yang GAGAL (mis. invalid pra-kirim) — untuk ditandai di bubble. */
+    /** Alamat tujuan yang GAGAL (mis. invalid pra-kirim) - untuk ditandai di bubble. */
     public readonly array $failedRecipients;
 
     public function __construct(string $friendlyReason, ?string $rawDetail = null, ?Throwable $previous = null, array $failedRecipients = [])

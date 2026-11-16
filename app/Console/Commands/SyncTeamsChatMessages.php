@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Tarik pesan baru dari group chat Teams tiket menjadi internal note.
  *
- * Dijadwalkan tiap menit. Tidak menyimpan daftar pekerjaan di mana pun — tiap
+ * Dijadwalkan tiap menit. Tidak menyimpan daftar pekerjaan di mana pun - tiap
  * run menghitung ulang chat mana yang layak dipoll dari `ticket_teams_chat`
  * dan status tiketnya saat ini, jadi tiket yang ditutup hilang sendiri dari
  * antrean tanpa perlu kode pembatal.
@@ -35,7 +35,7 @@ class SyncTeamsChatMessages extends Command
             // Bukan error: begini caranya fitur ini dimatikan
             // (TEAMS_SYNC_ENABLED / TEAMS_SYNC_INBOUND = false). Scheduler tetap
             // memanggilnya tiap menit dan ia keluar seketika.
-            $this->line('Sinkron masuk Teams tidak aktif — dilewati.');
+            $this->line('Sinkron masuk Teams tidak aktif - dilewati.');
 
             return self::SUCCESS;
         }
@@ -81,7 +81,7 @@ class SyncTeamsChatMessages extends Command
             }
 
             if ($result['skipped'] > 0) {
-                // Bukan kehilangan data — sisanya diambil putaran berikutnya
+                // Bukan kehilangan data - sisanya diambil putaran berikutnya
                 // karena kursor hanya maju sejauh yang sudah ditangani.
                 $this->warn("  tiket {$chat->ticket_id}: {$result['skipped']} pesan ditunda (batas per putaran)");
             }

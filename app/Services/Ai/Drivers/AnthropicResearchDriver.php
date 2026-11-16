@@ -14,7 +14,7 @@ use App\Services\Ai\Drivers\Contracts\ResearchDriver;
 use Closure;
 
 /**
- * Claude side of AiResearchService's turn — the server-tool (web_search/
+ * Claude side of AiResearchService's turn - the server-tool (web_search/
  * web_fetch) loop that used to live directly in AiResearchService before GPT
  * became a second provider. Owns Claude's 'pause_turn' resume loop entirely
  * internally (see ResearchDriver's docblock for why that can't leak out).
@@ -55,7 +55,7 @@ class AnthropicResearchDriver implements ResearchDriver
                 model: $model,
                 // Cache breakpoint: dalam SATU giliran ini, system prompt yang sama
                 // persis terkirim ulang di setiap resume 'pause_turn' (loop while di
-                // atas) — jadi cache hit alih-alih diproses ulang dari nol tiap kali.
+                // atas) - jadi cache hit alih-alih diproses ulang dari nol tiap kali.
                 system: [TextBlockParam::with(text: $systemPrompt, cacheControl: CacheControlEphemeral::with())],
                 thinking: ['type' => 'adaptive'],
                 outputConfig: $effort ? ['effort' => $effort] : null,
@@ -65,7 +65,7 @@ class AnthropicResearchDriver implements ResearchDriver
             // MessageAccumulator melipat event stream kembali menjadi Message utuh.
             // Ini penting di sini: blok hasil server tool (web_search_tool_result)
             // harus dikirim balik apa adanya pada giliran berikutnya DALAM loop
-            // pause_turn ini, dan menyusunnya manual dari event mentah rapuh —
+            // pause_turn ini, dan menyusunnya manual dari event mentah rapuh -
             // biarkan SDK yang mengerjakan.
             $accumulator = MessageAccumulator::forMessages();
             $aborted = false;
@@ -91,7 +91,7 @@ class AnthropicResearchDriver implements ResearchDriver
             // resume mengirim ulang konteks dan ditagih sendiri.
             AiUsageRecorder::recordAnthropic($model, 'research', $message->usage);
 
-            // Objek SDK apa adanya — HANYA hidup di memori selama loop pause_turn
+            // Objek SDK apa adanya - HANYA hidup di memori selama loop pause_turn
             // ini, tidak pernah keluar dari method ini. Untuk melanjutkan
             // 'pause_turn', giliran assistant harus dikirim balik utuh, dan objek
             // aslinya adalah bentuk paling setia. Yang dikembalikan ke pemanggil
@@ -161,12 +161,12 @@ class AnthropicResearchDriver implements ResearchDriver
     }
 
     /**
-     * Kumpulkan URL sumber dari blok hasil server tool giliran INI saja —
+     * Kumpulkan URL sumber dari blok hasil server tool giliran INI saja -
      * dedup lintas giliran jadi tanggung jawab AiResearchService (dia yang
      * pegang akumulator lintas panggilan ask()).
      *
      * Catatan bentuk data: pada web_search, `content` berisi ARRAY hasil saat
-     * sukses, tapi berubah jadi OBJEK error (mis. max_uses_exceeded) saat gagal —
+     * sukses, tapi berubah jadi OBJEK error (mis. max_uses_exceeded) saat gagal -
      * server tool tidak melempar exception, errornya ikut di body 200.
      *
      * @param array<int, array{url: string, title: string}> $sources
@@ -204,7 +204,7 @@ class AnthropicResearchDriver implements ResearchDriver
     }
 
     /**
-     * Ringkas giliran assistant menjadi blok teks kanonik saja — blok kerja
+     * Ringkas giliran assistant menjadi blok teks kanonik saja - blok kerja
      * server tool (server_tool_use, web_search_tool_result) dan thinking
      * TIDAK ikut: giliran berikutnya (across ask() calls, bukan dalam loop
      * pause_turn) tidak membutuhkannya, dan bentuk union-nya tidak round-trip
@@ -232,12 +232,12 @@ class AnthropicResearchDriver implements ResearchDriver
     }
 
     /**
-     * Server tool milik Anthropic — dieksekusi di sisi mereka, kita cukup
+     * Server tool milik Anthropic - dieksekusi di sisi mereka, kita cukup
      * mendeklarasikannya. Sengaja memakai kelas typed, bukan array biasa:
-     * ToolUnion di SDK adalah union TANPA discriminator — array polos
+     * ToolUnion di SDK adalah union TANPA discriminator - array polos
      * dicocokkan ke varian pertama yang "muat".
      *
-     * citations pada web_fetch sengaja TIDAK diaktifkan — lihat catatan
+     * citations pada web_fetch sengaja TIDAK diaktifkan - lihat catatan
      * historis di dokumen fitur; daftar rujukan tetap ada lewat collectSources().
      *
      * @return array<int, object>

@@ -31,7 +31,7 @@ class TeamsOutboxItem extends Model
         'sent_at',
     ];
 
-    /** Disamakan dengan default kolom di migrasi — lihat TicketTeamsChat. */
+    /** Disamakan dengan default kolom di migrasi - lihat TicketTeamsChat. */
     protected $attributes = [
         'status'   => self::STATUS_PENDING,
         'attempts' => 0,
@@ -69,7 +69,7 @@ class TeamsOutboxItem extends Model
     /**
      * Gagal kirim. Selama percobaan masih tersisa, baris dikembalikan ke pending
      * supaya putaran berikutnya mencobanya lagi; sesudah itu ia BERHENTI di
-     * 'failed' dengan pesan errornya tersimpan — terlihat sebagai data, bukan
+     * 'failed' dengan pesan errornya tersimpan - terlihat sebagai data, bukan
      * hilang jadi baris log.
      */
     public function markAttemptFailed(string $error, int $maxAttempts): void

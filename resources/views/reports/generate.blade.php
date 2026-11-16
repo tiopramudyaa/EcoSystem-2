@@ -127,7 +127,7 @@
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                 </svg>
                 <p id="wrProcessingText" class="text-sm font-medium text-gray-700">Diproses AI...</p>
-                <p class="text-xs text-gray-400 mt-1">Bisa beberapa menit — baca template, ambil data, susun dokumen.</p>
+                <p class="text-xs text-gray-400 mt-1">Bisa beberapa menit - baca template, ambil data, susun dokumen.</p>
             </div>
 
             <div id="wrErrorState" class="hidden flex-1 flex flex-col items-center justify-center text-center py-6">
@@ -460,7 +460,7 @@
         wrScrollChatBottom();
     }
 
-    // ── Scope panel (pilih template — upload dilakukan di halaman Customer) ──
+    // ── Scope panel (pilih template - upload dilakukan di halaman Customer) ──
     window.wrToggleScopePanel = function () {
         wrScopePanel.classList.toggle('hidden');
         wrScopeChevron.classList.toggle('rotate-180');
@@ -765,9 +765,9 @@
                 wrHeaderSub.textContent = 'Dijeda sementara';
                 showState(wrPausedState);
                 wrPausedText.textContent = json.error_message
-                    || 'Layanan AI sedang sibuk. Progres yang sudah selesai tersimpan — klik "Lanjutkan" untuk meneruskan.';
+                    || 'Layanan AI sedang sibuk. Progres yang sudah selesai tersimpan - klik "Lanjutkan" untuk meneruskan.';
                 if (pendingId) wrUpdateAssistantBubble(pendingId, json.error_message
-                    || 'Dijeda sementara — klik "Lanjutkan" untuk meneruskan.', false);
+                    || 'Dijeda sementara - klik "Lanjutkan" untuk meneruskan.', false);
                 return;
             }
 

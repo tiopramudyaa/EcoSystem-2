@@ -9,7 +9,7 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b-2 border-gray-100">
         <div>
             <h2 class="text-2xl font-bold text-gray-900">Dropdown Settings</h2>
-            <p class="text-sm text-gray-500 mt-1">Manage the dropdown lists used across Employee Information (Position, Division, Department, etc.) — pick a list on the left, then add/edit/remove its values.</p>
+            <p class="text-sm text-gray-500 mt-1">Manage the dropdown lists used across Employee Information (Position, Division, Department, etc.) - pick a list on the left, then add/edit/remove its values.</p>
         </div>
         @if($can('management.employee.dropdown-settings.manage'))
         <button onclick="openCreateConfigModal()" class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all duration-200 shrink-0">
@@ -73,7 +73,7 @@
                         class="w-full pl-9 pr-3.5 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 transition-shadow"
                         placeholder="cost_center">
                 </div>
-                <p class="text-xs text-gray-400 mt-1.5">Lowercase letters, numbers, underscores only. Used internally to look this list up — avoid changing it once other code depends on it.</p>
+                <p class="text-xs text-gray-400 mt-1.5">Lowercase letters, numbers, underscores only. Used internally to look this list up - avoid changing it once other code depends on it.</p>
             </div>
             <div>
                 <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Description</label>
@@ -84,7 +84,7 @@
             <label class="flex items-center justify-between gap-3 px-3.5 py-3 border border-gray-200 rounded-lg cursor-pointer hover:border-gray-300 transition-colors">
                 <span class="text-sm text-gray-700">
                     Active
-                    <span class="block text-xs text-gray-400 font-normal mt-0.5">When off, this entire field is hidden from the Employee form — not just emptied of options.</span>
+                    <span class="block text-xs text-gray-400 font-normal mt-0.5">When off, this entire field is hidden from the Employee form - not just emptied of options.</span>
                 </span>
                 <span class="relative inline-flex items-center shrink-0">
                     <input type="checkbox" id="configActive" checked class="peer sr-only">
@@ -181,7 +181,7 @@
 .config-row:hover { background: #f9fafb; }
 .config-row.active { background: #fef2f2; box-shadow: inset 3px 0 0 #991b1b; }
 
-/* Modal enter/exit — panel scales+fades in, overlay just fades.
+/* Modal enter/exit - panel scales+fades in, overlay just fades.
    `hidden` still fully removes it from layout/interaction once closed. */
 .modal-overlay { transition: opacity 0.18s ease; opacity: 0; }
 .modal-overlay.modal-visible { opacity: 1; }
@@ -197,12 +197,12 @@ let selectedConfigId = null;
 let valuesData   = [];
 
 // ── Pagination state (values table paginates client-side, same data already loaded).
-// The Dropdown Lists panel on the left just scrolls (max-h + overflow-y-auto) —
+// The Dropdown Lists panel on the left just scrolls (max-h + overflow-y-auto) -
 // its list is short enough that paging it adds more clicks than it saves. ──
 const VALUE_PAGE_SIZE  = 10;
 let valuePage  = 1;
 
-// ── Filter state (client-side — same data already loaded) ───────────────────
+// ── Filter state (client-side - same data already loaded) ───────────────────
 let valueFilters  = { search: '', status: '' };
 
 function matchesStatusFilter(isActive, statusFilter) {
@@ -253,7 +253,7 @@ function updateValueFilterIndicators() {
     });
 }
 
-// ── Column filter popovers (Value / Status) — icon-triggered, same pattern
+// ── Column filter popovers (Value / Status) - icon-triggered, same pattern
 // as the Ticket table's column filters. position:fixed so the panel escapes
 // the table's overflow-x-auto clipping without needing to move it in the DOM. ──
 function positionFilterPanel(btn, panel) {
@@ -425,7 +425,7 @@ async function selectConfig(id) {
     const json   = await res.json();
     valuesData   = json.data || [];
     if (isNewConfig) {
-        valuePage = 1; // fresh list — start from page 1
+        valuePage = 1; // fresh list - start from page 1
         valueFilters = { search: '', status: '' };
     }
 
@@ -541,7 +541,7 @@ function renderValueTableBody() {
     const { pageItems, totalPages, page } = paginate(filtered, valuePage, VALUE_PAGE_SIZE);
     valuePage = page; // clamped
 
-    // Reordering only makes sense against the true, unfiltered order — offer
+    // Reordering only makes sense against the true, unfiltered order - offer
     // ↑ / ↓ only while no filter narrows what's on screen.
     const canReorder = CAN_MANAGE_DROPDOWNS && !isValueFilterActive();
 
@@ -606,7 +606,7 @@ function openEditConfigModal(id) {
     document.getElementById('configName').value = c.name;
     document.getElementById('configCode').value = c.code;
     // Code is the internal lookup key other code may already depend on
-    // (e.g. AppServiceProvider's DropdownConfig::optionsFor('position')) —
+    // (e.g. AppServiceProvider's DropdownConfig::optionsFor('position')) -
     // block accidental edits, still changeable if the admin really needs to.
     document.getElementById('configCode').readOnly = true;
     document.getElementById('configDescription').value = c.description || '';
@@ -632,7 +632,7 @@ async function submitConfig(e) {
     const id = document.getElementById('configId').value;
     // Turning a config off hides its entire field block on the Employee form
     // (see AppServiceProvider's dropdownFieldActive, consumed by
-    // master/employee/index.blade.php and .../sections/basicdata.blade.php) —
+    // master/employee/index.blade.php and .../sections/basicdata.blade.php) -
     // it no longer just empties the dropdown's options.
     const payload = {
         code:        document.getElementById('configCode').value.trim(),
@@ -706,7 +706,7 @@ async function submitValue(e) {
     e.preventDefault();
     if (!selectedConfigId) return;
     const id = document.getElementById('valueId').value;
-    // No sort_order here on purpose — creating leaves it out so the backend
+    // No sort_order here on purpose - creating leaves it out so the backend
     // auto-appends to the end, and editing leaves it out so save-as-text
     // never accidentally reshuffles the list. Reordering happens only via
     // the ↑ / ↓ buttons (moveValue()), which target sort_order directly.
@@ -732,7 +732,7 @@ async function submitValue(e) {
 
 // ── Reorder (Move Up / Move Down) ────────────────────────────────────────────
 // Swaps sort_order with the true previous/next item (valuesData is already
-// sorted by sort_order from the API) — simple, error-proof nudging instead of
+// sorted by sort_order from the API) - simple, error-proof nudging instead of
 // hand-typed order numbers. Only offered when no filter is active so "up"/
 // "down" always matches what's visibly adjacent on screen.
 async function moveValue(id, direction) {
@@ -811,7 +811,7 @@ function customConfirm({ title, message, okLabel = 'Confirm', okClass = 'bg-red-
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 // Panel scales/fades in via .modal-visible (see the .modal-overlay/.modal-panel
-// CSS above) — added a frame after `hidden` is removed so the transition
+// CSS above) - added a frame after `hidden` is removed so the transition
 // actually plays, instead of snapping straight to the open state. Closing
 // reverses it and waits out the transition before re-adding `hidden`.
 function openModal(id) {
@@ -855,7 +855,7 @@ function escHtml(str) {
     return d.innerHTML;
 }
 
-// Intentionally no backdrop-click-to-close on configModal/valueModal — these
+// Intentionally no backdrop-click-to-close on configModal/valueModal - these
 // forms can hold unsaved input, so the only way out is the × button (or
 // Cancel), never an accidental click outside.
 

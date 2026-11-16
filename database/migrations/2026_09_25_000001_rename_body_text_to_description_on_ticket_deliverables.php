@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * ticket_deliverables.body_text was really a per-file INTERNAL description
  * (never sent to the customer). "Body text" now means the email body typed at
- * send time, which is not stored — so the column is renamed to avoid the clash.
+ * send time, which is not stored - so the column is renamed to avoid the clash.
  */
 return new class extends Migration
 {

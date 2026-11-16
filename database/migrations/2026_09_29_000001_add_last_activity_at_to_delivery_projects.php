@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
  * delivery_projects.updated_at. Kolom itu hanya berubah kalau BARIS HEADER
  * project yang disimpan, sehingga aktivitas di section anak (Issue, Risk,
  * WRICEF, Cost, Term of Payment, Document, Team, Planning/Activity) tidak
- * pernah tercatat — sementara proses sistem (buka halaman detail, scheduler
+ * pernah tercatat - sementara proses sistem (buka halaman detail, scheduler
  * OneDrive) justru bisa menggesernya.
  *
  * `last_activity_at` = kapan terakhir USER mengubah sesuatu di project ini,

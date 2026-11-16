@@ -22,9 +22,9 @@ return new class extends Migration
     private const PARENT_SLUG = 'delivery.project';
 
     private const MENUS = [
-        'delivery-project.stakeholder.view'   => 'Stakeholder Register — View',
-        'delivery-project.stakeholder.edit'   => 'Stakeholder Register — Edit',
-        'delivery-project.stakeholder.manage' => 'Stakeholder Register — Create / Delete',
+        'delivery-project.stakeholder.view'   => 'Stakeholder Register - View',
+        'delivery-project.stakeholder.edit'   => 'Stakeholder Register - Edit',
+        'delivery-project.stakeholder.manage' => 'Stakeholder Register - Create / Delete',
     ];
 
     public function up(): void

@@ -37,7 +37,7 @@ class HolidayManagementController extends Controller
             'is_active' => $h->is_active,
         ]);
 
-        // Daftar tahun yang punya data — untuk dropdown filter
+        // Daftar tahun yang punya data - untuk dropdown filter
         $years = Holiday::query()
             ->selectRaw('DISTINCT YEAR(date) as y')
             ->orderByDesc('y')

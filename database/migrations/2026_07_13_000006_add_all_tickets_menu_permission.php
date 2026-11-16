@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * "All Tickets" tab is now gated by its own menu permission (Role & Menu Access),
- * for every internal role — including Admin/Head/Helpdesk, not just DS User/Manager.
+ * for every internal role - including Admin/Head/Helpdesk, not just DS User/Manager.
  * Grant it by default to every role that currently has 'tickets.inbox' access, so
  * nobody loses access to the ticket list they already had after this deploy.
  */

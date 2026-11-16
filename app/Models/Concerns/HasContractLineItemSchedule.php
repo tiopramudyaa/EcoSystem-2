@@ -5,7 +5,7 @@ namespace App\Models\Concerns;
 use App\Models\DeliveryProjectContractLineItem;
 
 /**
- * Jadwal & nilai kontrak sebuah Contract Line Item — dipakai bersama oleh
+ * Jadwal & nilai kontrak sebuah Contract Line Item - dipakai bersama oleh
  * Delivery Project (DeliveryProjectContractLineItem) dan Delivery Support
  * (DeliverySupportContractLineItem). Konstanta frekuensi & buildPeriods()
  * tetap satu sumber di DeliveryProjectContractLineItem.
@@ -53,7 +53,7 @@ trait HasContractLineItemSchedule
         return round((float) $this->amount * $this->occurrences(), 2);
     }
 
-    /** Teks kolom "Schedule", mis. "Once" atau "Jan 2027 – Dec 2027 (12x)". */
+    /** Teks kolom "Schedule", mis. "Once" atau "Jan 2027 - Dec 2027 (12x)". */
     public function scheduleLabel(): string
     {
         if ($this->isMilestone()) {
@@ -65,7 +65,7 @@ trait HasContractLineItemSchedule
         }
 
         $n = $this->occurrences();
-        return $this->start_date->format('M Y') . ' – ' . $this->end_date->format('M Y') . " ({$n}x)";
+        return $this->start_date->format('M Y') . ' - ' . $this->end_date->format('M Y') . " ({$n}x)";
     }
 
     public function typeLabel(): string

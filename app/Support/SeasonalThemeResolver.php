@@ -4,7 +4,7 @@ namespace App\Support;
 
 /**
  * Menggabungkan preferensi tema musiman per-user dengan setting global admin
- * menjadi SATU key tema yang benar-benar dirender — titik tunggal yang
+ * menjadi SATU key tema yang benar-benar dirender - titik tunggal yang
  * dipanggil dashboard.blade.php dan (nanti) auth/login.blade.php, supaya
  * logika "default ikut admin, tapi user boleh menimpa" tidak ditulis ulang
  * di kedua tempat.

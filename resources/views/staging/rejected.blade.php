@@ -21,7 +21,7 @@
     </div>
     <div class="text-right lg:text-right">
         <p class="text-xs font-medium text-gray-500 mb-1">Total Rejected</p>
-        <p class="text-2xl font-bold text-gray-900" id="totalRejected">—</p>
+        <p class="text-2xl font-bold text-gray-900" id="totalRejected">-</p>
     </div>
 </div>
 
@@ -194,14 +194,14 @@ function renderTable(rows) {
     tbody.innerHTML = rows.map(s => {
         const date     = s.validated_at
             ? new Date(s.validated_at).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric' })
-            : (s.created_at ? new Date(s.created_at).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric' }) : '—');
-        const short    = s.description ? (s.description.length > 55 ? s.description.substring(0, 55) + '…' : s.description) : '—';
+            : (s.created_at ? new Date(s.created_at).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric' }) : '-');
+        const short    = s.description ? (s.description.length > 55 ? s.description.substring(0, 55) + '…' : s.description) : '-';
         const reason   = s.rejection_reason ? (s.rejection_reason.length > 50 ? s.rejection_reason.substring(0, 50) + '…' : s.rejection_reason) : '<span class="text-gray-300 italic">No reason given</span>';
         const prio     = s.ticket_priority ?? 'Medium';
         const ch       = s.channel === 'email'
             ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md"><i class="fas fa-envelope text-[9px]"></i> Email</span>'
             : '<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md"><i class="fas fa-globe text-[9px]"></i> Web</span>';
-        const validator = escHtml(s.validator_name ?? '—');
+        const validator = escHtml(s.validator_name ?? '-');
 
         return `<tr class="border-b border-gray-50 hover:bg-red-50/30 transition-colors">
             <td class="px-6 py-4 text-gray-500 font-mono text-xs">#${s.id}</td>
@@ -215,7 +215,7 @@ function renderTable(rows) {
             </td>
             <td class="px-6 py-4">${ch}</td>
             <td class="px-6 py-4 max-w-[200px]">
-                <p class="text-xs text-red-700 italic leading-relaxed">${s.rejection_reason ? escHtml(s.rejection_reason.length > 50 ? s.rejection_reason.substring(0,50) + '…' : s.rejection_reason) : '<span class="text-gray-300">—</span>'}</p>
+                <p class="text-xs text-red-700 italic leading-relaxed">${s.rejection_reason ? escHtml(s.rejection_reason.length > 50 ? s.rejection_reason.substring(0,50) + '…' : s.rejection_reason) : '<span class="text-gray-300">-</span>'}</p>
             </td>
             <td class="px-6 py-4 text-gray-500 text-xs">${validator}</td>
             <td class="px-6 py-4 text-gray-500 text-xs whitespace-nowrap">${date}</td>
@@ -235,7 +235,7 @@ function renderPagination() {
     area.classList.remove('hidden');
     area.classList.add('flex');
     document.getElementById('pageInfo').textContent =
-        `Showing ${Math.min((currentPage-1)*meta.per_page+1, meta.total)}–${Math.min(currentPage*meta.per_page, meta.total)} of ${meta.total}`;
+        `Showing ${Math.min((currentPage-1)*meta.per_page+1, meta.total)}-${Math.min(currentPage*meta.per_page, meta.total)} of ${meta.total}`;
     document.getElementById('btnPrev').disabled = currentPage <= 1;
     document.getElementById('btnNext').disabled = currentPage >= meta.last_page;
 }
@@ -265,8 +265,8 @@ function renderModalContent(s) {
     const prioColor = { Low: 'bg-green-100 text-green-700', Medium: 'bg-blue-100 text-blue-700', High: 'bg-red-100 text-red-700' };
     const prio      = s.ticket_priority ?? 'Medium';
     const isEmail   = s.channel === 'email';
-    const date      = s.created_at  ? new Date(s.created_at).toLocaleString('id-ID',  { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB' : '—';
-    const rejDate   = s.validated_at ? new Date(s.validated_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB' : '—';
+    const date      = s.created_at  ? new Date(s.created_at).toLocaleString('id-ID',  { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB' : '-';
+    const rejDate   = s.validated_at ? new Date(s.validated_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB' : '-';
 
     // Tentukan sumber body: email_body_html (email) atau body (web form)
     const bodySource = s.email_body_html || s.body || null;
@@ -283,7 +283,7 @@ function renderModalContent(s) {
         </div>`
         : `<div class="bg-gray-50 rounded-xl p-4">
             <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wide mb-2">Description</p>
-            <p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">${escHtml(s.description ?? '—')}</p>
+            <p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">${escHtml(s.description ?? '-')}</p>
         </div>`;
 
     document.getElementById('modalContent').innerHTML = `
@@ -309,7 +309,7 @@ function renderModalContent(s) {
 
         <div class="bg-gray-50 rounded-xl p-4">
             <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wide mb-2">Description</p>
-            <p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">${escHtml(s.description ?? '—')}</p>
+            <p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">${escHtml(s.description ?? '-')}</p>
         </div>
 
         ${bodyBlock}
@@ -321,7 +321,7 @@ function renderModalContent(s) {
             </div>
             <p class="text-sm text-red-800 font-semibold leading-relaxed">${escHtml(s.rejection_reason ?? 'No reason provided.')}</p>
             <div class="mt-3 pt-3 border-t border-red-200 flex items-center justify-between text-xs text-red-500">
-                <span>Rejected by: <strong>${escHtml(s.validator_name ?? '—')}</strong></span>
+                <span>Rejected by: <strong>${escHtml(s.validator_name ?? '-')}</strong></span>
                 <span>${rejDate}</span>
             </div>
         </div>

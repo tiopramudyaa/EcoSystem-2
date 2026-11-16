@@ -80,7 +80,7 @@ class ResourceTimelineService
      * Grid tahunan: baris yang sama (urutan & grouping identik dengan bulanan),
      * tapi per bulan diringkas jadi
      * [['location' => 'IHC', 'segments' => [[1, 15], [20, 22]]], ...]
-     * — segments = rentang hari berurutan (tgl awal, tgl akhir) per customer
+     * - segments = rentang hari berurutan (tgl awal, tgl akhir) per customer
      * code di bulan itu, supaya UI bisa menggambar fill sesuai posisi harinya.
      * Urut berdasarkan hari mulai paling awal.
      *
@@ -147,7 +147,7 @@ class ResourceTimelineService
             ->orderBy('id')
             ->get()
             ->groupBy('employee_id')
-            // date => [location, ...] — a consultant can be on several projects
+            // date => [location, ...] - a consultant can be on several projects
             // on the same day (overlapping assignments).
             ->map(fn ($rows) => $rows
                 ->groupBy(fn (ResourceTimeline $rt) => $rt->date->format('Y-m-d'))
@@ -211,7 +211,7 @@ class ResourceTimelineService
      * Ringkasan range untuk satu consultant (dipakai list "existing entries"
      * di Create Timeline modal). Hari-hari berurutan dengan lokasi sama
      * digabung jadi satu range. Consultant boleh punya beberapa lokasi di
-     * tanggal yang sama (project overlap), jadi digabung per lokasi dulu —
+     * tanggal yang sama (project overlap), jadi digabung per lokasi dulu -
      * range antar lokasi boleh saling tumpang-tindih.
      *
      * @return array<int,array{start:string,end:string,location:string}>
@@ -265,11 +265,11 @@ class ResourceTimelineService
      *
      * $previousStartDate/$previousEndDate/$previousLocation (opsional) =
      * range ASLI sebelum di-edit. Kalau diisi, range lama itu (hanya untuk
-     * lokasi lama) dihapus dulu, baru range baru ditulis — supaya
+     * lokasi lama) dihapus dulu, baru range baru ditulis - supaya
      * menyusutkan/menggeser tanggal atau mengganti lokasi saat edit tidak
      * meninggalkan sisa hari lama, tanpa menyentuh assignment lokasi lain.
      *
-     * Audit Log: SATU baris per aksi (bukan per hari) — siapa, consultant mana,
+     * Audit Log: SATU baris per aksi (bukan per hari) - siapa, consultant mana,
      * customer apa, tanggal berapa, dan nilai lama -> baru.
      */
     public function upsertRange(

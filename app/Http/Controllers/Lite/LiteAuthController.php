@@ -47,7 +47,7 @@ class LiteAuthController extends Controller
             $email    = trim($request->email);
             $password = $request->password;
 
-            // Brute-force guard — identical logic to AuthController::login().
+            // Brute-force guard - identical logic to AuthController::login().
             $loginSecurity = app(\App\Services\LoginSecurityService::class);
 
             if ($loginSecurity->isIpBlocked($request->ip())) {
@@ -190,7 +190,7 @@ class LiteAuthController extends Controller
             }
 
             // ── Two-factor authentication gate ──────────────────────────
-            // Same placement/rationale as AuthController::login() — every
+            // Same placement/rationale as AuthController::login() - every
             // other gate has already run, and no session/DB mutation
             // happens yet if 2FA is required.
             if (TwoFactorAuthService::isEnabled($authUser)) {
@@ -230,7 +230,7 @@ class LiteAuthController extends Controller
 
     /**
      * Finishes a Lite login after every gate (and, if enabled, 2FA) has
-     * passed — same DB/session writes as AuthController::finalizeEmployeeLogin(),
+     * passed - same DB/session writes as AuthController::finalizeEmployeeLogin(),
      * minus remember-me handling (Lite never sets that cookie). Called both
      * directly from login() and from verifyTwoFactor().
      */
@@ -395,7 +395,7 @@ class LiteAuthController extends Controller
     }
 
     /**
-     * Logout — hapus session dan catat aktivitas.
+     * Logout - hapus session dan catat aktivitas.
      *
      * POST /api/lite/auth/logout
      */

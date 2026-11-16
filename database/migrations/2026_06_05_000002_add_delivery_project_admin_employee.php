@@ -56,7 +56,7 @@ return new class extends Migration
 
         // 4. Pivot role assignments (multi-role source of truth).
         //    The "User System Registered" role is REQUIRED for EcoSystem login
-        //    access (see AuthController: $hasSystemAccess check) — every employee
+        //    access (see AuthController: $hasSystemAccess check) - every employee
         //    must have it, so assign it alongside the project admin role.
         $systemRoleId = DB::table('employee_role')->where('name', 'User System Registered')->value('id');
         $assignRoleIds = array_values(array_unique(array_filter([$roleId, $systemRoleId])));
@@ -108,7 +108,7 @@ return new class extends Migration
             'updated_at'            => Carbon::now(),
         ]);
 
-        // 7. Login account — only if not already present (guards re-runs / clashes).
+        // 7. Login account - only if not already present (guards re-runs / clashes).
         $authExists = DB::table('auth_users')
             ->where('email', self::EMAIL)
             ->orWhere('username', self::ECI)

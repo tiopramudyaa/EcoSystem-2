@@ -24,7 +24,7 @@ class CheckMenuAccess
         $employee = Employee::find($user['id'] ?? null);
         $canAccess = $employee && $employee->canAccessMenu($menuSlug);
 
-        // TEMP DIAGNOSTIC — remove after the 2026-09-29 menu-access investigation.
+        // TEMP DIAGNOSTIC - remove after the 2026-09-29 menu-access investigation.
         Log::info('CheckMenuAccess diagnostic', [
             'menu_slug'        => $menuSlug,
             'session_user_id'  => $user['id'] ?? null,
