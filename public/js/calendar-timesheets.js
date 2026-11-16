@@ -3355,8 +3355,8 @@ async function confirmBulkSubmit() {
     }
     if (failCount > 0) {
         // Surface the actual backend reason(s) instead of a blank generic message -
-        // e.g. "Customer Mandays status is not approved yet" - so users know what to
-        // fix instead of just seeing a dead-end failure.
+        // e.g. "quota exceeded" - so users know what to fix instead of just seeing a
+        // dead-end failure.
         const reasonText = Array.from(failReasons).join(' - ');
         showNotification(`Failed to submit ${failCount} timesheet(s): ${reasonText}`, 'error');
     }

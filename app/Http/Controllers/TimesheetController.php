@@ -13,7 +13,6 @@ use App\Support\SessionUser;
 use App\Support\TimesheetApproval;
 use App\Models\ConsultantMandays;
 use App\Models\ConsultantMandaysDetail;
-use App\Models\CustomerMandays;
 use App\Models\DeliveryProject;
 use App\Models\DeliveryProjectActivity;
 use App\Models\DeliverySupportActivity;
@@ -1078,26 +1077,9 @@ class TimesheetController extends Controller
                 $empId    = $timesheet->employee_id;
                 $ticketId = $timesheet->ticket_id;
 
-                // Customer Mandays approval is only required for Change Request tickets
-                // (same ticket_type check used by MandaysController's CR gates on Resolution
-                // Days). Other ticket types never require a Customer Mandays proposal, so
-                // gating their timesheets on it would block submission forever.
-                if ($timesheet->ticket?->ticket_type === 'Change Request') {
-                    // Latest Customer Mandays version for this ticket must be approved before
-                    // any timesheet can be submitted - an older approved version doesn't count
-                    // if a newer draft/revision superseded it.
-                    $latestCustomerMandays = CustomerMandays::where('ticket_id', $ticketId)
-                        ->orderBy('version', 'desc')
-                        ->first();
-
-                    if (!$latestCustomerMandays || $latestCustomerMandays->status !== 'approved') {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Customer Mandays status is not approved yet, cannot submit timesheet.',
-                        ], 422);
-                    }
-                }
-
+                // No Customer Mandays check here: on a Change Request the Customer Mandays must be
+                // approved before the Head can approve Resolution Days (MandaysController), and the
+                // quota below comes only from the approved Resolution Days.
                 $quota = ConsultantMandaysDetail::approvedQuotas([$ticketId], (int) $empId)[$ticketId . '_' . $empId] ?? null;
 
                 if ($quota === null) {

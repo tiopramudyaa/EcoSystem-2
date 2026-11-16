@@ -79,7 +79,7 @@ These rules are checked when you save or submit. If one is broken, nothing is sa
 - Choose the ticket you worked on and fill the `Activity Date`.
 - The `Ticket` list shows tickets where you are the lead, a member or a Co-PM (plus the tickets of Delivery Support you manage), but only if Head has approved days for you and quota remains. A draft you edit keeps its own ticket selectable.
 - `MD Consumed` cannot be more than your remaining quota on that ticket. The quota is the days Head approved for you, including additional days. It stays valid while the proposal is revised. Your drafts, submitted and approved entries all count against it. If you need more, ask your Head to raise the quota.
-- You can save a draft before days are approved, but cannot submit it: EcoSystem says Head has approved no days for you on the ticket. For a Change Request the Customer Mandays must be approved first.
+- You can save a draft before days are approved, but cannot submit it: EcoSystem says Head has approved no days for you on the ticket.
 - If your personnel subarea is `Project`, one support entry can use at most 1 MD. Split bigger work into several entries.
 
 ### Project entries

@@ -5,13 +5,13 @@ order: 50
 title: Masuk dan keamanan akun
 summary: Cara masuk dengan password atau Microsoft, mengganti password, dan menjaga akun tetap aman.
 requires: []
-updated: 2026-11-12
+updated: 2026-11-15
 ---
 Topik ini menjelaskan cara masuk ke EcoSystem dengan password atau akun kerja Microsoft Anda, tempat mengganti password, dan kebiasaan yang menjaga akun Anda tetap aman.
 
 ## Siapa yang menggunakan
 
-Semua orang yang masuk ke EcoSystem. Bagian tentang menyiapkan login Microsoft 365 hanya untuk EC Administrator.
+Semua orang yang masuk ke EcoSystem.
 
 ## Sebelum Anda mulai
 
@@ -81,21 +81,6 @@ Untuk menghapus sambungan, pilih `Disconnect` lalu konfirmasi. Anda tetap bisa m
 
 Jika bagian itu berisi `Sign in with Microsoft is not enabled yet`, berarti EC Administrator belum mengaktifkannya.
 
-### Menyiapkan login Microsoft 365 (khusus EC Administrator)
-
-Hanya EC Administrator yang melihat kotak `Microsoft 365 tenant configuration` di bagian `Microsoft account`.
-
-![Kotak Microsoft 365 tenant configuration dengan tenant ID, client ID, client secret, redirect URI, dan pilihan enable](images/guide/settings-microsoft-config.png)
-
-*Tangkapan layar dengan data contoh.*
-
-1. Di Microsoft Entra, buka app registration perusahaan lalu tambahkan redirect URI bertipe `Web` dengan alamat yang persis sama seperti di `Web redirect URI` (pakai `Copy`).
-2. Pastikan app registration mengizinkan izin dasar untuk masuk dan administrator sudah menyetujuinya untuk organisasi.
-3. Di EcoSystem, isi `Directory (tenant) ID`, `Application (client) ID`, dan `Client secret value`. Pakai Value dari secret, bukan ID secret.
-4. Centang `Enable Microsoft 365 login` lalu pilih `Save M365 configuration`.
-
-Kosongkan `Client secret value` untuk mempertahankan secret yang sudah tersimpan. Secret disimpan terenkripsi dan tidak pernah ditampilkan lagi. Kolom ID yang kosong memakai app registration Microsoft bersama milik server, jika ada.
-
 ### Memeriksa tempat Anda masuk
 
 Bagian `Active sessions` di tab `Security` mendaftar sesi akun Anda. Baris bertanda `Current session` adalah browser yang sedang Anda pakai.
@@ -109,7 +94,7 @@ Bagian `Active sessions` di tab `Security` mendaftar sesi akun Anda. Baris berta
 ## Aturan yang perlu diketahui
 
 - Masuk dengan Microsoft adalah pilihan tambahan. Masuk dengan password tetap tersedia dan tidak berubah.
-- Hanya EC Administrator yang dapat mengaktifkan atau mengubah pengaturannya. Sebelum itu fitur ini mati. Tombolnya muncul di halaman masuk hanya jika fitur diaktifkan dan tenant ID, client ID, serta client secret sudah lengkap.
+- Hanya EC Administrator yang dapat mengaktifkan atau mengubah pengaturannya. Sebelum itu fitur ini mati. Tombolnya muncul di halaman masuk hanya setelah fitur diaktifkan.
 - Hanya akun dari organisasi Microsoft yang dikonfigurasi yang dapat masuk dengan cara ini.
 - EcoSystem tidak pernah membuat akun dari proses masuk Microsoft. Akun Microsoft harus milik akun karyawan EcoSystem yang sudah ada dan aktif.
 - Pada pertama kali, email kerja Microsoft dicocokkan dengan email akun EcoSystem. Sesudah itu sambungannya memakai akun Microsoft itu sendiri, sehingga email yang berubah tidak memutusnya. Akun EcoSystem yang sudah tersambung ke satu akun Microsoft tidak dapat diambil alih oleh akun Microsoft lain.
@@ -118,8 +103,7 @@ Bagian `Active sessions` di tab `Security` mendaftar sesi akun Anda. Baris berta
 - Verifikasi 2 langkah tidak dilewati. Jika aktif untuk akun Anda, kode diminta setelah masuk Microsoft, sama seperti setelah password.
 - `Keep me signed in` tidak berlaku untuk masuk Microsoft. Sesi Anda berakhir seperti sesi biasa.
 - Proses masuk Microsoft harus selesai dalam 10 menit setelah Anda memilih `Sign in with Microsoft`. Lewat dari itu, mulai lagi.
-- Menyambungkan dan memutus akun Microsoft, serta setiap perubahan konfigurasi, tercatat di Audit Log. Client secret tidak pernah dicatat di sana.
-- Tenant ID dan client ID harus berbentuk `00000000-0000-0000-0000-000000000000`. Login tidak dapat diaktifkan selama salah satu dari ketiga nilai belum terisi.
+- Menyambungkan dan memutus akun Microsoft tercatat di Audit Log.
 
 ## Apa yang terjadi selanjutnya
 
