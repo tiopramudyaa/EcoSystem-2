@@ -8,6 +8,21 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// UMUR LOCK withoutOverlapping(N) WAJIB DITULIS (N = menit).
+//
+// Tanpa angka, Laravel memakai 1440 menit (24 jam). Deploy production =
+// rebuild + restart container, dan supervisord membunuh `schedule:work`
+// beserta proses anaknya. Task yang sedang berjalan saat itu tidak sempat
+// melepas lock-nya, sehingga task itu DILEWATI diam-diam selama 24 jam.
+// Terjadi 16 Nov 2026 10:09: teams:sync-chat-messages berhenti sehari penuh,
+// pesan dari group chat Teams tidak masuk ke tiket, sementara arah keluar
+// (lock terpisah) tetap jalan sehingga masalahnya tidak langsung terlihat.
+//
+// Aturan memilih N: cukup panjang dari run TERLAMA yang wajar (lock yang habis
+// saat task masih jalan membuat run berikutnya tumpang tindih), tetapi pendek
+// supaya lock yatim cepat kedaluwarsa. Lock yatim sisa deploy juga dibersihkan
+// saat container start - lihat [program:scheduler] di docker/supervisord.conf.
+
 // No-op proof-of-life that the external cron is actually calling
 // `schedule:run` every minute - see ScheduleHeartbeat for why this needs to
 // be its own task rather than inferred from the 7 real ones below.
@@ -31,7 +46,7 @@ Schedule::command('email:process-inbox')
 // belum dikonfigurasi. withoutOverlapping supaya run yang lambat tidak menumpuk.
 Schedule::command('tickets:open-reminders')
     ->everyMinute()
-    ->withoutOverlapping()
+    ->withoutOverlapping(10)
     ->name('tickets-open-reminders');
 
 // Reminder harian (flow 8) ke group chat Teams tiket Closed yang dokumen
@@ -41,7 +56,7 @@ Schedule::command('tickets:open-reminders')
 // di jam berikutnya. Keluar tanpa efek kalau flow-nya belum dikonfigurasi.
 Schedule::command('tickets:deliverable-reminders')
     ->hourly()
-    ->withoutOverlapping()
+    ->withoutOverlapping(30)
     ->name('tickets-deliverable-reminders');
 
 // Recompute delivery activity statuses tiap hari 00:05 (untuk transisi delayed berbasis tanggal)
@@ -66,7 +81,7 @@ Schedule::command('notifications:timesheet-reminders')->dailyAt('15:00');
 // dan tanpa ini kegagalannya baru ketahuan saat customer melapor tidak bisa akses.
 Schedule::command('onedrive:audit-links --fix')
     ->dailyAt('02:30')
-    ->withoutOverlapping()
+    ->withoutOverlapping(120)
     ->name('onedrive-audit-links');
 
 // Buang percakapan AI yang kedaluwarsa. Cache file Laravel hanya menghapus entri
@@ -82,7 +97,7 @@ Schedule::command('onedrive:audit-links --fix')
 // berumur bulan, jadi ikut jalan dua kali sehari sama sekali tidak masalah.
 Schedule::command('ai:prune-conversations --apply')
     ->twiceDailyAt(3, 15, 0)
-    ->withoutOverlapping()
+    ->withoutOverlapping(60)
     ->name('ai-prune-conversations');
 
 // Security Center: privilege escalation / mass export / anomalous login
@@ -90,7 +105,7 @@ Schedule::command('ai:prune-conversations --apply')
 // with the request that wrote the underlying audit_logs/login_activity row.
 Schedule::command('security:detect-anomalies')
     ->everyFiveMinutes()
-    ->withoutOverlapping()
+    ->withoutOverlapping(15)
     ->name('security-detect-anomalies');
 
 // Prune audit_logs/security_events/login_activity past their configured
@@ -100,7 +115,7 @@ Schedule::command('security:detect-anomalies')
 // might still be writing to these tables overnight.
 Schedule::command('security:prune-logs --apply')
     ->dailyAt('04:00')
-    ->withoutOverlapping()
+    ->withoutOverlapping(120)
     ->name('security-prune-logs');
 
 // Reactive health check for MS Graph / Anthropic / OpenAI credentials (see
@@ -110,7 +125,7 @@ Schedule::command('security:prune-logs --apply')
 // infrequent enough not to hammer 3 external APIs for a monitoring check.
 Schedule::command('schedule-monitor:check-integration-health')
     ->everySixHours()
-    ->withoutOverlapping()
+    ->withoutOverlapping(30)
     ->name('check-integration-health');
 
 // Schedule Monitor's own staleness sweep (see ScheduleMonitorService::
@@ -118,14 +133,14 @@ Schedule::command('schedule-monitor:check-integration-health')
 // for the monitor, not a task the monitor should watch/alert on itself.
 Schedule::command('schedule-monitor:check-staleness')
     ->everyFifteenMinutes()
-    ->withoutOverlapping();
+    ->withoutOverlapping(15);
 
 // Queue worker backlog sweep (see ScheduleMonitorService::
 // checkQueueHealthAlerts()) - same "infrastructure, not a monitored task"
 // reasoning as the staleness sweep above.
 Schedule::command('schedule-monitor:check-queue-health')
     ->everyFifteenMinutes()
-    ->withoutOverlapping();
+    ->withoutOverlapping(15);
 
 // Disk capacity sweep (see ScheduleMonitorService::checkDiskUsageAlerts()) -
 // same "infrastructure, not a monitored task" reasoning as the sweeps above.
@@ -133,7 +148,7 @@ Schedule::command('schedule-monitor:check-queue-health')
 // 15 minutes is fine.
 Schedule::command('schedule-monitor:check-disk-usage')
     ->everyFifteenMinutes()
-    ->withoutOverlapping();
+    ->withoutOverlapping(15);
 
 // Tarik pesan group chat Teams jadi internal note tiket. Command-nya keluar
 // seketika kalau TEAMS_SYNC_ENABLED / TEAMS_SYNC_INBOUND masih false, jadi
@@ -145,7 +160,7 @@ Schedule::command('schedule-monitor:check-disk-usage')
 // per chat aktif jadi dua kali lipat (dibatasi TEAMS_SYNC_CHAT_BATCH).
 Schedule::command('teams:sync-chat-messages')
     ->everyThirtySeconds()
-    ->withoutOverlapping();
+    ->withoutOverlapping(10);
 
 // Kirim internal note yang mengantre ke group chat Teams (flow 7). Keluar
 // seketika kalau TEAMS_SYNC_ENABLED / TEAMS_SYNC_OUTBOUND masih false.
@@ -153,13 +168,18 @@ Schedule::command('teams:sync-chat-messages')
 // Terpisah dari teams:sync-chat-messages dengan sengaja: dua arah ini bisa
 // dimatikan sendiri-sendiri, dan arah yang bermasalah tidak boleh ikut
 // menghentikan arah yang sehat.
+//
+// Lock 15 menit, lebih longgar dari job 30 detik lain: TeamsOutboxService::due()
+// mengambil baris 'pending' tanpa klaim atomik, jadi dua run yang tumpang tindih
+// bisa mengirim note yang sama dua kali. Satu batch (25 item, salin berkas
+// native s.d. 30 MB) harus selesai jauh sebelum lock ini habis.
 Schedule::command('teams:flush-outbox')
     ->everyThirtySeconds()
-    ->withoutOverlapping();
+    ->withoutOverlapping(15);
 
 // Masukkan guest (consultant eksternal) yang baru diundang ke group chat
 // tiketnya, begitu Teams sudah mengenalnya. Tiap menit; jeda per baris diatur
 // sendiri oleh next_attempt_at (TeamsPendingGuestMember::BACKOFF_MINUTES).
 Schedule::command('teams:add-pending-guests')
     ->everyMinute()
-    ->withoutOverlapping();
+    ->withoutOverlapping(10);
