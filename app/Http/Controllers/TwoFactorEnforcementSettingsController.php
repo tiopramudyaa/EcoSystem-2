@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\Log;
  *
  * Menentukan role mana yang WAJIB mengaktifkan 2FA sebelum bisa memakai
  * aplikasi (dibaca App\Http\Middleware\EnforceTwoFactorForAdmins di setiap
- * request). Sengaja TIDAK hardcode role id — sama seperti
- * AiSettingsController/SeasonalThemeSettingsController — akses lewat slug
+ * request). Sengaja TIDAK hardcode role id - sama seperti
+ * AiSettingsController/SeasonalThemeSettingsController - akses lewat slug
  * `control-center.two-factor-enforcement` yang lahir aktif hanya untuk EC
  * Administrator, dan bisa dipindah lewat Menu Access tanpa ubah kode.
  */
@@ -39,7 +39,7 @@ class TwoFactorEnforcementSettingsController extends Controller
 
         $before = TwoFactorEnforcementSettings::roleIds();
 
-        // role_ids sengaja boleh kosong/tidak dikirim sama sekali — itu berarti
+        // role_ids sengaja boleh kosong/tidak dikirim sama sekali - itu berarti
         // admin uncheck semua role, alias "2FA tidak wajib untuk siapapun".
         TwoFactorEnforcementSettings::save($request->input('role_ids', []));
 

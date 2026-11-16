@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Arsip percakapan AI — supaya riwayat tidak lagi hilang saat tab ditutup.
+ * Arsip percakapan AI - supaya riwayat tidak lagi hilang saat tab ditutup.
  *
  * DUA LAPIS, dan pembagiannya disengaja:
  *   - cache 'ai_chat'  = KONTEKS KERJA yang dikirim ke API (boleh hilang,
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Schema;
  * toHistory(); blok server tool (web_search_tool_result) tidak round-trip
  * dengan andal dan tidak boleh ikut mendarat di sini.
  *
- * Prefiks 'ai_' — bukan 'ai_research_' — karena halaman AI Assistant nanti
+ * Prefiks 'ai_' - bukan 'ai_research_' - karena halaman AI Assistant nanti
  * memakai tabel yang sama, dibedakan lewat kolom 'assistant'.
  */
 return new class extends Migration
@@ -39,7 +39,7 @@ return new class extends Migration
             $table->string('title', 180);
             $table->string('model_tier', 20)->default('default');
 
-            // Dasar retensi — sengaja bukan updated_at, yang bisa bergerak
+            // Dasar retensi - sengaja bukan updated_at, yang bisa bergerak
             // karena perubahan judul/tier dan membuat percakapan mati
             // seolah-olah masih hidup.
             $table->timestamp('last_message_at')->nullable();
@@ -63,7 +63,7 @@ return new class extends Migration
             $table->json('sources')->nullable();
 
             /*
-             * Lampiran SENGAJA tidak diarsipkan — byte-nya hanya hidup di cache
+             * Lampiran SENGAJA tidak diarsipkan - byte-nya hanya hidup di cache
              * selama percakapan aktif. Yang disimpan cuma jumlahnya, supaya
              * transkrip lama masih bisa menjelaskan "ada 1 gambar di sini"
              * tanpa menyimpan screenshot sistem customer selamanya.

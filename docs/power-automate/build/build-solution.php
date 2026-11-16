@@ -47,7 +47,7 @@ if (is_dir($outRoot)) {
 
 /**
  * Berkas flow di dalam solution memakai pembungkus properties.definition, dan
- * connectionReferences bergaya solution ("runtimeSource": "embedded") — berbeda
+ * connectionReferences bergaya solution ("runtimeSource": "embedded") - berbeda
  * dari legacy package yang memakai gaya "source": "Embedded".
  */
 $workflowFiles = [];

@@ -44,7 +44,7 @@
             </h3>
         </div>
 
-        {{-- Search Bar — selaras dengan style index lain --}}
+        {{-- Search Bar - selaras dengan style index lain --}}
         <div class="p-4">
             <input type="search" id="issue-search"
                    placeholder="Search by customer, issue, action, status..."
@@ -98,11 +98,11 @@
                             <div class="flex flex-wrap justify-between text-sm">
                                 <div>
                                     <span class="text-gray-500">Identified:</span>
-                                    <span class="font-medium text-gray-900 ml-1">{{ optional($issue->date_identified)->format('d M Y') ?? '—' }}</span>
+                                    <span class="font-medium text-gray-900 ml-1">{{ optional($issue->date_identified)->format('d M Y') ?? '-' }}</span>
                                 </div>
                                 <div>
                                     <span class="text-gray-500">Est. Closed:</span>
-                                    <span class="font-medium text-gray-900 ml-1">{{ optional($issue->estimated_closed)->format('d M Y') ?? '—' }}</span>
+                                    <span class="font-medium text-gray-900 ml-1">{{ optional($issue->estimated_closed)->format('d M Y') ?? '-' }}</span>
                                 </div>
                             </div>
 
@@ -115,7 +115,7 @@
 
                                 <div>
                                     <p class="text-sm text-gray-500">Owner:</p>
-                                    <p class="text-sm font-medium text-gray-900 mt-1">{{ $issue->owner ?? '—' }}</p>
+                                    <p class="text-sm font-medium text-gray-900 mt-1">{{ $issue->owner ?? '-' }}</p>
                                 </div>
                             </div>
                         </div>
@@ -203,7 +203,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $issue->owner ?? '—' }}
+                                {{ $issue->owner ?? '-' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
@@ -213,7 +213,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ optional($issue->date_identified)->format('d M Y') ?? '—' }}
+                                {{ optional($issue->date_identified)->format('d M Y') ?? '-' }}
                             </td>
                         </tr>
                     @empty

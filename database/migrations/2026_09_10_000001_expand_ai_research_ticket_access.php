@@ -5,15 +5,15 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Perluas akses menu 'ai-research' ke setiap role yang sudah punya
- * 'tickets.inbox' — sebelum ini HANYA EC Administrator yang punya grant
+ * 'tickets.inbox' - sebelum ini HANYA EC Administrator yang punya grant
  * 'ai-research' (dicek langsung ke DB saat merancang fitur ini), sementara
  * tombol "Ask AI" baru di halaman tiket (lihat AiResearchController::
- * openForTicket()) sengaja ditujukan untuk team lead & member tiket biasa —
+ * openForTicket()) sengaja ditujukan untuk team lead & member tiket biasa -
  * role yang sama yang sudah bisa membuka daftar tiket.
  *
  * Pola migrasi ini SAMA PERSIS dengan 2026_08_13_000001_
  * activate_master_section_permissions.php (backfill grant ke role yang
- * sudah punya permission "induk"), bukan MenuRegistrar::register() biasa —
+ * sudah punya permission "induk"), bukan MenuRegistrar::register() biasa -
  * 'ai-research' BUKAN slug baru, jadi bukan pelanggaran aturan baku
  * "slug baru = admin-only", ini murni memperluas siapa yang sudah dianggap
  * layak memakai fitur yang sudah ada.
@@ -110,7 +110,7 @@ return new class extends Migration
     }
 
     /**
-     * Buang cache `perm_slugs_{employee_id}` milik anggota role terdampak —
+     * Buang cache `perm_slugs_{employee_id}` milik anggota role terdampak -
      * tanpa ini perubahan baru terasa setelah TTL 60 menit habis.
      * Lihat App\Http\Middleware\ShareMenuPermissions.
      */

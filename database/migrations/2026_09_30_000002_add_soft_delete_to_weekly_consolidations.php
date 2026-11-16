@@ -6,10 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Soft-delete untuk Weekly Consolidation (Edit/Delete/Save, lihat plan
- * "Weekly Consolidation — Edit/Delete/Save + Last Update column"). Delete
+ * "Weekly Consolidation - Edit/Delete/Save + Last Update column"). Delete
  * default = soft (bisa di-restore), plus jalur hapus permanen terpisah di
  * controller (forceDelete, cascade ke weekly_consolidation_tickets lewat FK
- * yang sudah ada). Izin edit/delete sendiri TIDAK butuh migrasi baru — sudah
+ * yang sudah ada). Izin edit/delete sendiri TIDAK butuh migrasi baru - sudah
  * pakai kolom role_menu.can_edit/can_delete yang sudah ada, diatur lewat
  * Control Center → Menu Access.
  */

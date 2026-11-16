@@ -1,5 +1,5 @@
 {{-- ══════════════════════════════════════════════════════════════════════ --}}
-{{-- RECONS — rekonsiliasi tiket                                            --}}
+{{-- RECONS - rekonsiliasi tiket                                            --}}
 {{-- ══════════════════════════════════════════════════════════════════════ --}}
 <div class="bg-white shadow-md rounded-lg" data-support-id="{{ $support->id }}">
     {{-- Header --}}
@@ -12,7 +12,7 @@
                     </svg>
                     Recons
                 </h2>
-                <p class="text-xs text-gray-500 mt-1">Ticket reconciliation — closed tickets with Customer MD grouped into recons batches</p>
+                <p class="text-xs text-gray-500 mt-1">Ticket reconciliation - closed tickets with Customer MD grouped into recons batches</p>
             </div>
 
             <div class="flex items-center gap-3 flex-wrap">
@@ -42,7 +42,7 @@
     </div>
 
     {{-- ────────────────────────────────────────────────────────────────── --}}
-    {{-- VIEW A — Daftar tiket support ini + info Recons                     --}}
+    {{-- VIEW A - Daftar tiket support ini + info Recons                     --}}
     {{-- ────────────────────────────────────────────────────────────────── --}}
     <div id="reconsTicketsView" class="px-6 py-5">
         <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
@@ -95,7 +95,7 @@
     </div>
 
     {{-- ────────────────────────────────────────────────────────────────── --}}
-    {{-- VIEW B — Daftar batch Recons                                        --}}
+    {{-- VIEW B - Daftar batch Recons                                        --}}
     {{-- ────────────────────────────────────────────────────────────────── --}}
     <div id="reconsBatchesView" class="px-6 py-5 hidden">
         <div class="overflow-x-auto rounded-lg border border-gray-200">
@@ -129,7 +129,7 @@
 </div>
 
 {{-- Konfirmasi hapus draft memakai modal global (partials/confirm-modal),
-     sama seperti aksi destruktif lain di halaman ini — tidak ada modal khusus. --}}
+     sama seperti aksi destruktif lain di halaman ini - tidak ada modal khusus. --}}
 
 <style>
     .recons-view-btn { background: transparent; color: #9ca3af; }

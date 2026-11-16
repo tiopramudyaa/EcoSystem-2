@@ -16,17 +16,17 @@ use Illuminate\Support\Facades\Log;
  * jadi hanya tiket yang lewat staging (email, Jarvies, portal customer) yang
  * mendapat group chat. Dipindah ke sini supaya tiket yang dibuat LANGSUNG dari
  * EcoSystem (admin create, helpdesk create) mendapat perlakuan yang sama
- * persis — isi method di bawah sengaja tidak diubah dari versi controller.
+ * persis - isi method di bawah sengaja tidak diubah dari versi controller.
  *
  * Semua kegagalan di sini non-fatal: tiket yang sudah tersimpan tidak boleh
  * gagal gara-gara Teams/Power Automate.
  */
 class TicketTeamsOnboardingService
 {
-    /** Pesan pertama berasal dari customer (email / Jarvies) — jalur staging. */
+    /** Pesan pertama berasal dari customer (email / Jarvies) - jalur staging. */
     public const FIRST_MESSAGE_CUSTOMER = 'customer';
 
-    /** Pesan pertama adalah email yang dikirim karyawan ke customer — jalur create langsung. */
+    /** Pesan pertama adalah email yang dikirim karyawan ke customer - jalur create langsung. */
     public const FIRST_MESSAGE_AGENT = 'agent';
 
     /**
@@ -34,7 +34,7 @@ class TicketTeamsOnboardingService
      *
      * Payload sudah memuat daftar lead modul beserta email kerjanya, jadi flow di
      * Power Automate cukup melakukan dua hal (post kartu ke channel, kirim chat
-     * ke tiap lead) tanpa perlu menebak siapa penerimanya — pemetaan modul ->
+     * ke tiap lead) tanpa perlu menebak siapa penerimanya - pemetaan modul ->
      * lead adalah pengetahuan EcoSystem, bukan pengetahuan flow.
      *
      * Tiket yang modulnya belum punya lead tetap dikirim: kartunya masih berguna
@@ -95,7 +95,7 @@ class TicketTeamsOnboardingService
 
                     // Penanda untuk flow 5: chatnya SUDAH ada, jangan bikin lagi.
                     // Tanpa Condition atas flag ini di sisi Power Automate, satu
-                    // tiket akan punya DUA grup — satu dari sini, satu dari flow.
+                    // tiket akan punya DUA grup - satu dari sini, satu dari flow.
                     $chatPayload['created_by_ecosystem'] = true;
 
                     $pendingGuests = app(TeamsChatService::class)
@@ -143,7 +143,7 @@ class TicketTeamsOnboardingService
                     // Konektor menolak alamat Gmail guest tetapi menerima object
                     // id-nya (terbukti 20 Okt 2026). Guest yang tidak bisa
                     // di-resolve dibuang supaya loop mention tidak berhenti;
-                    // begitu juga guest yang masih ditunda — mereka belum
+                    // begitu juga guest yang masih ditunda - mereka belum
                     // anggota grup saat kartu ini diposting.
                     'lead_teams_ids' => array_values(array_filter(array_map(
                         static fn ($email) => app(TeamsGuestService::class)->teamsUserRef((string) $email),

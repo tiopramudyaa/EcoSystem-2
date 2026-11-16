@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('customer_address', function (Blueprint $table) {
-            // "Nama Gedung/Tempat" — nama gedung/tempat pada alamat (mis. "Graha Mantap")
+            // "Nama Gedung/Tempat" - nama gedung/tempat pada alamat (mis. "Graha Mantap")
             $table->string('building_name')->nullable()->after('house_number');
-            // "Alamat Lengkap" — alamat lengkap utuh dari dokumen sumber
+            // "Alamat Lengkap" - alamat lengkap utuh dari dokumen sumber
             $table->text('full_address')->nullable()->after('building_name');
         });
     }

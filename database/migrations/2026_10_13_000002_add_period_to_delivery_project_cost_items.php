@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  * "YYYY-MM" supaya bisa difilter & diurutkan tanpa konversi.
  *
  * Nullable: expense lama tidak punya period dan sengaja TIDAK diisi otomatis
- * dari created_at — tanggal input belum tentu sama dengan period biayanya.
+ * dari created_at - tanggal input belum tentu sama dengan period biayanya.
  */
 return new class extends Migration
 {

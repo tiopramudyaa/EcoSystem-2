@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
  * ticket.propose-mandays was the original permission for the Propose Mandays UI, but the
  * 2026-07-16 split into ticket.propose-mandays-customer / -resolution replaced it in every
  * UI check. It kept being granted to role EMPLOYEE and was quietly repurposed in
- * show.blade.php's $canManageMembers as a "is this role a DS User" marker — toggling it in
+ * show.blade.php's $canManageMembers as a "is this role a DS User" marker - toggling it in
  * Role & Menu Access no longer affected Propose Mandays visibility, only Manage Members.
  * That coupling has been removed (manage-members now checks the role directly), so this
  * dead menu slug can go.

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * Manajemen library template Word Report Generator dari halaman detail
- * Customer (tab "Report Templates") — lihat sections/report-templates.blade.php.
+ * Customer (tab "Report Templates") - lihat sections/report-templates.blade.php.
  * Digate lewat middleware 'customer.section:report_templates,...'
  * (CheckCustomerSectionAccess), section permission tersendiri yang TIDAK
  * otomatis ikut siapa pun yang boleh edit Customer secara umum.

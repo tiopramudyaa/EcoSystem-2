@@ -27,7 +27,7 @@
     #aiInput { max-height: 200px; }
 
     /* Sidebar riwayat. Di layar lebar ia kolom biasa; di layar sempit ruang
-       tidak cukup untuk dua kolom, jadi ia muncul sebagai drawer melayang —
+       tidak cukup untuk dua kolom, jadi ia muncul sebagai drawer melayang -
        pola sama persis dengan #airHistory di ai/research.blade.php. Selektor
        ber-id dipakai supaya menang atas .hidden milik Tailwind. */
     @media (max-width: 1023px) {
@@ -91,7 +91,7 @@
 <div class="ai-shell flex gap-4">
 
     {{-- ── Riwayat percakapan ───────────────────────────────────────────────
-         Isinya hanya milik user yang login — tidak ada jalur untuk melihat
+         Isinya hanya milik user yang login - tidak ada jalur untuk melihat
          riwayat orang lain, termasuk untuk admin (lihat AiAssistantController::
          conversations()). Tersimpan di server (bukan sessionStorage), jadi
          tetap tampak kalau login dari device/browser lain. --}}
@@ -233,7 +233,7 @@
 </div>
 
 {{-- Pratinjau tempelan besar. Chip di composer maupun di bubble yang sudah
-     terkirim membuka modal ini — isi tempelan tidak pernah dirender inline,
+     terkirim membuka modal ini - isi tempelan tidak pernah dirender inline,
      karena 8.000 baris di dalam thread membuat halaman tak bisa dipakai. --}}
 <div id="aiPasteModal" onclick="aiClosePaste(event)"
      class="hidden fixed inset-0 z-50 bg-black/50 items-center justify-center p-4">
@@ -264,18 +264,18 @@
    Backend touchpoint for sending is aiSendToBackend(), which streams the
    reply from POST /ai-assistant/chat as Server-Sent Events. The conversation
    id is a client-generated UUID kept in sessionStorage (see
-   aiEnsureConversationId()) — same tab/id, so refreshing or switching menus
+   aiEnsureConversationId()) - same tab/id, so refreshing or switching menus
    and coming back reuses it; a brand-new tab starts a fresh conversation.
 
    The chat itself IS persisted server-side (assistant's working memory lasts
-   24h, and a text-only archive survives well past that — see AiChatService).
+   24h, and a text-only archive survives well past that - see AiChatService).
    What used to reset on every page load was purely the DOM: the thread was
    never re-fetched after a reload. aiOpenConversation() (called from
    DOMContentLoaded when a saved id exists) fixes that by pulling the archived
    transcript from GET /ai-assistant/conversations/{id} and re-rendering it.
 
    sessionStorage only ever remembers "which conversation is active in THIS
-   tab" — it never carries across devices/browsers on its own. The History
+   tab" - it never carries across devices/browsers on its own. The History
    sidebar (aiLoadHistory() et al., mirroring ai/research.blade.php's) is what
    makes past conversations reachable from anywhere: it lists straight from
    the server-side archive (AiAssistantController::conversations(), keyed by
@@ -285,7 +285,7 @@
 
 const AI_MAX_CHARS = 4000;
 const AI_CHAT_ENDPOINT = @json(route('ai-assistant.chat'));
-/* {id} diganti saat dipakai — route() butuh parameter, dan menyusun URL-nya
+/* {id} diganti saat dipakai - route() butuh parameter, dan menyusun URL-nya
    di sisi JS dengan string mentah gampang salah kalau prefiks app berubah. */
 const AI_CONV_ENDPOINT = @json(route('ai-assistant.conversation', ['conversation' => '__ID__']));
 const AI_LIST_ENDPOINT = @json(route('ai-assistant.conversations'));
@@ -293,14 +293,14 @@ const AI_DELETE_ENDPOINT = @json(route('ai-assistant.conversation.delete', ['con
 const AI_CONVERSATION_STORAGE_KEY = 'ai_conversation_id';
 
 /* Ambang "ini tempelan, bukan ketikan". Di atas salah satu angka ini, teks
-   yang di-paste TIDAK masuk ke textarea melainkan jadi lampiran — persis
+   yang di-paste TIDAK masuk ke textarea melainkan jadi lampiran - persis
    seperti composer claude.ai. Alasannya bukan kosmetik: `message` dibatasi
    4.000 karakter di server, jadi menempel 8.000 baris kode ke textarea
    berakhir sebagai penolakan validasi, bukan sebagai jawaban. */
 const AI_PASTE_MIN_CHARS = @json(\App\Support\AiTextAttachment::PASTE_THRESHOLD_CHARS);
 const AI_PASTE_MIN_LINES = @json(\App\Support\AiTextAttachment::PASTE_THRESHOLD_LINES);
 
-/* Sinkron dengan AiTextAttachment::MAX_CHARS — di atas ini server memotong,
+/* Sinkron dengan AiTextAttachment::MAX_CHARS - di atas ini server memotong,
    dan user berhak tahu SEBELUM mengirim, bukan sesudah. */
 const AI_TEXT_MAX_CHARS = @json(\App\Support\AiTextAttachment::MAX_CHARS);
 
@@ -319,7 +319,7 @@ let aiPreviewUrls = [];        // dibuang saat chat baru, lihat aiNewChat()
 const AI_USER_NAME = @json(session('user.name', ''));
 
 /* Placeholder composer: satu dipilih acak tiap halaman dimuat / chat baru,
-   supaya terasa hidup alih-alih satu kalimat instruksi yang sama terus —
+   supaya terasa hidup alih-alih satu kalimat instruksi yang sama terus -
    pola yang sama seperti composer claude.ai. Instruksi keyboard (Enter/
    Shift+Enter) sengaja tidak dijejalkan ke sini lagi; itu perilaku standar
    yang tidak perlu diiklankan di setiap kunjungan. */
@@ -426,13 +426,13 @@ function aiPreviewUrl(file) {
     return aiPreviews.get(file);
 }
 
-/* Cache lampiran di browser (opsional, murni kenyamanan) — server TIDAK
+/* Cache lampiran di browser (opsional, murni kenyamanan) - server TIDAK
    PERNAH menyimpan byte gambar, arsip cuma mencatat JUMLAH lampiran
    (lihat migration create_ai_conversation_tables: "tanpa menyimpan
    screenshot sistem customer selamanya"). Supaya thumbnail tetap muncul
    lagi saat conversation dibuka ulang DI BROWSER/DEVICE YANG SAMA,
    file-nya disimpan di IndexedDB milik user sendiri, dikunci dari teks
-   pesan (bukan posisi/index — lebih tahan terhadap pesan yang gagal/
+   pesan (bukan posisi/index - lebih tahan terhadap pesan yang gagal/
    ditolak terkirim, yang tidak pernah benar-benar sampai ke arsip).
    Kegagalan di jalur ini SELALU diam: ini cuma penambah, bukan pengganti,
    badge teks "N attachment" yang sudah ada. Database TERPISAH dari AI
@@ -551,7 +551,7 @@ function aiRenderAttachments() {
     box.classList.toggle('flex', aiFiles.length > 0);
 
     // Gambar tampil sebagai thumbnail sungguhan (klik untuk lightbox), sama
-    // seperti bubble terkirim — bukan cuma chip ikon+nama. Tempelan teks
+    // seperti bubble terkirim - bukan cuma chip ikon+nama. Tempelan teks
     // TETAP lewat aiChipFace() apa adanya (paste selalu menang atas image-
     // ness, walau secara teknis jarang/tidak pernah keduanya sekaligus).
     box.innerHTML = aiFiles.map((file, i) => {
@@ -579,7 +579,7 @@ function aiRenderAttachments() {
 }
 
 /**
- * Bagian "wajah" chip — dipakai bersama oleh composer dan bubble terkirim,
+ * Bagian "wajah" chip - dipakai bersama oleh composer dan bubble terkirim,
  * supaya lampiran yang sama tidak tampil berbeda di dua tempat.
  */
 function aiChipFace(file, iconClass, labelClass, badgeClass) {
@@ -613,7 +613,7 @@ function aiChipFace(file, iconClass, labelClass, badgeClass) {
  * Tempelan besar dan gambar dari clipboard sama-sama berakhir sebagai
  * LAMPIRAN, bukan sebagai isi textarea.
  *
- * Tempelan kecil dibiarkan lewat (return tanpa preventDefault) — mengubah
+ * Tempelan kecil dibiarkan lewat (return tanpa preventDefault) - mengubah
  * setiap paste jadi lampiran akan merusak hal paling biasa yang dilakukan
  * orang di composer: menempel satu kalimat.
  */
@@ -678,7 +678,7 @@ function aiAddPastedText(text) {
 
 /**
  * Ekstensi ditebak dari isinya supaya nama berkas yang sampai ke model
- * memberi petunjuk bahasa — model membaca nama lampiran, dan "pasted-1.txt"
+ * memberi petunjuk bahasa - model membaca nama lampiran, dan "pasted-1.txt"
  * untuk file Blade membuang konteks yang sebenarnya gratis.
  */
 function aiPasteFileName(text, seq) {
@@ -689,7 +689,7 @@ function aiPasteFileName(text, seq) {
     // Escape heksadesimal DIPAKAI DENGAN SENGAJA di baris berikut (\x40 =
     // karakter at, \x7b/\x7d = kurung kurawal): file ini Blade, dan penanda
     // direktif Blade yang ditulis literal di dalam <script> tetap ikut
-    // dikompilasi — hasilnya view gagal dirender (500), bukan sekadar regex
+    // dikompilasi - hasilnya view gagal dirender (500), bukan sekadar regex
     // yang salah.
     else if (/\x40extends|\x40section|\x40php|\x7b\x7b.*\x7d\x7d/.test(head))  ext = 'blade.php';
     else if (/<\?php|namespace\s+\w+|public function /.test(head))               ext = 'php';
@@ -748,7 +748,7 @@ function aiFileSize(bytes) {
 
 marked.setOptions({ breaks: true });
 
-/** Markdown -> HTML, lalu disaring DOMPurify sebelum dipasang via innerHTML —
+/** Markdown -> HTML, lalu disaring DOMPurify sebelum dipasang via innerHTML -
  *  teksnya berasal dari model/data DB, jadi tidak boleh dipercaya mentah. */
 function aiRenderMarkdown(text) {
     return DOMPurify.sanitize(marked.parse(String(text ?? '')));
@@ -761,7 +761,7 @@ function aiEsc(s) {
 }
 
 /* Tanpa argumen = sekarang. Bubble yang dipulihkan dari arsip mengirim waktu
-   aslinya — kalau tidak, percakapan kemarin tampil seolah baru saja terjadi. */
+   aslinya - kalau tidak, percakapan kemarin tampil seolah baru saja terjadi. */
 function aiTime(at) {
     const d = at ? new Date(at) : new Date();
     if (isNaN(d)) return '';
@@ -783,15 +783,15 @@ function aiScrollToBottom() {
 }
 
 function aiAppendUser(text, files) {
-    // Gambar (kecuali tempelan teks yang kebetulan lolos deteksi MIME — tidak
+    // Gambar (kecuali tempelan teks yang kebetulan lolos deteksi MIME - tidak
     // pernah terjadi di praktik, tapi aiPasteMeta.get(f) di aiChipFace() sudah
     // menjaganya) tampil utuh sebagai thumbnail; file lain tetap chip nama.
     const images = files.filter(f => aiIsImage(f) && !aiPasteMeta.has(f));
     const others = files.filter(f => !images.includes(f));
 
-    // Lampiran DULU, teks/prompt di bawahnya — sama seperti composer
+    // Lampiran DULU, teks/prompt di bawahnya - sama seperti composer
     // claude.ai (gambar/berkas adalah "subjek", teksnya keterangan/pertanyaan
-    // tentangnya). justify-start (bukan justify-end) — bubble-nya sendiri
+    // tentangnya). justify-start (bukan justify-end) - bubble-nya sendiri
     // sudah rata kanan (flex justify-end di bawah), thumbnail di DALAM bubble
     // harus rata kiri seperti alur baca normal, bukan menempel ke sudut kanan.
     const thumbs = images.length === 0 ? '' : `
@@ -828,7 +828,7 @@ function aiAppendUser(text, files) {
 }
 
 /* Hidrasi riwayat membuat banyak bubble dalam milidetik yang sama, jadi id-nya
-   TIDAK boleh berbasis Date.now() — id kembar membuat delta jawaban baru
+   TIDAK boleh berbasis Date.now() - id kembar membuat delta jawaban baru
    mendarat di bubble lama. */
 let aiMsgSeq = 0;
 
@@ -916,7 +916,7 @@ async function aiUpgradeStoredAttachments(noteId, conversationId, text, count) {
         Array.from({ length: count }, (_, fi) => aiGetCachedAttachmentFile(aiAttachmentCacheKey(conversationId, text, fi)))
     );
 
-    if (files.some(f => !f)) return; // sebagian/semua tidak ada — biarkan badge teks apa adanya
+    if (files.some(f => !f)) return; // sebagian/semua tidak ada - biarkan badge teks apa adanya
 
     const el = document.getElementById(noteId);
     if (!el) return;
@@ -941,13 +941,13 @@ async function aiUpgradeStoredAttachments(noteId, conversationId, text, count) {
                 </span>`).join('')}
         </div>`;
 
-    // Note (badge lampiran) diganti thumbs+chips di POSISI YANG SAMA — bubble
+    // Note (badge lampiran) diganti thumbs+chips di POSISI YANG SAMA - bubble
     // sudah dirakit dengan lampiran DI ATAS teks (lihat aiAppendUserStored()),
     // jadi tidak perlu urus ulang posisi teksnya di sini.
     el.outerHTML = thumbs + chips;
 }
 
-/** Bubble assistant dari arsip — bentuknya sama dengan hasil streaming. */
+/** Bubble assistant dari arsip - bentuknya sama dengan hasil streaming. */
 function aiAppendAssistantStored(text, at) {
     const id = aiAppendAssistantPending(at);
     const wrap = document.getElementById(id);
@@ -1011,7 +1011,7 @@ function aiResolveAssistant(id, text, isError) {
     if (isError) {
         body.innerHTML = `<p class="whitespace-pre-wrap break-words text-red-600">${aiEsc(text)}</p>`;
     } else if (!body.dataset.streaming) {
-        // Tidak ada delta yang masuk (text penuh langsung) — render sekarang.
+        // Tidak ada delta yang masuk (text penuh langsung) - render sekarang.
         body.innerHTML = aiRenderMarkdown(text);
     }
     // else: sudah dirender bertahap oleh aiAppendAssistantDelta.
@@ -1053,7 +1053,7 @@ function aiSend() {
     aiAppendUser(text, files);
 
     // Cache opsional di browser sendiri (lihat blok "Cache lampiran" dekat
-    // aiIsImage()) — kalau turn ini ternyata gagal/ditolak dan tidak pernah
+    // aiIsImage()) - kalau turn ini ternyata gagal/ditolak dan tidak pernah
     // sampai ke arsip, entrinya cuma jadi sisa yang tidak pernah dicocokkan
     // siapa pun; tidak ada salahnya menyimpan lebih awal daripada menunggu
     // konfirmasi sukses.
@@ -1160,7 +1160,7 @@ async function aiSendToBackend(text, files, model, pendingId) {
                 } else if (eventName === 'error') {
                     sawError = payload.message || 'Something went wrong.';
                 }
-                // 'done' needs no handling here — the outer promise just resolves.
+                // 'done' needs no handling here - the outer promise just resolves.
             }
         }
     } finally {
@@ -1191,8 +1191,8 @@ function aiNewChat() {
     // tempelan lama tidak lagi bisa dibuka; jangan ditahan di memori.
     Object.keys(aiPasteById).forEach(id => delete aiPasteById[id]);
 
-    // Start a fresh conversation. The old one is NOT deleted — it stays in
-    // the archive, just no longer linked to this tab — so nothing needs to
+    // Start a fresh conversation. The old one is NOT deleted - it stays in
+    // the archive, just no longer linked to this tab - so nothing needs to
     // be explicitly torn down beyond dropping the id.
     aiConversationId = null;
     sessionStorage.removeItem(AI_CONVERSATION_STORAGE_KEY);
@@ -1207,7 +1207,7 @@ function aiNewChat() {
 
 /* ── Riwayat ───────────────────────────────────────────────────────────
    Percakapan disimpan di server (ai_conversations, assistant 'internal') dan
-   hanya bisa dilihat pemiliknya — dari device/browser mana pun dia login,
+   hanya bisa dilihat pemiliknya - dari device/browser mana pun dia login,
    bukan cuma tab yang memulainya. Pola sama persis dengan History milik
    ai/research.blade.php (fungsi air*), cuma prefiks-nya "ai" di sini.
    ────────────────────────────────────────────────────────────────────── */
@@ -1229,7 +1229,7 @@ async function aiLoadHistory() {
 }
 
 /* Pencarian murni di klien: 100 item terakhir sudah dimuat sekali lewat
-   aiLoadHistory(), jadi mengetik di kotak cari tidak perlu roundtrip baru —
+   aiLoadHistory(), jadi mengetik di kotak cari tidak perlu roundtrip baru -
    cukup saring ulang array yang sudah ada lalu render lagi. */
 function aiFilteredHistory() {
     const q = (document.getElementById('aiHistorySearch')?.value || '').trim().toLowerCase();
@@ -1327,7 +1327,7 @@ async function aiOpenConversation(id, silent = false) {
             aiShowThread();
 
             // Batas ingatan model. Saat konteks kerjanya sudah kedaluwarsa,
-            // yang disemai ulang ke model hanya `window` pesan TERAKHIR —
+            // yang disemai ulang ke model hanya `window` pesan TERAKHIR -
             // layar menampilkan lebih banyak daripada yang diingat model,
             // dan itu harus dikatakan, bukan dibiarkan ditebak dari jawaban
             // yang pelupa.

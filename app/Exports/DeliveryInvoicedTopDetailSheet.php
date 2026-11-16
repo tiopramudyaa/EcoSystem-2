@@ -15,7 +15,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 
 /**
- * Sheet "Invoiced TOP" — satu baris per termin ber-Invoice No
+ * Sheet "Invoiced TOP" - satu baris per termin ber-Invoice No
  * (lihat DeliveryInvoicedTopExport). AutoFilter di header + Total SUBTOTAL
  * supaya bisa langsung difilter per project / status / customer di Excel.
  */
@@ -35,7 +35,7 @@ class DeliveryInvoicedTopDetailSheet implements WithTitle, WithEvents
         'fixed'      => 'Fixed Amount',
     ];
 
-    /** key => [label, lebar] — urutan = urutan kolom. */
+    /** key => [label, lebar] - urutan = urutan kolom. */
     private const COLUMNS = [
         'no'       => ['No', 6],
         'io'       => ['IO Number', 15],
@@ -83,7 +83,7 @@ class DeliveryInvoicedTopDetailSheet implements WithTitle, WithEvents
                 $last = $col['status'];
 
                 // ── Judul + info ──────────────────────────────────────
-                $text('A1', 'INVOICED TERM OF PAYMENT — ALL DELIVERY PROJECTS');
+                $text('A1', 'INVOICED TERM OF PAYMENT - ALL DELIVERY PROJECTS');
                 $sheet->mergeCells("A1:{$last}1");
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
 

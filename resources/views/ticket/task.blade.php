@@ -42,7 +42,7 @@
         <div class="sm:ml-auto flex items-center gap-2">
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold">
                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block"></span>
-                <span id="summaryText">— active ticket(s)</span>
+                <span id="summaryText">- active ticket(s)</span>
             </span>
         </div>
     </div>
@@ -60,7 +60,7 @@
                     </svg>
                 </div>
             </div>
-            <p class="text-3xl font-bold text-gray-900 leading-none" id="cardTicketCount">—</p>
+            <p class="text-3xl font-bold text-gray-900 leading-none" id="cardTicketCount">-</p>
         </div>
 
         {{-- Total Alloc MD --}}
@@ -74,7 +74,7 @@
                     </svg>
                 </div>
             </div>
-            <p class="text-3xl font-bold text-gray-900 leading-none" id="cardTotalAllocMd">—</p>
+            <p class="text-3xl font-bold text-gray-900 leading-none" id="cardTotalAllocMd">-</p>
         </div>
 
         {{-- Total Remain --}}
@@ -88,7 +88,7 @@
                     </svg>
                 </div>
             </div>
-            <p class="text-3xl font-bold text-orange-500 leading-none" id="cardTotalRemain">—</p>
+            <p class="text-3xl font-bold text-orange-500 leading-none" id="cardTotalRemain">-</p>
         </div>
 
         {{-- Workload % --}}
@@ -102,7 +102,7 @@
                     </svg>
                 </div>
             </div>
-            <p class="text-3xl font-bold leading-none" id="cardWorkloadPct">—</p>
+            <p class="text-3xl font-bold leading-none" id="cardWorkloadPct">-</p>
         </div>
 
         {{-- Load Score --}}
@@ -116,7 +116,7 @@
                     </svg>
                 </div>
             </div>
-            <p class="text-3xl font-bold leading-none" id="cardLoadScore">—</p>
+            <p class="text-3xl font-bold leading-none" id="cardLoadScore">-</p>
         </div>
     </div>
 
@@ -284,7 +284,7 @@
         return 'bg-red-400';
     }
 
-    // Workload % = remain / allocated — arahnya kebalikan dari progressBarColor
+    // Workload % = remain / allocated - arahnya kebalikan dari progressBarColor
     // (di sini makin tinggi makin berat, jadi merah di angka besar).
     function workloadBarColor(pct) {
         if (pct >= 70) return 'bg-red-500';
@@ -433,25 +433,25 @@
             day: '2-digit',
             month: 'short',
             year: 'numeric'
-        }) : '—';
+        }) : '-';
 
         const isOverdue = t.end_date && new Date(t.end_date) < new Date() && t.status !== 'closed' && t.status !== 'cancel';
 
         // Sama seperti Consultant Workload: "Updated: <tanggal> by <nama>"
         const formatUpdatedAt = (raw) => raw ? new Date(raw).toLocaleString('en-GB', {
             day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-        }) : '—';
+        }) : '-';
 
         const details = t.consultant_details ?? [];
         const myDetail = details.find(d => d.employee_id == myEmpId);
         const myMd = myDetail ? Math.round((parseFloat(myDetail.mandays) + parseFloat(myDetail.approved_additional || 0)) * 100) / 100 : null;
         // Backend sudah mengembalikan MD yang diajukan (bukan placeholder) selama belum
-        // approved, jadi tampilkan langsung — fallback ke ticket.man_days cuma untuk tiket
+        // approved, jadi tampilkan langsung - fallback ke ticket.man_days cuma untuk tiket
         // lama yang belum punya breakdown consultant_details sama sekali.
         const displayMd = myMd !== null ? myMd : (t.has_real_man_days && t.man_days ? parseFloat(t.man_days) : null);
         const hasDetails = details.length > 0;
 
-        // Workload % = remain_md / effective_md milik user ini di tiket ini — dihitung sama
+        // Workload % = remain_md / effective_md milik user ini di tiket ini - dihitung sama
         // seperti Consultant Workload (sudah termasuk MD yang masih pending approval).
         const myEffectiveMd = myDetail ? parseFloat(myDetail.effective_md) || 0 : 0;
         const myRemainMd    = myDetail ? parseFloat(myDetail.remain_md) || 0 : 0;
@@ -482,15 +482,15 @@
                                 <p class="font-semibold text-gray-800">${d.emp_name}</p>
                                 <p class="text-gray-400 font-mono text-[11px]">${d.eci}</p>
                             </td>
-                            <td class="px-4 py-2 text-gray-500">${d.module !== '—' ? d.module : '<span class="text-gray-300">—</span>'}</td>
+                            <td class="px-4 py-2 text-gray-500">${d.module !== '-' ? d.module : '<span class="text-gray-300">-</span>'}</td>
                             <td class="px-4 py-2 text-right font-semibold text-gray-700">${d.is_approved
                                 ? formatMd(d.mandays) + ' md'
                                 : `<span class="text-amber-600 italic font-normal" title="Proposed, awaiting approval">${formatMd(d.mandays)} md</span>`}</td>
-                            <td class="px-4 py-2 text-right font-semibold ${d.approved_additional > 0 ? (d.is_approved ? 'text-indigo-600' : 'text-amber-600 italic') : 'text-gray-300'}"${d.approved_additional > 0 && !d.is_approved ? ` title="Proposed additional, awaiting approval"` : ''}>${d.approved_additional > 0 ? formatMd(d.approved_additional) + ' md' : '—'}</td>
+                            <td class="px-4 py-2 text-right font-semibold ${d.approved_additional > 0 ? (d.is_approved ? 'text-indigo-600' : 'text-amber-600 italic') : 'text-gray-300'}"${d.approved_additional > 0 && !d.is_approved ? ` title="Proposed additional, awaiting approval"` : ''}>${d.approved_additional > 0 ? formatMd(d.approved_additional) + ' md' : '-'}</td>
                             <td class="px-4 py-2 text-right">
                                 ${d.remain_md !== null && d.remain_md !== undefined
                                     ? `<span class="font-bold ${d.remain_md > 0 ? 'text-orange-600' : 'text-emerald-600'}">${formatMd(d.remain_md)} d</span>`
-                                    : '<span class="text-gray-300">—</span>'}
+                                    : '<span class="text-gray-300">-</span>'}
                             </td>
                             <td class="px-4 py-2 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
@@ -508,7 +508,7 @@
                                 <div id="sub-upd-${d.detail_id}" class="text-[10px] text-gray-400 mt-0.5 text-right">Updated: ${formatUpdatedAt(d.progress_updated_at)}${d.progress_updated_by_name ? ` by <span class="text-gray-500 font-medium">${d.progress_updated_by_name}</span>` : ''}</div>
                             </td>
                             <td id="sub-note-${d.detail_id}" class="px-4 py-2 text-gray-500 text-xs max-w-[180px]">
-                                ${d.progress_note ? `<span class="italic">${d.progress_note}</span>` : '<span class="text-gray-300">—</span>'}
+                                ${d.progress_note ? `<span class="italic">${d.progress_note}</span>` : '<span class="text-gray-300">-</span>'}
                             </td>
                         </tr>`).join('')}
                         <tr class="border-t-2 border-indigo-200 bg-indigo-50/80 font-bold">
@@ -528,18 +528,18 @@
 
         const moduleHtml = myModules && myModules !== '-' ?
             myModules.split(', ').map(m => `<span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 text-xs font-medium mr-1 mb-0.5">${m}</span>`).join('') :
-            '<span class="text-gray-300 text-xs">—</span>';
+            '<span class="text-gray-300 text-xs">-</span>';
 
         const mainRow = `
     <tr class="border-b border-gray-50 hover:bg-gray-50/60 cursor-pointer group transition-colors"
         onclick="window.location='/ticket/${t.ticket_id}'">
         <td class="px-5 py-3.5">
             <div class="flex items-center gap-1.5">
-                <span class="font-mono text-xs font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-lg group-hover:bg-indigo-50 group-hover:text-indigo-700 transition">${t.ticket_number ?? '—'}</span>
+                <span class="font-mono text-xs font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-lg group-hover:bg-indigo-50 group-hover:text-indigo-700 transition">${t.ticket_number ?? '-'}</span>
                 ${t.is_lead ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-100 text-[10px] font-semibold">Lead</span>' : ''}
             </div>
         </td>
-        <td class="px-5 py-3.5 text-sm font-medium text-gray-700 max-w-[180px] truncate">${t.customer_name ?? '—'}</td>
+        <td class="px-5 py-3.5 text-sm font-medium text-gray-700 max-w-[180px] truncate">${t.customer_name ?? '-'}</td>
         <td class="px-5 py-3.5">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${st.cls}">
                 <span class="w-1.5 h-1.5 rounded-full ${st.dot} shrink-0"></span>${st.text}
@@ -547,7 +547,7 @@
         </td>
         <td class="px-5 py-3.5">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${prInfo.cls}">
-                <span class="w-1.5 h-1.5 rounded-full ${prInfo.dot} shrink-0"></span>${t.ticket_priority ?? '—'}
+                <span class="w-1.5 h-1.5 rounded-full ${prInfo.dot} shrink-0"></span>${t.ticket_priority ?? '-'}
             </span>
         </td>
         <td class="px-4 py-3">${moduleHtml}</td>
@@ -566,7 +566,7 @@
                     <span class="text-xs font-bold ${workloadTextColor(myWorkloadPct)} w-10 text-right shrink-0">${myWorkloadPct}%</span>
                 </div>
                 <div class="text-[10px] text-gray-400">${formatMd(myRemainMd)} / ${formatMd(myEffectiveMd)} md</div>
-            </div>` : '<span class="text-gray-300 text-xs">—</span>'}
+            </div>` : '<span class="text-gray-300 text-xs">-</span>'}
         </td>
         <td class="px-4 py-3 text-right text-xs text-gray-500">${endDate}</td>
         <td class="px-4 py-3" onclick="event.stopPropagation()">
@@ -728,7 +728,7 @@
                     const subNote = document.getElementById(`sub-note-${p.detail_id}`);
                     if (subBar)  { subBar.style.width = p.progress_percentage + '%'; subBar.className = `${progressBarColor(p.progress_percentage)} h-1.5 rounded-full`; }
                     if (subPct)  subPct.textContent = p.progress_percentage + '%';
-                    if (subNote) subNote.innerHTML  = p.progress_note ? `<span class="italic">${p.progress_note}</span>` : '<span class="text-gray-300">—</span>';
+                    if (subNote) subNote.innerHTML  = p.progress_note ? `<span class="italic">${p.progress_note}</span>` : '<span class="text-gray-300">-</span>';
                 });
 
                 btn.textContent = 'Tersimpan!';

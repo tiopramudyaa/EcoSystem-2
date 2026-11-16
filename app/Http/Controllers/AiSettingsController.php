@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  * (sesuai aturan slug baru) lahir aktif hanya untuk EC Administrator, dan
  * pemilik sistem bisa memindahkannya lewat Menu Access tanpa ubah kode.
  *
- * Validasi di sini sengaja LONGGAR — cukup memastikan bentuknya array —
+ * Validasi di sini sengaja LONGGAR - cukup memastikan bentuknya array -
  * karena penegakan yang sebenarnya (model dikenal, model mendukung server
  * tool, plafon token milik model, effort yang ditolak Haiku) ada di
  * AiModelSettings::sanitize(). Menduplikasinya di sini hanya membuat dua
@@ -37,7 +37,7 @@ class AiSettingsController extends Controller
             // bukan disaring ulang di Blade. Sebelumnya Blade hanya menyaring
             // baris AI Research, padahal AiModelSettings::sanitize() menolak
             // model tanpa server tool untuk Ticket Analyzer, AI Summarize, dan
-            // kedua fase Word Report juga — jadi form menawarkan pilihan yang
+            // kedua fase Word Report juga - jadi form menawarkan pilihan yang
             // diam-diam dikembalikan ke bawaan begitu disimpan.
             'allowedByAssistant' => array_map(
                 static fn ($key) => AiModelSettings::catalogFor($key),

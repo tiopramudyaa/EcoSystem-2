@@ -512,7 +512,7 @@ class Customer extends Authenticatable
      * Konversi nama perusahaan ke kode inisial tepat 4 karakter.
      * Menggunakan pendekatan round-robin: ambil 1 karakter dari tiap kata per putaran
      * hingga terkumpul 4 karakter. Jika kurang, pad dengan 'X'.
-     * Angka romawi (I–XV) → digit Arab.
+     * Angka romawi (I-XV) → digit Arab.
      * Contoh:
      *   "Perum Jasa Tirta I"    → round-0: P,J,T,1      → "PJT1"
      *   "Bank Mandiri"          → round-0: B,M → round-1: A,A → "BMAA"
@@ -529,7 +529,7 @@ class Customer extends Authenticatable
             return 'CUST';
         }
 
-        // Peta Roman numeral — paling panjang dulu agar matching tepat
+        // Peta Roman numeral - paling panjang dulu agar matching tepat
         $romanMap = [
             'XV'   => '15', 'XIV'  => '14', 'XIII' => '13', 'XII' => '12',
             'VIII' => '8',  'VII'  => '7',  'XI'   => '11', 'VI'  => '6',
@@ -597,7 +597,7 @@ class Customer extends Authenticatable
             return $base;
         }
 
-        // Collision: ganti char terakhir dengan counter (2–9, A–Z)
+        // Collision: ganti char terakhir dengan counter (2-9, A-Z)
         $prefix      = substr($base, 0, 3);
         $suffixChars = array_merge(range('2', '9'), range('A', 'Z'));
         foreach ($suffixChars as $char) {
@@ -891,7 +891,7 @@ class Customer extends Authenticatable
             $query->search($filters['search']);
         }
 
-        // Filter `customer` (input "Search by email or company name") — frontend
+        // Filter `customer` (input "Search by email or company name") - frontend
         // mengirim key `customer`, jadi alias-kan ke scopeSearch yang sudah meng-cover
         // email + name_1 + name_2 + customer_code + search_term_*. Tetap pakai scope
         // yang sama supaya logic search konsisten.
@@ -934,7 +934,7 @@ class Customer extends Authenticatable
             });
         }
 
-        // Filter status — derive dari kolom `block` & `deletion_flag` di
+        // Filter status - derive dari kolom `block` & `deletion_flag` di
         // customer_basic_data (sumber yang sama dengan logika status di
         // CustomerController@getData baris 137-143).
         if (!empty($filters['status'])) {

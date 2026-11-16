@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 
 /**
  * Daily reminder (in-app bell) for consultants who have not logged any timesheet
- * today. Any timesheet dated today counts — including drafts. Skipped entirely on
+ * today. Any timesheet dated today counts - including drafts. Skipped entirely on
  * weekends and public holidays (HolidayService), and at most one reminder per
  * consultant per day, so a manual re-run does not spam.
  */
@@ -27,7 +27,7 @@ class SendTimesheetReminders extends Command
         $today = today();
 
         if ($holidays->isNonWorkingDay($today)) {
-            $this->info('Non-working day — no reminders sent.');
+            $this->info('Non-working day - no reminders sent.');
             return self::SUCCESS;
         }
 

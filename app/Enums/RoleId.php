@@ -32,7 +32,7 @@ enum RoleId: int
 
     // ── Extended roles (added via migration 2026_04_16) ─────────────────────
     // DB name: Delivery Project Administrator (employee_role.id = 12)
-    // Project-domain administrator — mirrors Helpdesk's role in the support
+    // Project-domain administrator - mirrors Helpdesk's role in the support
     // domain, but scoped to the Delivery Project module (no support-ticket powers).
     case DELIVERY_PROJECT_ADMIN = 12;
     // DB name: Delivery Project User (employee_role.id = 15)

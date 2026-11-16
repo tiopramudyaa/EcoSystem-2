@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 class SettingsController extends Controller
 {
-    /** Nilai default preferensi — satu-satunya sumber kebenaran. */
+    /** Nilai default preferensi - satu-satunya sumber kebenaran. */
     const DEFAULT_PREFERENCES = [
         'theme'                 => 'light',
         'primary_color'         => '#991b1b',
@@ -29,7 +29,7 @@ class SettingsController extends Controller
         // Daftar href menu sidebar yang di-pin user ke Command Center (Dashboard).
         // Diidentifikasi lewat href (bukan slug menu) karena sidebar dirender dari
         // ~100 blok <a> hardcoded per item, bukan dari satu sumber data menu yang
-        // bisa ditandai slug-nya — baca/tulis murni dari DOM yang sudah dirender.
+        // bisa ditandai slug-nya - baca/tulis murni dari DOM yang sudah dirender.
         'pinned_menus'          => [],
     ];
 
@@ -296,7 +296,7 @@ class SettingsController extends Controller
                     $clean[$key] = strtolower($value);
                 }
             } elseif (is_array($default)) {
-                // Mis. pinned_menus — tanpa cabang ini nilainya KE-BUANG oleh
+                // Mis. pinned_menus - tanpa cabang ini nilainya KE-BUANG oleh
                 // fallback scalar di bawah (is_scalar(array) === false), diam-diam
                 // kembali ke default setiap kali field array dikirim.
                 $clean[$key] = is_array($value)

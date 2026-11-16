@@ -96,20 +96,20 @@
     </div>
     <div id="caCardPlannedMd" onclick="caMdCardFilter('planned')" role="button" tabindex="0"
          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();caMdCardFilter('planned');}"
-         title="Total planned working days from activity assignments — click to show only assignments with planned MD"
+         title="Total planned working days from activity assignments - click to show only assignments with planned MD"
          class="ca-lens-card bg-white rounded-xl border border-gray-200 px-4 py-2.5 cursor-pointer select-none transition-all duration-200 hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-100">
         <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Planned MD</p>
         <p class="text-base font-bold text-gray-700" id="caStatPlannedMd">0</p>
     </div>
     <div id="caCardActualMd" onclick="caMdCardFilter('actual')" role="button" tabindex="0"
          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();caMdCardFilter('actual');}"
-         title="Total approved timesheet mandays charged to the project — click to show only assignments with actual MD"
+         title="Total approved timesheet mandays charged to the project - click to show only assignments with actual MD"
          class="ca-lens-card bg-white rounded-xl border border-gray-200 px-4 py-2.5 cursor-pointer select-none transition-all duration-200 hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-100">
         <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Actual MD</p>
         <p class="text-base font-bold text-gray-700" id="caStatActualMd">0</p>
     </div>
 </div>
-{{-- Lensa kartu MD (planned/actual). Bukan dropdown — cukup nilai tersembunyi
+{{-- Lensa kartu MD (planned/actual). Bukan dropdown - cukup nilai tersembunyi
      yang ikut terbawa caFilterParams() ke API maupun Export. --}}
 <input type="hidden" id="caMdOnly" value="">
 
@@ -119,7 +119,7 @@
     <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
         <div class="flex items-center gap-3">
             <p class="text-xs text-gray-400">
-                Showing <span class="font-semibold text-gray-600" id="caRangeStart">0</span>&ndash;<span class="font-semibold text-gray-600" id="caRangeEnd">0</span>
+                Showing <span class="font-semibold text-gray-600" id="caRangeStart">0</span>-<span class="font-semibold text-gray-600" id="caRangeEnd">0</span>
                 <span class="text-gray-300 mx-1">of</span>
                 <span class="font-semibold text-gray-700" id="caTotalItems">0</span> consultants
                 <span class="text-gray-300 mx-1">&middot;</span>
@@ -169,8 +169,8 @@
                             <div class="border-t border-gray-100 mt-3 pt-3">
                                 <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Sort</label>
                                 <div class="flex gap-2">
-                                    <button type="button" onclick="caSort('consultant_name','asc')" class="flex-1 px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50">&uarr; A&ndash;Z</button>
-                                    <button type="button" onclick="caSort('consultant_name','desc')" class="flex-1 px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50">&darr; Z&ndash;A</button>
+                                    <button type="button" onclick="caSort('consultant_name','asc')" class="flex-1 px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50">&uarr; A-Z</button>
+                                    <button type="button" onclick="caSort('consultant_name','desc')" class="flex-1 px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50">&darr; Z-A</button>
                                 </div>
                             </div>
                             <div class="flex justify-end mt-3">
@@ -398,7 +398,7 @@
 .ca-group-row.ca-group-open { background: #fdf2f2 !important; }
 .ca-group-row.ca-group-open td { border-bottom: 0; }
 /* Kolom Consultant menempel (sticky) saat tabel digeser horizontal. Latarnya
-   WAJIB opaque — warna semi-transparan (bg-white/60, bg-gray-50/95, dst.)
+   WAJIB opaque - warna semi-transparan (bg-white/60, bg-gray-50/95, dst.)
    membuat isi kolom yang lewat di belakangnya tembus dan terbaca dobel. */
 .ca-sticky-col { position: sticky; left: 0; z-index: 12; background: #ffffff; }
 .ca-group-row:hover .ca-sticky-col { background: #fef4f4; }
@@ -786,7 +786,7 @@ function caUpdateSortIcons() {
 
 // ── Grouping per consultant ──────────────────────────────────────────────────
 // Satu baris induk = satu consultant; penugasannya jadi baris anak yang bisa
-// dibuka. Yang dipaginasi adalah CONSULTANT, bukan penugasan — kalau baris anak
+// dibuka. Yang dipaginasi adalah CONSULTANT, bukan penugasan - kalau baris anak
 // ikut dihitung, satu consultant bisa terpotong di antara dua halaman.
 
 const CA_NUMERIC_KEYS = ['planned_md', 'actual_md'];
@@ -850,7 +850,7 @@ function caBuildGroups() {
         g.customer_count = new Set(g.items.map(i => i.customer_name).filter(Boolean)).size;
         g.roles          = [...new Set(g.items.map(i => i.role).filter(Boolean))];
         // Satu penugasan bisa menyimpan beberapa modul dalam satu kolom
-        // ("FI, CO, FM"), jadi dedupe harus per TOKEN — bukan per string utuh,
+        // ("FI, CO, FM"), jadi dedupe harus per TOKEN - bukan per string utuh,
         // yang membuat "FI, CO, FM" + "CO" tampil sebagai "FI, CO, FM, CO".
         g.modules        = caUniqueModules(g.items.map(i => i.module));
         g.types          = [...new Set(g.items.map(i => i.employee_type).filter(Boolean))];
@@ -891,7 +891,7 @@ function caBuildGroups() {
 function caSortGroups(groups) {
     const factor = caSortDir === 'asc' ? 1 : -1;
 
-    // Default: nama consultant A–Z.
+    // Default: nama consultant A-Z.
     if (!caSortKey) {
         return groups.sort((a, b) => String(a.consultant_name).localeCompare(String(b.consultant_name)));
     }
@@ -912,7 +912,7 @@ function caSortGroups(groups) {
             return ((valueOf(a) || 0) - (valueOf(b) || 0)) * factor;
         }
         // Consultant tanpa nilai (mis. semua penugasannya tanpa tanggal) selalu
-        // di bawah, apa pun arah sortirnya — kalau tidak, baris kosong menutupi data.
+        // di bawah, apa pun arah sortirnya - kalau tidak, baris kosong menutupi data.
         const va = valueOf(a) || '';
         const vb = valueOf(b) || '';
         if (va === '' && vb === '') return 0;
@@ -964,7 +964,7 @@ function caRenderStats(stats) {
     set('caStatPlannedMd',   caNum(stats.planned_md));
     set('caStatActualMd',    caNum(stats.actual_md));
 
-    // Kartu bernilai 0 tidak punya apa pun untuk disaring — matikan supaya
+    // Kartu bernilai 0 tidak punya apa pun untuk disaring - matikan supaya
     // tidak ada klik yang berujung tabel kosong tanpa penjelasan.
     caSetLensEnabled('caCardInternal',  Number(stats.internal)   > 0);
     caSetLensEnabled('caCardExternal',  Number(stats.external)   > 0);
@@ -975,7 +975,7 @@ function caRenderStats(stats) {
 function caSetLensEnabled(cardId, enabled) {
     const card = document.getElementById(cardId);
     if (!card) return;
-    // Kartu yang sedang menjadi filter aktif TIDAK boleh dimatikan — kalau tidak,
+    // Kartu yang sedang menjadi filter aktif TIDAK boleh dimatikan - kalau tidak,
     // filternya terkunci dan tidak bisa dilepas lagi lewat kartu itu sendiri.
     enabled = enabled || card.classList.contains('active-filter');
     card.dataset.disabled = enabled ? '' : '1';
@@ -1048,26 +1048,26 @@ function caGroupRow(g) {
                     </span>
                 </div>
             </td>
-            <td class="px-3 py-3 text-xs text-gray-500">${caEsc(g.eci) || '&mdash;'}</td>
-            <td class="px-3 py-3 text-xs text-gray-600">${caEsc(g.position) || '&mdash;'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500">${caEsc(g.eci) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600">${caEsc(g.position) || '-'}</td>
             <td class="px-3 py-3 text-xs font-semibold text-gray-700">
                 ${g.project_count} project${g.project_count > 1 ? 's' : ''}
                 ${g.items.length !== g.project_count ? `<span class="font-normal text-gray-400"> &middot; ${g.items.length} assignments</span>` : ''}
             </td>
-            <td class="px-3 py-3 text-xs text-gray-300">&mdash;</td>
+            <td class="px-3 py-3 text-xs text-gray-300">-</td>
             <td class="px-3 py-3 text-xs text-gray-600">${g.customer_count} customer${g.customer_count > 1 ? 's' : ''}</td>
-            <td class="px-3 py-3 text-xs text-gray-300">&mdash;</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[150px] truncate" title="${caEsc(g.modules.join(', '))}">${caEsc(g.modules.join(', ')) || '&mdash;'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 max-w-[170px] truncate" title="${caEsc(g.roles.join(', '))}">${caEsc(g.roles.join(', ')) || '&mdash;'}</td>
+            <td class="px-3 py-3 text-xs text-gray-300">-</td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[150px] truncate" title="${caEsc(g.modules.join(', '))}">${caEsc(g.modules.join(', ')) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 max-w-[170px] truncate" title="${caEsc(g.roles.join(', '))}">${caEsc(g.roles.join(', ')) || '-'}</td>
             <td class="px-3 py-3">${g.types.map(t => caTypeBadge(t)).join(' ')}</td>
-            <td class="px-3 py-3 text-xs text-gray-300">&mdash;</td>
+            <td class="px-3 py-3 text-xs text-gray-300">-</td>
             <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${caGroupPeriodText(g)}</td>
-            <td class="px-3 py-3 text-xs text-gray-300 text-center">&mdash;</td>
+            <td class="px-3 py-3 text-xs text-gray-300 text-center">-</td>
             <td class="px-3 py-3 text-center">${caGroupStatusBadges(g)}</td>
             <td class="px-3 py-3 text-center text-sm text-gray-700">${caNum(g.planned_md)}</td>
             <td class="px-3 py-3 text-center text-sm font-bold text-gray-800">${caNum(g.actual_md)}</td>
             <td class="px-3 py-3 text-center text-xs">${caUtilization(g.utilization)}</td>
-            <td class="px-3 py-3 text-xs text-gray-300">&mdash;</td>
+            <td class="px-3 py-3 text-xs text-gray-300">-</td>
         </tr>
     `;
 }
@@ -1088,26 +1088,26 @@ function caChildRows(g) {
                 <a href="/projects/${r.project_id}" onclick="event.stopPropagation()" class="text-sm font-medium primary-text hover:underline">${caEsc(r.project_name)}</a>
                 ${r.project_closed ? '<span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gray-100 text-gray-500">CLOSED</span>' : ''}
             </td>
-            <td class="px-3 py-2 text-xs text-gray-600">${caEsc(r.io_number) || '&mdash;'}</td>
-            <td class="px-3 py-2 text-sm text-gray-700">${caEsc(r.customer_name) || '&mdash;'}</td>
+            <td class="px-3 py-2 text-xs text-gray-600">${caEsc(r.io_number) || '-'}</td>
+            <td class="px-3 py-2 text-sm text-gray-700">${caEsc(r.customer_name) || '-'}</td>
             <td class="px-3 py-2">${caCategoryBadge(r.project_category)}</td>
-            <td class="px-3 py-2 text-xs text-gray-600">${caEsc(r.module) || '&mdash;'}</td>
+            <td class="px-3 py-2 text-xs text-gray-600">${caEsc(r.module) || '-'}</td>
             <td class="px-3 py-2 text-xs text-gray-700">${caEsc(r.role)}</td>
             <td class="px-3 py-2">${caTypeBadge(r.employee_type)}</td>
-            <td class="px-3 py-2 text-xs text-gray-600">${caEsc(r.vendor_name) || '&mdash;'}</td>
+            <td class="px-3 py-2 text-xs text-gray-600">${caEsc(r.vendor_name) || '-'}</td>
             <td class="px-3 py-2 text-xs text-gray-600 whitespace-nowrap">${caPeriodText(r)}</td>
-            <td class="px-3 py-2 text-center text-xs text-gray-600">${r.duration_days != null ? r.duration_days + 'd' : '&mdash;'}</td>
+            <td class="px-3 py-2 text-center text-xs text-gray-600">${r.duration_days != null ? r.duration_days + 'd' : '-'}</td>
             <td class="px-3 py-2 text-center">${caStatusBadge(r.assignment_status)}</td>
             <td class="px-3 py-2 text-center text-sm text-gray-700">${caNum(r.planned_md)}</td>
             <td class="px-3 py-2 text-center text-sm text-gray-700">${caNum(r.actual_md)}</td>
             <td class="px-3 py-2 text-center text-xs">${caUtilization(r.utilization)}</td>
-            <td class="px-3 py-2 text-xs text-gray-500 max-w-[240px] truncate" title="${caEsc(r.notes)}">${caEsc(r.notes) || '&mdash;'}</td>
+            <td class="px-3 py-2 text-xs text-gray-500 max-w-[240px] truncate" title="${caEsc(r.notes)}">${caEsc(r.notes) || '-'}</td>
         </tr>
     `).join('');
 }
 
 function caGroupPeriodText(g) {
-    if (!g.first_start) return '&mdash;';
+    if (!g.first_start) return '-';
     return caEsc(g.first_start) + ' &rarr; ' + (g.last_end ? caEsc(g.last_end) : 'ongoing');
 }
 
@@ -1116,13 +1116,13 @@ function caGroupStatusBadges(g) {
     if (g.active_count)   parts.push(`<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700">${g.active_count} active</span>`);
     if (g.upcoming_count) parts.push(`<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">${g.upcoming_count} upcoming</span>`);
     if (g.ended_count)    parts.push(`<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600">${g.ended_count} ended</span>`);
-    return parts.length ? `<div class="flex flex-wrap gap-1 justify-center">${parts.join('')}</div>` : '<span class="text-gray-300">&mdash;</span>';
+    return parts.length ? `<div class="flex flex-wrap gap-1 justify-center">${parts.join('')}</div>` : '<span class="text-gray-300">-</span>';
 }
 
 // ── Cell formatters ──────────────────────────────────────────────────────────
 
 function caPeriodText(r) {
-    if (!r.start_date) return '&mdash;';
+    if (!r.start_date) return '-';
     return caEsc(r.start_date) + ' &rarr; ' + (r.end_date ? caEsc(r.end_date) : 'ongoing');
 }
 
@@ -1138,7 +1138,7 @@ function caStatusBadge(status) {
 }
 
 function caCategoryBadge(category) {
-    if (!category) return '<span class="text-xs text-gray-400">&mdash;</span>';
+    if (!category) return '<span class="text-xs text-gray-400">-</span>';
     const map = {
         'Open':       'bg-blue-50 text-blue-600',
         'In Process': 'bg-yellow-50 text-yellow-700',
@@ -1154,7 +1154,7 @@ function caTypeBadge(type) {
 }
 
 function caUtilization(pct) {
-    if (pct == null) return '<span class="text-gray-300">&mdash;</span>';
+    if (pct == null) return '<span class="text-gray-300">-</span>';
     const cls = pct > 110 ? 'text-red-600' : pct >= 90 ? 'text-green-600' : 'text-gray-600';
     return `<span class="font-semibold ${cls}">${pct}%</span>`;
 }

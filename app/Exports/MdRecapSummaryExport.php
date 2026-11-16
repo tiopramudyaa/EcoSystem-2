@@ -13,7 +13,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use Illuminate\Support\Collection;
 
 /**
- * "Summary" MD Recap export — no Delivery column/grouping. One row per
+ * "Summary" MD Recap export - no Delivery column/grouping. One row per
  * employee + mode (matches the pre-Delivery export shape), for readers who
  * just want totals per person without the delivery-level breakdown.
  * @see MdRecapExport for the Delivery-level counterpart.

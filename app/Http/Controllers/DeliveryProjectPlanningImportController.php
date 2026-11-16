@@ -20,7 +20,7 @@ use Carbon\Carbon;
  * directly under the Phase when no Group is given). Nested groups are written
  * in the Group column with a ">" separator, e.g. "Realization > Configuration".
  *
- * Validation guards mirror ActivityManagementController@store — dates must stay
+ * Validation guards mirror ActivityManagementController@store - dates must stay
  * inside the project's contract window and an activity's weight may not push a
  * phase past its budgeted weight. Violations do not abort the import: the
  * offending row is skipped and recorded in the returned error log.
@@ -162,7 +162,7 @@ class DeliveryProjectPlanningImportController extends Controller
 
             $phaseName = $get('phase');
             if (!$phaseName) {
-                $errors[] = "Baris {$rowNum}: kolom Phase wajib diisi — baris dilewati";
+                $errors[] = "Baris {$rowNum}: kolom Phase wajib diisi - baris dilewati";
                 continue;
             }
 
@@ -188,7 +188,7 @@ class DeliveryProjectPlanningImportController extends Controller
 
                 // Contract window guard
                 if ($rangeError = $this->contractRangeViolation($project, $startDate, $endDate)) {
-                    $errors[] = "Baris {$rowNum} ({$activityName}): {$rangeError} — baris dilewati";
+                    $errors[] = "Baris {$rowNum} ({$activityName}): {$rangeError} - baris dilewati";
                     continue;
                 }
 
@@ -196,7 +196,7 @@ class DeliveryProjectPlanningImportController extends Controller
                 $startC = $startDate ? $this->parseDate($startDate) : null;
                 $endC   = $endDate ? $this->parseDate($endDate) : null;
                 if ($startC && $endC && $endC->lt($startC)) {
-                    $errors[] = "Baris {$rowNum} ({$activityName}): End Date lebih awal dari Start Date — baris dilewati";
+                    $errors[] = "Baris {$rowNum} ({$activityName}): End Date lebih awal dari Start Date - baris dilewati";
                     continue;
                 }
 
@@ -227,7 +227,7 @@ class DeliveryProjectPlanningImportController extends Controller
                     if (($usedWeight + $weight) > $phase->weight + 0.01) {
                         $errors[] = "Baris {$rowNum} ({$activityName}): bobot melebihi batas fase \"{$phase->name}\" "
                             . "(batas {$phase->weight}%, terpakai " . round($usedWeight, 2) . "%, sisa "
-                            . round($phase->weight - $usedWeight, 2) . "%) — baris dilewati";
+                            . round($phase->weight - $usedWeight, 2) . "%) - baris dilewati";
                         continue;
                     }
                 }
@@ -336,7 +336,7 @@ class DeliveryProjectPlanningImportController extends Controller
 
     /**
      * Resolve a (possibly nested) group path under a phase, creating any missing
-     * level. Nested levels are split on ">" — e.g. "Realization > Configuration".
+     * level. Nested levels are split on ">" - e.g. "Realization > Configuration".
      */
     private function resolveGroup(DeliveryProject $project, DeliveryProjectPhase $phase, string $groupPath, array &$cache, int &$created): DeliveryProjectPlanning
     {
@@ -458,7 +458,7 @@ class DeliveryProjectPlanningImportController extends Controller
 
     /**
      * Find an existing activity planning row of the same name (case-insensitive)
-     * under the same phase and group. Returns null when none exists — that path
+     * under the same phase and group. Returns null when none exists - that path
      * creates a new activity instead.
      */
     private function findExistingActivity(DeliveryProject $project, DeliveryProjectPhase $phase, ?DeliveryProjectPlanning $group, string $name): ?DeliveryProjectPlanning
@@ -476,7 +476,7 @@ class DeliveryProjectPlanningImportController extends Controller
 
     /**
      * Replace an existing activity's details with the CSV row values. Only fields
-     * the CSV actually supplied (non-empty cells) overwrite the stored values —
+     * the CSV actually supplied (non-empty cells) overwrite the stored values -
      * blank cells leave the old data intact. Recalculates the group afterwards.
      */
     private function updateActivity(DeliveryProject $project, ?DeliveryProjectPlanning $group, DeliveryProjectPlanning $planning, array $data): void
@@ -518,7 +518,7 @@ class DeliveryProjectPlanningImportController extends Controller
     /**
      * Coerce a raw CSV cell to valid UTF-8. Spreadsheets exported from Excel are
      * often Windows-1252, whose high bytes (en dash, curly quotes, °, é …) are not
-     * legal UTF-8 — they would otherwise be written to the database and later make
+     * legal UTF-8 - they would otherwise be written to the database and later make
      * response()->json() throw "Malformed UTF-8 characters".
      */
     private function toUtf8(?string $value): string
@@ -531,7 +531,7 @@ class DeliveryProjectPlanningImportController extends Controller
         }
 
         // Collapse non-breaking spaces to plain ones. Excel/Word smuggle U+00A0
-        // into pasted cells where trim() cannot see it — leaving it in would make
+        // into pasted cells where trim() cannot see it - leaving it in would make
         // "Kickoff Meeting" (NBSP) fail to match the stored "Kickoff Meeting",
         // silently creating a duplicate activity on every re-import.
         return str_replace(["\u{00A0}", "\u{200B}", "\u{FEFF}"], [' ', '', ''], $value);

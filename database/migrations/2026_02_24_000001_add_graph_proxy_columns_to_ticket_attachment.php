@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Tambah kolom yang diperlukan untuk proxy attachment via Microsoft Graph.
  *
- * graph_message_id : Graph internal message ID — diperlukan untuk endpoint
+ * graph_message_id : Graph internal message ID - diperlukan untuk endpoint
  *                    GET /users/{sender}/messages/{msgId}/attachments/{attId}
  *
  * content_id       : Content-ID (CID) dari inline attachment.

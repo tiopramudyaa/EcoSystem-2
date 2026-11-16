@@ -19,7 +19,7 @@ class ShareMenuPermissions
             $userId    = $user['id'] ?? null;
             $cacheKey  = "perm_slugs_{$userId}";
 
-            // Cache 60 min — invalidated explicitly when roles/permissions change
+            // Cache 60 min - invalidated explicitly when roles/permissions change
             $permSlugs = Cache::remember($cacheKey, now()->addMinutes(60), function () use ($userId) {
                 $employee = Employee::find($userId);
                 return $employee ? $employee->allPermissionSlugs() : [];

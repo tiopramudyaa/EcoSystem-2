@@ -534,7 +534,7 @@
     const DELIVERY_SUPPORT_HEAD_ROLE    = {{ \App\Enums\RoleId::DELIVERY_SUPPORT_HEAD->value }};
     const DELIVERY_SUPPORT_MANAGER_ROLE = {{ \App\Enums\RoleId::DELIVERY_SUPPORT_MANAGER->value }};
 
-    // Support type filter options — loaded from master data (menu Management >
+    // Support type filter options - loaded from master data (menu Management >
     // Master Delivery Settings > Support Type), bukan hardcode lagi. Fallback
     // list di bawah menutupi jeda sebelum fetch selesai (atau bila fetch gagal)
     // supaya filter "Type" tidak pernah kosong.
@@ -606,7 +606,7 @@
                 // Support User: "My Tickets" or "Unassign"
                 endpoint = (currentView === 'my') ? '/api/tickets/my' : '/api/tickets';
             } else if (hasRole(EC_USER_ROLE)) {
-                // EC User — only their own tickets
+                // EC User - only their own tickets
                 endpoint = '/api/tickets/my';
             }
             // Other views / roles use /api/tickets (all tickets)
@@ -830,7 +830,7 @@
                         
                         <!-- Title -->
                         <h3 class="text-base font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-gray-700 transition-colors">
-                            ${ticket.ticket_number ? ticket.ticket_number + ' — ' : ''}${ticket.description || 'No description'}
+                            ${ticket.ticket_number ? ticket.ticket_number + ' - ' : ''}${ticket.description || 'No description'}
                         </h3>
                         
                         <!-- Meta Information -->

@@ -1,5 +1,5 @@
 {{-- =========================================================
-     ACTIVITY DETAIL DRAWER — Table View only
+     ACTIVITY DETAIL DRAWER - Table View only
      Slide-in panel from the right. Opened via openActivityDrawer(id).
      ========================================================= --}}
 
@@ -181,7 +181,7 @@
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// ACTIVITY DRAWER — JavaScript
+// ACTIVITY DRAWER - JavaScript
 // ─────────────────────────────────────────────────────────────────────────────
 
 window._activityDataMap  = {};  // populated by table-view.blade.php during render

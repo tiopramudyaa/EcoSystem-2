@@ -130,7 +130,7 @@
                         </div>
                     </div>
 
-                    {{-- Status (matches ticket.status — same values as the Status column here & on the Ticket page) --}}
+                    {{-- Status (matches ticket.status - same values as the Status column here & on the Ticket page) --}}
                     <div class="custom-dd relative" data-onchange="applyReportFilters" data-fixed="true" style="min-width:150px">
                         <button type="button" class="custom-dd-btn w-full flex items-center justify-between pl-3 pr-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-500 hover:border-gray-400 transition-all text-left gap-2">
                             <span class="custom-dd-label">All Statuses</span>
@@ -243,7 +243,7 @@
                         <th class="text-center px-2 py-2 font-semibold text-gray-400 uppercase tracking-wider grp-info" style="min-width:85px;">Status</th>
                         {{-- SLA Response --}}
                         <th class="text-center px-2 py-2 font-semibold text-blue-500 uppercase tracking-wider grp-resp" style="min-width:130px">Date &amp; Time<br>Received</th>
-                        <th class="text-center px-2 py-2 font-semibold text-blue-500 uppercase tracking-wider grp-resp" style="min-width:130px">Date &amp; Time Start<br>SLA Response<br><span class="text-[8px] font-normal normal-case">(Working Hours 08:00–17:00)</span></th>
+                        <th class="text-center px-2 py-2 font-semibold text-blue-500 uppercase tracking-wider grp-resp" style="min-width:130px">Date &amp; Time Start<br>SLA Response<br><span class="text-[8px] font-normal normal-case">(Working Hours 08:00-17:00)</span></th>
                         <th class="text-center px-2 py-2 font-semibold text-blue-500 uppercase tracking-wider grp-resp" style="min-width:70px">SLA<br>Response<br>Time</th>
                         <th class="text-center px-2 py-2 font-semibold text-blue-500 uppercase tracking-wider grp-resp" style="min-width:130px">Response Due On</th>
                         <th class="text-center px-2 py-2 font-semibold text-blue-500 uppercase tracking-wider grp-resp" style="min-width:130px">Date &amp; Time<br>Responded</th>
@@ -251,8 +251,8 @@
                         <th class="text-center px-2 py-2 font-semibold text-blue-500 uppercase tracking-wider grp-resp border-r border-gray-200" style="min-width:80px">SLA<br>Response<br>Time</th>
                         {{-- SLA Resolution --}}
                         <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:70px">SLA<br>Resolution<br>(HOUR)</th>
-                        <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:130px">Date &amp; Time Start<br>SLA Resolution<br><span class="text-[8px] font-normal normal-case">(Working Day, 08:00–17:00 EXCEPT VERY HIGH)</span></th>
-                        <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:130px">SLA Resolution<br>Due On<br><span class="text-[8px] font-normal normal-case">(Working Day, 08:00–17:00 EXCEPT VERY HIGH)</span></th>
+                        <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:130px">Date &amp; Time Start<br>SLA Resolution<br><span class="text-[8px] font-normal normal-case">(Working Day, 08:00-17:00 EXCEPT VERY HIGH)</span></th>
+                        <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:130px">SLA Resolution<br>Due On<br><span class="text-[8px] font-normal normal-case">(Working Day, 08:00-17:00 EXCEPT VERY HIGH)</span></th>
                         <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:130px">First<br>Resolved Date</th>
                         <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:130px">Date of sending<br>Resolution doc./mail</th>
                         <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:80px">Resolution<br>Duration<br>(STOP-GO)</th>
@@ -324,22 +324,22 @@
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div class="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
                             <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Response</p>
-                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="statResponseVal">—</p>
+                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="statResponseVal">-</p>
                             <p class="text-[10px] mt-0.5" id="statResponseStatus"></p>
                         </div>
                         <div class="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
                             <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Resolution</p>
-                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="statResolutionVal">—</p>
+                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="statResolutionVal">-</p>
                             <p class="text-[10px] mt-0.5" id="statResolutionStatus"></p>
                         </div>
                         <div class="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
                             <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Waiting</p>
-                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="statWaitingVal">—</p>
+                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="statWaitingVal">-</p>
                             <p class="text-[10px] text-gray-400 mt-0.5">total pause time</p>
                         </div>
                         <div class="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
                             <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Ball Holder</p>
-                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="statBallHolder">—</p>
+                            <p class="text-sm font-bold text-gray-800 mt-0.5" id="statBallHolder">-</p>
                             <p class="text-[10px] text-gray-400 mt-0.5" id="statBallHolderSub"></p>
                         </div>
                     </div>
@@ -400,11 +400,11 @@ function toMDY(dt) {
 }
 
 function fmtDT(dt) {
-    if (!dt) return '—';
+    if (!dt) return '-';
     return toMDY(dt);
 }
 
-// Notes column log-line timestamp — same MM/DD/YYYY HH:MM format as the rest of the report.
+// Notes column log-line timestamp - same MM/DD/YYYY HH:MM format as the rest of the report.
 function fmtNoteDT(dt) {
     if (!dt) return '';
     return toMDY(dt);
@@ -421,14 +421,14 @@ function escHtml(s) {
 function buildNotesLog(t) {
     const lines = (t.notes || []).map(n => `[${fmtNoteDT(n.at)}] ${n.text}`);
     if (!lines.length && t.sla_policy_missing) {
-        lines.push('Belum ada SLA Policy untuk delivery support ini — jam kerja tidak diterapkan');
+        lines.push('Belum ada SLA Policy untuk delivery support ini - jam kerja tidak diterapkan');
     }
     return lines;
 }
 
 // Format decimal hours → HH:MM
 function fmtHHMM(h) {
-    if (h === null || h === undefined) return '—';
+    if (h === null || h === undefined) return '-';
     const totalMins = Math.round(parseFloat(h) * 60);
     const hh = Math.floor(totalMins / 60);
     const mm = totalMins % 60;
@@ -765,7 +765,7 @@ function renderTable(tickets) {
     tbody.innerHTML = tickets.map((t, idx) => {
         const isPending = t.is_pending_validation;
         const noPolicyWarning = t.sla_policy_missing
-            ? `<span class="ml-1 text-amber-500 cursor-help" title="Belum ada SLA Policy untuk delivery support tiket ini — jam kerja tidak diterapkan, waktu ditampilkan apa adanya"><i class="fas fa-exclamation-triangle text-[9px]"></i></span>`
+            ? `<span class="ml-1 text-amber-500 cursor-help" title="Belum ada SLA Policy untuk delivery support tiket ini - jam kerja tidak diterapkan, waktu ditampilkan apa adanya"><i class="fas fa-exclamation-triangle text-[9px]"></i></span>`
             : '';
         const prio = PRIORITY_CFG[t.ticket_priority] || { bg:'bg-gray-50', text:'text-gray-600', dot:'bg-gray-400' };
 
@@ -773,33 +773,33 @@ function renderTable(tickets) {
             return `
             <tr class="row-pending border-b border-amber-100 bg-amber-50/40 hover:bg-amber-50/70 transition-colors">
                 <td class="sc px-2 py-2 text-center text-gray-400"                style="left:0;width:32px;min-width:32px;">${idx + 1}</td>
-                <td class="sc px-2 py-2 text-center text-gray-500"                style="left:32px;width:44px;min-width:44px;">${t.year || '—'}</td>
-                <td class="sc px-2 py-2 text-gray-700 font-medium"                style="left:76px;width:110px;min-width:110px;">${t.customer_name || '—'}</td>
+                <td class="sc px-2 py-2 text-center text-gray-500"                style="left:32px;width:44px;min-width:44px;">${t.year || '-'}</td>
+                <td class="sc px-2 py-2 text-gray-700 font-medium"                style="left:76px;width:110px;min-width:110px;">${t.customer_name || '-'}</td>
                 <td class="sc sc-last px-2 py-2"                                   style="left:186px;width:110px;min-width:110px;">
                     <span class="font-mono text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">Staging #${t.staging_id || '?'}</span>
                 </td>
                 <td class="px-2 py-2 text-center text-amber-600" colspan="9">
                     <span class="text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Menunggu Validasi</span>
                 </td>
-                <td class="px-2 py-2 text-gray-400" colspan="17">—</td>
+                <td class="px-2 py-2 text-gray-400" colspan="17">-</td>
                 <td class="px-2 py-2 text-center text-gray-400 italic text-[10px]">Validasi dulu</td>
             </tr>`;
         }
 
         const resStatusColor = t.resolution?.status === 'met' ? 'text-green-600' : t.resolution?.status === 'breached' ? 'text-red-600' : 'text-gray-400';
 
-        // SLA Resolution Time — live/running duration column (separate from Resolution
+        // SLA Resolution Time - live/running duration column (separate from Resolution
         // Duration (STOP-GO), which stays blank until the ticket closes). Shows progress
         // on still-open tickets, tagged amber + clock icon since it's not final yet.
         const resTimeIsOngoing = t.resolution?.live_hours != null && t.resolution?.is_final === false;
         const resTimeColor     = resTimeIsOngoing ? 'text-amber-600' : resStatusColor;
 
-        // SLA Resolution Status — Achieved/Not Achieved/N/A verdict computed server-side
+        // SLA Resolution Status - Achieved/Not Achieved/N/A verdict computed server-side
         // (SlaController::slaResolutionAchievement).
         const resAchieveColor = t.resolution?.time_status === 'Achieved' ? 'text-green-600'
             : t.resolution?.time_status === 'Not Achieved' ? 'text-red-600' : 'text-gray-400';
 
-        // SLA Response Time (achieved) — Achieved if Response Duration <= SLA Response Time (Hour), else Not Achieved.
+        // SLA Response Time (achieved) - Achieved if Response Duration <= SLA Response Time (Hour), else Not Achieved.
         // If not yet responded, fall back to the raw status label (e.g. Active).
         // If there's no SLA config (policy) for this delivery support, warn instead of silently comparing against a null target.
         let respStatusLabel, respStatusColor;
@@ -811,7 +811,7 @@ function renderTable(tickets) {
             respStatusLabel = respAchieved ? 'Achieved' : 'Not Achieved';
             respStatusColor = respAchieved ? 'text-green-600' : 'text-red-600';
         } else {
-            respStatusLabel = STATUS_CFG[t.response?.status]?.label || '—';
+            respStatusLabel = STATUS_CFG[t.response?.status]?.label || '-';
             respStatusColor = t.response?.status === 'met' ? 'text-green-600' : t.response?.status === 'breached' ? 'text-red-600' : 'text-gray-400';
         }
 
@@ -824,18 +824,18 @@ function renderTable(tickets) {
                    class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-gray-500 hover:text-indigo-600 border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 px-2 py-1 rounded-lg transition">
                    <i class="fas fa-clipboard-list text-[10px]"></i> ${notesCount}
                </button>`
-            : '<span class="text-gray-300 text-[10px]">—</span>';
+            : '<span class="text-gray-300 text-[10px]">-</span>';
 
         // Type of Service label from ticket's assigned Delivery Support type (MO/CR/AMS/ATS/...)
-        const typeOfService = t.delivery_support_type || '—';
+        const typeOfService = t.delivery_support_type || '-';
 
         return `
         <tr class="border-b border-gray-50 hover:bg-blue-50/20 transition-colors">
             {{-- Informasi Tiket (sticky No→Status) --}}
             <td class="sc px-2 py-2 text-center text-gray-400 text-[10px]" style="left:0;width:32px;min-width:32px;">${idx + 1}</td>
-            <td class="sc px-2 py-2 text-center text-gray-600 font-medium"  style="left:32px;width:44px;min-width:44px;">${t.year || '—'}</td>
+            <td class="sc px-2 py-2 text-center text-gray-600 font-medium"  style="left:32px;width:44px;min-width:44px;">${t.year || '-'}</td>
             <td class="sc px-2 py-2 overflow-hidden"                         style="left:76px;width:110px;min-width:110px;">
-                <p class="text-gray-700 font-medium truncate">${t.customer_name || '—'}</p>
+                <p class="text-gray-700 font-medium truncate">${t.customer_name || '-'}</p>
             </td>
             <td class="sc sc-last px-2 py-2"                                   style="left:186px;width:110px;min-width:110px;">
                 <a href="${ticketUrl}" class="font-mono text-[10px] font-bold text-red-700 bg-red-50 px-1.5 py-0.5 rounded hover:bg-red-100 transition whitespace-nowrap">
@@ -843,33 +843,33 @@ function renderTable(tickets) {
                 </a>
             </td>
             <td class="px-2 py-2 text-center" style="min-width:90px;">
-                <span class="text-[10px] font-semibold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">${t.module || '—'}</span>
+                <span class="text-[10px] font-semibold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">${t.module || '-'}</span>
             </td>
             <td class="px-2 py-2 text-center" style="min-width:85px;">
                 <span class="inline-flex items-center gap-1 text-[10px] font-semibold ${prio.text} ${prio.bg} px-1.5 py-0.5 rounded-full">
-                    <span class="w-1.5 h-1.5 rounded-full ${prio.dot} flex-shrink-0"></span>${t.ticket_priority || '—'}
+                    <span class="w-1.5 h-1.5 rounded-full ${prio.dot} flex-shrink-0"></span>${t.ticket_priority || '-'}
                 </span>
             </td>
-            <td class="px-2 py-2 text-center text-gray-500 text-[10px]" style="min-width:70px;">${t.scale || '—'}</td>
+            <td class="px-2 py-2 text-center text-gray-500 text-[10px]" style="min-width:70px;">${t.scale || '-'}</td>
             <td class="px-2 py-2 overflow-hidden" style="min-width:150px;">
-                <p class="text-gray-600 truncate text-[10px]" title="${(t.description || '').replace(/"/g, '&quot;')}">${desc || '—'}</p>
+                <p class="text-gray-600 truncate text-[10px]" title="${(t.description || '').replace(/"/g, '&quot;')}">${desc || '-'}</p>
             </td>
-            <td class="px-2 py-2 text-center text-gray-500 text-[10px]" style="min-width:90px;">${t.cust_pic || '—'}</td>
-            <td class="px-2 py-2 text-center text-gray-500 text-[10px]" style="min-width:100px;">${t.pic || '—'}</td>
+            <td class="px-2 py-2 text-center text-gray-500 text-[10px]" style="min-width:90px;">${t.cust_pic || '-'}</td>
+            <td class="px-2 py-2 text-center text-gray-500 text-[10px]" style="min-width:100px;">${t.pic || '-'}</td>
             <td class="px-2 py-2 text-center" style="min-width:75px;">
                 <span class="text-[10px] font-semibold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">${typeOfService}</span>
             </td>
             <td class="px-2 py-2 text-center" style="min-width:120px;">
-                <span class="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">${t.ticket_type || '—'}</span>
+                <span class="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">${t.ticket_type || '-'}</span>
             </td>
             <td class="px-2 py-2 text-center" style="min-width:85px;">
-                <span class="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded capitalize">${(t.ticket_status || '—').replace(/_/g,' ')}</span>
+                <span class="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded capitalize">${(t.ticket_status || '-').replace(/_/g,' ')}</span>
             </td>
             {{-- SLA Response --}}
             <td class="px-2 py-2 bg-blue-50/20 text-[10px] text-gray-600">${fmtDT(t.received_at)}</td>
             <td class="px-2 py-2 bg-blue-50/20 text-[10px] text-gray-600">${fmtDT(t.sla_start_at)}${noPolicyWarning}</td>
             <td class="px-2 py-2 text-center bg-blue-50/20">
-                <span class="text-[10px] text-blue-700 font-semibold">${t.response?.target_hours ?? '—'}</span>
+                <span class="text-[10px] text-blue-700 font-semibold">${t.response?.target_hours ?? '-'}</span>
             </td>
             <td class="px-2 py-2 bg-blue-50/20 text-[10px] text-gray-600">${fmtDT(t.response?.due_at)}</td>
             <td class="px-2 py-2 bg-blue-50/20 text-[10px] text-gray-600">${fmtDT(t.response?.responded_at)}</td>
@@ -881,7 +881,7 @@ function renderTable(tickets) {
             </td>
             {{-- SLA Resolution --}}
             <td class="px-2 py-2 text-center bg-green-50/20">
-                <span class="text-[10px] text-green-700 font-semibold">${t.resolution?.target_hours ?? '—'}</span>
+                <span class="text-[10px] text-green-700 font-semibold">${t.resolution?.target_hours ?? '-'}</span>
             </td>
             <td class="px-2 py-2 bg-green-50/20 text-[10px] text-gray-600">${fmtDT(t.resolution?.start_at)}${noPolicyWarning}</td>
             <td class="px-2 py-2 bg-green-50/20 text-[10px] text-gray-600">${fmtDT(t.resolution?.due_at)}</td>
@@ -891,12 +891,12 @@ function renderTable(tickets) {
                 <span class="text-[10px] font-semibold ${resStatusColor}">${fmtHHMM(t.resolution?.actual_hours)}</span>
             </td>
             <td class="px-2 py-2 text-center bg-green-50/20">
-                <span class="text-[10px] font-semibold ${resTimeColor}" ${resTimeIsOngoing ? `title="Tiket masih berjalan — durasi ini belum final, akan berubah sampai tiket closed"` : ''}>
+                <span class="text-[10px] font-semibold ${resTimeColor}" ${resTimeIsOngoing ? `title="Tiket masih berjalan - durasi ini belum final, akan berubah sampai tiket closed"` : ''}>
                     ${fmtHHMM(t.resolution?.live_hours)}${resTimeIsOngoing ? ' <i class="fas fa-spinner text-[9px]"></i>' : ''}
                 </span>
             </td>
             <td class="px-2 py-2 text-center bg-green-50/20">
-                <span class="text-[10px] font-semibold ${resAchieveColor}">${t.resolution?.time_status || '—'}</span>
+                <span class="text-[10px] font-semibold ${resAchieveColor}">${t.resolution?.time_status || '-'}</span>
             </td>
             <td class="px-2 py-2 bg-green-50/20 text-[10px] text-gray-600">${fmtDT(t.closed_at)}</td>
             <td class="px-2 py-2 text-center bg-green-50/20 border-r border-gray-200">${notesCell}</td>
@@ -960,22 +960,22 @@ async function _loadDetailData(ticketId) {
             const rStat  = resp.status;
             const rColor = rStat === 'met' ? 'text-green-600' : rStat === 'breached' ? 'text-red-600' : 'text-blue-600';
             document.getElementById('statResponseVal').innerHTML =
-                `<span class="${rColor}">${resp.actual_hours !== null ? fmtHHMM(resp.actual_hours) : '—'}</span>`;
+                `<span class="${rColor}">${resp.actual_hours !== null ? fmtHHMM(resp.actual_hours) : '-'}</span>`;
             document.getElementById('statResponseStatus').textContent =
-                `${STATUS_CFG[rStat]?.label || rStat} / ${resp.target_hours ?? '—'} jam target`;
+                `${STATUS_CFG[rStat]?.label || rStat} / ${resp.target_hours ?? '-'} jam target`;
             document.getElementById('statResponseStatus').className = `text-[10px] mt-0.5 ${rColor}`;
         }
         if (resol) {
             const sStat  = resol.status;
             const sColor = sStat === 'met' ? 'text-green-600' : sStat === 'breached' ? 'text-red-600' : 'text-blue-600';
             document.getElementById('statResolutionVal').innerHTML =
-                `<span class="${sColor}">${resol.actual_hours !== null ? fmtHHMM(resol.actual_hours) : '—'}</span>`;
+                `<span class="${sColor}">${resol.actual_hours !== null ? fmtHHMM(resol.actual_hours) : '-'}</span>`;
             document.getElementById('statResolutionStatus').textContent =
-                `${STATUS_CFG[sStat]?.label || sStat} / ${resol.target_hours ?? '—'} jam target`;
+                `${STATUS_CFG[sStat]?.label || sStat} / ${resol.target_hours ?? '-'} jam target`;
             document.getElementById('statResolutionStatus').className = `text-[10px] mt-0.5 ${sColor}`;
         }
         document.getElementById('statWaitingVal').textContent =
-            resol?.waiting_hours != null ? fmtHHMM(resol.waiting_hours) : '—';
+            resol?.waiting_hours != null ? fmtHHMM(resol.waiting_hours) : '-';
         const ballCfg = {
             helpdesk: { label:'Helpdesk',       sub:'Waiting for agent'  },
             customer: { label:'Customer',        sub:'Waiting for customer'},
@@ -1027,7 +1027,7 @@ async function _loadDetailData(ticketId) {
                 : '';
 
             return `<tr class="border-b border-gray-50 hover:bg-gray-50/50">
-                <td class="px-4 py-3 text-[10px] text-gray-400 whitespace-nowrap">${ev.event_at ? ev.event_at.substring(0,16) : '—'}</td>
+                <td class="px-4 py-3 text-[10px] text-gray-400 whitespace-nowrap">${ev.event_at ? ev.event_at.substring(0,16) : '-'}</td>
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-2">
                         <span class="w-6 h-6 rounded-full ${cfg.bg} flex items-center justify-center flex-shrink-0">
@@ -1040,11 +1040,11 @@ async function _loadDetailData(ticketId) {
                         </div>
                     </div>
                 </td>
-                <td class="px-4 py-3 text-[10px] text-gray-500">${ev.jarvis_status ? `<span class="bg-gray-100 px-2 py-0.5 rounded font-mono">${ev.jarvis_status}</span>` : '—'}</td>
-                <td class="px-4 py-3">${waitBadge || '—'}</td>
-                <td class="px-4 py-3">${respBadge || '—'}</td>
-                <td class="px-4 py-3">${resBadge || '—'}</td>
-                <td class="px-4 py-3 text-[10px] text-gray-400 max-w-[180px] truncate">${ev.notes || '—'}</td>
+                <td class="px-4 py-3 text-[10px] text-gray-500">${ev.jarvis_status ? `<span class="bg-gray-100 px-2 py-0.5 rounded font-mono">${ev.jarvis_status}</span>` : '-'}</td>
+                <td class="px-4 py-3">${waitBadge || '-'}</td>
+                <td class="px-4 py-3">${respBadge || '-'}</td>
+                <td class="px-4 py-3">${resBadge || '-'}</td>
+                <td class="px-4 py-3 text-[10px] text-gray-400 max-w-[180px] truncate">${ev.notes || '-'}</td>
             </tr>`;
         }).join('');
 

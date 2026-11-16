@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Vendor (opsional) pada Delivery Support — menunjuk ke master Business Partner
+ * Vendor (opsional) pada Delivery Support - menunjuk ke master Business Partner
  * (`customer`) bertipe Vendor. FK + onDelete('set null') mengikuti pola
  * `client_id` di tabel yang sama.
  */

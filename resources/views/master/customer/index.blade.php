@@ -221,7 +221,7 @@ const canCustomerAction = {{ $can('master.customer.action') ? 'true' : 'false' }
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 flex-shrink-0 mt-0.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                             </svg>
-                            <span>Login access is managed per <strong>Contact Person</strong> — go to the Contact tab after saving to grant Jarvies access.</span>
+                            <span>Login access is managed per <strong>Contact Person</strong> - go to the Contact tab after saving to grant Jarvies access.</span>
                         </div>
 
                         {{-- Type Business Partner. Wajib: menentukan data ini muncul
@@ -291,12 +291,12 @@ const canCustomerAction = {{ $can('master.customer.action') ? 'true' : 'false' }
                             <label class="text-xs font-semibold text-gray-600 mb-1">AE (Account Executive)</label>
                             <div class="custom-dd relative" id="ddAccountExecutive" data-searchable="true" data-fixed="true">
                                 <button type="button" class="custom-dd-btn w-full flex items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded text-sm hover:border-gray-400 transition-all text-left">
-                                    <span class="custom-dd-label text-gray-400">— Select Employee —</span>
+                                    <span class="custom-dd-label text-gray-400">- Select Employee -</span>
                                     <svg class="custom-dd-arrow w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <input type="hidden" id="ecAccountExecutive" value="">
                                 <div class="custom-dd-panel hidden absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 py-1.5 overflow-y-auto" style="max-height:200px;">
-                                    <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50" data-value="">— Select Employee —</button>
+                                    <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50" data-value="">- Select Employee -</button>
                                 </div>
                             </div>
                             <span class="text-xs text-gray-400 mt-1">Only employees with a Sales role are listed.</span>
@@ -949,7 +949,7 @@ const canCustomerAction = {{ $can('master.customer.action') ? 'true' : 'false' }
             none.type = 'button';
             none.className = 'custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50';
             none.dataset.value = '';
-            none.textContent = '— Select Employee —';
+            none.textContent = '- Select Employee -';
             panel.insertBefore(none, insertBefore);
 
             data.data.forEach(emp => {
@@ -1357,7 +1357,7 @@ const canCustomerAction = {{ $can('master.customer.action') ? 'true' : 'false' }
     }
 
     function closeCustMenu() {
-        // Dipanggil pada setiap klik dokumen — elemennya bisa saja tidak ada.
+        // Dipanggil pada setiap klik dokumen - elemennya bisa saja tidak ada.
         document.getElementById('floatingCustMenu')?.classList.add('hidden');
     }
 

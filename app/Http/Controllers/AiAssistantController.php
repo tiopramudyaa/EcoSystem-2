@@ -14,13 +14,13 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * AI Assistant — chat backend.
+ * AI Assistant - chat backend.
  *
  * The chat endpoint streams its reply as Server-Sent Events. In-flight
  * conversation state (attachments included) lives in a dedicated file cache
  * store with a 24-hour sliding TTL (see config/cache.php 'ai_chat' store);
  * a text-only archive of each conversation is also kept in ai_conversations/
- * ai_messages (assistant = 'internal') — see AiChatService's docblock for the
+ * ai_messages (assistant = 'internal') - see AiChatService's docblock for the
  * split. conversation() below reads that archive so the frontend can restore
  * the visible transcript after navigating away and back, independent of
  * whatever's left of the working cache.
@@ -129,7 +129,7 @@ class AiAssistantController extends Controller
     }
 
     /**
-     * Archived transcript of one conversation — read by the frontend on page
+     * Archived transcript of one conversation - read by the frontend on page
      * load (see assistant.blade.php's aiOpenConversation()) to restore the
      * visible chat after navigating away and back, since the DOM/JS state
      * that held it doesn't survive a full page load.
@@ -157,7 +157,7 @@ class AiAssistantController extends Controller
     }
 
     /**
-     * Daftar percakapan AI Assistant milik user yang login — dibaca dari
+     * Daftar percakapan AI Assistant milik user yang login - dibaca dari
      * arsip DB (ai_conversations, employee_id = employee ini), BUKAN dari
      * sessionStorage sisi browser. Inilah yang membuat riwayat tetap tampak
      * kalau user login dari device/browser lain: sessionStorage cuma
@@ -165,7 +165,7 @@ class AiAssistantController extends Controller
      * daftar percakapannya sendiri selalu utuh di server untuk employee_id
      * yang sama, dari device mana pun.
      *
-     * Beda dari AiResearchController::conversations() — di sini semua
+     * Beda dari AiResearchController::conversations() - di sini semua
      * percakapan SELALU privat (assistant 'internal' tidak pernah dibuat
      * otomatis dari ticket seperti room 'research' bersama), jadi cukup
      * filter employee_id, tidak perlu logic TicketTeamAccess sama sekali.
@@ -191,12 +191,12 @@ class AiAssistantController extends Controller
     }
 
     /**
-     * Hapus satu percakapan — arsip DB sekaligus konteks di cache.
+     * Hapus satu percakapan - arsip DB sekaligus konteks di cache.
      *
      * POST, bukan DELETE: verb DELETE diblokir edge/WAF di production (lihat
      * catatan yang sama pada AiResearchController::destroyConversation()).
      * findOwnedConversation() sudah memastikan cuma pemiliknya yang sampai
-     * ke titik ini — beda dari room BERSAMA AI Research, di sini tidak ada
+     * ke titik ini - beda dari room BERSAMA AI Research, di sini tidak ada
      * konsep "tidak boleh dihapus siapa pun" karena semua percakapan memang
      * privat.
      */
@@ -233,7 +233,7 @@ class AiAssistantController extends Controller
      * Conversation owned by the current employee, or 404.
      *
      * conversationId is a UUID supplied by the browser, so it's never trusted
-     * alone — without the owner check, pasting someone else's UUID would be
+     * alone - without the owner check, pasting someone else's UUID would be
      * enough to read their archived chat.
      */
     private function findOwnedConversation(Employee $employee, string $conversation): AiConversation
@@ -290,7 +290,7 @@ class AiAssistantController extends Controller
         $note = null;
         if (!empty($rejected)) {
             $names = implode(', ', $rejected);
-            $note = "_Note: {$names} — this file type isn't supported yet. Only PDF, image "
+            $note = "_Note: {$names} - this file type isn't supported yet. Only PDF, image "
                 . "(PNG, JPEG, GIF, WEBP), Word (.docx), and text/code attachments can be read right now._\n\n";
         }
 

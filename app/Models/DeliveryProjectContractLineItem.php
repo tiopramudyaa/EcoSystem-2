@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * Contract Line Item — pekerjaan dalam kontrak (mis. Service, License, ATS) yang
+ * Contract Line Item - pekerjaan dalam kontrak (mis. Service, License, ATS) yang
  * menjadi acuan termin pada mode TOP "line_item".
  *
  * Type:
@@ -90,7 +90,7 @@ class DeliveryProjectContractLineItem extends Model
             $periods[] = [
                 'label' => $months === 1
                     ? $cursor->format('M Y')
-                    : $cursor->format('M Y') . ' – ' . $periodEnd->format('M Y'),
+                    : $cursor->format('M Y') . ' - ' . $periodEnd->format('M Y'),
                 'start' => $cursor->copy(),
             ];
             $cursor->addMonths($months);

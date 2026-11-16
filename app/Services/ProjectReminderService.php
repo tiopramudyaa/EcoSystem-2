@@ -14,9 +14,9 @@ use Illuminate\Support\Facades\Log;
  * Single source of truth for the project-deadline bell reminders.
  *
  * Two live reminder types are evaluated together:
- *   1. contract_end_reminder — project whose contract_end_date is within the next
+ *   1. contract_end_reminder - project whose contract_end_date is within the next
  *      CONTRACT_WINDOW_DAYS (or already overdue) and which is not yet Closed.
- *   2. top_invoice_reminder  — payment term whose estimated_date has arrived (today
+ *   2. top_invoice_reminder  - payment term whose estimated_date has arrived (today
  *      or earlier) while submit_invoice_date is still empty.
  *
  * Strategy: {@see syncAll()} deletes every existing reminder of these two types and
@@ -33,7 +33,7 @@ class ProjectReminderService
 
     /**
      * Roles that receive project-deadline reminders, matched by the stable
-     * `employee_role.name` (not by ID — see syncAll() for why).
+     * `employee_role.name` (not by ID - see syncAll() for why).
      */
     private const RECIPIENT_ROLE_NAMES = [
         'Delivery Project Head',
@@ -57,7 +57,7 @@ class ProjectReminderService
         // Resolve by role NAME, not by fixed enum ID: role IDs diverge between
         // environments (migrate:fresh assigns different IDs to the extended roles,
         // e.g. "Delivery Project Administrator" is id 62 here but the enum hardcodes
-        // 12 — which actually maps to "Delivery RPMO User" in this DB). Matching on the
+        // 12 - which actually maps to "Delivery RPMO User" in this DB). Matching on the
         // stable role name guarantees only the intended roles ever get notified and
         // avoids silently leaking reminders to an unrelated role.
         $recipientIds = Employee::whereHas('roles', fn($q) =>
@@ -66,7 +66,7 @@ class ProjectReminderService
             ->pluck('employee_id')
             ->all();
 
-        // Wipe previous reminders of these types — they are live reminders, not history.
+        // Wipe previous reminders of these types - they are live reminders, not history.
         // Done even when there are no recipients so stale rows never linger.
         Notification::whereIn('type', [self::TYPE_CONTRACT, self::TYPE_INVOICE])->delete();
 
@@ -102,7 +102,7 @@ class ProjectReminderService
     }
 
     /**
-     * Condition 1 — contract end date within the window or overdue (project not Closed).
+     * Condition 1 - contract end date within the window or overdue (project not Closed).
      *
      * @param  array<int>            $recipientIds  global Head/Admin recipients
      * @param  array<string,array>   $aeNameMap     lowercased full name → [employee_id]
@@ -135,12 +135,12 @@ class ProjectReminderService
             $endStr   = $end->format('d M Y');
 
             if ($daysUntil > 0) {
-                $preview = "[IO {$io}] {$name} — {$customer}. Contract ends in {$daysUntil} day(s) on {$endStr}. Review for a possible addendum.";
+                $preview = "[IO {$io}] {$name}: {$customer}. Contract ends in {$daysUntil} day(s) on {$endStr}. Review for a possible addendum.";
             } elseif ($daysUntil === 0) {
-                $preview = "[IO {$io}] {$name} — {$customer}. Contract ends TODAY ({$endStr}). Review for a possible addendum.";
+                $preview = "[IO {$io}] {$name}: {$customer}. Contract ends TODAY ({$endStr}). Review for a possible addendum.";
             } else {
                 $overdue = abs($daysUntil);
-                $preview = "[IO {$io}] {$name} — {$customer}. Contract OVERDUE by {$overdue} day(s) (ended {$endStr}). Addendum needed.";
+                $preview = "[IO {$io}] {$name}: {$customer}. Contract OVERDUE by {$overdue} day(s) (ended {$endStr}). Addendum needed.";
             }
 
             $link = route('projects.show', $project->id, false);
@@ -165,7 +165,7 @@ class ProjectReminderService
     }
 
     /**
-     * Condition 2 — payment term estimated_date reached (today or past) and
+     * Condition 2 - payment term estimated_date reached (today or past) and
      * submit_invoice_date still empty. Applies regardless of project status.
      *
      * @param  array<int>            $recipientIds  global Head/Admin recipients
@@ -195,9 +195,9 @@ class ProjectReminderService
             $estStr    = $estimated->format('d M Y');
 
             if ($estimated->lt($today)) {
-                $preview = "[IO {$io}] {$name} — {$customer}. Invoice for \"{$termLabel}\" (Term #{$term->term_number}) OVERDUE since {$estStr}. Please fill the Submit Invoice Date.";
+                $preview = "[IO {$io}] {$name}: {$customer}. Invoice for \"{$termLabel}\" (Term #{$term->term_number}) OVERDUE since {$estStr}. Please fill the Submit Invoice Date.";
             } else {
-                $preview = "[IO {$io}] {$name} — {$customer}. Invoice for \"{$termLabel}\" (Term #{$term->term_number}) due TODAY ({$estStr}). Please fill the Submit Invoice Date.";
+                $preview = "[IO {$io}] {$name}: {$customer}. Invoice for \"{$termLabel}\" (Term #{$term->term_number}) due TODAY ({$estStr}). Please fill the Submit Invoice Date.";
             }
 
             // Deep-link to the Delivery Info section where the TOP Plan table lives.

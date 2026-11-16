@@ -9,11 +9,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
     <style>
-        /* Cross-document View Transitions — progressive enhancement murni CSS.
+        /* Cross-document View Transitions - progressive enhancement murni CSS.
            Browser yang belum dukung (unknown at-rule) mengabaikannya begitu saja,
            navigasi tetap seperti biasa. Browser yang dukung (Chromium terbaru)
            otomatis crossfade halus saat window.location.href berpindah ke halaman
-           lain yang JUGA mendeklarasikan ini (lihat dashboard.blade.php) — jadi
+           lain yang JUGA mendeklarasikan ini (lihat dashboard.blade.php) - jadi
            kedip "flash putih" antara login → dashboard berkurang, tanpa JS apa pun,
            tanpa mengubah logika redirect yang sudah ada. */
         @view-transition {
@@ -378,17 +378,17 @@
 <div id="toast-container"></div>
 
 {{-- Dihitung SEKALI di sini (paling atas), dipakai overlay loading screen di
-     bawah DAN #deco-panel nanti — halaman ini pre-auth, tidak ada preferensi
+     bawah DAN #deco-panel nanti - halaman ini pre-auth, tidak ada preferensi
      per-user, cuma setting global admin. GlobalSeasonalTheme::active() sendiri
      sudah aman (fallback 'none' kalau app_configs belum ada/bermasalah). --}}
 @php
     $loginSeasonalTheme = \App\Support\GlobalSeasonalTheme::active();
 @endphp
 
-{{-- Loading screen bertema musiman — TERSEMBUNYI secara default (display:none),
+{{-- Loading screen bertema musiman - TERSEMBUNYI secara default (display:none),
      cuma dimunculkan lewat JS di cabang login SUKSES FINAL (bukan 2FA/ganti
      password), dan HANYA kalau tema musiman aktif secara global. Kalau tema
-     'none', elemen ini tidak pernah ditampilkan sama sekali — alur login
+     'none', elemen ini tidak pernah ditampilkan sama sekali - alur login
      persis seperti sebelum fitur ini ada. Reuse partial yang sama dipakai di
      #deco-panel (placement 'fullpage', yang sebelumnya belum ada pemakainya). --}}
 <div id="seasonalLoginOverlay" style="display:none; opacity:0; transition:opacity .4s ease;
@@ -403,11 +403,11 @@
         ])
     @endif
     @if($loginSeasonalTheme === 'natal')
-        {{-- Border salju di tepi atas & bawah — REVISI: sebelumnya pola tile
+        {{-- Border salju di tepi atas & bawah - REVISI: sebelumnya pola tile
              penuh layar (SVG garis polos diulang) terasa "kasar"/ramai (feedback
              user). Diganti karakter Unicode ❄ (sama yang dipakai salju jatuh,
              sudah terbukti rapi) di ukuran & posisi bervariasi membentuk garis
-             dekoratif, BUKAN menutupi seluruh layar. Statis (tidak animasi) —
+             dekoratif, BUKAN menutupi seluruh layar. Statis (tidak animasi) -
              beda dari salju jatuh yang tetap ada terpisah lewat partial di atas. --}}
         <div class="seasonal-frost-border seasonal-frost-border--top" aria-hidden="true">
             @foreach([14,22,17,28,20,36,21,29,16,24,13] as $j => $fsize)
@@ -424,18 +424,18 @@
         {{-- Tim kereta luncur: sorotan khusus loading screen, terpisah dari aksen
              ambient di sidebar/login-panel (yang sengaja tetap halus/statis).
              Beberapa elemen (rusa/kereta/Santa/hadiah/kerlip) masing-masing punya
-             animasi SENDIRI di atas animasi terbang bersama — supaya pergerakannya
+             animasi SENDIRI di atas animasi terbang bersama - supaya pergerakannya
              terasa "detail", bukan cuma satu emoji melayang datar. Ini aman dibuat
              lebih besar & dramatis karena cuma tampil ~1.8 detik sekali per login,
              bukan chrome yang selalu terlihat. Tersembunyi total kalau
-             prefers-reduced-motion (lihat <style> di bawah) — statis di tengah
+             prefers-reduced-motion (lihat <style> di bawah) - statis di tengah
              tanpa animasi akan terlihat aneh/rusak, lebih baik tidak ditampilkan
              sama sekali untuk pengguna itu. --}}
-        {{-- Ilustrasi SVG orisinal (bukan aset/gambar pihak ketiga) — siluet flat
+        {{-- Ilustrasi SVG orisinal (bukan aset/gambar pihak ketiga) - siluet flat
              2 warna (emas #FCD34D untuk badan utama, merah #DC2626 untuk aksen
              jubah Santa/pita hadiah) senada palet brand. Dikelompokkan per
              bagian (<g class="...">) supaya tiap bagian bisa dianimasikan
-             sendiri lewat CSS tanpa perlu transform-origin presisi — kaki
+             sendiri lewat CSS tanpa perlu transform-origin presisi - kaki
              rusa & badan kereta dianimasikan lewat translateY sederhana
              (naik-turun bergantian), bukan rotasi, supaya tidak butuh titik
              pivot yang rawan meleset tanpa alat preview visual. --}}
@@ -460,12 +460,12 @@
             <g class="sleigh-reindeer">
                 <polygon points="305,84 297,90 305,97" fill="#FCD34D"/>
                 {{-- Badan dipecah 2 lengkung (pinggul + dada) yang overlap, bukan 1
-                     ellipse simetris — biar terlihat seperti torso hewan (menyempit
+                     ellipse simetris - biar terlihat seperti torso hewan (menyempit
                      di tengah, membulat di dua ujung), bukan telur/blob polos. Kaki
                      belakang jatuh di bawah pinggul, kaki depan di bawah dada. --}}
                 <ellipse cx="325" cy="97" rx="28" ry="22" fill="#FCD34D"/>
                 <ellipse cx="362" cy="92" rx="26" ry="20" fill="#FCD34D"/>
-                {{-- Leher: menjembatani dada (puncak ~362,72) ke kepala (~395,58) —
+                {{-- Leher: menjembatani dada (puncak ~362,72) ke kepala (~395,58) -
                      tanpa ini ada celah kosong di antara keduanya. --}}
                 <ellipse cx="378" cy="72" rx="20" ry="16" fill="#FCD34D" transform="rotate(-30 378 72)"/>
                 <path d="M393,48 L388,26 M388,26 L383,16 M388,26 L394,18 M393,48 L401,24 M401,24 L397,12 M401,24 L407,16"
@@ -507,7 +507,7 @@
         </p>
     </div>
     @if($loginSeasonalTheme === 'natal')
-        {{-- File sudah ada di public/sounds/jingle-bells.mp3 (2.5MB — sepertinya
+        {{-- File sudah ada di public/sounds/jingle-bells.mp3 (2.5MB - sepertinya
              lagu penuh, bukan cuma klip pendek; browser cukup mulai mengunduh &
              memutar dari detik 0, redirect di 2.6 detik otomatis memotongnya,
              jadi tidak masalah biar filenya panjang). --}}
@@ -516,7 +516,7 @@
 </div>
 @if($loginSeasonalTheme === 'natal')
 <style>
-    /* Border salju atas/bawah — statis, TIDAK menutupi seluruh layar (beda
+    /* Border salju atas/bawah - statis, TIDAK menutupi seluruh layar (beda
        dari pola tile lama yang dihapus). Warna & drop-shadow sama seperti
        salju jatuh (partials/seasonal-theme.blade.php) supaya terasa satu
        kesatuan visual, bukan dua gaya salju berbeda dalam 1 layar. */
@@ -540,13 +540,13 @@
     #seasonalLoginOverlay .seasonal-frost-border--bottom { bottom: 0; height: 60px; }
 
     /* Kontainer: 260×90px, jadi anak-anaknya bisa diposisikan dengan `left`
-       relatif terhadap grup, bukan relatif ke layar — supaya formasi rusa di
+       relatif terhadap grup, bukan relatif ke layar - supaya formasi rusa di
        depan, kereta+Santa di tengah, hadiah+kerlip di belakang tetap rapi di
        ukuran layar berapa pun. Kontainer ini yang terbang melintasi layar;
        tiap anak di dalamnya punya animasi mikronya SENDIRI (lihat bawah),
-       jadi geraknya berlapis — bukan satu blok kaku yang cuma bergeser datar.
+       jadi geraknya berlapis - bukan satu blok kaku yang cuma bergeser datar.
        Statis di posisi awal sampai prefers-reduced-motion diketahui aman. */
-    /* SVG viewBox 440×160 (rasio 2.75:1) — width CSS diset, height mengikuti
+    /* SVG viewBox 440×160 (rasio 2.75:1) - width CSS diset, height mengikuti
        rasio otomatis (tidak ada atribut width/height di tag <svg>, cuma viewBox). */
     #seasonalLoginOverlay .seasonal-sleigh-team {
         position: absolute;
@@ -560,11 +560,11 @@
     }
 
     @media (prefers-reduced-motion: no-preference) {
-        /* Grup: terbang melintasi layar mengikuti busur — SEKALI JALAN (bukan
+        /* Grup: terbang melintasi layar mengikuti busur - SEKALI JALAN (bukan
            infinite), durasinya sengaja disamakan dengan waktu tampil overlay
            (lihat JS: redirect dijadwalkan 2600ms, animasi ini 2400ms) supaya
            benar-benar SELESAI dari kiri sampai mentok kanan sebelum halaman
-           berpindah — sebelumnya animasi 6 detik tapi overlay cuma tampil 1.8
+           berpindah - sebelumnya animasi 6 detik tapi overlay cuma tampil 1.8
            detik, jadi kepotong baru sampai ±tengah. `both` di shorthand animation
            menahan keadaan akhir (di luar layar, opacity 0) kalau redirect
            meleset sepersekian detik, supaya tidak ada lompatan balik ke awal
@@ -580,12 +580,12 @@
             100% { transform: translate(130vw, 14vh) rotate(-6deg) scale(.92); opacity: 0; }
         }
 
-        /* Kaki rusa: naik-turun BERGANTIAN (bukan rotasi di titik pivot — SVG
+        /* Kaki rusa: naik-turun BERGANTIAN (bukan rotasi di titik pivot - SVG
            transform-origin butuh koordinat presisi yang rawan meleset tanpa
            alat preview visual, translateY jauh lebih aman & tetap terlihat
            seperti kuda-kudaan berlari lewat 2 pasang kaki berlawanan fase). */
         {{-- transform-box:fill-box dipasang di SEMUA elemen SVG yang di-transform
-             di bawah ini — default CSS untuk SVG adalah transform-origin relatif
+             di bawah ini - default CSS untuk SVG adalah transform-origin relatif
              ke viewBox PENUH (440×160), bukan ke elemen itu sendiri. Tanpa
              fill-box, scale()/rotate() bisa melenceng jauh dari posisi
              seharusnya (elemen kecil seperti kaki/kerlip bisa "meloncat" ke
@@ -643,7 +643,7 @@
         }
     }
     @media (prefers-reduced-motion: reduce) {
-        /* Statis di tengah layar akan terlihat rusak — sembunyikan total,
+        /* Statis di tengah layar akan terlihat rusak - sembunyikan total,
            sisa overlay (pesan + salju diam) tetap tampil normal. */
         #seasonalLoginOverlay .seasonal-sleigh-team {
             display: none;
@@ -1025,11 +1025,11 @@
 <script>
     // ── bfcache guard ────────────────────────────────────────────
     // Kalau user login sukses lalu tekan Back, browser bisa memulihkan
-    // halaman ini dari back-forward cache (bfcache) — DOM PERSIS seperti
+    // halaman ini dari back-forward cache (bfcache) - DOM PERSIS seperti
     // sesaat sebelum redirect, termasuk overlay loading yang masih
     // 'display:flex' dari showSeasonalLoadingScreen(). Ini BUKAN salah
     // routing: AuthController::showLogin() (app/Http/Controllers/AuthController.php)
-    // sudah benar redirect ke /dashboard kalau sesi masih aktif — masalahnya
+    // sudah benar redirect ke /dashboard kalau sesi masih aktif - masalahnya
     // bfcache memulihkan halaman TANPA request baru ke server, jadi guard
     // server itu tidak sempat jalan lagi. Fix standar: paksa reload kalau
     // terdeteksi dipulihkan dari bfcache (event.persisted), supaya request
@@ -1087,7 +1087,7 @@
 
     // ── URL tujuan (deep link) ───────────────────────────────────
     // Middleware CheckAuthToken menaruh tujuan di ?redirect= saat user yang belum
-    // login membuka deep link. Hanya path relatif same-origin yang diterima —
+    // login membuka deep link. Hanya path relatif same-origin yang diterima -
     // "//evil.com", "https://lain.com/x", dan "javascript:" ditolak.
     function safePath(value) {
         const raw = (value || '').trim();
@@ -1102,11 +1102,11 @@
         return safePath(new URLSearchParams(window.location.search).get('redirect'));
     }
 
-    // Loading screen bertema musiman — dipanggil HANYA di cabang login sukses
+    // Loading screen bertema musiman - dipanggil HANYA di cabang login sukses
     // FINAL (bukan 2FA/ganti password), lihat pemanggilnya di bawah. Dibungkus
     // try/catch dengan sengaja: kalau overlay ini gagal tampil karena alasan
     // apa pun, itu TIDAK BOLEH ikut menggagalkan/menunda redirect ke dashboard
-    // — pemanggil selalu menjadwalkan redirect lewat setTimeout TERPISAH,
+    // - pemanggil selalu menjadwalkan redirect lewat setTimeout TERPISAH,
     // tidak menunggu fungsi ini selesai atau berhasil.
     function showSeasonalLoadingScreen() {
         try {
@@ -1118,18 +1118,18 @@
             console.warn('Seasonal loading screen failed to show:', err);
         }
         try {
-            // Backsound — belum ada file-nya (lihat catatan di
+            // Backsound - belum ada file-nya (lihat catatan di
             // resources/views/auth/login.blade.php <audio> tag), jadi .play()
             // akan gagal SENYAP (404/NotSupportedError ditangkap .catch) sampai
             // filenya benar-benar ditaruh di path itu. Dibungkus try/catch
             // ganda (di sini + .catch() promise-nya) supaya kegagalan audio
             // apa pun (file belum ada, browser blokir autoplay-with-sound,
           // dst) TIDAK PERNAH ikut menggagalkan tampilnya loading screen atau
-            // menunda redirect — audio murni bonus, bukan hal yang ditunggu.
+            // menunda redirect - audio murni bonus, bukan hal yang ditunggu.
             const jingle = document.getElementById('seasonalJingle');
             if (jingle) {
                 jingle.currentTime = 0;
-                jingle.play().catch(() => { /* autoplay diblokir / file belum ada — tidak apa */ });
+                jingle.play().catch(() => { /* autoplay diblokir / file belum ada - tidak apa */ });
             }
         } catch (err) { /* sama, jangan sampai ganggu alur utama */ }
     }
@@ -1190,11 +1190,11 @@
                 localStorage.setItem('api_token', data.data.token);
                 localStorage.setItem('user_data', JSON.stringify(data.data.user));
                 // Server yang menentukan tujuan akhir (URL deep link yang tadi
-                // diklik, mis. /ticket/123 dari kartu Teams) — sudah disanitasi
+                // diklik, mis. /ticket/123 dari kartu Teams) - sudah disanitasi
                 // di sisi server. Di sini tetap dipagari: hanya path relatif.
                 const target = safePath(data.redirect_url) || intendedTarget() || '/dashboard';
                 // Redirect dijadwalkan LEBIH DULU, sebagai satu-satunya sumber kebenaran
-                // untuk kapan pengguna berpindah halaman — supaya apa pun yang terjadi di
+                // untuk kapan pengguna berpindah halaman - supaya apa pun yang terjadi di
                 // showSeasonalLoadingScreen() (tema aktif atau tidak, gagal atau berhasil)
                 // tidak pernah bisa menunda atau membatalkan redirect ini.
                 if (window.__seasonalThemeActive) {

@@ -25,14 +25,14 @@ use Throwable;
 /**
  * Orchestrates one assistant turn: loads/saves ephemeral conversation state
  * from cache, drives the model's tool-use loop (via a ChatDriver picked per
- * AiModelSettings' active provider — see AiDriverFactory), and streams text
+ * AiModelSettings' active provider - see AiDriverFactory), and streams text
  * deltas back to the caller as they arrive.
  *
  * TWO LAYERS, same split as AiResearchService:
  *   - cache 'ai_chat'    = working context sent to the model (sliding 24h TTL,
- *     carries attachment bytes — see CACHE_TTL_MINUTES).
+ *     carries attachment bytes - see CACHE_TTL_MINUTES).
  *   - ai_conversations/ai_messages (assistant = 'internal') = human-readable
- *     archive (text only, no attachments, no tool_use/tool_result blocks) —
+ *     archive (text only, no attachments, no tool_use/tool_result blocks) -
  *     what lets a conversation survive navigating away and coming back, or
  *     the cache simply expiring. See archiveTurn()/restoreFromArchive().
  */
@@ -44,14 +44,14 @@ class AiChatService
      * How long the working context (sent to the model, attachment bytes
      * included) survives since the last message. Was 60 minutes; raised to
      * 24 hours so a conversation left over lunch or overnight still has its
-     * full context — including images — instead of falling back to the
+     * full context - including images - instead of falling back to the
      * text-only archive window after an hour of silence.
      */
     private const CACHE_TTL_MINUTES = 1440;
 
     /**
      * How many archived messages get reseeded into the model's context once
-     * the working cache has expired (not turns — one turn is 2 messages, so
+     * the working cache has expired (not turns - one turn is 2 messages, so
      * 20 ≈ 10 exchanges). Capped because the archive itself has no limit.
      */
     private const ARCHIVE_CONTEXT_MESSAGES = 20;
@@ -103,7 +103,7 @@ class AiChatService
             $messages = $this->restoreFromArchive($employee, $conversationId);
         }
 
-        // Turn boundary, used when archiving below — only this turn's
+        // Turn boundary, used when archiving below - only this turn's
         // messages get written to the archive, not the whole context that
         // happens to be riding along in $messages.
         $turnStart = count($messages);
@@ -127,7 +127,7 @@ class AiChatService
             }
 
             if (++$iterations > self::MAX_TOOL_ITERATIONS) {
-                $onDelta("\n\nI wasn't able to finish gathering everything needed to answer this fully — could you try a narrower question?");
+                $onDelta("\n\nI wasn't able to finish gathering everything needed to answer this fully - could you try a narrower question?");
                 break;
             }
 
@@ -192,7 +192,7 @@ class AiChatService
     }
 
     /**
-     * How far the model's memory of this conversation currently reaches —
+     * How far the model's memory of this conversation currently reaches -
      * used by the frontend to mark, in the restored transcript, the point
      * before which the assistant no longer has the messages in context.
      *
@@ -212,7 +212,7 @@ class AiChatService
      *
      * Dipanggil saat user menghapus percakapan: tanpa ini arsipnya hilang dari
      * daftar tapi isinya masih menunggu di disk sampai TTL habis. "Hapus"
-     * harus berarti hapus — sama seperti AiResearchService::forgetContext().
+     * harus berarti hapus - sama seperti AiResearchService::forgetContext().
      */
     public function forgetContext(Employee $employee, string $conversationId): void
     {
@@ -224,7 +224,7 @@ class AiChatService
      * by several assistant/tool_result round-trips) to the single user text +
      * single assistant reply that the user actually saw, and archive it.
      *
-     * Tool_use/tool_result blocks are intentionally never archived — they're
+     * Tool_use/tool_result blocks are intentionally never archived - they're
      * mid-turn plumbing the user never sees, and the archive only exists to
      * be read back as plain text (or reseeded as such, see
      * restoreFromArchive()). The reply text mirrors exactly what onDelta
@@ -261,7 +261,7 @@ class AiChatService
 
             // A turn that never produced any visible text (aborted before the
             // first token, or pure tool-use with nothing to say) isn't worth
-            // archiving — it would only leave an empty assistant bubble behind.
+            // archiving - it would only leave an empty assistant bubble behind.
             if ('' === $reply) {
                 return;
             }
@@ -305,7 +305,7 @@ class AiChatService
 
     /**
      * Reseed working context from the archive once the cache has expired.
-     * Mirrors AiResearchService::restoreFromArchive() — same shape, same
+     * Mirrors AiResearchService::restoreFromArchive() - same shape, same
      * reasoning (attachments were never archived, so a user turn that had
      * any gets an explicit note instead of silently vanishing).
      *
@@ -342,7 +342,7 @@ class AiChatService
                         . 'ask the user to upload them again instead of guessing.]');
                 }
 
-                // First message of a restored context must be from the user —
+                // First message of a restored context must be from the user -
                 // an assistant-first array is rejected by the API.
                 if (empty($messages) && 'user' !== $row->role) {
                     continue;
@@ -364,7 +364,7 @@ class AiChatService
 
     /**
      * Conversation owned by THIS employee, or null. conversationId comes from
-     * the browser, so it's never trusted alone — the owner check is what
+     * the browser, so it's never trusted alone - the owner check is what
      * stops one employee's UUID guess from reading another's archive.
      */
     private function findConversation(Employee $employee, string $conversationId): ?AiConversation
@@ -388,7 +388,7 @@ class AiChatService
             $table = is_string($call['input']['table'] ?? null) ? $call['input']['table'] : null;
 
             if (!$tool) {
-                // Model asked for a tool name that doesn't exist — worth a trace
+                // Model asked for a tool name that doesn't exist - worth a trace
                 // on its own (could be a confused model, or a probe trying names
                 // that aren't wired up).
                 $this->logToolCall($employee, $conversationId, $call['name'], $table, 'unknown_tool');
@@ -432,20 +432,20 @@ class AiChatService
     }
 
     /**
-     * Trace of WHICH table/tool the assistant actually read from, per call —
+     * Trace of WHICH table/tool the assistant actually read from, per call -
      * the piece that was missing before: AuditLog::logAiPrompt() (called by
      * the controller) only records the employee's question text, never what
      * the tool loop did to answer it. Without this, a question that
      * successfully pulled sensitive data leaves no record of which table was
      * read, only that a question was asked.
      *
-     * Deliberately NOT the row content — logging actual query results would
+     * Deliberately NOT the row content - logging actual query results would
      * turn this log into a second copy of whatever sensitive data it's meant
      * to help audit. `response_bytes` is a size signal (e.g. "this pulled a
      * lot") without reproducing what was pulled.
      *
      * 'denied' covers TableAccess::authorizeQuery() refusals AND ordinary
-     * validation errors (unknown column, bad filter) — both already come back
+     * validation errors (unknown column, bad filter) - both already come back
      * as {'error': ...} from the tool, and distinguishing them further isn't
      * worth a second status value for what this log exists to answer: did
      * this table get read, and if not, why.
@@ -478,7 +478,7 @@ class AiChatService
 
     /**
      * Lampiran teks (tempelan besar / berkas kode) menjadi content block
-     * `text` — bukan `document` base64. Lihat App\Support\AiTextAttachment.
+     * `text` - bukan `document` base64. Lihat App\Support\AiTextAttachment.
      *
      * @param array<int, array<string, mixed>> $attachments
      * @return array<int, array<string, mixed>>
@@ -513,7 +513,7 @@ class AiChatService
     }
 
     /**
-     * Model, plafon token, dan effort yang berlaku — DITENTUKAN SUPER ADMIN
+     * Model, plafon token, dan effort yang berlaku - DITENTUKAN SUPER ADMIN
      * lewat Control Center → AI Settings, bukan lagi hardcode di sini.
      *
      * Argumen $tier dari request SENGAJA DIABAIKAN: halaman chat tidak lagi
@@ -521,7 +521,7 @@ class AiChatService
      * supaya yang tercatat di cache adalah tier itu, bukan 'default' bawaan
      * request.
      *
-     * effort dilewatkan APA ADANYA (string mentah atau null) — driver yang
+     * effort dilewatkan APA ADANYA (string mentah atau null) - driver yang
      * dipilih lewat 'provider' yang tahu cara menerjemahkannya ke parameter
      * API-nya sendiri (thinking+output_config di Anthropic, reasoning.effort
      * di OpenAI); lihat AnthropicChatDriver/OpenAiChatDriver.
@@ -551,17 +551,17 @@ class AiChatService
     private function systemPrompt(): string
     {
         return <<<'PROMPT'
-You are the EcoSystem Assistant, built into EcoSystem — the internal operations app Eclectic's employees use for
+You are the EcoSystem Assistant, built into EcoSystem - the internal operations app Eclectic's employees use for
 tickets, SLA tracking, and delivery project management.
 
 Scope: help the current user understand EcoSystem and the data in it. Your data access is NOT limited to
-tickets/SLA/delivery projects — you have read access to the entire EcoSystem database, every table, including things
+tickets/SLA/delivery projects - you have read access to the entire EcoSystem database, every table, including things
 that sound like they might be "out of scope" at first glance: delivery project financials (revenue, plan_cost,
 gross_profit are real columns on delivery_projects), employee payroll, customer records, mandays, timesheets, and
 anything else that exists in the schema. Never assume a category of data isn't available just because it isn't one of
-the three curated domains — check with list_tables/query_data/aggregate_data before telling the user something isn't
+the three curated domains - check with list_tables/query_data/aggregate_data before telling the user something isn't
 tracked in EcoSystem. Only decline requests that are genuinely unrelated to EcoSystem or this user's work at Eclectic
-(e.g. general coding help, unrelated trivia) — a question about data that actually exists in this database is always
+(e.g. general coding help, unrelated trivia) - a question about data that actually exists in this database is always
 in scope, however it's phrased.
 
 Explain how the system works, answer questions about live data using the provided tools, summarize tickets or
@@ -569,25 +569,25 @@ reports, and draft customer-facing reply text when asked.
 
 Tools: use get_tickets, get_sla_summary, and get_delivery_projects to answer questions about live data. Use
 explain_workflow for "how do I..." / "what's the process for..." questions about how a business process works
-(mandays proposals, ticket creation/assignment, delivery project planning, SLA configuration) — don't describe these
+(mandays proposals, ticket creation/assignment, delivery project planning, SLA configuration) - don't describe these
 processes from general knowledge or assumption, always call the tool.
 
-For anything outside those three domains — employee/HR records, customer records, mandays proposals, delivery support
-planning, timesheets, master/reference data, and more — use list_tables, query_data, and aggregate_data to read
+For anything outside those three domains - employee/HR records, customer records, mandays proposals, delivery support
+planning, timesheets, master/reference data, and more - use list_tables, query_data, and aggregate_data to read
 directly from the database. Call list_tables first if you're not sure of the exact table name (they're snake_case and
 don't always match the obvious English word). Prefer get_tickets / get_sla_summary / get_delivery_projects over
 query_data whenever the question is about tickets, SLA, or delivery projects specifically: those tools include
 computed fields (SLA due dates, schedule-status bands) that query_data cannot recompute correctly on its own.
 
 Permission-gated data: a handful of tables (bank/payment/identification records, customer credentials, login history)
-are permission-gated — query_data/aggregate_data will return an "error" for them if the current user lacks access, and
+are permission-gated - query_data/aggregate_data will return an "error" for them if the current user lacks access, and
 for a few of them (bank/payment/identification) a user with only self-service access will transparently get back just
 their own row instead of everyone's. Whenever any tool result includes a "note" or "error" explaining a permission
-limitation, relay that to the user plainly — never retry with a different table/tool or phrasing to work around it,
+limitation, relay that to the user plainly - never retry with a different table/tool or phrasing to work around it,
 and never claim the data "doesn't exist in EcoSystem" when the real reason is a permission limitation.
 
 For "how many" / "total" / "average" / "sum" questions, always use aggregate_data rather than counting rows returned
-by query_data or get_tickets — those are capped at 100 and 50 rows respectively, so counting them undercounts and
+by query_data or get_tickets - those are capped at 100 and 50 rows respectively, so counting them undercounts and
 must never be presented as the real total. aggregate_data can also group by a column in one call (e.g. ticket count
 per status) instead of querying each value separately.
 
@@ -596,25 +596,25 @@ the ticket if one is referenced, then write the draft as plain reply text. Make 
 draft the user should review, not something already sent.
 
 Formatting query_data/aggregate_data results: never dump the raw row as a literal "Field | Detail" table mirroring
-database column names — that reads as a database export, not an answer. Instead:
+database column names - that reads as a database export, not an answer. Instead:
 - Translate column names into natural labels ("employee_id" -> "ID Karyawan", not left as-is), and drop internal/
   technical values a user has no use for (flags like deletion_flag/block/is_active as 0/1, internal IDs, timestamps
   nobody asked about) rather than reporting them verbatim.
 - For ONE record: write it as short grouped sections with a heading per logical group (e.g. "Data Pribadi", "Data
-  Kepegawaian", "Status") and label: value lines underneath — not one long flat table. Skip empty/null fields
+  Kepegawaian", "Status") and label: value lines underneath - not one long flat table. Skip empty/null fields
   silently unless the user specifically asked about that field.
 - For MULTIPLE records (a list): a table is appropriate, but only with the columns relevant to the question, and only
-  as many rows as make sense to read — summarize/count instead of listing all 100 when the user asked "how many" or
+  as many rows as make sense to read - summarize/count instead of listing all 100 when the user asked "how many" or
   "which one" rather than "list them".
 - Match the user's language (reply in Indonesian if they wrote in Indonesian) and keep the tone conversational, like
   a colleague answering a question, not a system dumping a query result.
 
-Response style — be informative, not just correct: a bare number or fact with no framing is a query-result dump, not
+Response style - be informative, not just correct: a bare number or fact with no framing is a query-result dump, not
 an answer. Add the one or two pieces of context that make it useful (what it's out of, how it compares to a relevant
-baseline, what it means) — but stay proportionate; a quick factual question deserves a quick answer, not padding.
+baseline, what it means) - but stay proportionate; a quick factual question deserves a quick answer, not padding.
 Structure the reply to fit its content: a short heading or bold label only when the answer covers more than one
 topic or record, a bullet/numbered list only when there are genuinely multiple items to scan, otherwise just write
-plain sentences — don't force structure onto a one-line answer. Never repeat: don't restate the user's question back
+plain sentences - don't force structure onto a one-line answer. Never repeat: don't restate the user's question back
 to them before answering, don't say the same fact or number twice within one reply, and don't re-explain something
 you already told the user earlier in this conversation unless they ask you to recap or clarify it.
 
@@ -623,31 +623,31 @@ search_term_1/search_term_2) and users often misspell or abbreviate them, so an 
 Search broadly ONCE (match against all the relevant name-ish columns together, not one column per tool call), then:
 - If there's exactly one clear match, proceed with it directly.
 - If there are multiple plausible matches (including a near-miss spelling vs. someone else who partially matches a
-  different token — e.g. user typed "Alvin Andreas Bastian" and the closest record is actually "Alfin Andreas Bastian
+  different token - e.g. user typed "Alvin Andreas Bastian" and the closest record is actually "Alfin Andreas Bastian
   Situmeang", while a different unrelated "Alvin Chandra Kusuma" also partially matches), STOP and list the
-  candidates for the user to pick from, in plain language — do not keep retrying variations of the search hoping one
+  candidates for the user to pick from, in plain language - do not keep retrying variations of the search hoping one
   converges, and do not silently guess one.
 - If there's truly no plausible match, say so directly instead of continuing to search.
 
-Never expose your own process. The user only ever sees your final text reply — they never see which tool you called,
+Never expose your own process. The user only ever sees your final text reply - they never see which tool you called,
 what table/column you queried, or your reasoning about where to look. This applies just as much when you're
 describing your own capabilities or scope in general terms (e.g. "what can I ask you about") as when you're relaying
-a specific answer — both cases must stay in plain business language. That means the reply must NEVER contain:
+a specific answer - both cases must stay in plain business language. That means the reply must NEVER contain:
 - table or column names (e.g. "employee", "employee_basic_data", "birth_date") or any other database/schema term
 - tool names (query_data, aggregate_data, get_tickets, etc.) or phrases about calling/using a tool
-- meta-words that reveal this runs on a database/backend at all — "database", "sistem" (as in "tercatat di sistem"),
-  "tabel", "record", "query" — describe what the data is ABOUT ("data karyawan", "riwayat customer", "info proyek
+- meta-words that reveal this runs on a database/backend at all - "database", "sistem" (as in "tercatat di sistem"),
+  "tabel", "record", "query" - describe what the data is ABOUT ("data karyawan", "riwayat customer", "info proyek
   delivery") instead of where or how it's technically stored
 - narration of your own investigation ("coba cek dulu", "sepertinya ada di...", "let me check...", "saya akan
-  mencari...") — figure out where to look silently, then answer as if you already knew
+  mencari...") - figure out where to look silently, then answer as if you already knew
 - code-like tokens: backticked identifiers, snake_case/camelCase field names, SQL-ish phrasing, JSON
 A user asking "employee dengan umur termuda siapa" should see only something like "Yang termuda adalah **Henock Joy
-Imanuel** (lahir 20 April 2006, Surabaya) — SAP Consultant di divisi Operations." — nothing about which table has the
+Imanuel** (lahir 20 April 2006, Surabaya) - SAP Consultant di divisi Operations." - nothing about which table has the
 birth date or how you found it. If you genuinely cannot find the data after checking, say so in plain terms ("data itu
 belum tercatat" / "belum ada informasinya") without naming which table you looked in or saying it's "not in the
 system/database".
 
-Be concise and direct, and never fabricate data — a ticket number, date, status, or any other value must always come
+Be concise and direct, and never fabricate data - a ticket number, date, status, or any other value must always come
 from a tool result, never a guess. If a tool doesn't have the information needed, say so plainly.
 PROMPT;
     }

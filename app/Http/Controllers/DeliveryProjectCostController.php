@@ -90,7 +90,7 @@ class DeliveryProjectCostController extends Controller
             'cost_type'      => 'required|in:indirect,direct',
             'budget'         => 'nullable|numeric|min:0',
             'release_amount' => 'nullable|numeric|min:0',
-            // actual_amount is NOT accepted here — it is derived from the
+            // actual_amount is NOT accepted here - it is derived from the
             // sum of expense detail items (see syncActualFromItems()).
         ]);
 
@@ -131,7 +131,7 @@ class DeliveryProjectCostController extends Controller
             'cost_type'      => 'required|in:indirect,direct',
             'budget'         => 'nullable|numeric|min:0',
             'release_amount' => 'nullable|numeric|min:0',
-            // actual_amount is NOT editable here — it is derived from the
+            // actual_amount is NOT editable here - it is derived from the
             // sum of expense detail items (see syncActualFromItems()).
         ]);
 
@@ -174,7 +174,7 @@ class DeliveryProjectCostController extends Controller
         }
 
         DB::transaction(function () use ($project) {
-            // 100 – INDIRECT COST (top-level parent only — children added manually)
+            // 100 - INDIRECT COST (top-level parent only - children added manually)
             DeliveryProjectCost::create([
                 'delivery_projects_id' => $project->id,
                 'parent_id'            => null,
@@ -187,7 +187,7 @@ class DeliveryProjectCostController extends Controller
                 'order_sequence'       => 1,
             ]);
 
-            // 200 – DIRECT COST (top-level parent only — children added manually)
+            // 200 - DIRECT COST (top-level parent only - children added manually)
             DeliveryProjectCost::create([
                 'delivery_projects_id' => $project->id,
                 'parent_id'            => null,
@@ -293,7 +293,7 @@ class DeliveryProjectCostController extends Controller
     // PUT /projects/{project}/costs/{cost}/items/{item}
     // Update an expense line-item (name, amount, optional document).
     // NOTE: the frontend sends this as POST + X-HTTP-Method-Override:PUT
-    // because some production edges block the PUT verb — Laravel still
+    // because some production edges block the PUT verb - Laravel still
     // routes it here. Multipart is parsed normally (real verb is POST).
     // ──────────────────────────────────────────────────────────────
     public function updateItem(
@@ -342,7 +342,7 @@ class DeliveryProjectCostController extends Controller
             }
 
             // File pengganti bisa saja file yang sama (nama identik ditimpa di
-            // tempat) — jangan hapus item yang baru saja diunggah.
+            // tempat) - jangan hapus item yang baru saja diunggah.
             if ($oldFile && $oldFile !== $docFile) {
                 $this->deleteOneDriveFile($oldFile);
             }
@@ -538,7 +538,7 @@ class DeliveryProjectCostController extends Controller
     // project, lalu buat share link ANONIM.
     //
     // PENTING: yang disimpan HARUS share link (createShareLink), bukan
-    // `webUrl` hasil upload. webUrl adalah path SharePoint langsung — hanya
+    // `webUrl` hasil upload. webUrl adalah path SharePoint langsung - hanya
     // bisa dibuka akun yang punya izin item tersebut, sehingga siapa pun yang
     // lain akan dihadang halaman login / "Request access".
     //
@@ -603,7 +603,7 @@ class DeliveryProjectCostController extends Controller
     // ──────────────────────────────────────────────────────────────
     // Helper: recompute & persist a cost item's actual_amount as the
     // sum of its expense detail items. Returns the new total.
-    // (Actual is fully derived from expenses — never entered manually.)
+    // (Actual is fully derived from expenses - never entered manually.)
     // ──────────────────────────────────────────────────────────────
     private function syncActualFromItems(DeliveryProjectCost $cost): float
     {
@@ -639,7 +639,7 @@ class DeliveryProjectCostController extends Controller
 
         // Available Release = Release − Actual
         // Shown when a release is set OR there has been actual spending; an
-        // otherwise-empty row stays "—" (not "Rp 0") to match Avail. Budget.
+        // otherwise-empty row stays "-" (not "Rp 0") to match Avail. Budget.
         $availRelease = ($releaseAmount !== null || (float)($actualAmount ?? 0) > 0)
             ? (float)($releaseAmount ?? 0) - (float)($actualAmount ?? 0)
             : null;
@@ -657,7 +657,7 @@ class DeliveryProjectCostController extends Controller
             'display_release'  => $releaseAmount,
             'display_actual'   => $actualAmount,
             // budget/release/actual: always null for items-with-children
-            // (they are read-only aggregates — not directly editable)
+            // (they are read-only aggregates - not directly editable)
             'budget'           => $hasChildren ? null : $cost->budget,
             'release_amount'   => $hasChildren ? null : $cost->release_amount,
             'actual_amount'    => $hasChildren ? null : $cost->actual_amount,

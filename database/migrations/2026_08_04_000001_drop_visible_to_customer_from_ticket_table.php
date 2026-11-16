@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  * Membatalkan mekanisme `ticket.visible_to_customer` (migration 2026_08_03_000003).
  *
  * KEPUTUSAN BARU: pembeda tiket yang disembunyikan dari customer di JARVIES
- * bukan lagi "dibuat dari EcoSystem / tidak lewat staging" — cakupan itu terlalu
+ * bukan lagi "dibuat dari EcoSystem / tidak lewat staging" - cakupan itu terlalu
  * luas dan ikut menyembunyikan tiket customer yang kebetulan dibuat dari
  * EcoSystem. Sekarang pembedanya HANYA `ticket_type = 'Internal'`
  * (lihat App\Models\Ticket::TYPE_INTERNAL), yang disaring langsung di JARVIES.
@@ -44,7 +44,7 @@ return new class extends Migration
         // 3. lock_wait_timeout pendek → kalau ada transaksi lain yang masih
         //    memegang tabel `ticket`, ALTER menyerah setelah 10 detik. Tanpa ini
         //    ALTER menunggu berjam-jam dan SEMUA query `ticket` ikut antre di
-        //    belakangnya (metadata lock pileup) — mode kegagalan yang paling
+        //    belakangnya (metadata lock pileup) - mode kegagalan yang paling
         //    berbahaya di sini, jauh lebih berisiko daripada rebuild-nya sendiri.
         $previous = DB::selectOne('SELECT @@session.lock_wait_timeout AS v')->v;
 
@@ -65,7 +65,7 @@ return new class extends Migration
             return;
         }
 
-        // Dikembalikan dengan default `true` untuk SEMUA baris — backfill lama
+        // Dikembalikan dengan default `true` untuk SEMUA baris - backfill lama
         // sengaja tidak diulang.
         Schema::table('ticket', function (Blueprint $table) {
             $table->boolean('visible_to_customer')->default(true)->after('is_hidden');

@@ -170,7 +170,7 @@
 
 {{-- Kunci section yang hanya boleh dilihat. Overlay ::after menutup seluruh
      section sehingga tombol aksi di dalamnya (termasuk yang dirender JS)
-     ikut tidak bisa diklik — pola yang sama dipakai master.employee.show. --}}
+     ikut tidak bisa diklik - pola yang sama dipakai master.employee.show. --}}
 <style>
 .profile-readonly { position: relative; }
 .profile-readonly::after {
@@ -352,7 +352,7 @@
             if (result.success && result.data) {
                 const basicData = result.data;
 
-                // Fields on `customer` table (not `customer_basic_data`) — merged into
+                // Fields on `customer` table (not `customer_basic_data`) - merged into
                 // basicData by the show() endpoint. setValue is no-op if id absent.
                 setValue('customerDomain', basicData.domain);
                 setValue('companyEmail', basicData.email);
@@ -367,14 +367,14 @@
                 setValue('searchTerm1', basicData.search_term_1);
                 setValue('searchTerm2', basicData.search_term_2);
                 // NOTE: jangan set 'street','city','country','email', dst di sini.
-                // Field-field itu TIDAK ada di section Basic Data — id yang sama hanya
+                // Field-field itu TIDAK ada di section Basic Data - id yang sama hanya
                 // dimiliki section Address. setValue() akan bocor mengisi form Address
                 // (mis. Email Address ke-isi customer.email padahal belum pilih alamat).
                 // Data Address dimuat sendiri oleh loadAddresses()/loadAddressToForm().
 
                 // Customer Information
                 setValue('externalNumber', basicData.external_number);
-                // Customer Group & Parent — native <select> (select-enhance); set value + fire change
+                // Customer Group & Parent - native <select> (select-enhance); set value + fire change
                 setSelect('customerGroupId', basicData.customer_group_id ?? '');
                 setSelect('customerParentId', basicData.parent_customer_id ?? '');
                 setValue('customerCategory', basicData.customer_category);

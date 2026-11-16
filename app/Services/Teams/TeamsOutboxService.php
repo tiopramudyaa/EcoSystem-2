@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\URL;
  *
  * Kenapa antrean dan bukan kirim langsung (design §5): user tidak ikut menunggu
  * Power Automate, kegagalan bisa di-retry, dan kegagalan TERLIHAT SEBAGAI DATA
- * (`status='failed'` + `last_error`) alih-alih menghilang jadi satu baris log —
+ * (`status='failed'` + `last_error`) alih-alih menghilang jadi satu baris log -
  * pelajaran langsung dari kasus email jadi draft diam-diam.
  *
  * Kenapa lewat Power Automate dan bukan Graph seperti arah masuknya:
@@ -48,7 +48,7 @@ class TeamsOutboxService
     /**
      * Masukkan satu internal note ke antrean kirim.
      *
-     * Mengembalikan null untuk semua kondisi "tidak perlu dikirim" — itu jalur
+     * Mengembalikan null untuk semua kondisi "tidak perlu dikirim" - itu jalur
      * normal, bukan kegagalan.
      */
     public function queue(TicketMessage $message): ?TeamsOutboxItem
@@ -96,7 +96,7 @@ class TeamsOutboxService
      * membuka tiket (permintaan 19 Okt 2026).
      *
      * Tidak ada risiko gema: flow 7 memposting atas nama akun koneksi, dan pesan
-     * dari akun itu diabaikan TeamsInboundService — jadi salinan ini tidak akan
+     * dari akun itu diabaikan TeamsInboundService - jadi salinan ini tidak akan
      * kembali ke tiket sebagai internal note.
      */
     public function queueCustomerMessage(TicketMessage $message): ?TeamsOutboxItem
@@ -143,12 +143,12 @@ class TeamsOutboxService
      * Jalur masuk KEEMPAT ke outbox, pasangan queueCustomerMessage(): dengan
      * keduanya, tim di group chat melihat percakapan dengan customer dari dua
      * arah tanpa membuka tiket (permintaan 28 Okt 2026). Seperti jalur customer,
-     * sengaja tidak menumpang shouldSend() — aturan "hanya internal note" tetap
+     * sengaja tidak menumpang shouldSend() - aturan "hanya internal note" tetap
      * benar untuk jalur note.
      *
      * Balasan yang emailnya GAGAL tidak diteruskan: customer tidak menerimanya,
      * jadi menampilkannya di grup sebagai "balasan ke customer" menyesatkan.
-     * Balasan tanpa penerima email (status null, channel web) tetap diteruskan —
+     * Balasan tanpa penerima email (status null, channel web) tetap diteruskan -
      * customer masih melihatnya di portal Jarvies.
      *
      * Tidak ada risiko gema, alasannya sama dengan queueCustomerMessage().
@@ -194,7 +194,7 @@ class TeamsOutboxService
     }
 
     /**
-     * Antre pesan customer yang belum masuk outbox — jaring pengaman untuk
+     * Antre pesan customer yang belum masuk outbox - jaring pengaman untuk
      * pesan yang tidak melewati hook queueCustomerMessage().
      *
      * Kasus utamanya JARVIES: balasan customer dari portal ditulis LANGSUNG ke
@@ -260,11 +260,11 @@ class TeamsOutboxService
      * Jalur masuk KEDUA ke outbox, terpisah dari queue(). Sengaja tidak menumpang
      * shouldSend(): pesan meeting berjenis `sender_type='system'` atau balasan ke
      * customer, dan keduanya ada di daftar §8 "TIDAK dikirim ke Teams". Aturan itu
-     * tetap benar untuk jalur note — meeting adalah pengecualian yang diminta
+     * tetap benar untuk jalur note - meeting adalah pengecualian yang diminta
      * secara sadar, jadi ia lewat pintu sendiri, bukan dengan melonggarkan pintu
      * yang lain.
      *
-     * Yang dikirim adalah pengumuman untuk TIM di group chat tiket — bukan
+     * Yang dikirim adalah pengumuman untuk TIM di group chat tiket - bukan
      * salinan undangan email ke customer. Isinya yang dibutuhkan orang yang mau
      * ikut: kapan, tautannya mana, dan konteks tiketnya.
      *
@@ -292,7 +292,7 @@ class TeamsOutboxService
             'ticket_message_id' => $message->id,
             // Blok `card` membuat flow 7 mengambil cabang "Post card"; jalur note
             // yang tidak membawanya tetap lewat "Post message" (keputusan meeting
-            // 18 Sep 2026 — jadwal meeting perlu tampil menonjol dan punya tombol
+            // 18 Sep 2026 - jadwal meeting perlu tampil menonjol dan punya tombol
             // gabung, sementara note justru hidup dari quote-reply).
             //
             // `message_html` hasil wrap() tetap ikut: cadangan kalau kartunya
@@ -310,7 +310,7 @@ class TeamsOutboxService
      * JSON, jadi designer cukup menempelkan satu ekspresi
      * `triggerBody()?['card']` tanpa perlu `string()` atau `json()`.
      *
-     * Tautan meeting jadi TOMBOL, bukan baris teks — itu inti permintaannya:
+     * Tautan meeting jadi TOMBOL, bukan baris teks - itu inti permintaannya:
      * URL mentah di badan pesan panjang dan tidak terbaca.
      */
     private function meetingCard(TicketMessage $message, array $meeting): string
@@ -383,14 +383,14 @@ class TeamsOutboxService
         if ($end = ($meeting['end'] ?? null)) {
             $e = Carbon::parse($end)->setTimezone($tz);
             // Tanggal tidak diulang kalau meetingnya selesai di hari yang sama.
-            $when .= '–' . $e->format($e->isSameDay($s) ? 'H:i' : 'D, d M Y H:i');
+            $when .= '-' . $e->format($e->isSameDay($s) ? 'H:i' : 'D, d M Y H:i');
         }
 
         return $when;
     }
 
     /**
-     * Teks pengumuman meeting — sejak 18 Sep 2026 hanya CADANGAN: yang tampil di
+     * Teks pengumuman meeting - sejak 18 Sep 2026 hanya CADANGAN: yang tampil di
      * grup adalah {@see meetingCard()}. Tetap dikirim di `message_html` supaya
      * payload meeting sebentuk dengan payload note, dan supaya ada yang bisa
      * diposting kalau kartunya suatu saat ditolak konektor.
@@ -449,7 +449,7 @@ class TeamsOutboxService
     }
 
     /**
-     * Bentuk pesan di Teams — teks, bukan Adaptive Card.
+     * Bentuk pesan di Teams - teks, bukan Adaptive Card.
      *
      * Kartu tampil buruk di HP dan tidak bisa di-quote-reply; diskusi tiket di
      * group chat justru hidup dari balas-membalas. Teksnya dirakit SEKARANG dan
@@ -489,7 +489,7 @@ class TeamsOutboxService
      *
      * Dibaca dari `message_html` lebih dulu, bukan kolom `message`: kolom itu
      * hasil strip_tags mentah, jadi "<p>a</p><p>b</p>" tersimpan sebagai "ab"
-     * dan paragrafnya hilang. Untuk email customer bedanya lebih parah — HTML
+     * dan paragrafnya hilang. Untuk email customer bedanya lebih parah - HTML
      * Outlook membawa blok <style> yang isinya ikut lolos lewat strip_tags.
      *
      * html_entity_decode WAJIB: tanpa itu, e() di wrap() meng-escape "&" dari
@@ -529,7 +529,7 @@ class TeamsOutboxService
      * request penyimpanan note, dan mengunggah berkas di sana membuat user ikut
      * menunggu OneDrive.
      *
-     * `message_html` hasil wrap() TIDAK diubah — ia tetap versi tautan yang
+     * `message_html` hasil wrap() TIDAK diubah - ia tetap versi tautan yang
      * lengkap, dan menjadi cadangan kalau penyalinan atau cabang Graph di flow 7
      * gagal. Lihat docs/teams-sync-parity-design.md §6c.
      *
@@ -575,7 +575,7 @@ class TeamsOutboxService
      * `message_html` versi tautan).
      *
      * Tiap lampiran `reference` WAJIB punya tag `<attachment id="…">` yang
-     * sepadan di badan pesan — tanpa itu Graph menolak pesannya.
+     * sepadan di badan pesan - tanpa itu Graph menolak pesannya.
      *
      * @param  list<array{attachment_id:int,name:string,url:string}>  $items
      * @param  array<int,array{id:string,contentType:string,contentUrl:string,name:string}>  $published
@@ -625,13 +625,13 @@ class TeamsOutboxService
      * Lampiran satu note, lengkap dengan tautan bertanda tangan yang bisa dibuka
      * dari Teams TANPA login EcoSystem.
      *
-     * Sebelum 23 Sep 2026 yang dikirim hanya penanda "(2 lampiran — lihat
+     * Sebelum 23 Sep 2026 yang dikirim hanya penanda "(2 lampiran - lihat
      * tiket)"; sejak itu lampirannya benar-benar ikut. Byte-nya tetap TIDAK
-     * dikirim ke Teams — yang dikirim tautan ke proxy EcoSystem, cerminan dari
+     * dikirim ke Teams - yang dikirim tautan ke proxy EcoSystem, cerminan dari
      * arah masuk yang juga menyimpan berkas Teams sebagai tautan, bukan salinan.
      *
      * Gambar inline ikut (keputusan 23 Sep 2026). Konsekuensinya note dengan
-     * banyak tangkapan layar jadi banyak gambar di grup — itu memang yang
+     * banyak tangkapan layar jadi banyak gambar di grup - itu memang yang
      * diinginkan: yang dilihat orang di grup sama dengan yang dilihat di tiket.
      *
      * Lampiran yang tidak bisa dilayani proxy (mis. tautan luar) dilewati
@@ -655,7 +655,7 @@ class TeamsOutboxService
             // Gambar inline yang tidak dirujuk badan pesan dilewati. Email
             // balasan membawa ulang gambar inline dari email yang dikutipnya;
             // kutipannya dipotong extractReplyBody(), tapi lampirannya tetap
-            // tersimpan — tanpa saringan ini gambar lama ikut terkirim lagi ke
+            // tersimpan - tanpa saringan ini gambar lama ikut terkirim lagi ke
             // Teams (terbukti 19 Okt 2026). Gambar inline yang ditampilkan
             // selalu dirujuk sebagai /storage/{file_path} (InlineImageService,
             // replaceCidReferences).
@@ -711,14 +711,14 @@ class TeamsOutboxService
     /**
      * Blok HTML lampiran: gambar ditampilkan langsung, sisanya jadi tautan.
      *
-     * Gambar dibungkus `<a>` supaya diklik membuka versi penuhnya — di grup ia
+     * Gambar dibungkus `<a>` supaya diklik membuka versi penuhnya - di grup ia
      * tampil kecil, dan tangkapan layar error justru perlu dizoom.
      *
      * **Apakah Teams merender `<img>` ber-URL eksternal di pesan chat belum
      * terbukti** (23 Sep 2026): konektor kadang membuangnya. Kalau ternyata
      * dibuang, tautan berkasnya tetap ada di `message`, dan jalur penggantinya
      * adalah mengirim note bergambar sebagai Adaptive Card lewat cabang yang
-     * sudah ada di flow 7 — lihat docs/teams-sync-parity-design.md §6.
+     * sudah ada di flow 7 - lihat docs/teams-sync-parity-design.md §6.
      *
      * @param  list<array{name:string,url:string,is_image:bool}>  $links
      */
@@ -730,7 +730,7 @@ class TeamsOutboxService
             // Gambar tampil langsung di badan pesan. TERBUKTI DIRENDER Teams
             // (uji 23 Sep 2026), dengan satu syarat yang mahal dipelajari:
             // JANGAN dibungkus <a href>. Percobaan pertama memakai
-            // <a href><img></a> dan Teams membuang SELURUH bloknya — bukan
+            // <a href><img></a> dan Teams membuang SELURUH bloknya - bukan
             // menampilkan gambar rusak, hilang sama sekali. Tanpa anchor, <img>
             // lolos.
             //
@@ -746,7 +746,7 @@ class TeamsOutboxService
 
             // Berkas non-gambar: nama berkasnya yang jadi tautan, URL-nya
             // disembunyikan di href. Anchor di sini membungkus TEKS, bukan
-            // <img> — kasus yang dibuang Teams di atas adalah <a><img></a>.
+            // <img> - kasus yang dibuang Teams di atas adalah <a><img></a>.
             $parts[] = '<a href="' . e($link['url']) . '">' . e($link['name']) . '</a>';
         }
 
@@ -754,7 +754,7 @@ class TeamsOutboxService
     }
 
     /**
-     * Versi teks polos daftar lampiran — cadangan kalau field Message suatu saat
+     * Versi teks polos daftar lampiran - cadangan kalau field Message suatu saat
      * berhenti diperlakukan sebagai HTML, dan isi kolom `note.text` di payload.
      *
      * @param  list<array{name:string,url:string,is_image:bool}>  $links
@@ -771,14 +771,14 @@ class TeamsOutboxService
      * Bungkus teks jadi payload flow 7.
      *
      * Dipakai KEDUA jalur (internal note dan pengumuman meeting) supaya bentuk
-     * payloadnya tidak pernah menyimpang satu sama lain — flow 7 hanya tahu satu
+     * payloadnya tidak pernah menyimpang satu sama lain - flow 7 hanya tahu satu
      * bentuk, dan bentuk itu didefinisikan di sini saja.
      *
      * **Tidak ada baris "nomor tiket → tautan" di badan pesan** (keputusan
      * meeting 18 Sep 2026). Pesan ini diposting di dalam group chat tiket yang
      * bersangkutan, jadi nomornya hanya mengulang nama grup, dan tautannya
      * tampil sebagai URL mentah yang panjang. Blok `ticket` di payload TETAP
-     * membawa `number` dan `url` — keduanya dipakai pagar staging dan berguna
+     * membawa `number` dan `url` - keduanya dipakai pagar staging dan berguna
      * kalau suatu saat flow ingin menampilkannya sendiri.
      */
     private function wrap(
@@ -848,7 +848,7 @@ class TeamsOutboxService
 
     /**
      * Payload yang benar-benar dikirim ke flow 7: bahan internal `teams_files`
-     * dibuang, dan — kalau berkasnya berhasil disalin ke OneDrive — ditambah
+     * dibuang, dan - kalau berkasnya berhasil disalin ke OneDrive - ditambah
      * `graph_message`, yang membuat flow mengambil cabang Graph.
      *
      * Hasilnya DISIMPAN ke baris antrean, jadi percobaan ulang (flow sedang
@@ -963,7 +963,7 @@ class TeamsOutboxService
             $item->markSent();
 
             // teams_message_id sengaja NULL: flow 7 tidak mengembalikan id pesan
-            // yang ia buat. Barisnya tetap ditulis sebagai jejak arah keluar —
+            // yang ia buat. Barisnya tetap ditulis sebagai jejak arah keluar -
             // yang menahan gema pesan ini saat terbaca balik adalah aturan
             // "abaikan pesan dari akun koneksi" di TeamsInboundService, bukan
             // baris ini.

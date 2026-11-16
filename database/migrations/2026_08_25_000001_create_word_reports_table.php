@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Tracking satu permintaan generate laporan .docx dari template Word (fitur
- * ClaudeReportService). Diproses lewat queue job — kolom `status` di sini
+ * ClaudeReportService). Diproses lewat queue job - kolom `status` di sini
  * yang dipoll frontend, sama seperti pola `ai_analysis_status` di
  * staging_ticket untuk fitur Analisa AI.
  */

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
  * Tambah kolom `to_emails` ke tabel ticket.
  *
  * Menyimpan daftar recipient TO (primary customer + recipient tambahan yang
- * ditambahkan helpdesk di form reply) agar bertahan antar reply/reload —
+ * ditambahkan helpdesk di form reply) agar bertahan antar reply/reload -
  * mirror perilaku `cc_emails`.
  *
  * Format: JSON array of {name, address} atau array of strings

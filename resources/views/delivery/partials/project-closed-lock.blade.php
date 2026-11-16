@@ -9,7 +9,7 @@
     KENAPA PERLU:
     CSS lama hanya mengunci `body.project-closed section.section-animate`, padahal
     SEMUA modal (Plan Cost, Actual Expense Details, Team, Documents, Issue, Risk, …)
-    dirender di LUAR <section> — jadi form tambah/edit/hapus di dalam modal tetap
+    dirender di LUAR <section> - jadi form tambah/edit/hapus di dalam modal tetap
     aktif sepenuhnya. Ini pitfall yang sama dengan izin section:
     lihat delivery/partials/section-permissions.blade.php.
 
@@ -50,7 +50,7 @@
     const PROJECT_ID = @json($project->id);
     const MESSAGE    = 'This project is closed and is read-only. Reopen it first to make changes.';
 
-    // Aksi yang tetap boleh berjalan meski project closed — harus cocok PERSIS
+    // Aksi yang tetap boleh berjalan meski project closed - harus cocok PERSIS
     // (jangan pakai "mengandung /delete", karena hapus expense pun berakhiran itu).
     const ALLOWED_PATHS = [
         '/projects/' + PROJECT_ID + '/close',
@@ -79,7 +79,7 @@
 
     let toastTimer = null;
     function notify() {
-        // Toast mandiri — partial ini tidak boleh bergantung pada helper toast
+        // Toast mandiri - partial ini tidak boleh bergantung pada helper toast
         // milik section mana pun (bisa belum ter-load / berbeda per halaman).
         let el = document.getElementById('projectClosedToast');
         if (!el) {

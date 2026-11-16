@@ -42,10 +42,10 @@ class LogShiftingExport implements FromArray, WithStyles, WithColumnWidths
         foreach ($this->rows as $r) {
             $bubble = $r['bubble_date'] ?? null;
             $rows[] = [
-                $r['ticket_number'] ?? '—',
-                $r['description'] ?? '—',
-                $bubble ? $bubble->format('d/m/Y') : '—',
-                $bubble ? $bubble->format('H:i') : '—',
+                $r['ticket_number'] ?? '-',
+                $r['description'] ?? '-',
+                $bubble ? $bubble->format('d/m/Y') : '-',
+                $bubble ? $bubble->format('H:i') : '-',
                 $r['sla_message'] ?? '',
                 $r['pic'] ?? 'Unknown',
             ];
@@ -68,7 +68,7 @@ class LogShiftingExport implements FromArray, WithStyles, WithColumnWidths
     {
         $generatedAt = $this->meta['generated_at'] ?? null;
         $generatedBy = $this->meta['generated_by'] ?? 'System';
-        $genStr = $generatedAt ? $generatedAt->format('d/m/Y H:i') . ' WIB' : '—';
+        $genStr = $generatedAt ? $generatedAt->format('d/m/Y H:i') . ' WIB' : '-';
         return "Digenerate: {$genStr} oleh {$generatedBy}  •  Total {$this->rows->count()} SLA Note";
     }
 

@@ -6,7 +6,7 @@
 <style>
     .primary-focus:focus { border-color: var(--primary-color) !important; box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15) !important; outline: none !important; }
 
-    /* Summary tiles — clickable, men-drive filter tabel yang sama dengan header kolom */
+    /* Summary tiles - clickable, men-drive filter tabel yang sama dengan header kolom */
     .stat-tile {
         display: block; width: 100%; text-align: left;
         padding: 0.875rem 1rem;
@@ -71,7 +71,7 @@
         $statAtCritical = $projects->where('status', 'At Critical')->count();
         $statCustomers  = $projects->map(fn($p) => $p->client->basicData->name_1 ?? null)->filter()->unique()->count();
 
-        // Deadline kontrak — hanya untuk project yang belum Closed.
+        // Deadline kontrak - hanya untuk project yang belum Closed.
         $statEndingSoon = $projects->filter(fn($p) => ($p->category ?? '') !== 'Closed' && $p->contract_end_date
                             && $p->contract_end_date->gte($today) && $p->contract_end_date->lte($soonLimit))->count();
         $statOverdue    = $projects->filter(fn($p) => ($p->category ?? '') !== 'Closed' && $p->contract_end_date
@@ -203,12 +203,12 @@
                         <a href="{{ route('projects.exportRevenue') }}" onclick="closeProjExportMenu()"
                            class="block px-4 py-2.5 hover:bg-gray-50 transition border-t border-gray-100">
                             <span class="block text-sm font-semibold text-gray-800">Project Revenue</span>
-                            <span class="block text-xs text-gray-500">All delivery projects — revenue, cost, gross profit &amp; billing status</span>
+                            <span class="block text-xs text-gray-500">All delivery projects - revenue, cost, gross profit &amp; billing status</span>
                         </a>
                         <a href="{{ route('projects.paymentTerms.exportInvoiced') }}" onclick="closeProjExportMenu()"
                            class="block px-4 py-2.5 hover:bg-gray-50 transition border-t border-gray-100">
                             <span class="block text-sm font-semibold text-gray-800">Invoiced Terms of Payment</span>
-                            <span class="block text-xs text-gray-500">All delivery projects — every payment term that has an Invoice No</span>
+                            <span class="block text-xs text-gray-500">All delivery projects - every payment term that has an Invoice No</span>
                         </a>
                         @endif
                     </div>
@@ -787,7 +787,7 @@
 
                 if (control && control.tagName === 'SELECT') {
                     // Opsi bisa sudah tidak ada (mis. customer/AE-nya tak lagi punya
-                    // project) — filter basi seperti itu dibuang, bukan dipasang
+                    // project) - filter basi seperti itu dibuang, bukan dipasang
                     // diam-diam sampai tabel kosong tanpa sebab yang terlihat.
                     if (!Array.from(control.options).some(o => o.value === val)) continue;
                     projState.filters[key] = val;
@@ -863,7 +863,7 @@
                     for (const key in f) {
                         const val = f[key];
                         // Card mobile tidak membawa semua data-* milik baris desktop
-                        // (mis. io/name/owner) — filter untuk key yang tidak ada
+                        // (mis. io/name/owner) - filter untuk key yang tidak ada
                         // diabaikan, bukan dianggap tidak cocok.
                         if (!val || !(key in card.dataset)) continue;
                         const data = card.dataset[key] || '';
@@ -957,7 +957,7 @@
         // ── Export Excel ─────────────────────────────────────────────────────────
         // Yang diekspor = persis baris yang sedang terlihat; id-nya dikirim lewat
         // query `ids`. Filter kolom sudah menyembunyikan baris desktop, sedangkan
-        // kotak search mobile hanya menyaring card — jadi term-nya diterapkan lagi
+        // kotak search mobile hanya menyaring card - jadi term-nya diterapkan lagi
         // di sini supaya hasil di layar kecil juga ikut menyempit.
         function toggleProjExportMenu() {
             document.getElementById('projExportMenu')?.classList.toggle('hidden');
@@ -984,12 +984,12 @@
                 .filter(Boolean);
 
             if (!ids.length) {
-                if (typeof showToast === 'function') showToast('No projects match the current filter — nothing to export.', 'warning');
+                if (typeof showToast === 'function') showToast('No projects match the current filter - nothing to export.', 'warning');
                 return;
             }
 
             const url = new URL('{{ route('projects.export') }}', window.location.origin);
-            // Kalau semua baris terpilih, biarkan server mengekspor semuanya —
+            // Kalau semua baris terpilih, biarkan server mengekspor semuanya -
             // tak perlu mengirim daftar id panjang yang bisa menabrak batas URL.
             if (ids.length < rows.length) url.searchParams.set('ids', ids.join(','));
 
@@ -1016,7 +1016,7 @@
         document.addEventListener('click', function (e) {
             // .se-panel / .se-wrap: dropdown hasil select-enhance.js. Panel-nya
             // di-detach ke <body> (mode fixed) sehingga bukan lagi turunan
-            // .proj-panel — tanpa guard ini, klik di dalamnya menutup panel filter.
+            // .proj-panel - tanpa guard ini, klik di dalamnya menutup panel filter.
             if (e.target.closest('.proj-th-btn') || e.target.closest('.proj-panel')
                 || e.target.closest('.se-panel') || e.target.closest('.se-wrap')) return;
             closeAllProjPanels();

@@ -134,7 +134,7 @@
     </div>
 </div>
 
-<!-- Modal View Members (read-only — dikelola lewat tab Qualification per employee) -->
+<!-- Modal View Members (read-only - dikelola lewat tab Qualification per employee) -->
 <div id="membersModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
         <div class="flex items-center justify-between mb-1">
@@ -146,7 +146,7 @@
         <p class="text-sm text-gray-500 mb-4" id="membersModalModuleName"></p>
 
         <div id="membersModalList" class="flex flex-col divide-y divide-gray-100 max-h-80 overflow-y-auto border border-gray-100 rounded-lg"></div>
-        <p class="text-xs text-gray-400 mt-3">Membership diambil dari data Qualification masing-masing employee — untuk mengubahnya, buka profile employee terkait.</p>
+        <p class="text-xs text-gray-400 mt-3">Membership diambil dari data Qualification masing-masing employee - untuk mengubahnya, buka profile employee terkait.</p>
 
         <div class="flex justify-end mt-4">
             <button onclick="closeMembersModal()" class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-200 transition-all">Close</button>
@@ -231,11 +231,11 @@
             <tr class="hover:bg-gray-50 transition-colors">
                 <td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td>
                 <td class="px-4 py-3 font-semibold text-gray-900">${m.name}</td>
-                <td class="px-4 py-3 text-gray-500">${m.description || '<span class="text-gray-300">—</span>'}</td>
+                <td class="px-4 py-3 text-gray-500">${m.description || '<span class="text-gray-300">-</span>'}</td>
                 <td class="px-4 py-3">
                     ${m.groups && m.groups.length
                         ? m.groups.map(g => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 mr-1 mb-1">${g.name}</span>`).join('')
-                        : '<span class="text-xs text-gray-300">—</span>'}
+                        : '<span class="text-xs text-gray-300">-</span>'}
                 </td>
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-2">

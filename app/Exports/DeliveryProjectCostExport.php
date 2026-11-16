@@ -9,12 +9,12 @@ use Maatwebsite\Excel\Concerns\WithPreCalculateFormulas;
 
 /**
  * Export Plan Cost satu Delivery Project:
- *   1. "Plan Cost"        — rekap Budget / Release / Actual per cost item,
+ *   1. "Plan Cost"        - rekap Budget / Release / Actual per cost item,
  *                           sama dengan tabel di section Plan Cost.
- *   2. "Expense Details"  — seluruh actual expense detail (termasuk period),
+ *   2. "Expense Details"  - seluruh actual expense detail (termasuk period),
  *                           satu baris per expense.
- *   3. "Monthly Cost"     — report Monthly Cost vs TOP Invoiced per bulan.
- *   4. "Release Schedule" — jadwal release bulanan per cost item.
+ *   3. "Monthly Cost"     - report Monthly Cost vs TOP Invoiced per bulan.
+ *   4. "Release Schedule" - jadwal release bulanan per cost item.
  *
  * Datanya disiapkan DeliveryProjectCostController::export() dengan helper yang
  * sama dengan tampilan (formatCost/buildSummary, ProjectMonthlyCostReport),

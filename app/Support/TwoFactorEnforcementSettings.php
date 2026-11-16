@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Override admin-configurable untuk role mana yang WAJIB mengaktifkan 2FA —
+ * Override admin-configurable untuk role mana yang WAJIB mengaktifkan 2FA -
  * dibaca App\Http\Middleware\EnforceTwoFactorForAdmins di setiap request.
  * Ditulis lewat Control Center → Two-Factor Enforcement
  * (TwoFactorEnforcementSettingsController), supaya admin bisa
@@ -20,7 +20,7 @@ use Throwable;
  * request sama sekali.
  *
  * config('security_center.two_factor.enforce_for_role_ids') tetap ada sebagai
- * SEED DEFAULT — dipakai persis sekali, selama admin belum pernah menyimpan
+ * SEED DEFAULT - dipakai persis sekali, selama admin belum pernah menyimpan
  * apapun lewat halaman Control Center ini (row app_configs belum ada).
  */
 final class TwoFactorEnforcementSettings
@@ -39,7 +39,7 @@ final class TwoFactorEnforcementSettings
             return self::seedDefault();
         }
 
-        // null = admin belum pernah menyimpan apapun lewat halaman ini —
+        // null = admin belum pernah menyimpan apapun lewat halaman ini -
         // jatuh ke nilai seed dari config file (perilaku sebelum fitur ini ada).
         if ($stored === null) {
             return self::seedDefault();

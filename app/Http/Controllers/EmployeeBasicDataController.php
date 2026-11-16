@@ -113,7 +113,7 @@ class EmployeeBasicDataController extends Controller
      */
     public function store(Request $request, $employeeId)
     {
-        // API routes skip ConvertEmptyStringsToNull middleware — convert all
+        // API routes skip ConvertEmptyStringsToNull middleware - convert all
         // nullable field empty strings to null so nullable|in:, nullable|date,
         // and nullable|string rules pass correctly.
         $nullableFields = [
@@ -130,7 +130,7 @@ class EmployeeBasicDataController extends Controller
             }
         }
 
-        // Cek apakah record sudah ada — diperlukan sebelum validasi agar unique rule
+        // Cek apakah record sudah ada - diperlukan sebelum validasi agar unique rule
         // bisa mengecualikan record milik employee ini sendiri saat update via POST.
         $existingBasicData = EmployeeBasicData::where('employee_id', $employeeId)->first();
         $nickNameUnique    = $existingBasicData

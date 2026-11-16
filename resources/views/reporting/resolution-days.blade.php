@@ -19,19 +19,19 @@
         <div id="rdCardAll" onclick="rdCardFilter('')"
             class="stat-card active-filter bg-white rounded-xl border border-gray-200 shadow-sm p-4 cursor-pointer select-none transition-all duration-200 hover:shadow-md hover:border-gray-300">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total Unapproved</p>
-            <p id="statRdTotal" class="text-2xl font-bold primary-text">—</p>
+            <p id="statRdTotal" class="text-2xl font-bold primary-text">-</p>
             <p class="text-xs text-gray-400 mt-0.5">None + Pending Head</p>
         </div>
         <div id="rdCardNone" onclick="rdCardFilter('none')"
             class="stat-card bg-white rounded-xl border border-gray-200 shadow-sm p-4 cursor-pointer select-none transition-all duration-200 hover:shadow-md hover:border-gray-300">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">None</p>
-            <p id="statRdNone" class="text-2xl font-bold text-gray-600">—</p>
+            <p id="statRdNone" class="text-2xl font-bold text-gray-600">-</p>
             <p class="text-xs text-gray-400 mt-0.5">Never proposed</p>
         </div>
         <div id="rdCardPending" onclick="rdCardFilter('pending_head')"
             class="stat-card bg-white rounded-xl border border-gray-200 shadow-sm p-4 cursor-pointer select-none transition-all duration-200 hover:shadow-md hover:border-yellow-200">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Pending Head</p>
-            <p id="statRdPending" class="text-2xl font-bold text-yellow-600">—</p>
+            <p id="statRdPending" class="text-2xl font-bold text-yellow-600">-</p>
             <p class="text-xs text-gray-400 mt-0.5">Awaiting approval</p>
         </div>
     </div>
@@ -138,7 +138,7 @@
         <div class="flex justify-between items-center px-6 py-5 border-b border-gray-200 flex-shrink-0">
             <div>
                 <h3 id="rdReviewTicketLabel" class="text-lg font-bold text-gray-900">Review Resolution Days</h3>
-                <p class="text-xs text-gray-500 mt-0.5">Status: <span id="rdReviewStatusLabel">—</span></p>
+                <p class="text-xs text-gray-500 mt-0.5">Status: <span id="rdReviewStatusLabel">-</span></p>
             </div>
             <button onclick="closeRdReviewModal()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:bg-red-800 hover:text-white transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
@@ -155,7 +155,7 @@
                     <thead>
                         <tr class="bg-gray-50">
                             <th class="px-3 py-2 text-left font-semibold text-gray-600 border border-gray-200">Name</th>
-                            <th class="px-3 py-2 text-center font-semibold text-gray-600 border border-gray-200 w-14" title="Days — working days">Days</th>
+                            <th class="px-3 py-2 text-center font-semibold text-gray-600 border border-gray-200 w-14" title="Days - working days">Days</th>
                             <th class="px-3 py-2 text-center font-semibold text-gray-600 border border-gray-200 w-16" title="Additional Days proposed by PIC">Add.</th>
                             <th class="px-3 py-2 text-left font-semibold text-gray-600 border border-gray-200">Notes</th>
                             <th class="px-3 py-2 text-center font-semibold text-gray-600 border border-gray-200 w-20" title="Enter approved days for each employee (out of the proposed Days)">Approved Days</th>
@@ -241,7 +241,7 @@
 let rdData         = [];
 let rdSortKey      = null;
 let rdSortDir      = null;
-let rdStatusFilter = ''; // '' | 'none' | 'pending_head' — driven by the summary stat cards
+let rdStatusFilter = ''; // '' | 'none' | 'pending_head' - driven by the summary stat cards
 
 document.addEventListener('DOMContentLoaded', function () {
     if (typeof initCustomDropdowns === 'function') initCustomDropdowns();
@@ -405,9 +405,9 @@ function renderRd() {
             <td class="px-3 py-2.5 text-sm text-gray-700">${escHtml(r.customer_name || '-')}</td>
             <td class="px-3 py-2.5 text-sm text-gray-700">${escHtml(r.pic_name || '-')}</td>
             <td class="px-3 py-2.5 text-center">${statusBadge(r.resolution_days_status)}</td>
-            <td class="px-3 py-2.5 text-xs text-gray-600">${escHtml(r.proposed_by || '—')}</td>
-            <td class="px-3 py-2.5 text-center text-sm font-semibold text-gray-700">${r.proposed_total_mandays != null ? formatMd(Number(r.proposed_total_mandays)) : '—'}</td>
-            <td class="px-3 py-2.5 text-center text-xs text-gray-600">${escHtml(r.proposed_at || '—')}</td>
+            <td class="px-3 py-2.5 text-xs text-gray-600">${escHtml(r.proposed_by || '-')}</td>
+            <td class="px-3 py-2.5 text-center text-sm font-semibold text-gray-700">${r.proposed_total_mandays != null ? formatMd(Number(r.proposed_total_mandays)) : '-'}</td>
+            <td class="px-3 py-2.5 text-center text-xs text-gray-600">${escHtml(r.proposed_at || '-')}</td>
         </tr>
     `).join('');
 }
@@ -438,7 +438,7 @@ async function openRdReviewModal(ticketId, ticketLabel) {
     const modal = document.getElementById('rdReviewModal');
     if (!modal) return;
     modal.classList.remove('hidden'); modal.classList.add('flex');
-    document.getElementById('rdReviewTicketLabel').textContent = 'Review Resolution Days — ' + (ticketLabel || ('#' + ticketId));
+    document.getElementById('rdReviewTicketLabel').textContent = 'Review Resolution Days - ' + (ticketLabel || ('#' + ticketId));
     document.getElementById('rdReviewOpenTicket').href = `/ticket/${ticketId}`;
     document.getElementById('rdReviewLoading').classList.remove('hidden');
     document.getElementById('rdReviewContent').classList.add('hidden');
@@ -477,7 +477,7 @@ async function openRdReviewModal(ticketId, ticketLabel) {
         const empMap = {};
         (proposal.details || []).forEach(d => {
             const eid = d.employee_id;
-            if (!empMap[eid]) empMap[eid] = { name: d.employee_name || '—', mandays: 0, approved_mandays: 0, additional_mandays: 0, approved_additional: 0, notes: '' };
+            if (!empMap[eid]) empMap[eid] = { name: d.employee_name || '-', mandays: 0, approved_mandays: 0, additional_mandays: 0, approved_additional: 0, notes: '' };
             empMap[eid].mandays            += parseFloat(d.mandays || 0);
             empMap[eid].approved_mandays   += parseFloat(d.approved_mandays || 0);
             empMap[eid].additional_mandays += parseFloat(d.additional_mandays || 0);
@@ -494,8 +494,8 @@ async function openRdReviewModal(ticketId, ticketLabel) {
             grandTotal += rowTotal;
             bodyHtml += `<tr>
                 <td class="px-3 py-2 border border-gray-200 text-xs font-medium">${escHtml(emp.name)}</td>
-                <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.mandays > 0 ? formatMd(emp.mandays) : '—'}</td>
-                <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.additional_mandays > 0 ? formatMd(emp.additional_mandays) : '—'}</td>
+                <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.mandays > 0 ? formatMd(emp.mandays) : '-'}</td>
+                <td class="px-3 py-2 border border-gray-200 text-xs text-center">${emp.additional_mandays > 0 ? formatMd(emp.additional_mandays) : '-'}</td>
                 <td class="px-3 py-2 border border-gray-200 text-xs text-gray-500">${escHtml(emp.notes || '')}</td>
                 <td class="border border-gray-200 p-0">
                     <input type="number" min="0" step="0.5"
@@ -511,7 +511,7 @@ async function openRdReviewModal(ticketId, ticketLabel) {
                         value="${currentApprAdd > 0 ? currentApprAdd : ''}"
                         oninput="rdUpdateRowTotal(this)">
                 </td>
-                <td class="px-2 py-1.5 border border-gray-200 text-xs text-center font-semibold bg-gray-50" data-rd-total="${eid}">${rowTotal > 0 ? formatMd(rowTotal) : '—'}</td>
+                <td class="px-2 py-1.5 border border-gray-200 text-xs text-center font-semibold bg-gray-50" data-rd-total="${eid}">${rowTotal > 0 ? formatMd(rowTotal) : '-'}</td>
             </tr>`;
         });
         document.getElementById('rdReviewBody').innerHTML = bodyHtml;
@@ -543,16 +543,16 @@ async function openRdReviewModal(ticketId, ticketLabel) {
         bannerEl.classList.add('hidden');
         if (status === 'approved') {
             bannerEl.className = 'mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700';
-            bannerEl.innerHTML = '<p class="font-semibold">Saved — Proposal Approved</p>'
+            bannerEl.innerHTML = '<p class="font-semibold">Saved - Proposal Approved</p>'
                 + (proposal.approved_by_head ? '<p class="text-xs mt-0.5">Approved by: ' + escHtml(proposal.approved_by_head) + '</p>' : '');
             bannerEl.classList.remove('hidden');
         } else if (status === 'draft') {
             bannerEl.className = 'mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700';
-            bannerEl.innerHTML = '<p class="font-semibold">Draft — PIC has not submitted yet.</p>';
+            bannerEl.innerHTML = '<p class="font-semibold">Draft - PIC has not submitted yet.</p>';
             bannerEl.classList.remove('hidden');
         } else if (status === 'rejected') {
             bannerEl.className = 'mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-700';
-            bannerEl.innerHTML = '<p class="font-semibold">Needs Revision — PIC is revising.</p>';
+            bannerEl.innerHTML = '<p class="font-semibold">Needs Revision - PIC is revising.</p>';
             bannerEl.classList.remove('hidden');
         }
 
@@ -582,14 +582,14 @@ function rdUpdateRowTotal(inp) {
     const total    = apprDays + apprAdd;
     const empId   = inp.dataset.employee;
     const cell    = row.querySelector(`[data-rd-total="${empId}"]`);
-    if (cell) cell.textContent = total > 0 ? formatMd(total) : '—';
+    if (cell) cell.textContent = total > 0 ? formatMd(total) : '-';
     let grand = 0;
     document.querySelectorAll('[data-rd-total]').forEach(c => grand += parseFloat(c.textContent) || 0);
     document.getElementById('rdReviewTotal').textContent = formatMd(grand);
     rdRecalcApprovedSummary();
 }
 
-// Sums the currently-typed Approved Days / Approve Add. inputs across all rows —
+// Sums the currently-typed Approved Days / Approve Add. inputs across all rows -
 // called on every keystroke (rdUpdateRowTotal) and once at initial render.
 function rdRecalcApprovedSummary() {
     let daysApproved = 0, addApproved = 0;
@@ -606,7 +606,7 @@ function rdRecalcApprovedSummary() {
 async function rdReviewApprove(confirmNegative = false) {
     if (!rdReviewTicketId) return;
 
-    // Approved Days is a required judgment call per employee — a blank field silently
+    // Approved Days is a required judgment call per employee - a blank field silently
     // became 0 before this check existed, so a Head could approve without actually
     // reviewing someone's days. Block the save and flag every empty field instead.
     const emptyDaysInputs = Array.from(document.querySelectorAll('.rd-approve-days'))

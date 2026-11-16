@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * ticket_priority di staging_tickets harus nullable karena email masuk
- * tidak memiliki priority — priority baru diset oleh helpdesk saat approve.
+ * tidak memiliki priority - priority baru diset oleh helpdesk saat approve.
  *
  * Sebelumnya kolom ini NOT NULL default 'Medium', dan StagingTicketService
  * secara eksplisit mengisi null untuk email-channel → menyebabkan error 1048.

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  *   <modul>.<section>.manage  → boleh menambah & menghapus data
  *
  * Section yang memang cuma punya form edit (General/Location/Approval/...)
- * sengaja TIDAK diberi slug `.manage` — biar tidak ada checkbox mati di modal
+ * sengaja TIDAK diberi slug `.manage` - biar tidak ada checkbox mati di modal
  * Menu Access.
  *
  * Slug section lama Delivery Project dihapus, tapi grant-nya dipindahkan dulu
@@ -113,7 +113,7 @@ return new class extends Migration
         $this->grantFromParent('delivery.project', $this->slugsWithAction(self::PROJECT_SECTIONS, 'view'));
         $this->grantFromParent('delivery.support', $this->slugsWithAction(self::SUPPORT_SECTIONS, 'view'));
 
-        // 2. Delivery Support belum pernah punya gating tulis per section —
+        // 2. Delivery Support belum pernah punya gating tulis per section -
         //    siapa pun yang bisa membuka halaman detail bisa mengedit. Supaya
         //    perilaku hari ini tidak berubah, `.edit`/`.manage` Support juga
         //    diwariskan dari menu induk (kecuali customer-pic yang sudah punya
@@ -216,7 +216,7 @@ return new class extends Migration
                 $this->ensureMenu(
                     $parent->id,
                     $section['base'] . '.' . $action,
-                    $section['name'] . ' — ' . self::ACTION_LABEL[$action],
+                    $section['name'] . ' - ' . self::ACTION_LABEL[$action],
                     $seq++,
                 );
             }

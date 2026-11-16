@@ -46,7 +46,7 @@ class DeliveryProjectIssueController extends Controller
     // ──────────────────────────────────────────────────────────────
 
     /**
-     * GET /projects/{project}/issues — JSON list for the issue log table.
+     * GET /projects/{project}/issues - JSON list for the issue log table.
      */
     public function apiIndex(DeliveryProject $project)
     {

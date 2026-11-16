@@ -12,8 +12,8 @@ return new class extends Migration
      *
      * Sebelumnya kolom-kolom ini hanya di-update lewat kode aplikasi (tersebar
      * di 9+ controller/service), sehingga jalur mana pun yang lupa menulis
-     * update tersebut — atau proses eksternal (mis. Jarvies) yang insert
-     * langsung ke tabel ini tanpa lewat API — membuat warna unread di list
+     * update tersebut - atau proses eksternal (mis. Jarvies) yang insert
+     * langsung ke tabel ini tanpa lewat API - membuat warna unread di list
      * ticket salah (tetap kuning padahal ada balasan customer terbaru).
      * Trigger ini menjamin konsistensi terlepas dari siapa/apa yang insert.
      */

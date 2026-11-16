@@ -8,12 +8,12 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Pastikan supporting document expense (Plan Cost — Delivery Project & Support)
+ * Pastikan supporting document expense (Plan Cost - Delivery Project & Support)
  * tersimpan sebagai share link ANONIM ("Anyone with the link").
  *
  * Baris yang di-upload sebelum fix share link menyimpan `webUrl` hasil upload:
  * path SharePoint langsung (…/personal/support_eclectic_co_id/Documents/…) yang
- * hanya bisa dibuka akun pemilik file — akun Eclectic lain pun kena
+ * hanya bisa dibuka akun pemilik file - akun Eclectic lain pun kena
  * "Request access". Kelas ini membuat ulang link-nya.
  */
 class PlanCostDocumentLink

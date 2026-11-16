@@ -11,14 +11,14 @@ use Illuminate\Support\Facades\File;
  * (dipakai bersama oleh halaman AI Assistant dan AI Research).
  *
  * KENAPA PERLU: cache file Laravel hanya menghapus entri kedaluwarsa saat kunci
- * itu DIBACA lagi (lihat FileStore::getPayload). Percakapan yang ditinggalkan —
- * user menutup tab dan tidak pernah kembali — kuncinya tidak akan pernah dibaca,
+ * itu DIBACA lagi (lihat FileStore::getPayload). Percakapan yang ditinggalkan -
+ * user menutup tab dan tidak pernah kembali - kuncinya tidak akan pernah dibaca,
  * jadi berkasnya menetap di disk selamanya. Dengan banyak user, dan lampiran
  * gambar yang ikut tersimpan di dalam riwayat, disk naik terus tanpa ada yang
  * menyadari sampai penuh.
  *
  * CARA KERJA: 10 byte pertama tiap berkas cache adalah timestamp UNIX
- * kedaluwarsa dalam bentuk teks. Itu saja yang dibaca — isi berkasnya SENGAJA
+ * kedaluwarsa dalam bentuk teks. Itu saja yang dibaca - isi berkasnya SENGAJA
  * tidak pernah di-unserialize, karena entri lama bisa memuat objek SDK Anthropic
  * yang meledak saat di-unserialize ("Typed static property … must not be
  * accessed before initialization"). Berkas yang tidak terbaca atau kepalanya
@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\File;
  * SEJAK ARSIP ADA: command ini juga memangkas tabel ai_conversations yang
  * melewati retensi (config services.ai.retention_days). Dua pekerjaan itu
  * hanya menumpang command yang sama karena sama-sama sampah yang tidak ada
- * yang membersihkan — sifatnya berbeda: cache berumur jam, arsip berumur bulan.
+ * yang membersihkan - sifatnya berbeda: cache berumur jam, arsip berumur bulan.
  *
  * Default = DRY-RUN. Tambahkan --apply untuk benar-benar menghapus.
  */
@@ -44,7 +44,7 @@ class PruneAiConversations extends Command
         $root = config('cache.stores.ai_chat.path');
 
         if (!$root || !is_dir($root)) {
-            $this->info('Direktori cache ai_chat belum ada — tidak ada yang perlu dibersihkan.');
+            $this->info('Direktori cache ai_chat belum ada - tidak ada yang perlu dibersihkan.');
 
             return self::SUCCESS;
         }
@@ -73,7 +73,7 @@ class PruneAiConversations extends Command
                 continue;
             }
 
-            // Cache "abadi" ditulis Laravel dengan expiry 9999999999 — biarkan.
+            // Cache "abadi" ditulis Laravel dengan expiry 9999999999 - biarkan.
             if ((int) $head > $now) {
                 ++$kept;
                 continue;
@@ -127,7 +127,7 @@ class PruneAiConversations extends Command
         $days = (int) config('services.ai.retention_days', 90);
 
         if ($days < 1) {
-            $this->line('Retensi arsip: nonaktif (AI_HISTORY_RETENTION_DAYS=0) — riwayat disimpan selamanya.');
+            $this->line('Retensi arsip: nonaktif (AI_HISTORY_RETENTION_DAYS=0) - riwayat disimpan selamanya.');
 
             return 0;
         }

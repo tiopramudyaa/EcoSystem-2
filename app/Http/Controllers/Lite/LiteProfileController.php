@@ -13,7 +13,7 @@ class LiteProfileController extends Controller
 {
     /**
      * Kembalikan data profil user yang sedang login sebagai JSON.
-     * Adaptasi dari ProfileController::myProfile() — mengembalikan JSON, bukan view.
+     * Adaptasi dari ProfileController::myProfile() - mengembalikan JSON, bukan view.
      *
      * GET /api/lite/profile
      */

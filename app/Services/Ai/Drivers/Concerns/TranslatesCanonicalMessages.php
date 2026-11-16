@@ -9,7 +9,7 @@ namespace App\Services\Ai\Drivers\Concerns;
  *
  * Anthropic embeds tool_use/tool_result INSIDE a message's content array;
  * the Responses API instead uses separate top-level `function_call` /
- * `function_call_output` input items addressed by `call_id` — so a canonical
+ * `function_call_output` input items addressed by `call_id` - so a canonical
  * message with mixed content gets split into sibling items in the flat
  * `input` array, in original order.
  */

@@ -101,7 +101,7 @@ class ProjectTopPlan
     }
 
     /**
-     * Peringatan non-blocking — ditampilkan sebagai banner & notifikasi saat simpan.
+     * Peringatan non-blocking - ditampilkan sebagai banner & notifikasi saat simpan.
      *
      * @return array<int,string>
      */

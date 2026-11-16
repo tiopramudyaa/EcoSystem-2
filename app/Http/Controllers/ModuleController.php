@@ -16,7 +16,7 @@ class ModuleController extends Controller
     /**
      * Employee dengan qualification record di module ini (Skill/Certification/
      * Training/Education yang di-tag ke module_id). Sumbernya sama dengan yang
-     * dipakai form Qualification per employee — hanya dibaca di sini, dikelola
+     * dipakai form Qualification per employee - hanya dibaca di sini, dikelola
      * tetap lewat tab Qualification masing-masing employee.
      */
     public function members(int $id)

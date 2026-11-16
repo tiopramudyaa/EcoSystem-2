@@ -4,7 +4,7 @@ namespace App\Enums;
 
 /**
  * Division employee. Label murni, daftar pendek & stabil, sehingga cukup
- * enum PHP (bukan tabel) — sama pola dengan HomeBase.
+ * enum PHP (bukan tabel) - sama pola dengan HomeBase.
  *
  * Penggunaan:
  *   Division::options()   // ['BUSINESS SUPPORT', 'SALES & BUSINESS DEVELOPMENT', 'OPERATIONS']

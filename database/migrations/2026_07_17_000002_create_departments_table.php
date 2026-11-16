@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Tabel referensi Department — single source of truth untuk opsi dropdown
+ * Tabel referensi Department - single source of truth untuk opsi dropdown
  * Department di form employee basic data (profile detail).
  *
  * Catatan desain (sama seperti tabel `grades`/`positions`): `employee_basic_data.department`

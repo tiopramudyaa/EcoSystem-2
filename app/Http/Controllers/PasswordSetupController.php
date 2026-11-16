@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 class PasswordSetupController extends Controller
 {
     // =========================================================================
-    // PAGES — PASSWORD SETUP (akun baru)
+    // PAGES - PASSWORD SETUP (akun baru)
     // =========================================================================
 
     /**
@@ -29,7 +29,7 @@ class PasswordSetupController extends Controller
     }
 
     /**
-     * Halaman form atur/reset password — ditampilkan saat user klik link di email.
+     * Halaman form atur/reset password - ditampilkan saat user klik link di email.
      */
     public function showChangePassword(Request $request)
     {
@@ -123,11 +123,11 @@ class PasswordSetupController extends Controller
     }
 
     // =========================================================================
-    // PAGES — FORGOT PASSWORD
+    // PAGES - FORGOT PASSWORD
     // =========================================================================
 
     /**
-     * Halaman form forgot password — user masukkan email terdaftar.
+     * Halaman form forgot password - user masukkan email terdaftar.
      */
     public function showForgotPassword()
     {
@@ -210,7 +210,7 @@ class PasswordSetupController extends Controller
         ]);
 
         if (empty($authUser->email)) {
-            Log::warning('PasswordSetupController: tidak bisa kirim email — auth_user tidak punya email', [
+            Log::warning('PasswordSetupController: tidak bisa kirim email - auth_user tidak punya email', [
                 'auth_user_id' => $authUser->id,
             ]);
             return;
@@ -249,7 +249,7 @@ class PasswordSetupController extends Controller
 <p>Regards,<br><strong>The {$appName} Team</strong></p>
 HTML;
             } else {
-                $subject = "{$appName} Account Activation — Set Your Password";
+                $subject = "{$appName} Account Activation - Set Your Password";
                 $body    = <<<HTML
 <p>Hello,</p>
 <p>Your account on <strong>{$appName}</strong> has been created by our team.</p>
@@ -329,7 +329,7 @@ HTML;
     {
         return \Illuminate\Support\Facades\Cache::remember(
             'password_setup.ms_graph_token',
-            3300, // 55 menit — buffer di bawah masa berlaku token (~60 menit)
+            3300, // 55 menit - buffer di bawah masa berlaku token (~60 menit)
             function () {
                 // Gunakan config() agar berfungsi saat config:cache di production
                 $tenantId = config('services.microsoft_graph.tenant_id');

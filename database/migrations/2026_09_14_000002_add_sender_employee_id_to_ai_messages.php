@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Atribusi "siapa yang tanya" — cuma relevan untuk room AI Research BERSAMA
+ * Atribusi "siapa yang tanya" - cuma relevan untuk room AI Research BERSAMA
  * (lihat 2026_09_14_000001_add_ticket_id_to_ai_conversations.php), di mana
  * lebih dari satu employee bisa menulis ke satu conversation yang sama.
  * NULL untuk baris role 'assistant', NULL juga untuk pesan seed sistem

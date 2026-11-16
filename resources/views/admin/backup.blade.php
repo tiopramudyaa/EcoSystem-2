@@ -2,7 +2,7 @@
 
 @section('title', 'Backup & Export')
 @section('page-title', 'Backup & Export')
-@section('page-subtitle', 'Database backup, data export, and CSV import — admin only')
+@section('page-subtitle', 'Database backup, data export, and CSV import - admin only')
 
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -112,9 +112,9 @@
                         </a>
                     </div>
                     <div class="bg-amber-50 rounded-xl p-3 text-xs text-amber-700 space-y-0.5 mb-2">
-                        <p class="font-semibold mb-1">Buat ticket baru (ticket number belum ada) — field wajib:</p>
+                        <p class="font-semibold mb-1">Buat ticket baru (ticket number belum ada) - field wajib:</p>
                         <p>Tiket · Description · Customer · Priority · Type</p>
-                        <p class="font-semibold mb-1 mt-2">Update ticket (ticket number sudah ada) — field yang diperbarui:</p>
+                        <p class="font-semibold mb-1 mt-2">Update ticket (ticket number sudah ada) - field yang diperbarui:</p>
                         <p>Description · Status · Priority · Scale · Type · PIC · Due Date</p>
                         <p class="text-amber-500 mt-1">Dicocokkan via ticket number. Baris tanpa ticket number dilewati.</p>
                     </div>
@@ -295,7 +295,7 @@
                     </div>
                     <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
                         <i class="fas fa-exclamation-triangle mr-1"></i>
-                        Proses bisa memakan waktu — ±1–3 detik per tiket tergantung kecepatan koneksi ke API lama.
+                        Proses bisa memakan waktu - ±1-3 detik per tiket tergantung kecepatan koneksi ke API lama.
                     </div>
                 </div>
             </div>
@@ -316,14 +316,14 @@
     </div>
 
     {{-- ════════════════════════════════════════════════════════ --}}
-    {{-- IMPORT — Urutan sesuai dependency                       --}}
+    {{-- IMPORT - Urutan sesuai dependency                       --}}
     {{-- ════════════════════════════════════════════════════════ --}}
 
     {{-- ── Step 1: Master Data ── --}}
     <div class="flex items-center gap-3 pt-1">
         <span class="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center">1</span>
         <span class="text-sm font-semibold text-gray-600">Master Data</span>
-        <span class="text-xs text-gray-400">— import pertama, tidak ada dependency</span>
+        <span class="text-xs text-gray-400">- import pertama, tidak ada dependency</span>
         <div class="flex-1 h-px bg-gray-100"></div>
     </div>
 
@@ -447,7 +447,7 @@
     <div class="flex items-center gap-3">
         <span class="flex-shrink-0 w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-bold flex items-center justify-center">2</span>
         <span class="text-sm font-semibold text-gray-600">Employee Detail</span>
-        <span class="text-xs text-gray-400">— butuh Employee sudah terimport</span>
+        <span class="text-xs text-gray-400">- butuh Employee sudah terimport</span>
         <div class="flex-1 h-px bg-gray-100"></div>
     </div>
 
@@ -502,7 +502,7 @@
     <div class="flex items-center gap-3">
         <span class="flex-shrink-0 w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">3</span>
         <span class="text-sm font-semibold text-gray-600">Customer Detail</span>
-        <span class="text-xs text-gray-400">— butuh Customer sudah terimport</span>
+        <span class="text-xs text-gray-400">- butuh Customer sudah terimport</span>
         <div class="flex-1 h-px bg-gray-100"></div>
     </div>
 
@@ -610,7 +610,7 @@
     <div class="flex items-center gap-3">
         <span class="flex-shrink-0 w-7 h-7 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">4</span>
         <span class="text-sm font-semibold text-gray-600">Ticket Related</span>
-        <span class="text-xs text-gray-400">— butuh Ticket sudah ada (import via Ticket Data di atas) + Employee</span>
+        <span class="text-xs text-gray-400">- butuh Ticket sudah ada (import via Ticket Data di atas) + Employee</span>
         <div class="flex-1 h-px bg-gray-100"></div>
     </div>
 
@@ -658,7 +658,7 @@
     <div class="flex items-center gap-3">
         <span class="flex-shrink-0 w-7 h-7 rounded-full bg-sky-100 text-sky-700 text-xs font-bold flex items-center justify-center">5</span>
         <span class="text-sm font-semibold text-gray-600">Mandays & Timesheet</span>
-        <span class="text-xs text-gray-400">— butuh Ticket + Employee sudah terimport</span>
+        <span class="text-xs text-gray-400">- butuh Ticket + Employee sudah terimport</span>
         <div class="flex-1 h-px bg-gray-100"></div>
     </div>
 
@@ -1238,7 +1238,7 @@ async function runApiImport() {
                         <span class="flex items-center gap-1"><i class="fas fa-forward text-gray-400"></i> ${json.skipped} dilewati</span>
                         <span class="flex items-center gap-1"><i class="fas fa-comment text-indigo-500"></i> ${json.messages} pesan</span>
                     </div>
-                    ${json.errors && json.errors.length ? `<button onclick="openErrorModal(${JSON.stringify(json.errors).replace(/"/g,'&quot;')})" class="mt-2 text-xs text-orange-500 hover:underline flex items-center gap-1"><i class="fas fa-exclamation-triangle"></i> ${json.errors.length} error — lihat detail</button>` : ''}
+                    ${json.errors && json.errors.length ? `<button onclick="openErrorModal(${JSON.stringify(json.errors).replace(/"/g,'&quot;')})" class="mt-2 text-xs text-orange-500 hover:underline flex items-center gap-1"><i class="fas fa-exclamation-triangle"></i> ${json.errors.length} error - lihat detail</button>` : ''}
                 </div>`;
         } else {
             result.innerHTML = `

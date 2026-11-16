@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  * Nomor Recons berganti format menjadi MDRC-[customer_code]-[yymm]-[xxxx]
  * dengan counter GLOBAL yang reset tiap tahun (keputusan pemilik sistem,
  * 2026-09-03). Karena urutannya tidak lagi per Delivery Support, keunikan
- * nomor juga harus dijaga lintas support — bukan hanya di dalam satu support.
+ * nomor juga harus dijaga lintas support - bukan hanya di dalam satu support.
  *
  * Unique lama : (delivery_support_id, recons_number)
  * Unique baru : (recons_number)
@@ -35,7 +35,7 @@ return new class extends Migration
 
         if ($duplicates->isNotEmpty()) {
             throw new RuntimeException(
-                'Tidak bisa membuat recons_number unik global — masih ada nomor kembar: '
+                'Tidak bisa membuat recons_number unik global - masih ada nomor kembar: '
                 . $duplicates->keys()->implode(', ')
                 . '. Perbaiki/rename nomor tersebut lebih dulu, lalu jalankan ulang migrasi ini.'
             );

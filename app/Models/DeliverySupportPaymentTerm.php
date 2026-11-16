@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Traits\Auditable;
 
 /**
- * Termin TOP Delivery Support — mirror DeliveryProjectPaymentTerm. Status dan
+ * Termin TOP Delivery Support - mirror DeliveryProjectPaymentTerm. Status dan
  * basis amount mengikuti versi project (DeliveryProjectPaymentTerm::STATUSES /
  * ::BASES), rumus amount lewat Concerns\HasPaymentTermBasis.
  */
@@ -19,10 +19,10 @@ class DeliverySupportPaymentTerm extends Model
 
     protected $table = 'delivery_support_payment_terms';
 
-    /** Open | Invoiced | Paid | Delay — sama dengan Delivery Project. */
+    /** Open | Invoiced | Paid | Delay - sama dengan Delivery Project. */
     public const STATUSES = DeliveryProjectPaymentTerm::STATUSES;
 
-    /** percentage | line_item | fixed — sama dengan Delivery Project. */
+    /** percentage | line_item | fixed - sama dengan Delivery Project. */
     public const BASES = DeliveryProjectPaymentTerm::BASES;
 
     protected $fillable = [

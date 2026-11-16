@@ -9,14 +9,14 @@ use Illuminate\Support\Facades\Schema;
  *
  * Kenapa perlu antrean: guest yang BARU SAJA diundang belum dikenal Teams.
  * Entra langsung memberi object id-nya, tetapi direktori Teams baru menyusul
- * beberapa menit kemudian — selama jeda itu POST /chats yang memuatnya ditolak
+ * beberapa menit kemudian - selama jeda itu POST /chats yang memuatnya ditolak
  * SELURUHNYA (403 "One or more members cannot be added to the thread roster",
  * tiket 26100280, 26 Okt 2026). Chat yang sama dengan anggota yang sama
  * berhasil ±12 menit kemudian.
  *
  * Jadi chat dibuat dulu tanpa guest itu, lalu guest-nya dimasukkan susulan oleh
  * teams:add-pending-guests. Kegagalan yang tidak kunjung pulih berhenti di
- * status 'failed' dengan last_error terisi — terlihat sebagai data, seperti
+ * status 'failed' dengan last_error terisi - terlihat sebagai data, seperti
  * teams_outbox.
  */
 return new class extends Migration
@@ -38,7 +38,7 @@ return new class extends Migration
             $table->dateTime('added_at')->nullable();
 
             // Payload flow 6 ("ticket member added") yang dikirim SETELAH guest
-            // masuk grup — pesan sambutan + @mention baru berarti kalau orangnya
+            // masuk grup - pesan sambutan + @mention baru berarti kalau orangnya
             // sudah anggota. Null untuk guest dari approve tiket: mereka sudah
             // disebut di kartu flow 5.
             $table->json('flow_payload')->nullable();

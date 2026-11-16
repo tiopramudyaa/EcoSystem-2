@@ -13,7 +13,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 /**
- * Sheet "Plan Cost" — rekap per cost item (lihat DeliveryProjectCostExport).
+ * Sheet "Plan Cost" - rekap per cost item (lihat DeliveryProjectCostExport).
  *
  * Sel ditulis manual di AfterSheet (bukan FromArray): teks bebas dari user
  * (nama item, nama project) ditulis sebagai string eksplisit sehingga nilai
@@ -145,7 +145,7 @@ class DeliveryProjectCostRecapSheet implements WithTitle, WithEvents
         ];
     }
 
-    /** Tulis lima kolom angka; null dibiarkan kosong (= "—" di layar). */
+    /** Tulis lima kolom angka; null dibiarkan kosong (= "-" di layar). */
     private function writeMoney($sheet, int $row, array $values): void
     {
         foreach (self::MONEY_COLS as $i => $col) {

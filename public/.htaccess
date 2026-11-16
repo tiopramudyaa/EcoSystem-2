@@ -28,7 +28,7 @@
 # (public/build/**) is content-hashed, and every hand-written asset under
 # public/js /public/css referenced from a Blade view is loaded with a
 # `?v=<version>` cache-busting query string (filemtime or a bumped constant),
-# so a stale cached copy is never served after a real change — see e.g.
+# so a stale cached copy is never served after a real change - see e.g.
 # select-enhance.js / custom-dropdown.js references across resources/views.
 <IfModule mod_expires.c>
     ExpiresActive On
@@ -51,7 +51,7 @@
     </FilesMatch>
 </IfModule>
 
-# Compress text-based responses (HTML pages, CSS, JS, JSON, SVG, fonts) —
+# Compress text-based responses (HTML pages, CSS, JS, JSON, SVG, fonts) -
 # applies to the dynamically-rendered page (e.g. /ticket, ~300KB raw HTML) as
 # well as static files, cutting transfer size regardless of caching above.
 <IfModule mod_deflate.c>

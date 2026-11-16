@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
  * Sebelumnya satu slug `delivery-project.team.manage` ("Create / Delete")
  * membundel tambah + hapus, dan tombol hapus memang tidak pernah ada di UI.
  * Sekarang ada kebutuhan menghapus anggota tim, dan role yang boleh menghapus
- * TIDAK sama dengan role yang boleh menambah — jadi aksinya dipecah:
+ * TIDAK sama dengan role yang boleh menambah - jadi aksinya dipecah:
  *
  *   delivery-project.team.manage  → Create  (tambah anggota)
  *   delivery-project.team.delete  → Delete  (hapus anggota)  ← BARU
@@ -34,7 +34,7 @@ return new class extends Migration
         // Label lama "Create / Delete" jadi menyesatkan setelah dipecah.
         DB::table('menu')
             ->where('id', $manage->id)
-            ->update(['name' => 'Team Members — Create', 'updated_at' => now()]);
+            ->update(['name' => 'Team Members - Create', 'updated_at' => now()]);
 
         // Sisipkan tepat setelah "Create" supaya urutannya di modal Menu Access
         // tetap View → Edit → Create → Delete.
@@ -46,7 +46,7 @@ return new class extends Migration
             ->increment('order_seq');
 
         MenuRegistrar::register('delivery.project', [
-            self::NEW_SLUG => 'Team Members — Delete',
+            self::NEW_SLUG => 'Team Members - Delete',
         ], $seq);
     }
 
@@ -65,6 +65,6 @@ return new class extends Migration
 
         DB::table('menu')
             ->where('slug', self::MANAGE_SLUG)
-            ->update(['name' => 'Team Members — Create / Delete', 'updated_at' => now()]);
+            ->update(['name' => 'Team Members - Create / Delete', 'updated_at' => now()]);
     }
 };

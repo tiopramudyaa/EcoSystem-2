@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
  * sudah lolos filter NDR, staging yang di-approve, tiket yang masih open), jadi
  * flow tidak perlu menebak lewat polling.
  *
- * Semua kegagalan dicatat ke log lalu DITELAN — integrasi notifikasi tidak boleh
+ * Semua kegagalan dicatat ke log lalu DITELAN - integrasi notifikasi tidak boleh
  * menggagalkan approve tiket atau pemrosesan inbox.
  */
 class PowerAutomateService
@@ -62,7 +62,7 @@ class PowerAutomateService
      * Diisi HANYA di server dev/staging. Masalah yang dipecahkannya: staging
      * membaca mailbox support@eclectic.co.id yang SAMA dengan produksi, jadi
      * tanpa pagar ini email customer sungguhan yang masuk saat demo akan memicu
-     * group chat Teams dan notifikasi ke employee sungguhan — dari server yang
+     * group chat Teams dan notifikasi ke employee sungguhan - dari server yang
      * datanya belum tentu benar.
      *
      * @return list<string> huruf kecil semua
@@ -110,7 +110,7 @@ class PowerAutomateService
      * Boleh berangkat? Selalu true di produksi (daftar kosong).
      *
      * Saat daftarnya terisi, payload yang email pelapornya TIDAK DIKENALI ikut
-     * DIHADANG — bukan diloloskan. Pagar ini memang dipasang untuk mencegah
+     * DIHADANG - bukan diloloskan. Pagar ini memang dipasang untuk mencegah
      * kebocoran ke orang sungguhan, dan meloloskan yang tak teridentifikasi akan
      * membolongi tepat pada kasus yang paling tidak kita pahami.
      */
@@ -158,8 +158,8 @@ class PowerAutomateService
             return false;
         }
 
-        // Pagar staging. Ditaruh di sini — satu-satunya pintu keluar ke Power
-        // Automate — supaya SETIAP flow ikut terjaga, termasuk flow yang belum
+        // Pagar staging. Ditaruh di sini - satu-satunya pintu keluar ke Power
+        // Automate - supaya SETIAP flow ikut terjaga, termasuk flow yang belum
         // ditulis. Menaruhnya di tiap pemanggil berarti flow berikutnya harus
         // ingat memasangnya sendiri, dan yang lupa baru ketahuan setelah bocor.
         if (!$this->passesSubmitterGate($flow, $payload)) {
@@ -270,7 +270,7 @@ class PowerAutomateService
         ];
     }
 
-    /** Bentuk baku satu staging ticket — dipakai flow greeting email. */
+    /** Bentuk baku satu staging ticket - dipakai flow greeting email. */
     public function stagingPayload(StagingTicket $staging): array
     {
         return [
@@ -283,7 +283,7 @@ class PowerAutomateService
             'sender_name'         => $staging->sender_name,
             'sender_email'        => $staging->submitted_by_email,
             'cc_emails'           => $staging->cc_emails ?: [],
-            // ID pesan di mailbox Graph — dipakai action "Reply to email" di Power
+            // ID pesan di mailbox Graph - dipakai action "Reply to email" di Power
             // Automate supaya greeting menyambung ke thread yang sama, bukan email
             // baru yang nanti dibaca EcoSystem sebagai tiket lain.
             'graph_message_id'    => $staging->graph_message_id,
@@ -362,7 +362,7 @@ class PowerAutomateService
      * MEMBUAT chatnya saat tiket divalidasi, dan flow yang mencari chat itu lagi
      * saat ada orang baru ditambahkan ke tiket. Konektor Teams tidak punya cara
      * menyimpan chat id tanpa lisensi Premium, jadi flow kedua mencocokkan
-     * `topic` hasil aksi "List chats" dengan string ini — cocoknya harus
+     * `topic` hasil aksi "List chats" dengan string ini - cocoknya harus
      * exact-match, dan itu hanya terjamin selama kedua jalur memakai fungsi yang
      * sama persis.
      *
@@ -424,7 +424,7 @@ class PowerAutomateService
 
         // Tim Delivery Support yang menangani tiket ini (Delivery Owner, Support
         // Manager, CO PM, Support Admin). Dibaca dari delivery support yang sudah
-        // dipilih helpdesk saat validasi, jadi orangnya spesifik per tiket —
+        // dipilih helpdesk saat validasi, jadi orangnya spesifik per tiket -
         // berbeda dari role penjaga di bawah yang sama untuk semua tiket.
         $supportTeam = $this->deliverySupportTeam(
             $this->deliverySupportIdForTicket((int) ($ticketPayload['id'] ?? 0))
@@ -441,7 +441,7 @@ class PowerAutomateService
 
         // Validator ikut secara default (POWER_AUTOMATE_TEAMS_INCLUDE_VALIDATOR
         // = true): yang menekan Validate umumnya helpdesk manusia yang memang
-        // perlu hadir di grup. Pengamannya ada di rejectExcluded() di bawah —
+        // perlu hadir di grup. Pengamannya ada di rejectExcluded() di bawah -
         // akun sistem seperti ECI_ADMIN (admin@eclectic.co.id) punya email di
         // database tapi bukan mailbox Microsoft 365, dan SATU alamat asing saja
         // membuat aksi Teams "Create a chat" menolak seluruh permintaan dengan
@@ -480,7 +480,7 @@ class PowerAutomateService
      * Potong daftar peserta di batas konektor Teams (20 orang untuk satu chat).
      *
      * Melebihi batas membuat aksi "Create a chat" menolak SELURUH permintaan
-     * dengan BadRequest — jadi lebih baik grupnya terbentuk dengan peserta yang
+     * dengan BadRequest - jadi lebih baik grupnya terbentuk dengan peserta yang
      * paling penting daripada tidak terbentuk sama sekali. Yang dibuang adalah
      * yang paling belakang: anggota tetap (`TEAMS_EXTRA_MEMBERS`) dan pemegang
      * role penjaga, bukan lead modul atau tim Delivery Support tiket itu.
@@ -521,7 +521,7 @@ class PowerAutomateService
      *
      * CATATAN: kalau subject tiket diubah setelah validasi, topic hasil rakitan
      * ini tidak lagi sama dengan nama grup yang terlanjur dibuat. Karena itu
-     * `chat.number` ikut dikirim sebagai kunci cadangan — nomor tiket tidak
+     * `chat.number` ikut dikirim sebagai kunci cadangan - nomor tiket tidak
      * pernah berubah, dan flow bisa memakainya untuk pencocokan awalan.
      *
      * @param  array{employee_id:?int,name:?string,email:?string}  $person
@@ -568,7 +568,7 @@ class PowerAutomateService
                 // `teams_id` = rujukan user untuk konektor Teams, dipakai flow 6
                 // di "Add a user to a chat" dan "Get an @mention token": email
                 // untuk internal, object id untuk guest (alamat Gmail ditolak
-                // konektor, object id diterima — terbukti 20 Okt 2026). Guest
+                // konektor, object id diterima - terbukti 20 Okt 2026). Guest
                 // sudah dimasukkan EcoSystem lewat Graph lebih dulu.
                 'is_guest'    => false,
                 'teams_id'    => $person['email'] ?? null,
@@ -580,7 +580,7 @@ class PowerAutomateService
             ],
             // Pesan jadi, dirakit di sini supaya designer cukup menempelkan satu
             // ekspresi. Keputusan meeting 18 Sep 2026: penambahan PIC/member
-            // cukup berupa PESAN, bukan Adaptive Card — kartu terasa berlebihan
+            // cukup berupa PESAN, bukan Adaptive Card - kartu terasa berlebihan
             // untuk satu baris informasi dan tombolnya menduplikasi kartu tiket
             // yang sudah ada di grup yang sama.
             //
@@ -590,7 +590,7 @@ class PowerAutomateService
             'message'      => $text,
             'message_html' => nl2br(e($text), false),
             // Varian untuk dipasang SESUDAH token @mention, supaya orang yang
-            // baru masuk langsung tertag dan dapat notifikasi — bukan sekadar
+            // baru masuk langsung tertag dan dapat notifikasi - bukan sekadar
             // disebut namanya. Sengaja tidak diawali nama: token mention sudah
             // tampil sebagai nama orangnya, jadi kalimatnya menyambung.
             'mention_html' => e($afterMention),
@@ -603,7 +603,7 @@ class PowerAutomateService
      *
      * Tanpa nomor tiket dan tanpa tautan tiket: pesan ini diposting DI DALAM
      * group chat tiket yang bersangkutan, jadi keduanya hanya mengulang konteks
-     * yang sudah jelas — dan tautan mentah tampil sebagai URL panjang yang
+     * yang sudah jelas - dan tautan mentah tampil sebagai URL panjang yang
      * mengotori percakapan (keputusan meeting 18 Sep 2026).
      *
      * @param  array{employee_id:?int,name:?string,email:?string}  $person
@@ -646,7 +646,7 @@ class PowerAutomateService
     /**
      * Nama + email kerja satu employee dalam bentuk yang dipakai
      * {@see ticketMemberPayload()}. Mengembalikan null kalau orangnya tidak punya
-     * email kerja sama sekali — tanpa email, konektor Teams tidak bisa menemukan
+     * email kerja sama sekali - tanpa email, konektor Teams tidak bisa menemukan
      * orangnya, jadi lebih baik flow tidak dipanggil daripada gagal di tengah.
      *
      * @return array{employee_id:int,name:?string,email:string}|null
@@ -665,7 +665,7 @@ class PowerAutomateService
         ];
     }
     /**
-     * Buang alamat yang tidak boleh masuk Teams — akun sistem seperti
+     * Buang alamat yang tidak boleh masuk Teams - akun sistem seperti
      * `admin@eclectic.co.id` ada di database sebagai email user, tapi bukan
      * mailbox Microsoft 365. Satu alamat asing membuat aksi "Create a chat"
      * DAN "Get an @mention token" menolak seluruh permintaan, jadi
@@ -704,7 +704,7 @@ class PowerAutomateService
      * Delivery support yang menangani satu tiket.
      *
      * PITFALL: tiket TIDAK punya kolom `delivery_support_id`. Kaitannya lewat
-     * tabel `delivery_support_activities` — saat helpdesk memilih delivery
+     * tabel `delivery_support_activities` - saat helpdesk memilih delivery
      * support di modal validasi, EcoSystem membuat satu baris activity di sana
      * (lihat StagingTicketController::assignTicketToDeliverySupport()). Karena
      * itu fungsi ini dibaca dari tabel activity, bukan dari request: hasilnya
@@ -731,7 +731,7 @@ class PowerAutomateService
     /**
      * Orang Delivery Support yang menangani tiket: Delivery Owner, Support
      * Manager, CO PM, dan Support Admin. Mereka ikut jadi peserta group chat
-     * tiket (keputusan meeting 11 Sep 2026) — sebelumnya grup hanya berisi lead
+     * tiket (keputusan meeting 11 Sep 2026) - sebelumnya grup hanya berisi lead
      * modul + role penjaga, sehingga pemilik delivery-nya sendiri tidak ada di
      * dalam grup tiket miliknya.
      *
@@ -741,11 +741,11 @@ class PowerAutomateService
      * tersimpan di tabel pivot `delivery_support_managers`. Kolom lama
      * `delivery_support.support_manager_id` masih ada di skema tapi sudah tidak
      * dipakai (tidak ada di `$fillable`, tidak ikut di-update controller), jadi
-     * isinya bisa basi — JANGAN dibaca.
+     * isinya bisa basi - JANGAN dibaca.
      *
      * `sales_id` sengaja TIDAK diikutkan: Sales bukan pelaksana tiket.
      *
-     * Employee non-aktif dibuang, sama seperti {@see roleMembers()} — mantan
+     * Employee non-aktif dibuang, sama seperti {@see roleMembers()} - mantan
      * karyawan tidak punya mailbox lagi, dan satu alamat tanpa mailbox membuat
      * aksi Teams "Create a chat" menolak seluruh permintaan.
      *
@@ -869,7 +869,7 @@ class PowerAutomateService
      * 6 Delivery Support Service Helpdesk) beserta email kerjanya. Mereka ikut
      * jadi peserta group chat tiap tiket, di samping Module Lead.
      *
-     * PITFALL: keanggotaan role TIDAK ada sebagai kolom di tabel `employee` —
+     * PITFALL: keanggotaan role TIDAK ada sebagai kolom di tabel `employee` -
      * relasinya di tabel pivot `employee_role_assignment` (employee_id, role_id).
      * Employee non-aktif dibuang supaya mantan helpdesk tidak ikut ditarik ke
      * setiap grup tiket baru.
@@ -940,7 +940,7 @@ class PowerAutomateService
     /**
      * Nama employee ada di employee_basic_data, BUKAN di tabel `employee` (tabel
      * itu hanya memegang eci + status aktif). Perhatikan: `full_name` di model
-     * EmployeeBasicData adalah ACCESSOR, bukan kolom — di query mentah nama harus
+     * EmployeeBasicData adalah ACCESSOR, bukan kolom - di query mentah nama harus
      * dirangkai sendiri dari first_name + last_name.
      *
      * @param  list<int>  $employeeIds
@@ -979,7 +979,7 @@ class PowerAutomateService
     /**
      * Email kerja tersimpan di employee_address.email_work (alamat PRIMARY kalau
      * ada). Employee lama bisa belum punya baris alamat sama sekali, jadi ada
-     * fallback ke email login di auth_users — itu email @eclectic.co.id yang sama
+     * fallback ke email login di auth_users - itu email @eclectic.co.id yang sama
      * yang dipakai masuk EcoSystem maupun Microsoft 365.
      *
      * @param  list<int>  $employeeIds

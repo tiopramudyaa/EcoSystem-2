@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
  * Guest yang baru diundang belum dikenal Teams selama beberapa menit, jadi
  * TeamsChatService membuat chat tanpa dia lalu mengantrenya di
  * `teams_pending_guest_member`. Command ini mencobanya lagi dengan jeda yang
- * merenggang, lalu — kalau barisnya membawa payload flow 6 — mengirim pesan
+ * merenggang, lalu - kalau barisnya membawa payload flow 6 - mengirim pesan
  * "ditambahkan ke tiket" begitu orangnya benar-benar sudah anggota.
  *
  * Dijadwalkan tiap menit. Baris yang tidak kunjung berhasil berhenti di
@@ -42,7 +42,7 @@ class AddPendingTeamsGuests extends Command
         }
 
         if (!$chats->isEnabled()) {
-            $this->line('Sinkron Teams tidak aktif — dilewati.');
+            $this->line('Sinkron Teams tidak aktif - dilewati.');
 
             return self::SUCCESS;
         }

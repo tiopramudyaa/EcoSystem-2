@@ -70,7 +70,7 @@ class ReprocessEmailAttachments extends Command
 
             $graphMsgId = $graphMsg['id'];
 
-            // Tanpa $select — contentId dan contentBytes adalah properti derived type
+            // Tanpa $select - contentId dan contentBytes adalah properti derived type
             // yang tidak bisa dipakai dengan $select pada collection endpoint.
             // contentBytes ada di response tapi tidak disimpan ke disk.
             $attRes = Http::withToken($token)->get(

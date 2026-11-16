@@ -6,7 +6,7 @@ use Illuminate\Http\UploadedFile;
 
 /**
  * Flags a suspicious ticket attachment for the Security Center dashboard.
- * Log-only, like the rest of Security Center — a support ticket can
+ * Log-only, like the rest of Security Center - a support ticket can
  * legitimately carry a .sh/.log/.sql file as troubleshooting evidence, so
  * this never rejects the upload, only surfaces it for review.
  */
@@ -21,7 +21,7 @@ class AttachmentSecurityScanner
 
         $originalName = $file->getClientOriginalName();
         $extension    = strtolower((string) $file->getClientOriginalExtension());
-        $realMime     = $file->getMimeType(); // server-side, fileinfo/magic-byte based — not the spoofable client Content-Type
+        $realMime     = $file->getMimeType(); // server-side, fileinfo/magic-byte based - not the spoofable client Content-Type
 
         $reasons = [];
 
@@ -29,7 +29,7 @@ class AttachmentSecurityScanner
             $reasons[] = "executable/script extension \".{$extension}\"";
         }
 
-        // Double extension: "invoice.pdf.php" — a document/image-looking
+        // Double extension: "invoice.pdf.php" - a document/image-looking
         // inner extension immediately followed by a dangerous outer one.
         $parts = explode('.', $originalName);
         if (count($parts) >= 3) {

@@ -131,9 +131,9 @@ class TicketDeliverableController extends Controller
      * Tentukan kesiapan folder deliverable untuk sebuah ticket.
      * Folder ticket berada di level customer:
      *   {root}/{customer}/TICKETING/{ticket_number}/Deliverable
-     * Folder diturunkan langsung dari customer ticket — TIDAK lagi bergantung pada
+     * Folder diturunkan langsung dari customer ticket - TIDAK lagi bergantung pada
      * delivery support (deliverable tidak masuk ke folder support). Folder dibuat
-     * lazy saat upload pertama — tidak perlu "generate" lebih dulu.
+     * lazy saat upload pertama - tidak perlu "generate" lebih dulu.
      *
      * @return array{0:string,1:?string}
      *   [state, message]  state: no_customer | ready
@@ -154,7 +154,7 @@ class TicketDeliverableController extends Controller
      * POST /api/tickets/{id}/deliverables/upload-session
      * Buat OneDrive upload session lebih dulu supaya file diupload LANGSUNG dari
      * browser ke Graph (chunked), tidak lewat body request Laravel. Ini menghindari
-     * batas post_max_size/upload_max_filesize PHP dan batas 4 MB simple-PUT Graph —
+     * batas post_max_size/upload_max_filesize PHP dan batas 4 MB simple-PUT Graph -
      * lihat submitNewDoc() di ticket/show.blade.php untuk alur lengkapnya.
      */
     public function createUploadSession(Request $request, $ticketId)
@@ -228,7 +228,7 @@ class TicketDeliverableController extends Controller
         ];
         // Link diperbarui bukan hanya saat kosong/pindah folder, tapi juga saat
         // link tersimpan ternyata bukan share link, sudah kedaluwarsa, atau
-        // scope-nya bukan anonymous — kondisi yang bikin customer kena
+        // scope-nya bukan anonymous - kondisi yang bikin customer kena
         // "Request access" padahal di EcoSystem terlihat normal.
         $needsLink = empty($ticket->onedrive_folder_url)
             || $ticket->onedrive_folder_id !== $ticketFolderId
@@ -252,8 +252,8 @@ class TicketDeliverableController extends Controller
 
     /**
      * POST /api/tickets/{id}/deliverables
-     * JSON body: doc_type, description (optional, internal note — never sent to customer), onedrive_item_id + file_name
-     * (optional — hasil dari createUploadSession() + upload chunked ke Graph).
+     * JSON body: doc_type, description (optional, internal note - never sent to customer), onedrive_item_id + file_name
+     * (optional - hasil dari createUploadSession() + upload chunked ke Graph).
      */
     public function store(Request $request, $ticketId)
     {
@@ -263,7 +263,7 @@ class TicketDeliverableController extends Controller
         }
 
         // Doc type kini master data (menu Management > Master Ticket Settings >
-        // Document Type) — lihat DeliverableDocumentTypeController — bukan hardcode lagi.
+        // Document Type) - lihat DeliverableDocumentTypeController - bukan hardcode lagi.
         $validDocTypes = DeliverableDocumentType::active()->pluck('name');
 
         $request->validate([
@@ -283,9 +283,9 @@ class TicketDeliverableController extends Controller
             $fileId   = $request->input('onedrive_item_id');
             $fileName = $request->input('file_name');
 
-            // webUrl dari upload adalah path SharePoint langsung — butuh izin akun
+            // webUrl dari upload adalah path SharePoint langsung - butuh izin akun
             // (Request access). Buat anonymous share link agar file bisa dibuka
-            // customer tanpa login. File SUDAH terupload ke OneDrive di titik ini —
+            // customer tanpa login. File SUDAH terupload ke OneDrive di titik ini -
             // kalau share link gagal dibuat, tetap simpan baris deliverable (fileUrl
             // null) daripada kehilangan record untuk file yang sudah ada di OneDrive.
             // `onedrive:audit-links --fix` bisa memperbaiki link-nya belakangan.
@@ -293,7 +293,7 @@ class TicketDeliverableController extends Controller
                 $oneDrive = new OneDriveService();
                 $fileUrl  = $oneDrive->createShareLink($fileId, 'view')['url'];
             } catch (\Throwable $e) {
-                Log::error('Deliverable file share link failed — file uploaded but no public link yet', [
+                Log::error('Deliverable file share link failed - file uploaded but no public link yet', [
                     'ticket_id' => $ticketId,
                     'file_id'   => $fileId,
                     'error'     => $e->getMessage(),
@@ -453,7 +453,7 @@ class TicketDeliverableController extends Controller
         }
 
         // Build message body
-        // Chat bubble (EcoSystem/Jarvies) tetap tampil "Helpdesk Support" — konsisten
+        // Chat bubble (EcoSystem/Jarvies) tetap tampil "Helpdesk Support" - konsisten
         // dengan reply biasa, karena email dikirim dari shared inbox M365.
         $senderName  = 'Helpdesk Support';
         $senderEmail = $user['email'] ?? null;
@@ -503,7 +503,7 @@ class TicketDeliverableController extends Controller
                 ? ($d->onedrive_file_url
                     ? '<a href="' . htmlspecialchars($d->onedrive_file_url) . '" target="_blank" style="color:#2563eb;word-break:break-word;overflow-wrap:anywhere;">' . htmlspecialchars($d->file_name) . '</a>'
                     : htmlspecialchars($d->file_name))
-                : '&mdash;';
+                : '-';
             if ($i > 0) {
                 $htmlMsg .= '<tr><td colspan="3" style="padding:4px 0;"></td></tr>';
             }
@@ -571,7 +571,7 @@ class TicketDeliverableController extends Controller
                 $emailHtml = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#374151;line-height:1.7;max-width:600px;">'
                     . $htmlMsg
                     . '<p style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;">'
-                    . 'Sent by <strong style="color:#6b7280;">' . htmlspecialchars($signatureName) . '</strong> &mdash; PT Eclectic Consulting<br>'
+                    . 'Sent by <strong style="color:#6b7280;">' . htmlspecialchars($signatureName) . '</strong> - PT Eclectic Consulting<br>'
                     . 'Ticket: <strong style="color:#6b7280;">#' . htmlspecialchars($ticket->ticket_number ?? $ticket->ticket_id) . '</strong>'
                     . '</p></div>';
 
@@ -681,10 +681,10 @@ class TicketDeliverableController extends Controller
     /**
      * Resolve email customer dari berbagai sumber (urutan prioritas, mirror
      * TicketMessageController::resolveCustomerEmail):
-     * 1. ticket.submitted_by_email          — email login customer (initiateEmail / import CSV)
-     * 2. staging_tickets.submitted_by_email  — dari staging yang sudah diapprove
-     * 3. ticket_message.sender_email pertama — email pesan pertama dari customer
-     * 4. customer.email                       — email perusahaan (fallback terakhir)
+     * 1. ticket.submitted_by_email          - email login customer (initiateEmail / import CSV)
+     * 2. staging_tickets.submitted_by_email  - dari staging yang sudah diapprove
+     * 3. ticket_message.sender_email pertama - email pesan pertama dari customer
+     * 4. customer.email                       - email perusahaan (fallback terakhir)
      */
     private function resolveCustomerEmail(Ticket $ticket): ?string
     {

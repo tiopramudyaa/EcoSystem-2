@@ -1,5 +1,5 @@
 {{--
-    Reusable confirm modal — replaces browser native confirm() dialog.
+    Reusable confirm modal - replaces browser native confirm() dialog.
 
     Usage (returns Promise<boolean>):
         if (await showConfirm('Delete this item?')) { ... }
@@ -118,7 +118,7 @@
     };
 
     /**
-     * Custom alert dialog (pengganti alert() native) — modal yang sama, hanya tombol OK.
+     * Custom alert dialog (pengganti alert() native) - modal yang sama, hanya tombol OK.
      * Returns Promise<void> yang resolve saat ditutup.
      * @param {string} message
      * @param {string} [title='Information']

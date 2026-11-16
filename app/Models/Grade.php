@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Grade consultant — referensi tunggal untuk opsi dropdown grade & harga MD.
+ * Grade consultant - referensi tunggal untuk opsi dropdown grade & harga MD.
  * Lihat migration create_grades_table.
  */
 class Grade extends Model
@@ -21,7 +21,7 @@ class Grade extends Model
     ];
 
     /**
-     * Daftar nama grade aktif (urut sort_order) — dipakai untuk render dropdown
+     * Daftar nama grade aktif (urut sort_order) - dipakai untuk render dropdown
      * & normalisasi import. Mengembalikan array string nama.
      *
      * @return string[]
@@ -38,7 +38,7 @@ class Grade extends Model
 
     /**
      * Daftar nama grade tanpa suffix " Consultant" (mis. "Junior Consultant" -> "Junior").
-     * Dipakai untuk opsi dropdown "Level" di Employee Qualification (tipe Certification) —
+     * Dipakai untuk opsi dropdown "Level" di Employee Qualification (tipe Certification) -
      * konsep career-level yang sama dengan Grade, cuma labelnya lebih singkat.
      *
      * @return string[]

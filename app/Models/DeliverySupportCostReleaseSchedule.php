@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Traits\Auditable;
 
 /**
- * Satu jadwal release bulanan sebuah cost item Plan Cost Delivery Support —
+ * Satu jadwal release bulanan sebuah cost item Plan Cost Delivery Support -
  * mirror DeliveryProjectCostReleaseSchedule.
  */
 class DeliverySupportCostReleaseSchedule extends Model

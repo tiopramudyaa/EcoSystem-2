@@ -1,4 +1,4 @@
-# Microsoft Graph Config — Wajib `config()`, Jangan `env()` (JARVIES)
+# Microsoft Graph Config - Wajib `config()`, Jangan `env()` (JARVIES)
 
 ## Latar Belakang
 
@@ -12,16 +12,16 @@ disimpan di `.env`.
 yang bicara ke Graph API memanggil `env('MS_TENANT_ID')` dkk **langsung di
 application code** (bukan cuma di file `config/*.php`). Begitu
 `php artisan config:cache` dijalankan (langkah deploy Laravel yang normal),
-Laravel berhenti membaca `.env` sama sekali — semua pemanggilan `env()` di
+Laravel berhenti membaca `.env` sama sekali - semua pemanggilan `env()` di
 luar file config balik `null`. Efeknya: URL OAuth jadi
 `https://login.microsoftonline.com//oauth2/v2.0/token` (tenant ID kosong),
 Microsoft balas 404, exception ke-catch diam-diam → **semua email Graph API
 gagal terkirim tanpa error yang terlihat user**, cuma masuk `Log::error()`.
 
 Ditemukan cache config lama (`bootstrap/cache/config.php`) bertanggal 1 Juli
-2026 di checkout ini — artinya `config:cache` memang pernah dijalankan.
+2026 di checkout ini - artinya `config:cache` memang pernah dijalankan.
 
-EcoSystem-2 **tidak** kena bug ini — controllernya sudah benar pakai
+EcoSystem-2 **tidak** kena bug ini - controllernya sudah benar pakai
 `config('services.microsoft_graph.*')` sejak awal (ada komentar eksplisit
 "Gunakan config() agar berfungsi saat config:cache di production").
 
@@ -39,7 +39,7 @@ EcoSystem-2 **tidak** kena bug ini — controllernya sudah benar pakai
 | `env('GRAPH_BASE_URL', '...')` | `config('services.microsoft_graph.base_url', '...')` | sama |
 
 `env()` **hanya boleh** dipakai di dalam file `config/*.php` sendiri (itu
-memang mekanisme resminya Laravel — file config di-load sekali sebelum cache
+memang mekanisme resminya Laravel - file config di-load sekali sebelum cache
 dibuat, lalu di-cache; application code selanjutnya baca dari cache lewat
 `config()`).
 
@@ -47,7 +47,7 @@ dibuat, lalu di-cache; application code selanjutnya baca dari cache lewat
 
 ## File yang Sudah Diperbaiki (JARVIES-new)
 
-### `config/services.php` — entry baru
+### `config/services.php` - entry baru
 ```php
 'microsoft_graph' => [
     'tenant_id'     => env('MS_TENANT_ID'),
@@ -72,7 +72,7 @@ Selain itu, `PasswordSetupController::getGraphToken()` (EcoSystem-2 & JARVIES-ne
 keduanya) sekarang **cache token OAuth selama 55 menit**
 (`Cache::remember('password_setup.ms_graph_token', 3300, ...)`) supaya tidak
 selalu round-trip OAuth baru tiap kirim email set-password/reset. Ini
-optimasi terpisah, hanya di `PasswordSetupController` — `GraphRelayService`
+optimasi terpisah, hanya di `PasswordSetupController` - `GraphRelayService`
 dan controller lain masih fetch token baru tiap panggilan (belum di-cache,
 di luar scope perbaikan ini).
 
@@ -99,7 +99,7 @@ $token = $ref->invoke(null); // harus berhasil, bukan RuntimeException
 
 Setelah selesai testing, jalankan `php artisan config:clear` supaya `.env`
 lokal kembali normal untuk development (jangan biarkan config ke-cache di
-environment dev — nanti perubahan `.env` tidak ke-detect sampai di-clear
+environment dev - nanti perubahan `.env` tidak ke-detect sampai di-clear
 manual).
 
 ---
@@ -112,14 +112,14 @@ manual).
    ```
    Harus **kosong**. Kalau ada file baru yang manggil Graph API, wajib pakai `config('services.microsoft_graph.*')`.
 2. Kalau deploy script menjalankan `php artisan config:cache`, pastikan urutannya: `.env` di-update dulu → baru `config:cache` dijalankan (config cache membekukan nilai `.env` saat itu).
-3. Setelah deploy, test kirim 1 email (misal trigger forgot-password) dan cek `storage/logs/laravel.log` untuk `PasswordSetupController: email terkirim` — kalau yang muncul `gagal kirim email`, config kemungkinan belum ke-refresh.
+3. Setelah deploy, test kirim 1 email (misal trigger forgot-password) dan cek `storage/logs/laravel.log` untuk `PasswordSetupController: email terkirim` - kalau yang muncul `gagal kirim email`, config kemungkinan belum ke-refresh.
 
 ---
 
-## Token Expiry — Standardisasi 24 Jam (2026-07-02)
+## Token Expiry - Standardisasi 24 Jam (2026-07-02)
 
 Sebelumnya EcoSystem-2 pakai `addMinutes(30)` sementara JARVIES-new pakai
-`addHours(24)` — padahal keduanya menulis ke kolom `cp_token_expires_at` di
+`addHours(24)` - padahal keduanya menulis ke kolom `cp_token_expires_at` di
 tabel `auth_users` yang **sama** (shared antar 2 aplikasi). Expired time
 token jadi tergantung aplikasi mana yang mengirim, bukan jenis alurnya
 (setup vs reset). Sudah disamakan jadi **24 jam** di kedua aplikasi:
@@ -133,7 +133,7 @@ token jadi tergantung aplikasi mana yang mengirim, bukan jenis alurnya
 
 Dipicu dari 2 flow yang sama-sama panggil `generateAndSendToken()`:
 - **Grant Access** (admin EcoSystem klik di `CustomerContactController::createLogin`, atau `AuthController` saat provisioning akun baru)
-- **First login self-service** (JARVIES `ProvisionsContactLogin` — customer login pertama kali dengan email yang dikenal di `customer_contact` tapi belum punya `auth_users`)
+- **First login self-service** (JARVIES `ProvisionsContactLogin` - customer login pertama kali dengan email yang dikenal di `customer_contact` tapi belum punya `auth_users`)
 
 Kalau ada perubahan expiry di masa depan, **ubah di kedua tempat** (dua
 `PasswordSetupController.php` yang terpisah repo) supaya tidak drift lagi.
