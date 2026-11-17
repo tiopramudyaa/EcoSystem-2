@@ -12,7 +12,11 @@ use App\Http\Controllers\EmployeeQualificationController;
 use App\Http\Controllers\EmployeeContractController;
 use App\Http\Controllers\EmployeeBankController;
 use App\Http\Controllers\EmployeePaymentController;
+use App\Http\Controllers\EmployeeSalaryComponentController;
 use App\Http\Controllers\EmployeeAttachmentController;
+use App\Http\Controllers\EmployeeCompensationController;
+use App\Http\Controllers\EmployeeHrProfileController;
+use App\Http\Controllers\EmployeeEngagementController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerBasicDataController;
 use App\Http\Controllers\CustomerAddressController;
@@ -98,8 +102,8 @@ Route::middleware(['web'])->group(function () {
         Route::post('/', [EmployeeController::class, 'store'])->middleware('menu:master.employee.create');
         Route::get('/roles', [EmployeeController::class, 'getRoles']);
         Route::get('/mentionable', [EmployeeController::class, 'getMentionable']);
-        Route::get('/{id}', [EmployeeController::class, 'getDetail']);
-        Route::get('/{id}/header', [EmployeeController::class, 'headerData']);
+        Route::get('/{id}', [EmployeeController::class, 'getDetail'])->middleware('employee.section:basic_data,view');
+        Route::get('/{id}/header', [EmployeeController::class, 'headerData'])->middleware('employee.section:basic_data,view');
 
         // Aksi terhadap record employee-nya sendiri (bukan section) - hanya
         // dari halaman Master > Employee, tidak pernah dari My Profile.
@@ -107,15 +111,16 @@ Route::middleware(['web'])->group(function () {
         Route::delete('/{id}', [EmployeeController::class, 'destroy'])->middleware('menu:master.employee.action');
         Route::post('/{id}/delete', [EmployeeController::class, 'destroy'])->middleware('menu:master.employee.action');
         Route::patch('/{id}/change-password', [EmployeeController::class, 'changePassword'])->middleware('menu:master.employee.action');
-        Route::patch('/{id}/change-eci', [EmployeeController::class, 'changeEci'])->middleware('menu:master.employee.action');
         Route::patch('/{id}/change-role', [EmployeeController::class, 'changeRole'])->middleware('menu:master.employee.action');
         // POST (WAF production memblokir verb DELETE). Izin sendiri + kode 2FA baru dari admin.
         Route::post('/{id}/reset-two-factor', [EmployeeController::class, 'resetTwoFactor'])->middleware(['menu:master.employee.reset-two-factor', 'throttle:10,1']);
+        // Ganti ECI (kode karyawan): wajib konfirmasi kata sandi penggantinya; dibatasi laju agar kata sandi tak bisa ditebak lewat sini.
+        Route::patch('/{id}/change-eci', [EmployeeController::class, 'changeEci'])->middleware(['menu:master.employee.action', 'throttle:10,1']);
     });
 
     // Employee Basic Data endpoints
     Route::prefix('employees/{employeeId}')->group(function () {
-        Route::get('/basic-data', [EmployeeBasicDataController::class, 'show']);
+        Route::get('/basic-data', [EmployeeBasicDataController::class, 'show'])->middleware('employee.section:basic_data,view');
         Route::post('/basic-data', [EmployeeBasicDataController::class, 'store'])->middleware('employee.section:basic_data');
         Route::delete('/basic-data', [EmployeeBasicDataController::class, 'destroy'])->middleware('employee.section:basic_data');
         Route::post('/basic-data/delete', [EmployeeBasicDataController::class, 'destroy'])->middleware('employee.section:basic_data');
@@ -123,12 +128,12 @@ Route::middleware(['web'])->group(function () {
 
     // Employee Address endpoints
     Route::middleware(['auth.session'])->group(function () {
-        Route::get('/employees/{employeeId}/addresses', [EmployeeAddressController::class, 'index']);
-        Route::get('/employees/{employeeId}/addresses/{addressId}', [EmployeeAddressController::class, 'show']);
-        Route::post('/employees/{employeeId}/addresses', [EmployeeAddressController::class, 'store'])->middleware('employee.section:address');
+        Route::get('/employees/{employeeId}/addresses', [EmployeeAddressController::class, 'index'])->middleware('employee.section:address,view');
+        Route::get('/employees/{employeeId}/addresses/{addressId}', [EmployeeAddressController::class, 'show'])->middleware('employee.section:address,view');
+        Route::post('/employees/{employeeId}/addresses', [EmployeeAddressController::class, 'store'])->middleware('employee.section:address,create');
         Route::put('/employees/{employeeId}/addresses/{addressId}', [EmployeeAddressController::class, 'update'])->middleware('employee.section:address');
-        Route::delete('/employees/{employeeId}/addresses/{addressId}', [EmployeeAddressController::class, 'destroy'])->middleware('employee.section:address');
-        Route::post('/employees/{employeeId}/addresses/{addressId}/delete', [EmployeeAddressController::class, 'destroy'])->middleware('employee.section:address');
+        Route::delete('/employees/{employeeId}/addresses/{addressId}', [EmployeeAddressController::class, 'destroy'])->middleware('employee.section:address,delete');
+        Route::post('/employees/{employeeId}/addresses/{addressId}/delete', [EmployeeAddressController::class, 'destroy'])->middleware('employee.section:address,delete');
         Route::patch('/employees/{employeeId}/addresses/{addressId}/set-primary', [EmployeeAddressController::class, 'setPrimary'])->middleware('employee.section:address');
 
         // Referensi wilayah Indonesia - dropdown alamat cascading
@@ -138,87 +143,138 @@ Route::middleware(['web'])->group(function () {
 
     // Employee Identification endpoints
     Route::prefix('employees/{employeeId}/identifications')->group(function () {
-        Route::get('/', [EmployeeIdentificationController::class, 'index']);
-        Route::post('/', [EmployeeIdentificationController::class, 'store'])->middleware('employee.section:identification');
-        Route::get('/{identificationId}', [EmployeeIdentificationController::class, 'show']);
+        Route::get('/', [EmployeeIdentificationController::class, 'index'])->middleware('employee.section:identification,view');
+        Route::post('/', [EmployeeIdentificationController::class, 'store'])->middleware('employee.section:identification,create');
+        Route::get('/{identificationId}', [EmployeeIdentificationController::class, 'show'])->middleware('employee.section:identification,view');
         Route::put('/{identificationId}', [EmployeeIdentificationController::class, 'update'])->middleware('employee.section:identification');
-        Route::delete('/{identificationId}', [EmployeeIdentificationController::class, 'destroy'])->middleware('employee.section:identification');
-        Route::post('/{identificationId}/delete', [EmployeeIdentificationController::class, 'destroy'])->middleware('employee.section:identification');
+        Route::delete('/{identificationId}', [EmployeeIdentificationController::class, 'destroy'])->middleware('employee.section:identification,delete');
+        Route::post('/{identificationId}/delete', [EmployeeIdentificationController::class, 'destroy'])->middleware('employee.section:identification,delete');
     });
 
     // Employee Family endpoints
     Route::prefix('employees/{employeeId}')->group(function () {
-        Route::get('/family', [EmployeeFamilyController::class, 'index']);
-        Route::get('/family/statistics', [EmployeeFamilyController::class, 'statistics']);
-        Route::get('/family/{familyId}', [EmployeeFamilyController::class, 'show']);
-        Route::post('/family', [EmployeeFamilyController::class, 'store'])->middleware('employee.section:family');
+        Route::get('/family', [EmployeeFamilyController::class, 'index'])->middleware('employee.section:family,view');
+        Route::get('/family/statistics', [EmployeeFamilyController::class, 'statistics'])->middleware('employee.section:family,view');
+        Route::get('/family/{familyId}', [EmployeeFamilyController::class, 'show'])->middleware('employee.section:family,view');
+        Route::post('/family', [EmployeeFamilyController::class, 'store'])->middleware('employee.section:family,create');
         Route::put('/family/{familyId}', [EmployeeFamilyController::class, 'update'])->middleware('employee.section:family');
-        Route::delete('/family/{familyId}', [EmployeeFamilyController::class, 'destroy'])->middleware('employee.section:family');
-        Route::post('/family/{familyId}/delete', [EmployeeFamilyController::class, 'destroy'])->middleware('employee.section:family');
+        Route::delete('/family/{familyId}', [EmployeeFamilyController::class, 'destroy'])->middleware('employee.section:family,delete');
+        Route::post('/family/{familyId}/delete', [EmployeeFamilyController::class, 'destroy'])->middleware('employee.section:family,delete');
     });
 
     // Employee Education endpoints
     Route::prefix('employees/{employeeId}/education')->group(function () {
-        Route::get('/', [EmployeeEducationController::class, 'index']);
-        Route::get('/{educationId}', [EmployeeEducationController::class, 'show']);
-        Route::post('/', [EmployeeEducationController::class, 'store'])->middleware('employee.section:education');
+        Route::get('/', [EmployeeEducationController::class, 'index'])->middleware('employee.section:education,view');
+        Route::get('/{educationId}', [EmployeeEducationController::class, 'show'])->middleware('employee.section:education,view');
+        Route::post('/', [EmployeeEducationController::class, 'store'])->middleware('employee.section:education,create');
         Route::put('/{educationId}', [EmployeeEducationController::class, 'update'])->middleware('employee.section:education');
-        Route::delete('/{educationId}', [EmployeeEducationController::class, 'destroy'])->middleware('employee.section:education');
-        Route::post('/{educationId}/delete', [EmployeeEducationController::class, 'destroy'])->middleware('employee.section:education');
+        Route::delete('/{educationId}', [EmployeeEducationController::class, 'destroy'])->middleware('employee.section:education,delete');
+        Route::post('/{educationId}/delete', [EmployeeEducationController::class, 'destroy'])->middleware('employee.section:education,delete');
     });
 
     // Employee Qualification endpoints
     Route::prefix('employees/{employeeId}/qualification')->group(function () {
-        Route::get('/', [EmployeeQualificationController::class, 'index']);
-        Route::get('/{qualificationId}', [EmployeeQualificationController::class, 'show']);
-        Route::post('/', [EmployeeQualificationController::class, 'store'])->middleware('employee.section:qualification');
+        Route::get('/', [EmployeeQualificationController::class, 'index'])->middleware('employee.section:qualification,view');
+        Route::get('/{qualificationId}', [EmployeeQualificationController::class, 'show'])->middleware('employee.section:qualification,view');
+        Route::post('/', [EmployeeQualificationController::class, 'store'])->middleware('employee.section:qualification,create');
         Route::put('/{qualificationId}', [EmployeeQualificationController::class, 'update'])->middleware('employee.section:qualification');
-        Route::delete('/{qualificationId}', [EmployeeQualificationController::class, 'destroy'])->middleware('employee.section:qualification');
-        Route::post('/{qualificationId}/delete', [EmployeeQualificationController::class, 'destroy'])->middleware('employee.section:qualification');
+        Route::delete('/{qualificationId}', [EmployeeQualificationController::class, 'destroy'])->middleware('employee.section:qualification,delete');
+        Route::post('/{qualificationId}/delete', [EmployeeQualificationController::class, 'destroy'])->middleware('employee.section:qualification,delete');
     });
 
     // Employee Contract endpoints
     Route::prefix('employees/{employeeId}/contract')->group(function () {
-        Route::get('/', [EmployeeContractController::class, 'index']);
-        Route::get('/{contractId}', [EmployeeContractController::class, 'show']);
-        Route::post('/', [EmployeeContractController::class, 'store'])->middleware('employee.section:contract');
+        Route::get('/', [EmployeeContractController::class, 'index'])->middleware('employee.section:contract,view');
+        Route::get('/{contractId}', [EmployeeContractController::class, 'show'])->middleware('employee.section:contract,view');
+        Route::post('/', [EmployeeContractController::class, 'store'])->middleware('employee.section:contract,create');
         Route::put('/{contractId}', [EmployeeContractController::class, 'update'])->middleware('employee.section:contract');
-        Route::delete('/{contractId}', [EmployeeContractController::class, 'destroy'])->middleware('employee.section:contract');
-        Route::post('/{contractId}/delete', [EmployeeContractController::class, 'destroy'])->middleware('employee.section:contract');
+        Route::delete('/{contractId}', [EmployeeContractController::class, 'destroy'])->middleware('employee.section:contract,delete');
+        Route::post('/{contractId}/delete', [EmployeeContractController::class, 'destroy'])->middleware('employee.section:contract,delete');
     });
 
     // Employee Bank endpoints
     Route::prefix('employees/{employeeId}/bank')->group(function () {
-        Route::get('/', [EmployeeBankController::class, 'index']);
-        Route::get('/{bankId}', [EmployeeBankController::class, 'show']);
-        Route::post('/', [EmployeeBankController::class, 'store'])->middleware('employee.section:bank');
+        // GET dijaga juga (sebelumnya terbuka bagi akun mana pun): diri sendiri → my-profile.section.bank.view, orang lain → employee|external.section.bank.view.
+        Route::get('/', [EmployeeBankController::class, 'index'])->middleware('employee.section:bank,view');
+        Route::get('/{bankId}', [EmployeeBankController::class, 'show'])->middleware('employee.section:bank,view');
+        Route::post('/', [EmployeeBankController::class, 'store'])->middleware('employee.section:bank,create');
         Route::put('/{bankId}', [EmployeeBankController::class, 'update'])->middleware('employee.section:bank');
-        Route::delete('/{bankId}', [EmployeeBankController::class, 'destroy'])->middleware('employee.section:bank');
-        Route::post('/{bankId}/delete', [EmployeeBankController::class, 'destroy'])->middleware('employee.section:bank');
+        Route::delete('/{bankId}', [EmployeeBankController::class, 'destroy'])->middleware('employee.section:bank,delete');
+        Route::post('/{bankId}/delete', [EmployeeBankController::class, 'destroy'])->middleware('employee.section:bank,delete');
+    });
+
+    // Employee HR Profile endpoints (H3.5). Hanya GET/POST (verb DELETE diblokir edge production).
+    // GET butuh izin .view; semua POST butuh .update (target diri sendiri → my-profile.*, lain → employee.*).
+    // Tanda tangan: hanya pemilik yang boleh unggah (dicek di controller).
+    Route::prefix('employees/{employeeId}/hr-profile')->group(function () {
+        Route::get('/', [EmployeeHrProfileController::class, 'show'])->middleware('employee.section:hr_profile,view');
+        Route::post('/', [EmployeeHrProfileController::class, 'save'])->middleware('employee.section:hr_profile');
+        Route::get('/photo', [EmployeeHrProfileController::class, 'photo'])->middleware('employee.section:hr_profile,view');
+        Route::get('/signature', [EmployeeHrProfileController::class, 'signature'])->middleware('employee.section:hr_profile,view');
+        Route::post('/photo', [EmployeeHrProfileController::class, 'uploadPhoto'])->middleware(['employee.section:hr_profile', 'throttle:30,1']);
+        Route::post('/photo/delete', [EmployeeHrProfileController::class, 'deletePhoto'])->middleware(['employee.section:hr_profile', 'throttle:30,1']);
+        Route::post('/signature', [EmployeeHrProfileController::class, 'uploadSignature'])->middleware(['employee.section:hr_profile', 'throttle:30,1']);
+        Route::post('/signature/delete', [EmployeeHrProfileController::class, 'deleteSignature'])->middleware(['employee.section:hr_profile', 'throttle:30,1']);
+    });
+
+    // Employee Compensation endpoints (Payroll; HC-D21): penanda pajak & BPJS (PTKP, BPJS, ikut payroll) + ringkasan gaji.
+    // Komponen gaji sendiri diedit di kotak Salary Components (employee.section.salary, di atas). Hanya GET/POST.
+    // GET butuh .view; POST butuh .update. Tidak ada padanan my-profile (gaji tidak diedit pemilik).
+    Route::prefix('employees/{employeeId}/compensation')->group(function () {
+        Route::get('/', [EmployeeCompensationController::class, 'show'])->middleware('employee.section:compensation,view');
+        Route::post('/tax', [EmployeeCompensationController::class, 'saveTax'])->middleware(['employee.section:compensation', 'throttle:60,1']);
+    });
+
+    // Employee Engagement endpoints - konsultan External (HC-D47). Hanya GET/POST. Tarif butuh izin terpisah
+    // (dicek di controller). Tidak ada padanan my-profile: konsultan tidak mengakses blok ini untuk dirinya sendiri.
+    Route::prefix('employees/{employeeId}/engagement')->group(function () {
+        Route::get('/', [EmployeeEngagementController::class, 'show'])->middleware('employee.section:engagement,view');
+        Route::post('/', [EmployeeEngagementController::class, 'save'])->middleware(['employee.section:engagement', 'throttle:60,1']);
+    });
+
+    // Salary Components - komponen gaji aktif karyawan (sumber utama payroll, BPJS, referensi kontrak).
+    // Tidak ada padanan my-profile: pemilik tidak mengelola komponen gajinya sendiri.
+    Route::prefix('employees/{employeeId}/salary-components')->group(function () {
+        Route::get('/', [EmployeeSalaryComponentController::class, 'index'])->middleware('employee.section:salary,view');
+        Route::post('/', [EmployeeSalaryComponentController::class, 'store'])->middleware('employee.section:salary,create');
+        Route::put('/{componentId}', [EmployeeSalaryComponentController::class, 'update'])->middleware('employee.section:salary');
+        Route::delete('/{componentId}', [EmployeeSalaryComponentController::class, 'destroy'])->middleware('employee.section:salary,delete');
+        Route::post('/{componentId}/delete', [EmployeeSalaryComponentController::class, 'destroy'])->middleware('employee.section:salary,delete');
+    });
+
+    // My Profile recaps - SELF ONLY (the employee id is the session's, never a URL parameter). Read-only; HR changes
+    // go through Contracts / Payroll. Deliberately not under employee.section.salary, which stays HR's editing gate.
+    Route::prefix('profile')->group(function () {
+        Route::get('/salary-summary', [\App\Http\Controllers\ProfileCompensationController::class, 'salarySummary']);
+        // The signing state of my contracts (stage wording + link), for the Contract tab of My Profile.
+        Route::get('/contract-signing', [\App\Http\Controllers\MyContractController::class, 'mine']);
+        Route::get('/paystub-summary', [\App\Http\Controllers\ProfileCompensationController::class, 'paystubSummary'])->middleware('menu:general.my-paystub');
     });
 
     // Employee Payment endpoints
     Route::prefix('employees/{employeeId}/payment')->group(function () {
-        Route::get('/', [EmployeePaymentController::class, 'index']);
-        Route::get('/{paymentId}', [EmployeePaymentController::class, 'show']);
-        Route::post('/', [EmployeePaymentController::class, 'store'])->middleware('employee.section:payment');
+        // GET dijaga juga (lihat catatan pada Bank di atas).
+        Route::get('/', [EmployeePaymentController::class, 'index'])->middleware('employee.section:payment,view');
+        Route::get('/{paymentId}', [EmployeePaymentController::class, 'show'])->middleware('employee.section:payment,view');
+        Route::post('/', [EmployeePaymentController::class, 'store'])->middleware('employee.section:payment,create');
         Route::put('/{paymentId}', [EmployeePaymentController::class, 'update'])->middleware('employee.section:payment');
-        Route::delete('/{paymentId}', [EmployeePaymentController::class, 'destroy'])->middleware('employee.section:payment');
-        Route::post('/{paymentId}/delete', [EmployeePaymentController::class, 'destroy'])->middleware('employee.section:payment');
+        Route::delete('/{paymentId}', [EmployeePaymentController::class, 'destroy'])->middleware('employee.section:payment,delete');
+        Route::post('/{paymentId}/delete', [EmployeePaymentController::class, 'destroy'])->middleware('employee.section:payment,delete');
     });
 
     // Employee Attachment endpoints
     Route::prefix('employees/{employeeId}/attachments')->group(function () {
-        Route::get('/', [EmployeeAttachmentController::class, 'index']);
-        Route::post('/', [EmployeeAttachmentController::class, 'store'])->middleware('employee.section:attachment');
-        Route::delete('/{attachmentId}', [EmployeeAttachmentController::class, 'destroy'])->middleware('employee.section:attachment');
-        Route::post('/{attachmentId}/delete', [EmployeeAttachmentController::class, 'destroy'])->middleware('employee.section:attachment');
+        Route::get('/', [EmployeeAttachmentController::class, 'index'])->middleware('employee.section:attachment,view');
+        Route::post('/', [EmployeeAttachmentController::class, 'store'])->middleware('employee.section:attachment,create');
+        Route::delete('/{attachmentId}', [EmployeeAttachmentController::class, 'destroy'])->middleware('employee.section:attachment,delete');
+        Route::post('/{attachmentId}/delete', [EmployeeAttachmentController::class, 'destroy'])->middleware('employee.section:attachment,delete');
     });
 
     // Module master data endpoints
     Route::prefix('modules')->group(function () {
         Route::get('/', [ModuleController::class, 'index']);
         Route::post('/', [ModuleController::class, 'store']);
+        Route::get('/overview', [ModuleController::class, 'overview']);   // lead + member semua module sekaligus (didaftarkan SEBELUM /{id})
         Route::get('/{id}', [ModuleController::class, 'show']);
         Route::get('/{id}/members', [ModuleController::class, 'members']);
         Route::put('/{id}', [ModuleController::class, 'update']);
@@ -581,6 +637,28 @@ Route::middleware(['web'])->group(function () {
     });
 
     // ==================== TIMESHEET ROUTES ====================
+    
+    // ==================== HR & GENERAL LEAVE & PERMIT API ====================
+    Route::prefix('hr-general/leave-permit')->group(function () {
+        Route::get('/employees-list',               [\App\Http\Controllers\HR\LeavePermitController::class, 'getEmployeesList'])->middleware('menu:hr_general.leave_permit');
+        Route::get('/user-quotas',                      [\App\Http\Controllers\HR\LeavePermitController::class, 'getUserQuotas']);
+        Route::get('/all-employees-quotas',            [\App\Http\Controllers\HR\LeavePermitController::class, 'getAllEmployeesQuotas'])->middleware('menu:hr_general.leave_permit');
+        Route::get('/employee-quota-detail/{employee_id}', [\App\Http\Controllers\HR\LeavePermitController::class, 'getEmployeeQuotaDetail'])->middleware('menu:hr_general.leave_permit');
+        
+        Route::get('/master-types',                        [\App\Http\Controllers\HR\LeavePermitController::class, 'getMasterTypes']);
+        Route::post('/master-types',                       [\App\Http\Controllers\HR\LeavePermitController::class, 'storeType'])->middleware('menu.can:hr_general.leave_permit.tab-types,create');
+        Route::post('/master-types/{id}/update',            [\App\Http\Controllers\HR\LeavePermitController::class, 'updateType'])->middleware('menu.can:hr_general.leave_permit.tab-types,edit');
+        Route::post('/master-types/{id}/toggle-active',     [\App\Http\Controllers\HR\LeavePermitController::class, 'toggleTypeActive'])->middleware('menu.can:hr_general.leave_permit.tab-types,edit');
+
+        Route::get('/applications',               [\App\Http\Controllers\HR\LeavePermitController::class, 'getApplications']);
+        Route::post('/applications',              [\App\Http\Controllers\HR\LeavePermitController::class, 'storeApplication']);
+        Route::post('/applications/{id}/update',   [\App\Http\Controllers\HR\LeavePermitController::class, 'updateApplication']);
+        Route::post('/applications/{id}/approve',  [\App\Http\Controllers\HR\LeavePermitController::class, 'approveApplication'])->middleware('menu.can:hr_general.leave_permit.tab-inbox,edit');
+        Route::post('/applications/{id}/reject',   [\App\Http\Controllers\HR\LeavePermitController::class, 'rejectApplication'])->middleware('menu.can:hr_general.leave_permit.tab-inbox,edit');
+        Route::post('/applications/{id}/revision', [\App\Http\Controllers\HR\LeavePermitController::class, 'requestRevision'])->middleware('menu.can:hr_general.leave_permit.tab-inbox,edit');
+        
+        Route::get('/reports', [\App\Http\Controllers\HR\LeavePermitController::class, 'getReport'])->middleware('menu:hr_general.leave_permit');
+    });
     Route::prefix('timesheets')->group(function () {
         Route::get('/', [TimesheetController::class, 'index']);
         Route::get('/statistics', [TimesheetController::class, 'statistics']);
@@ -824,57 +902,63 @@ Route::middleware(['web'])->group(function () {
     Route::get('/notification-sounds', [AdminNotificationSoundController::class, 'list']);
 
     // ==================== ROLE & MENU MANAGEMENT ====================
+    // HC-D63 (5 Okt 2026): SEMUA rute di blok ini dulu hanya `auth.session` - pegawai (bahkan customer) mana pun yang login
+    // dapat memberi dirinya izin lewat API. Kini digerbang izin Management; `GET /my-menus` sengaja tetap terbuka.
     Route::get('/my-menus', [\App\Http\Controllers\MenuController::class, 'getMyMenus']);
 
     // Menu management
-    Route::get('/menus',                                            [\App\Http\Controllers\MenuController::class, 'index']);
-    Route::get('/menus/all',                                        [\App\Http\Controllers\MenuController::class, 'allWithPermissions']);
-    Route::get('/menus/with-roles',                                 [\App\Http\Controllers\MenuController::class, 'withRoles']);
-    Route::post('/menus',                                           [\App\Http\Controllers\MenuController::class, 'store']);
-    Route::put('/menus/{menuId}',                                   [\App\Http\Controllers\MenuController::class, 'update']);
-    Route::delete('/menus/{menuId}',                                [\App\Http\Controllers\MenuController::class, 'destroy']);
-    Route::post('/menus/{menuId}/delete',                           [\App\Http\Controllers\MenuController::class, 'destroy']);
-    Route::put('/menus/{menuId}/roles/{roleId}',                    [\App\Http\Controllers\MenuController::class, 'updateRolePermission']);
-    Route::delete('/menus/{menuId}/roles/{roleId}',                 [\App\Http\Controllers\MenuController::class, 'removeRolePermission']);
-    Route::post('/menus/{menuId}/roles/{roleId}/delete',            [\App\Http\Controllers\MenuController::class, 'removeRolePermission']);
+    Route::get('/menus',                                            [\App\Http\Controllers\MenuController::class, 'index'])->middleware('menu:management.roles,management.permissions');
+    Route::get('/menus/all',                                        [\App\Http\Controllers\MenuController::class, 'allWithPermissions'])->middleware('menu:management.roles,management.permissions');
+    Route::get('/menus/with-roles',                                 [\App\Http\Controllers\MenuController::class, 'withRoles'])->middleware('menu:management.roles,management.permissions');
+    Route::post('/menus',                                           [\App\Http\Controllers\MenuController::class, 'store'])->middleware('menu:management.permissions');
+    Route::put('/menus/{menuId}',                                   [\App\Http\Controllers\MenuController::class, 'update'])->middleware('menu:management.permissions');
+    Route::delete('/menus/{menuId}',                                [\App\Http\Controllers\MenuController::class, 'destroy'])->middleware('menu:management.permissions');
+    Route::post('/menus/{menuId}/delete',                           [\App\Http\Controllers\MenuController::class, 'destroy'])->middleware('menu:management.permissions');
+    // Menu List → "Siapa yang punya akses": Menu Access dari sisi MENU (baca: roles ATAU permissions; ubah: roles).
+    Route::prefix('menus/{menuId}/access')->whereNumber('menuId')->group(function () {
+        $c = \App\Http\Controllers\Management\MenuRoleAccessController::class;
+        Route::get('/',         [$c, 'show'])->middleware('menu:management.roles,management.permissions');
+        Route::get('/history',  [$c, 'history'])->middleware('menu:management.roles,management.permissions');
+        Route::post('/plan',    [$c, 'plan'])->middleware('menu:management.roles');
+        Route::post('/apply',   [$c, 'apply'])->middleware('menu:management.roles');
+        Route::post('/undo',    [$c, 'undo'])->middleware('menu:management.roles');
+    });
+    Route::put('/menus/{menuId}/roles/{roleId}',                    [\App\Http\Controllers\MenuController::class, 'updateRolePermission'])->middleware('menu:management.roles');
+    Route::delete('/menus/{menuId}/roles/{roleId}',                 [\App\Http\Controllers\MenuController::class, 'removeRolePermission'])->middleware('menu:management.roles');
+    Route::post('/menus/{menuId}/roles/{roleId}/delete',            [\App\Http\Controllers\MenuController::class, 'removeRolePermission'])->middleware('menu:management.roles');
 
     // Role management
-    Route::get('/roles',                                            [\App\Http\Controllers\RoleController::class, 'index']);
-    Route::post('/roles',                                           [\App\Http\Controllers\RoleController::class, 'store']);
-    Route::get('/roles/{id}',                                       [\App\Http\Controllers\RoleController::class, 'show']);
-    Route::put('/roles/{id}',                                       [\App\Http\Controllers\RoleController::class, 'update']);
-    Route::delete('/roles/{id}',                                    [\App\Http\Controllers\RoleController::class, 'destroy']);
-    Route::post('/roles/{id}/delete',                               [\App\Http\Controllers\RoleController::class, 'destroy']);
-    Route::get('/roles/{id}/permissions',                           [\App\Http\Controllers\RoleController::class, 'permissions']);
-    Route::put('/roles/{id}/permissions/{menuId}',                  [\App\Http\Controllers\RoleController::class, 'updatePermission']);
-    Route::post('/roles/{id}/permissions/{menuId}/revoke',          [\App\Http\Controllers\RoleController::class, 'removePermission']);
-    Route::delete('/roles/{id}/permissions/{menuId}',               [\App\Http\Controllers\RoleController::class, 'removePermission']);
-    Route::post('/roles/{id}/permissions/{menuId}/delete',          [\App\Http\Controllers\RoleController::class, 'removePermission']);
-    Route::get('/roles/{id}/employees',                             [\App\Http\Controllers\RoleController::class, 'employees']);
+    Route::get('/roles',                                            [\App\Http\Controllers\RoleController::class, 'index'])->middleware('menu:management.roles');
+    Route::post('/roles',                                           [\App\Http\Controllers\RoleController::class, 'store'])->middleware('menu:management.roles');
+    Route::get('/roles/{id}',                                       [\App\Http\Controllers\RoleController::class, 'show'])->middleware('menu:management.roles');
+    Route::put('/roles/{id}',                                       [\App\Http\Controllers\RoleController::class, 'update'])->middleware('menu:management.roles');
+    Route::delete('/roles/{id}',                                    [\App\Http\Controllers\RoleController::class, 'destroy'])->middleware('menu:management.roles');
+    Route::post('/roles/{id}/delete',                               [\App\Http\Controllers\RoleController::class, 'destroy'])->middleware('menu:management.roles');
+    Route::get('/roles/{id}/permissions',                           [\App\Http\Controllers\RoleController::class, 'permissions'])->middleware('menu:management.roles,management.permissions');
+    Route::put('/roles/{id}/permissions/{menuId}',                  [\App\Http\Controllers\RoleController::class, 'updatePermission'])->middleware('menu:management.roles');
+    Route::post('/roles/{id}/permissions/{menuId}/revoke',          [\App\Http\Controllers\RoleController::class, 'removePermission'])->middleware('menu:management.roles');
+    Route::delete('/roles/{id}/permissions/{menuId}',               [\App\Http\Controllers\RoleController::class, 'removePermission'])->middleware('menu:management.roles');
+    Route::post('/roles/{id}/permissions/{menuId}/delete',          [\App\Http\Controllers\RoleController::class, 'removePermission'])->middleware('menu:management.roles');
+    Route::get('/roles/{id}/employees',                             [\App\Http\Controllers\RoleController::class, 'employees'])->middleware('menu:management.roles');
+
+    // Menu Access per role (halaman penuh, HC-D63/D64): matriks, ringkasan perubahan, simpan massal, salin/bandingkan, riwayat + undo.
+    Route::prefix('roles/{id}/menu-access')->middleware('menu:management.roles')->group(function () {
+        Route::get('/',                          [\App\Http\Controllers\Management\RoleMenuAccessController::class, 'matrix']);
+        Route::post('/diff',                     [\App\Http\Controllers\Management\RoleMenuAccessController::class, 'plan']);
+        Route::post('/apply',                    [\App\Http\Controllers\Management\RoleMenuAccessController::class, 'apply']);
+        Route::get('/compare/{otherId}',         [\App\Http\Controllers\Management\RoleMenuAccessController::class, 'compare']);
+        Route::get('/copy-diff/{sourceId}',      [\App\Http\Controllers\Management\RoleMenuAccessController::class, 'copyDiff']);
+        Route::get('/history',                   [\App\Http\Controllers\Management\RoleMenuAccessController::class, 'history']);
+        Route::post('/history/{changeId}/undo',  [\App\Http\Controllers\Management\RoleMenuAccessController::class, 'undo']);
+    });
 
     // Holiday management (Manajemen → Hari Libur)
-    Route::get('/management/holidays',         [\App\Http\Controllers\HolidayManagementController::class, 'index']);
-    Route::post('/management/holidays',        [\App\Http\Controllers\HolidayManagementController::class, 'store']);
-    Route::put('/management/holidays/{id}',    [\App\Http\Controllers\HolidayManagementController::class, 'update']);
-    Route::delete('/management/holidays/{id}', [\App\Http\Controllers\HolidayManagementController::class, 'destroy']);
-    Route::post('/management/holidays/{id}/delete', [\App\Http\Controllers\HolidayManagementController::class, 'destroy']);
-
-    // Dropdown config management (Manajemen → Employee → Dropdown Settings) -
-    // generic Employee Information dropdown master data (Position, Division,
-    // Personnel Area/Subarea, Employee Group/Subgroup, Department, and any new
-    // dropdown type added later). See App\Models\DropdownConfig.
-    Route::get('/management/dropdown-configs',              [\App\Http\Controllers\DropdownConfigController::class, 'index']);
-    // Membaca terbuka (dipakai dropdown di form Employee); mengubah memakai izin ...dropdown-settings.manage.
-    Route::post('/management/dropdown-configs',              [\App\Http\Controllers\DropdownConfigController::class, 'store'])->middleware('menu:management.employee.dropdown-settings.manage');
-    Route::put('/management/dropdown-configs/{id}',          [\App\Http\Controllers\DropdownConfigController::class, 'update'])->middleware('menu:management.employee.dropdown-settings.manage');
-    Route::delete('/management/dropdown-configs/{id}',       [\App\Http\Controllers\DropdownConfigController::class, 'destroy'])->middleware('menu:management.employee.dropdown-settings.manage');
-    Route::post('/management/dropdown-configs/{id}/delete',  [\App\Http\Controllers\DropdownConfigController::class, 'destroy'])->middleware('menu:management.employee.dropdown-settings.manage');
-
-    Route::get('/management/dropdown-configs/{id}/values',                     [\App\Http\Controllers\DropdownConfigController::class, 'values']);
-    Route::post('/management/dropdown-configs/{id}/values',                    [\App\Http\Controllers\DropdownConfigController::class, 'storeValue'])->middleware('menu:management.employee.dropdown-settings.manage');
-    Route::put('/management/dropdown-configs/{id}/values/{valueId}',           [\App\Http\Controllers\DropdownConfigController::class, 'updateValue'])->middleware('menu:management.employee.dropdown-settings.manage');
-    Route::delete('/management/dropdown-configs/{id}/values/{valueId}',        [\App\Http\Controllers\DropdownConfigController::class, 'destroyValue'])->middleware('menu:management.employee.dropdown-settings.manage');
-    Route::post('/management/dropdown-configs/{id}/values/{valueId}/delete',   [\App\Http\Controllers\DropdownConfigController::class, 'destroyValue'])->middleware('menu:management.employee.dropdown-settings.manage');
+    // Holidays apply to every employee, so only HR changes them: the Create / Edit / Delete boxes of management.holidays.
+    Route::get('/management/holidays',         [\App\Http\Controllers\HolidayManagementController::class, 'index'])->middleware('menu:management.holidays');
+    Route::post('/management/holidays',        [\App\Http\Controllers\HolidayManagementController::class, 'store'])->middleware('menu.can:management.holidays,create');
+    Route::put('/management/holidays/{id}',    [\App\Http\Controllers\HolidayManagementController::class, 'update'])->middleware('menu.can:management.holidays,edit');
+    Route::delete('/management/holidays/{id}', [\App\Http\Controllers\HolidayManagementController::class, 'destroy'])->middleware('menu.can:management.holidays,delete');
+    Route::post('/management/holidays/{id}/delete', [\App\Http\Controllers\HolidayManagementController::class, 'destroy'])->middleware('menu.can:management.holidays,delete');
 
     // Employee ↔ Role assignment
     // Menentukan role seseorang = menentukan izinnya, jadi digate sama dengan

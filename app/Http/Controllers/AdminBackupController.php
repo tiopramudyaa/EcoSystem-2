@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -28,12 +27,10 @@ class AdminBackupController extends Controller
         return $this->menuAllowed('control-center.backup');
     }
 
+    /** Heads import timesheets for their team: the `timesheet.import` permission. */
     private function assertHeadOrAdmin(): bool
     {
-        $roleId = (int) session('user.role.id');
-        return $roleId === RoleId::EC_ADMINISTRATOR->value
-            || in_array($roleId, RoleId::HEAD_GROUP, true)
-            || $roleId === RoleId::DELIVERY_RPMO_HEAD->value;
+        return \App\Models\Employee::find(session('user.id'))?->hasPermission('timesheet.import') ?? false;
     }
 
     private function backupDisk()
@@ -775,7 +772,6 @@ class AdminBackupController extends Controller
                 'marital_status'     => $get('marital_status'),
                 'personnel_area'     => $get('personnel_area'),
                 'personnel_subarea'  => $get('personnel_subarea'),
-                'employee_group'     => $get('employee_group'),
                 'employee_subgroup'  => $get('employee_subgroup'),
                 'position'           => $get('position'),
                 'division'           => $get('division'),
@@ -785,8 +781,10 @@ class AdminBackupController extends Controller
                 'direct_supervision'  => $get('direct_supervision'),
                 'manager'            => $get('manager'),
                 'home_base'          => $homeBase,
-                // Internal/External diturunkan dari home_base ("Others" → External).
-                'employee_type'      => \App\Models\EmployeeBasicData::deriveEmployeeType($homeBase),
+                // Internal/External mengikuti Employee Group. File lama yang hanya menandai konsultan lewat Home Base "Others"
+                // tetap dibaca sebagai EXTERNAL (group ditulis eksplisit supaya group tetap satu-satunya penentu).
+                'employee_group'     => $get('employee_group') ?: (\App\Models\EmployeeBasicData::deriveEmployeeType($homeBase) === 'External' ? 'EXTERNAL' : null),
+                'employee_type'      => \App\Models\EmployeeBasicData::typeForGroup($get('employee_group') ?: (\App\Models\EmployeeBasicData::deriveEmployeeType($homeBase) === 'External' ? 'EXTERNAL' : null)),
                 'since_date'         => $this->normalizeDate($get('since_date')),
             ], fn($v) => $v !== null);
 

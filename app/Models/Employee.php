@@ -140,6 +140,33 @@ class Employee extends Model
     /** Cek apakah employee boleh akses menu berdasarkan slug */
     public function canAccessMenu(string $slug): bool
     {
+        // ESS self-service slugs are accessible to all active employees by default
+        $essSlugs = [
+            'general.my-attendance',
+            'my-leave-permit',
+            'general.my-overtime',
+            'general.my-reimbursement',
+            'general.my-purchase-request',
+            'general.my-kpi',
+            'profile.my',
+        ];
+
+        // Konsultan eksternal tidak mendapat sebagian slug self-service karyawan secara otomatis (config/external_ess.php).
+        if (in_array($slug, $essSlugs, true) && !($this->isExternalConsultant() && in_array($slug, config('external_ess.blocked_default_slugs', []), true))) {
+            return true;
+        }
+
+        // Jalur cepat (hemat 3 query per pemeriksaan): daftar slug yang sudah di-cache ShareMenuPermissions (60 menit; dibuang eksplisit saat
+        // role/izin/penugasan role berubah - kunci & invalidasi yang SAMA dipakai CheckEmployeeSectionAccess). Slug ESS bawaan tidak lewat
+        // sini (daftarnya memuat default ESS yang bagi konsultan bisa diblokir). Bila cache kosong → jalur database seperti semula.
+        if (!in_array($slug, $essSlugs, true)) {
+            $cached = \Illuminate\Support\Facades\Cache::get("perm_slugs_{$this->employee_id}");
+            if (is_array($cached)) {
+                return in_array($slug, $cached, true);
+            }
+        }
+
+        // Bila cache belum ada: peta izin per-instance (1 query untuk semua menu).
         return $this->hasMenuPermission($slug, 'can_view');
     }
 
@@ -149,6 +176,15 @@ class Employee extends Model
      */
     public function hasMenuPermission(string $slug, string $permission = 'can_view'): bool
     {
+        // Jalur cepat dari matriks izin yang di-cache (kunci & invalidasi sama dengan perm_slugs_*); slug ESS bawaan tetap lewat database.
+        $flag = ['can_view' => 'view', 'can_create' => 'create', 'can_edit' => 'edit', 'can_delete' => 'delete'][$permission] ?? null;
+        if ($flag !== null && !in_array($slug, ['general.my-attendance', 'my-leave-permit', 'general.my-overtime', 'general.my-reimbursement', 'general.my-purchase-request', 'general.my-kpi', 'profile.my'], true)) {
+            $matrix = \Illuminate\Support\Facades\Cache::get("perm_matrix_{$this->employee_id}");
+            if (is_array($matrix)) {
+                return (bool) ($matrix[$slug][$flag] ?? false);
+            }
+        }
+
         // Kolom izin yang dikenal dibaca dari peta yang dimuat SEKALI per instance
         // (1 query untuk semua menu), bukan 1 query per pasangan slug+izin. Halaman
         // dengan banyak gating (mis. section Customer/Employee) jadi tidak N+1.
@@ -219,13 +255,74 @@ class Employee extends Model
     {
         $roleIds = $this->memoizedRoleIds();
 
-        return Menu::whereHas('roles', function ($q) use ($roleIds) {
+        $slugs = Menu::whereHas('roles', function ($q) use ($roleIds) {
                 $q->whereIn('employee_role.id', $roleIds)
                   ->where('role_menu.can_view', true);
             })
             ->where('is_active', true)
             ->pluck('slug')
             ->toArray();
+
+        $essDefaults = [
+            'general.my-attendance',
+            'my-leave-permit',
+            'general.my-overtime',
+            'general.my-reimbursement',
+            'general.my-kpi',
+            'profile.my',
+        ];
+
+        if ($this->isExternalConsultant()) {
+            $essDefaults = array_values(array_diff($essDefaults, config('external_ess.blocked_default_slugs', [])));
+        }
+
+        return array_values(array_unique(array_merge($slugs, $essDefaults)));
+    }
+
+    /**
+     * Full capability matrix per menu slug: [slug => ['view','create','edit','delete' => bool]].
+     * Flags are OR-ed across all of the employee's roles. Sent to views as `permMatrix`
+     * so pages can gate edit/create/delete buttons, not just visibility.
+     */
+    public function allPermissionMatrix(): array
+    {
+        $roleIds = $this->roles()->pluck('employee_role.id');
+
+        $rows = \Illuminate\Support\Facades\DB::table('menu')
+            ->join('role_menu', 'role_menu.menu_id', '=', 'menu.id')
+            ->whereIn('role_menu.role_id', $roleIds)
+            ->where('menu.is_active', true)
+            ->get(['menu.slug', 'role_menu.can_view', 'role_menu.can_create', 'role_menu.can_edit', 'role_menu.can_delete']);
+
+        $matrix = [];
+        foreach ($rows as $r) {
+            $slug = $r->slug;
+            $matrix[$slug] ??= ['view' => false, 'create' => false, 'edit' => false, 'delete' => false];
+            $matrix[$slug]['view']   = $matrix[$slug]['view']   || (bool) $r->can_view;
+            $matrix[$slug]['create'] = $matrix[$slug]['create'] || (bool) $r->can_create;
+            $matrix[$slug]['edit']   = $matrix[$slug]['edit']   || (bool) $r->can_edit;
+            $matrix[$slug]['delete'] = $matrix[$slug]['delete'] || (bool) $r->can_delete;
+        }
+
+        // ESS self-service slugs are viewable by every active employee by default.
+        $blocked = $this->isExternalConsultant() ? config('external_ess.blocked_default_slugs', []) : [];
+        foreach (array_diff(['general.my-attendance', 'my-leave-permit', 'general.my-overtime',
+                  'general.my-reimbursement', 'general.my-purchase-request',
+                  'general.my-kpi', 'profile.my'], $blocked) as $slug) {
+            $matrix[$slug] ??= ['view' => false, 'create' => false, 'edit' => false, 'delete' => false];
+            $matrix[$slug]['view'] = true;
+        }
+
+        return $matrix;
+    }
+
+    private ?bool $externalConsultant = null;
+
+    /** Karyawan berjenis External (konsultan kontrak). Hasilnya disimpan per instance. */
+    public function isExternalConsultant(): bool
+    {
+        return $this->externalConsultant ??= \Illuminate\Support\Facades\DB::table('employee_basic_data')
+            ->where('employee_id', $this->employee_id)->where('employee_type', 'External')->exists();
     }
 
     public function basicData()
@@ -233,6 +330,19 @@ class Employee extends Model
         return $this->hasOne(EmployeeBasicData::class, 'employee_id', 'employee_id');
     }
     
+    /**
+     * Nama lengkap untuk dokumen dan dropdown (bukan nama panggilan).
+     * Berurutan: nama lengkap -> nama panggilan -> ECI.
+     * Pemanggil yang memuat `basicData` dengan kolom terbatas harus ikut
+     * menyertakan first_name dan last_name.
+     */
+    public function fullNameLabel(): string
+    {
+        $basic = $this->basicData;
+
+        return trim((string) $basic?->full_name) ?: ($basic?->nick_name ?: (string) $this->eci);
+    }
+
     public function hasBasicData()
     {
         return $this->basicData()->exists();
@@ -334,4 +444,21 @@ class Employee extends Model
         return $this->hasMany(Timesheet::class, 'employee_id', 'employee_id');
     }
 
+    /**
+     * Get KPI evaluations for this employee
+     */
+    public function kpiEvaluations()
+    {
+        return $this->hasMany(KpiEvaluation::class, 'employee_id', 'employee_id');
+    }
+
+    /**
+     * Get delivery projects assigned to this employee
+     */
+    public function deliveryProjects()
+    {
+        return $this->belongsToMany(DeliveryProject::class, 'delivery_project_employee', 'employee_id', 'delivery_projects_id', 'employee_id', 'id');
+    }
+
 }
+

@@ -2,11 +2,16 @@
 
 namespace App\Providers;
 
+use App\Enums\Division;
+use App\Enums\EmployeeGroup;
+use App\Enums\EmployeeSubgroup;
 use App\Enums\HomeBase;
-use App\Enums\RoleId;
-use App\Models\Customer;
+use App\Enums\PersonnelArea;
+use App\Enums\PersonnelSubarea;
 use App\Models\DropdownConfig;
+use App\Models\Department;
 use App\Models\Grade;
+use App\Models\Position;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
@@ -78,6 +83,7 @@ class AppServiceProvider extends ServiceProvider
             });
         }
 
+
         // Scheme URL dipaksa ke https HANYA bila APP_URL memang https (produksi).
         //
         // Mengandalkan trustProxies + header X-Forwarded-Proto saja tidak cukup:
@@ -95,73 +101,65 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Gate::define('viewApiDocs', function ($user = null) {
-            return (int) session('user.role.id') === RoleId::EC_ADMINISTRATOR->value;
+            return \App\Models\Employee::find(session('user.id'))?->hasPermission('control-center.api-docs') ?? false;
         });
 
-        // Suntik opsi Home Base & 7 dropdown master data organisasi ke form
+        // Suntik opsi Home Base, Position, Department & 5 daftar organisasi ke form
         // employee (modal index + section basicdata yang dipakai detail & profile).
-        // Position/Department/Division/Personnel Area/Personnel Subarea/Employee
-        // Group/Employee Subgroup semuanya bersumber dari tabel generik
-        // dropdown_configs/dropdown_config_values (lihat App\Models\DropdownConfig)
-        // - admin-editable lewat halaman Management > Employee > Dropdown Settings,
-        // tanpa perlu migration/deploy tiap kali ada nilai baru. Home Base TETAP
-        // enum PHP karena nilainya dipakai di logic kode (lihat
-        // EmployeeBasicData::deriveEmployeeType()), bukan cuma label tampilan.
+        // Sumber utama: tabel positions/departments dan enum organisasi (alnaf_hr).
+        // Nilai tambahan yang dulu diisi admin lewat Dropdown Settings (tabel
+        // dropdown_config_values, eco_new) digabung agar tidak ada nilai produksi yang
+        // hilang dari form. Halaman Dropdown Settings-nya sudah dihapus; tabelnya hanya
+        // dibaca di sini.
         // Catatan: Grade TIDAK lagi dipakai di Basic Data - konsepnya pindah ke
         // "Level" pada Employee Qualification (lihat composer di bawah).
         View::composer(
-            ['master.employee.index', 'master.employee.sections.basicdata', 'master.employee.sections.address', 'master.customer.sections.address'],
+            ['master.employee.index', 'master.employee.sections.basicdata'],
             function ($view) {
-                $dropdownCodes = ['position', 'department', 'division', 'personnel_area', 'personnel_subarea', 'employee_group', 'employee_subgroup'];
-
                 // Guard: hindari error bila tabel belum ada (mis. saat migrate awal).
-                $hasDropdownTables = Schema::hasTable('dropdown_config_values');
-                $dd = fn (string $code) => $hasDropdownTables ? DropdownConfig::optionsFor($code) : [];
+                $positionOptions   = \App\Support\SchemaCache::hasTable('positions') ? Position::options() : [];
+                $departmentOptions = \App\Support\SchemaCache::hasTable('departments') ? Department::options() : [];
 
-                // Country untuk tab Address (Employee Detail): admin-editable lewat
-                // Dropdown Settings sama seperti Position/dll, TAPI belum ada admin
-                // yang mengisi config "country" di banyak environment. Fallback ke
-                // ['Indonesia'] menjaga behavior lama (satu-satunya opsi hardcoded)
-                // sampai admin menambah datanya sendiri - dropdown tidak pernah kosong.
-                $countryOptions = $dd('country');
-                if (empty($countryOptions)) {
-                    $countryOptions = ['Indonesia'];
-                }
-
-                // Config yang di-nonaktifkan (is_active=false) bukan cuma dikosongkan
-                // opsinya - seluruh blok field-nya disembunyikan dari form Employee
-                // (lihat DropdownConfig::activeMap()). Field dengan config yang belum
-                // ada barisnya (mis. tabel belum ke-migrate) dianggap aktif (fail open).
-                $dropdownFieldActive = $hasDropdownTables
-                    ? DropdownConfig::activeMap($dropdownCodes)
-                    : array_fill_keys($dropdownCodes, true);
-
-                // "Current Assignment" - dropdown-nya diambil dari daftar Business
-                // Partner bertipe Customer (bukan free text lagi), sama sumbernya
-                // dengan dropdown customer di form Create Ticket.
-                $customerOptions = Schema::hasTable('customer')
-                    ? Customer::with('basicData')
-                        ->customers()
-                        ->where('is_active', true)
-                        ->get()
-                        ->map(fn ($c) => $c->basicData->name_1 ?? $c->email ?? null)
-                        ->filter()
-                        ->unique()
-                        ->sort()
-                        ->values()
-                    : collect();
+                $legacy = fn (string $code): array => \App\Support\SchemaCache::hasTable('dropdown_config_values') ? DropdownConfig::optionsFor($code) : [];
+                $union  = fn (array $base, string $code): array => array_values(array_unique(array_merge($base, $legacy($code))));
 
                 $view->with('homeBaseOptions', HomeBase::options())
-                     ->with('positionOptions', $dd('position'))
-                     ->with('departmentOptions', $dd('department'))
-                     ->with('divisionOptions', $dd('division'))
-                     ->with('personnelAreaOptions', $dd('personnel_area'))
-                     ->with('personnelSubareaOptions', $dd('personnel_subarea'))
-                     ->with('employeeGroupOptions', $dd('employee_group'))
-                     ->with('employeeSubgroupOptions', $dd('employee_subgroup'))
-                     ->with('dropdownFieldActive', $dropdownFieldActive)
-                     ->with('customerOptions', $customerOptions)
-                     ->with('countryOptions', $countryOptions);
+                     ->with('positionOptions', $union($positionOptions, 'position'))
+                     ->with('departmentOptions', $union($departmentOptions, 'department'))
+                     ->with('divisionOptions', $union(Division::options(), 'division'))
+                     ->with('personnelAreaOptions', $union(PersonnelArea::options(), 'personnel_area'))
+                     ->with('personnelSubareaOptions', $union(PersonnelSubarea::options(), 'personnel_subarea'))
+                     ->with('employeeGroupOptions', $union(EmployeeGroup::options(), 'employee_group'))
+                     ->with('employeeSubgroupOptions', $union(EmployeeSubgroup::options(), 'employee_subgroup'));
+            }
+        );
+
+        // Country untuk alamat Business Partner (customer): daftar negara dari
+        // dropdown_configs (kode "country"); fallback ['Indonesia'] bila belum diisi.
+        View::composer('master.customer.sections.address', function ($view) {
+            $countries = \App\Support\SchemaCache::hasTable('dropdown_config_values') ? DropdownConfig::optionsFor('country') : [];
+            $view->with('countryOptions', $countries ?: ['Indonesia']);
+        });
+
+        // Opsi "Direct Supervision" (dropdown searchable nama / ECI). Nilai yang
+        // disimpan = employee_id, sama dengan yang dibaca modul KPI.
+        View::composer(
+            'master.employee.sections.basicdata',
+            function ($view) {
+                $supervisorOptions = \App\Support\SchemaCache::hasTable('employee')
+                    ? \App\Models\Employee::with('basicData:employee_id,first_name,last_name')
+                        ->where('is_active', true)
+                        ->get(['employee_id', 'eci'])
+                        ->map(fn ($e) => [
+                            'id'   => (string) $e->employee_id,
+                            'name' => $e->basicData?->full_name ?: $e->eci,
+                            'eci'  => $e->eci,
+                        ])
+                        ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+                        ->values()
+                        ->all()
+                    : [];
+                $view->with('supervisorOptions', $supervisorOptions);
             }
         );
 
@@ -171,7 +169,7 @@ class AppServiceProvider extends ServiceProvider
         View::composer(
             'master.employee.sections.qualification',
             function ($view) {
-                $levelOptions = Schema::hasTable('grades') ? Grade::levelOptions() : [];
+                $levelOptions = \App\Support\SchemaCache::hasTable('grades') ? Grade::levelOptions() : [];
                 $view->with('qualificationLevelOptions', $levelOptions);
             }
         );

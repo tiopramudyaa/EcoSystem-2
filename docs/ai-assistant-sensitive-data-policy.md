@@ -26,6 +26,10 @@ access for these tables:
 | `employee_attachment` | `my-profile.section.attachment.view` | `employee.section.attachment.view` |
 | `customer_bank` | - | `customer.section.bank.view` |
 | `customer_credential` | - | `customer.section.credential.view` |
+| `recruitment_candidates`, `recruitment_candidate_documents`, `recruitment_candidate_status_histories` | - | `general.recruitment.candidates` |
+| `recruitment_interviews`, `recruitment_interview_interviewers` | - | `general.recruitment.schedule` |
+| `recruitment_offers` (compensation) | - | `general.recruitment.offers` |
+| `recruitment_job_openings`, `recruitment_job_opening_documents` (salary range) | - | `general.recruitment.jobs` |
 | `customer_identification` | - | `customer.section.identification.view` |
 | `customer_history` | - | `customer.section.history.view` |
 | `customer_attachment` | - | `customer.section.attachment.view` |
@@ -98,6 +102,8 @@ blanket rule.
 | `customer_bank` | Customer bank account numbers |
 | `employee_payment` | Individual payroll/salary figures |
 | `employee_contract` | Contract-level `salary` figure - found via a full schema audit (2026-09-14, `information_schema.COLUMNS` search for salary-shaped column names); it was never listed here or in the borderline section below, just openly queryable like any other table until this pass. Same category as `employee_payment`, just a different table holding the number. |
+| `employee_hr_profile` | HR profile: health data (blood type), third-party emergency contact, dormant payroll data (PTKP, dependents, BPJS flags); added 30 Sep 2026 |
+| `recruitment_*` (candidates, offers, interviews, job openings) | Applicant personal data, offer compensation and salary ranges; applicants have no "own row" path (added 5 Oct 2026, HC-D65). Config tables `recruitment_options`, `recruitment_settings`, `recruitment_offer_components` stay open. |
 
 **Rule:** not freely queryable. An employee should be able to reach their
 own row (self-service, same as the existing profile pages); reaching

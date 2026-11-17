@@ -7,10 +7,13 @@ use App\Models\EmployeeIdentification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Services\Management\EmployeeMasterData as MD;
 use Illuminate\Support\Facades\Log;
 
 class EmployeeIdentificationController extends Controller
 {
+    use \App\Http\Controllers\Concerns\FriendlyValidation;
+
     /**
      * Get all identifications for an employee
      */
@@ -92,10 +95,11 @@ class EmployeeIdentificationController extends Controller
      */
     public function store(Request $request, $employeeId)
     {
+        $cur = null;
         $validator = Validator::make($request->all(), [
-            'identification_type' => 'required|string|max:50',
-            'identification_number' => 'required|string|max:100',
-            'responsible_institution' => 'nullable|string|max:255',
+            'identification_type' => array_filter(['required', 'string', 'max:50', MD::inRule('identification', 'identification_type', $cur->identification_type ?? null)]),
+            'identification_number' => ['required', 'string', 'max:' . MD::maxLength('identification', 'number_max_length')],
+            'responsible_institution' => ['nullable', 'string', 'max:' . MD::maxLength('identification', 'institution_max_length')],
             'country' => 'nullable|string|max:100',
             'region' => 'nullable|string|max:100',
             'valid_from' => 'nullable|date',
@@ -105,13 +109,38 @@ class EmployeeIdentificationController extends Controller
             'verify_link' => 'nullable|url|max:500',
         ]);
 
+        // Format nomor per jenis (KTP 16, NPWP 15/16, BPJS Kesehatan 13, KPJ 11 digit) - pesan menyebut berapa yang benar dan berapa yang diisi.
+        $validator->after(function ($v) use ($request) {
+            if (!$v->errors()->has('identification_number') && !$v->errors()->has('identification_type')) {
+                $error = \App\Support\Validation\FieldFormats::identificationError((string) $request->identification_type, (string) $request->identification_number);
+                if ($error) {
+                    $v->errors()->add('identification_number', $error);
+                } else {
+                    // Nomor UNIK per JENIS identitas (bukan global): NPWP 16 digit memang sama dengan NIK KTP. Pesan jelas (tanpa menyebut milik siapa) menggantikan galat 500.
+                    $dup = \Illuminate\Support\Facades\DB::table('employee_identification')
+                        ->where('identification_type', (string) $request->identification_type)
+                        ->where('identification_number', \App\Support\Validation\FieldFormats::identificationNormalize((string) $request->identification_type, (string) $request->identification_number));
+                    if ($request->route('identificationId')) {
+                        $dup->where('identification_id', '!=', $request->route('identificationId'));
+                    }
+                    if ($dup->exists()) {
+                        $v->errors()->add('identification_number', 'This number is already registered in the system (each identification type must have a unique number). Check for typing errors, or contact HR if the number is yours.');
+                    }
+                }
+            }
+        });
+
+        $this->friendly($validator);
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Employee identification data is invalid.',
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors()
             ], 422);
         }
+
+        $request->merge(['identification_number' => \App\Support\Validation\FieldFormats::identificationNormalize((string) $request->identification_type, (string) $request->identification_number)]);
 
         DB::beginTransaction();
 
@@ -186,10 +215,11 @@ class EmployeeIdentificationController extends Controller
      */
     public function update(Request $request, $employeeId, $identificationId)
     {
+        $cur = DB::table('employee_identification')->where('identification_id', $identificationId)->first();
         $validator = Validator::make($request->all(), [
-            'identification_type' => 'required|string|max:50',
-            'identification_number' => 'required|string|max:100',
-            'responsible_institution' => 'nullable|string|max:255',
+            'identification_type' => array_filter(['required', 'string', 'max:50', MD::inRule('identification', 'identification_type', $cur->identification_type ?? null)]),
+            'identification_number' => ['required', 'string', 'max:' . MD::maxLength('identification', 'number_max_length')],
+            'responsible_institution' => ['nullable', 'string', 'max:' . MD::maxLength('identification', 'institution_max_length')],
             'country' => 'nullable|string|max:100',
             'region' => 'nullable|string|max:100',
             'valid_from' => 'nullable|date',
@@ -199,13 +229,38 @@ class EmployeeIdentificationController extends Controller
             'verify_link' => 'nullable|url|max:500',
         ]);
 
+        // Format nomor per jenis (KTP 16, NPWP 15/16, BPJS Kesehatan 13, KPJ 11 digit) - pesan menyebut berapa yang benar dan berapa yang diisi.
+        $validator->after(function ($v) use ($request) {
+            if (!$v->errors()->has('identification_number') && !$v->errors()->has('identification_type')) {
+                $error = \App\Support\Validation\FieldFormats::identificationError((string) $request->identification_type, (string) $request->identification_number);
+                if ($error) {
+                    $v->errors()->add('identification_number', $error);
+                } else {
+                    // Nomor UNIK per JENIS identitas (bukan global): NPWP 16 digit memang sama dengan NIK KTP. Pesan jelas (tanpa menyebut milik siapa) menggantikan galat 500.
+                    $dup = \Illuminate\Support\Facades\DB::table('employee_identification')
+                        ->where('identification_type', (string) $request->identification_type)
+                        ->where('identification_number', \App\Support\Validation\FieldFormats::identificationNormalize((string) $request->identification_type, (string) $request->identification_number));
+                    if ($request->route('identificationId')) {
+                        $dup->where('identification_id', '!=', $request->route('identificationId'));
+                    }
+                    if ($dup->exists()) {
+                        $v->errors()->add('identification_number', 'This number is already registered in the system (each identification type must have a unique number). Check for typing errors, or contact HR if the number is yours.');
+                    }
+                }
+            }
+        });
+
+        $this->friendly($validator);
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Employee identification data is invalid.',
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors()
             ], 422);
         }
+
+        $request->merge(['identification_number' => \App\Support\Validation\FieldFormats::identificationNormalize((string) $request->identification_type, (string) $request->identification_number)]);
 
         DB::beginTransaction();
 

@@ -1,3 +1,20 @@
+@php
+    // Pilihan dropdown. Nilai lama yang tidak ada di daftar (mis. "primary", "IDN") tetap tampil dan tetap sah - ditambahkan otomatis saat data dimuat.
+    $addrTypes = \App\Services\Management\EmployeeMasterData::options('address', 'address_type');
+    $addrLanguages = ['IDN' => 'Indonesian', 'ENG' => 'English'];
+    $addrPreferred = ['email' => 'Email', 'cell_phone' => 'Cell phone', 'telephone' => 'Telephone', 'fax' => 'Fax'];
+    $dialCodes = [
+        '+62' => 'Indonesia', '+60' => 'Malaysia', '+65' => 'Singapore', '+66' => 'Thailand', '+63' => 'Philippines', '+84' => 'Vietnam',
+        '+673' => 'Brunei', '+670' => 'Timor-Leste', '+855' => 'Cambodia', '+856' => 'Laos', '+95' => 'Myanmar', '+91' => 'India',
+        '+92' => 'Pakistan', '+880' => 'Bangladesh', '+94' => 'Sri Lanka', '+977' => 'Nepal', '+86' => 'China', '+852' => 'Hong Kong',
+        '+853' => 'Macau', '+886' => 'Taiwan', '+81' => 'Japan', '+82' => 'South Korea', '+61' => 'Australia', '+64' => 'New Zealand',
+        '+44' => 'United Kingdom', '+49' => 'Germany', '+33' => 'France', '+31' => 'Netherlands', '+39' => 'Italy', '+34' => 'Spain',
+        '+41' => 'Switzerland', '+46' => 'Sweden', '+7' => 'Russia', '+90' => 'Turkey', '+971' => 'United Arab Emirates', '+966' => 'Saudi Arabia',
+        '+974' => 'Qatar', '+965' => 'Kuwait', '+968' => 'Oman', '+20' => 'Egypt', '+27' => 'South Africa', '+1' => 'USA / Canada',
+        '+52' => 'Mexico', '+55' => 'Brazil',
+    ];
+    $addrSelectClass = 'addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white';
+@endphp
 <style>
     /* Chevron kustom untuk dropdown alamat cascading (Country → … → Village). */
     .addr-select {
@@ -21,16 +38,10 @@
         @if(!isset($isReadonly) || !$isReadonly)
         <div class="flex gap-2 js-section-action">
             <input type="hidden" id="editAddressId">
-            <button type="button" onclick="clearAddressForm()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-500 text-white text-xs font-semibold rounded-lg hover:bg-gray-600 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-                </svg>
+            <button type="button" onclick="clearAddressForm()" class="js-act-create inline-flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-300 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-all">
                 New
             </button>
-            <button type="button" onclick="saveAddress()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-red-800 text-white text-xs font-semibold rounded-lg hover:bg-red-900 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
-                </svg>
+            <button type="button" onclick="saveAddress()" class="inline-flex items-center px-4 py-2 bg-red-800 text-white text-sm font-semibold rounded-lg hover:bg-red-900 transition-all">
                 <span id="saveAddressButtonText">Save</span>
             </button>
         </div>
@@ -47,68 +58,53 @@
             <!-- Address Type -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Address Type</label>
-                <div class="relative">
-                    <input type="text" id="addressType" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent pr-8">
-                    <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                        </svg>
-                    </button>
-                </div>
+                <select id="addressType" data-maxlen="255" class="{{ $addrSelectClass }}">
+                        <option value="">-- Select type --</option>
+                        @foreach($addrTypes as $v => $l)<option value="{{ $v }}">{{ $l }}</option>@endforeach
+                    </select>
             </div>
 
-            <!-- Country (dropdown - data-driven dari dropdown_configs, fallback Indonesia) -->
+            <!-- Country (dropdown - fixed Indonesia) -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Country</label>
-                <select id="country" onchange="addrOnCountryChange()" class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
-                    @foreach(($countryOptions ?? ['Indonesia']) as $c)
-                        <option value="{{ $c }}" {{ $c === 'Indonesia' ? 'selected' : '' }}>{{ $c }}</option>
+                <select id="country" class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
+                    @php $addrCountries = \App\Services\Management\EmployeeMasterData::options('address', 'country'); $addrDefaultCountry = array_key_exists('Indonesia', $addrCountries) ? 'Indonesia' : array_key_first($addrCountries); @endphp
+                    @foreach($addrCountries as $optValue => $optLabel)
+                        <option value="{{ $optValue }}" @selected($optValue === $addrDefaultCountry)>{{ $optLabel }}</option>
                     @endforeach
                 </select>
             </div>
 
-            <!-- Region / Provinsi (cascading dari Country bila Indonesia; input manual bila negara lain) -->
+            <!-- Region / Provinsi (cascading dari Country) -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Region</label>
-                <div id="regionWilayahWrap">
-                    <select id="region" onchange="addrOnRegionChange()" data-searchable="true" data-search-placeholder="Search region..." class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
-                        <option value="">-- Select Region --</option>
-                    </select>
-                </div>
-                <input type="text" id="regionManual" placeholder="Region / Province" class="hidden w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent">
+                <select id="region" onchange="addrOnRegionChange()" data-searchable="true" data-search-placeholder="Search region..." class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
+                    <option value="">-- Select Region --</option>
+                </select>
             </div>
 
-            <!-- City / Kabupaten-Kota (cascading dari Region bila Indonesia; input manual bila negara lain) -->
+            <!-- City / Kabupaten-Kota (cascading dari Region) -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">City</label>
-                <div id="cityWilayahWrap">
-                    <select id="city" onchange="addrOnCityChange()" data-searchable="true" data-search-placeholder="Search city..." class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
-                        <option value="">-- Select City --</option>
-                    </select>
-                </div>
-                <input type="text" id="cityManual" placeholder="City" class="hidden w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent">
+                <select id="city" onchange="addrOnCityChange()" data-searchable="true" data-search-placeholder="Search city..." class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
+                    <option value="">-- Select City --</option>
+                </select>
             </div>
 
-            <!-- District / Kecamatan (cascading dari City bila Indonesia; input manual bila negara lain) -->
+            <!-- District / Kecamatan (cascading dari City) -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">District</label>
-                <div id="districtWilayahWrap">
-                    <select id="district" onchange="addrOnDistrictChange()" data-searchable="true" data-search-placeholder="Search district..." class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
-                        <option value="">-- Select District --</option>
-                    </select>
-                </div>
-                <input type="text" id="districtManual" placeholder="District" class="hidden w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent">
+                <select id="district" onchange="addrOnDistrictChange()" data-searchable="true" data-search-placeholder="Search district..." class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
+                    <option value="">-- Select District --</option>
+                </select>
             </div>
 
-            <!-- Rural/Urban Village / Kelurahan-Desa (cascading dari District bila Indonesia; input manual bila negara lain) -->
+            <!-- Rural/Urban Village / Kelurahan-Desa (cascading dari District) -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Rural / Urban Village</label>
-                <div id="villageWilayahWrap">
-                    <select id="village" data-searchable="true" data-search-placeholder="Search village..." class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
-                        <option value="">-- Select Village --</option>
-                    </select>
-                </div>
-                <input type="text" id="villageManual" placeholder="Rural / Urban Village" class="hidden w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent">
+                <select id="village" data-searchable="true" data-search-placeholder="Search village..." class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
+                    <option value="">-- Select Village --</option>
+                </select>
             </div>
 
             <!-- Street (Row 2) -->
@@ -139,53 +135,37 @@
             <!-- Language -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Language</label>
-                <div class="relative">
-                    <input type="text" id="language" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent pr-8">
-                    <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                        </svg>
-                    </button>
-                </div>
+                <select id="language" data-maxlen="50" class="{{ $addrSelectClass }}">
+                        <option value="">-- Select language --</option>
+                        @foreach($addrLanguages as $v => $l)<option value="{{ $v }}">{{ $l }}</option>@endforeach
+                    </select>
             </div>
 
             <!-- Cell Phone Country -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Cell Phone Country</label>
-                <div class="relative">
-                    <input type="text" id="cellPhoneCountry" placeholder="+62" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent pr-8">
-                    <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                        </svg>
-                    </button>
-                </div>
+                <select id="cellPhoneCountry" data-maxlen="10" data-searchable="true" data-search-placeholder="Search..." class="{{ $addrSelectClass }}">
+                        <option value="">-- Code --</option>
+                        @foreach($dialCodes as $v => $l)<option value="{{ $v }}">{{ $v }} &nbsp;{{ $l }}</option>@endforeach
+                    </select>
             </div>
 
             <!-- Telephone Country -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Telephone Country</label>
-                <div class="relative">
-                    <input type="text" id="telephoneCountry" placeholder="+62" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent pr-8">
-                    <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                        </svg>
-                    </button>
-                </div>
+                <select id="telephoneCountry" data-maxlen="10" data-searchable="true" data-search-placeholder="Search..." class="{{ $addrSelectClass }}">
+                        <option value="">-- Code --</option>
+                        @foreach($dialCodes as $v => $l)<option value="{{ $v }}">{{ $v }} &nbsp;{{ $l }}</option>@endforeach
+                    </select>
             </div>
 
             <!-- Fax Country -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Fax Country</label>
-                <div class="relative">
-                    <input type="text" id="faxCountry" placeholder="+62" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent pr-8">
-                    <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                        </svg>
-                    </button>
-                </div>
+                <select id="faxCountry" data-maxlen="10" data-searchable="true" data-search-placeholder="Search..." class="{{ $addrSelectClass }}">
+                        <option value="">-- Code --</option>
+                        @foreach($dialCodes as $v => $l)<option value="{{ $v }}">{{ $v }} &nbsp;{{ $l }}</option>@endforeach
+                    </select>
             </div>
 
             <!-- Email (Work) -->
@@ -203,14 +183,10 @@
             <!-- Preferred Communication (Row 2) -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Preferred Communication</label>
-                <div class="relative">
-                    <input type="text" id="preferredCommunication" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent pr-8">
-                    <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                        </svg>
-                    </button>
-                </div>
+                <select id="preferredCommunication" data-maxlen="50" class="{{ $addrSelectClass }}">
+                        <option value="">-- Select --</option>
+                        @foreach($addrPreferred as $v => $l)<option value="{{ $v }}">{{ $l }}</option>@endforeach
+                    </select>
             </div>
 
             <!-- Cell Phone -->
@@ -227,8 +203,8 @@
 
             <!-- Telephone Extension -->
             <div class="col-span-1">
-                <label class="block text-xs font-semibold text-gray-600 mb-1.5">Extension</label>
-                <input type="text" id="telephoneExt" placeholder="Ext" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent">
+                <label class="block text-xs font-semibold text-gray-600 mb-1.5" title="Extension (ext.): the internal line number you dial after the main telephone number reaches the switchboard, e.g. 123. Leave empty if the telephone has none.">Extension (ext.)</label>
+                <input type="text" id="telephoneExt" placeholder="e.g. 123" maxlength="10" inputmode="numeric" title="Internal extension number of this telephone (maximum 10 characters). Leave empty if none." class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent">
             </div>
 
             <!-- Fax -->
@@ -239,8 +215,8 @@
 
             <!-- Fax Extension -->
             <div class="col-span-1">
-                <label class="block text-xs font-semibold text-gray-600 mb-1.5">Extension</label>
-                <input type="text" id="faxExt" placeholder="Ext" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent">
+                <label class="block text-xs font-semibold text-gray-600 mb-1.5" title="Extension (ext.): the internal line number of the fax machine behind a shared main number. Leave empty if none.">Extension (ext.)</label>
+                <input type="text" id="faxExt" placeholder="e.g. 123" maxlength="10" inputmode="numeric" title="Internal extension number of this fax (maximum 10 characters). Leave empty if none." class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent">
             </div>
 
             <!-- Email (Personal) -->
@@ -291,17 +267,11 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <button onclick="copySelectedAddress()" title="Copy" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
-                    </svg>
+                <button onclick="copySelectedAddress()" title="Copy" class="js-act-create inline-flex items-center px-3 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-all">
                     Copy
                 </button>
 
-                <button onclick="deleteSelectedAddress()" title="Delete" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-red-600 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50 transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                    </svg>
+                <button onclick="deleteSelectedAddress()" title="Delete" class="js-act-delete inline-flex items-center px-3 py-2 bg-white border border-red-600 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50 transition-all">
                     Delete
                 </button>
 
@@ -362,7 +332,7 @@
 
 
 <!-- Delete Confirmation Modal -->
-<div id="confirmDeleteAddressModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+<div id="confirmDeleteAddressModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 items-center justify-center p-4">
     <div class="bg-white rounded-xl max-w-md w-full shadow-2xl">
         <div class="p-6">
             <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
@@ -490,69 +460,6 @@
         addrFillWilayah(addrVillageSel(), dCode ? await addrFetchWilayah(dCode) : [], '-- Select Village --', villageName || '');
     }
 
-    /* ─────────────────────────────────────────────────────────────────────
-       COUNTRY-DEPENDENT MODE: Indonesia pakai dropdown wilayah cascading di
-       atas; negara lain (mis. Singapura) pakai input manual karena tabel
-       `wilayah` memang data resmi Indonesia-only. Kolom yang disimpan tetap
-       region/city/district/rural_urban_village (string bebas - backend
-       sudah menerima teks apa pun), jadi tidak ada perubahan payload/API.
-       ───────────────────────────────────────────────────────────────────── */
-    const ADDR_WILAYAH_COUNTRY = 'Indonesia';
-    const ADDR_LOC_FIELDS = ['region', 'city', 'district', 'village']; // 'village' = id field; payload key-nya rural_urban_village
-
-    function addrIsManualCountry(v) {
-        return (v || 'Indonesia') !== ADDR_WILAYAH_COUNTRY;
-    }
-
-    // Tampilkan dropdown wilayah (Indonesia) atau input manual (negara lain).
-    function addrApplyCountryMode(countryValue) {
-        const manual = addrIsManualCountry(countryValue);
-        ADDR_LOC_FIELDS.forEach(key => {
-            document.getElementById(key + 'WilayahWrap').classList.toggle('hidden', manual);
-            document.getElementById(key + 'Manual').classList.toggle('hidden', !manual);
-        });
-    }
-
-    // Baca value field lokasi dari mode yang sedang aktif (select ATAU manual input).
-    function addrGetField(key) {
-        const manualEl = document.getElementById(key + 'Manual');
-        if (!manualEl.classList.contains('hidden')) return manualEl.value.trim();
-        return document.getElementById(key).value;
-    }
-
-    // Set value Country secara programatic (load/reset), lalu dispatch 'change'
-    // supaya label tombol select-enhance ikut ter-refresh - widget kustom itu
-    // hanya dengar event 'change'/mutasi DOM, TIDAK dengar assignment `.value =`
-    // langsung (persis alasan kenapa reset Region di bawah sudah dispatch event
-    // juga). Guard flag mencegah addrOnCountryChange() (listener kita sendiri,
-    // bukan punya select-enhance) ikut jalan dan salah reset field lokasi yang
-    // baru saja kita isi dari data tersimpan.
-    let addrSuppressCountryChange = false;
-    function addrSetCountry(value) {
-        const sel = document.getElementById('country');
-        sel.value = value || 'Indonesia';
-        addrSuppressCountryChange = true;
-        sel.dispatchEvent(new Event('change'));
-        addrSuppressCountryChange = false;
-    }
-
-    function addrOnCountryChange() {
-        if (addrSuppressCountryChange) return;
-        const val = document.getElementById('country').value;
-        addrApplyCountryMode(val);
-        if (!addrIsManualCountry(val)) {
-            // Balik ke Indonesia: reset wilayah, user pilih ulang (tidak ada carry-over dari manual text).
-            addrRegionSel().value = '';
-            addrRegionSel().dispatchEvent(new Event('change'));
-            addrResetWilayah(addrCitySel(), '-- Select City --');
-            addrResetWilayah(addrDistrictSel(), '-- Select District --');
-            addrResetWilayah(addrVillageSel(), '-- Select Village --');
-        } else {
-            // Pindah ke manual: kosongkan text field (hindari data wilayah Indonesia nyasar ke negara lain).
-            ADDR_LOC_FIELDS.forEach(key => { document.getElementById(key + 'Manual').value = ''; });
-        }
-    }
-
     /**
      * Load all addresses for this employee
      */
@@ -678,6 +585,39 @@
         }
     }
 
+
+    /**
+     * Mengisi dropdown dari nilai tersimpan. Nilai lama yang belum ada di daftar (mis. "primary", "IDN") ditambahkan sebagai pilihan
+     * supaya tidak hilang diam-diam; nilai yang terlalu panjang untuk kolomnya (mis. nomor telepon yang salah masuk ke kolom kode negara)
+     * dikosongkan agar tidak membuat penyimpanan berikutnya gagal.
+     */
+    function addrSetSelect(id, value) {
+        const sel = document.getElementById(id);
+        if (!sel) { return; }
+        let v = value == null ? '' : String(value).trim();
+        let opt = [...sel.options].find(o => o.value.toLowerCase() === v.toLowerCase());
+        if (v !== '' && !opt) {
+            if (v.length <= (Number(sel.dataset.maxlen) || 50)) {
+                opt = new Option(v + ' (saved value)', v);
+                sel.add(opt);
+            } else {
+                v = '';
+            }
+        }
+        sel.value = opt ? opt.value : '';
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    /** Susun pesan galat server menjadi daftar per kolom yang mudah dibaca. */
+    function addrErrorText(data) {
+        const lines = [];
+        if (data && data.errors && typeof data.errors === 'object') {
+            Object.values(data.errors).forEach(list => (Array.isArray(list) ? list : [list]).forEach(m => { if (m) { lines.push('• ' + m); } }));
+        }
+        if (lines.length) { return 'Please correct the following:\n' + lines.join('\n'); }
+        return (data && data.message) ? data.message : 'The address could not be saved. Please try again.';
+    }
+
     /**
      * Load address data to form fields above
      */
@@ -699,35 +639,26 @@
                 const address = data.data;
                 
                 document.getElementById('editAddressId').value = address.address_id;
-                document.getElementById('addressType').value = address.address_type || '';
-                addrSetCountry(address.country || 'Indonesia');
-                addrApplyCountryMode(address.country);
-                if (addrIsManualCountry(address.country)) {
-                    // Negara non-Indonesia: isi langsung text manual, tidak perlu hit /api/regions/children.
-                    document.getElementById('regionManual').value = address.region || '';
-                    document.getElementById('cityManual').value = address.city || '';
-                    document.getElementById('districtManual').value = address.district || '';
-                    document.getElementById('villageManual').value = address.rural_urban_village || '';
-                } else {
-                    // Rekonstruksi dropdown cascading Region → City → District → Village.
-                    await addrHydrateLocation(address.region, address.city, address.district, address.rural_urban_village);
-                }
+                addrSetSelect('addressType', address.address_type);
+                document.getElementById('country').value = address.country || 'Indonesia';
+                // Rekonstruksi dropdown cascading Region → City → District → Village.
+                await addrHydrateLocation(address.region, address.city, address.district, address.rural_urban_village);
                 document.getElementById('street').value = address.street || '';
                 document.getElementById('houseNumber').value = address.house_number || '';
                 document.getElementById('postalCode').value = address.postal_code || '';
-                document.getElementById('language').value = address.language || '';
-                document.getElementById('cellPhoneCountry').value = address.cell_phone_country || '';
+                addrSetSelect('language', address.language);
+                addrSetSelect('cellPhoneCountry', address.cell_phone_country);
                 document.getElementById('cellPhone').value = address.cell_phone || '';
-                document.getElementById('telephoneCountry').value = address.telephone_country || '';
+                addrSetSelect('telephoneCountry', address.telephone_country);
                 document.getElementById('telephone').value = address.telephone || '';
                 document.getElementById('telephoneExt').value = address.telephone_extension || '';
-                document.getElementById('faxCountry').value = address.fax_country || '';
+                addrSetSelect('faxCountry', address.fax_country);
                 document.getElementById('fax').value = address.fax || '';
                 document.getElementById('faxExt').value = address.fax_extension || '';
                 document.getElementById('emailWork').value = address.email_work || '';
                 document.getElementById('emailPersonal').value = address.email_personal || '';
                 document.getElementById('website').value = address.website || '';
-                document.getElementById('preferredCommunication').value = address.preferred_communication || '';
+                addrSetSelect('preferredCommunication', address.preferred_communication);
                 document.getElementById('addrValidFrom').value = address.valid_from || '';
                 document.getElementById('addrValidTo').value = address.valid_to || '';
                 document.getElementById('addrIsPrimary').checked = address.is_primary || false;
@@ -753,10 +684,10 @@
             country: document.getElementById('country').value,
             street: document.getElementById('street').value,
             house_number: document.getElementById('houseNumber').value,
-            rural_urban_village: addrGetField('village'),
-            district: addrGetField('district'),
-            city: addrGetField('city'),
-            region: addrGetField('region'),
+            rural_urban_village: document.getElementById('village').value,
+            district: document.getElementById('district').value,
+            city: document.getElementById('city').value,
+            region: document.getElementById('region').value,
             postal_code: document.getElementById('postalCode').value,
             language: document.getElementById('language').value,
             cell_phone_country: document.getElementById('cellPhoneCountry').value,
@@ -810,7 +741,7 @@
                     clearAddressForm();
                 }
             } else {
-                showNotification('Failed to save address: ' + (data.message || 'Unknown error'), 'error');
+                showNotification(addrErrorText(data), 'error');
             }
         } catch (error) {
             console.error(' Error saving address:', error);
@@ -823,10 +754,8 @@
      */
     function clearAddressForm() {
         document.getElementById('editAddressId').value = '';
-        document.getElementById('addressType').value = '';
-        addrSetCountry('Indonesia');
-        addrApplyCountryMode('Indonesia');
-        ADDR_LOC_FIELDS.forEach(key => { document.getElementById(key + 'Manual').value = ''; });
+        addrSetSelect('addressType', '');
+        document.getElementById('country').value = 'Indonesia';
         // Reset cascading: kosongkan Region + dispatch change agar select-enhance
         // menyegarkan label; level di bawahnya dikosongkan manual (innerHTML →
         // observer enhancer ikut menyegarkan labelnya sendiri).
@@ -838,19 +767,19 @@
         document.getElementById('street').value = '';
         document.getElementById('houseNumber').value = '';
         document.getElementById('postalCode').value = '';
-        document.getElementById('language').value = '';
-        document.getElementById('cellPhoneCountry').value = '+62';
+        addrSetSelect('language', '');
+        addrSetSelect('cellPhoneCountry', '+62');
         document.getElementById('cellPhone').value = '';
-        document.getElementById('telephoneCountry').value = '+62';
+        addrSetSelect('telephoneCountry', '+62');
         document.getElementById('telephone').value = '';
         document.getElementById('telephoneExt').value = '';
-        document.getElementById('faxCountry').value = '+62';
+        addrSetSelect('faxCountry', '+62');
         document.getElementById('fax').value = '';
         document.getElementById('faxExt').value = '';
         document.getElementById('emailWork').value = '';
         document.getElementById('emailPersonal').value = '';
         document.getElementById('website').value = '';
-        document.getElementById('preferredCommunication').value = '';
+        addrSetSelect('preferredCommunication', '');
         document.getElementById('addrValidFrom').value = '';
         document.getElementById('addrValidTo').value = '';
         document.getElementById('addrIsPrimary').checked = false;
@@ -949,9 +878,9 @@
      */
 
     // Initialize
-    document.addEventListener('DOMContentLoaded', function() {
+    (window.onSectionFirstShow || function (t, fn) { document.addEventListener('DOMContentLoaded', fn); })('address', function(viaSwitch) {
         addrLoadRegions();   // siapkan daftar provinsi untuk form "New"
-        loadAddresses(true);
+        if (!viaSwitch) { loadAddresses(true); }   // dibuka lewat klik tab: switchSection() -> loadSectionData() memuatnya
     });
 
 

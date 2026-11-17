@@ -92,11 +92,38 @@ class ProfileController extends Controller
         $sections = array_keys(\App\Http\Controllers\SettingsController::PROFILE_SECTIONS);
         $profileSectionHidden   = [];
         $profileSectionReadonly = [];
+        // Satu pencarian izin untuk semua seksi (dulu 2 kueri × 2 pemeriksaan × 13 seksi). Setara dengan canAccessMenu() untuk slug
+        // my-profile.section.* : slug yang dipegang role dengan can_view pada menu aktif.
+        $permSlugs = $emp ? $emp->allPermissionSlugs() : [];
         foreach ($sections as $key) {
-            $canView   = (bool) $emp?->canAccessMenu("my-profile.section.{$key}.view");
-            $canUpdate = (bool) $emp?->canAccessMenu("my-profile.section.{$key}.update");
+            $canView   = in_array("my-profile.section.{$key}.view", $permSlugs, true);
+            $canUpdate = in_array("my-profile.section.{$key}.update", $permSlugs, true);
             $profileSectionHidden[$key]   = !$canView;
             $profileSectionReadonly[$key] = $canView && !$canUpdate;
+        }
+
+        // H3.11: profil terkunci → seksi yang dinilai Onboarding tampil READ-ONLY (View Only) bagi pemilik.
+        // Penegakan sebenarnya di CheckEmployeeSectionAccess; ini hanya agar tampilannya jujur.
+        $profileLocked = app(\App\Services\HrProfile\ProfileLockService::class)->isLocked((int) $employeeId);
+        if ($profileLocked) {
+            foreach (\App\Services\HrProfile\ProfileLockPolicy::LOCKED_SECTIONS as $lockedKey) {
+                if (array_key_exists($lockedKey, $profileSectionHidden) && !$profileSectionHidden[$lockedKey]) {
+                    $profileSectionReadonly[$lockedKey] = true;
+                }
+            }
+        }
+
+        // HC-D14: progres kelengkapan data MILIK SENDIRI untuk banner di halaman ini.
+        // Kegagalan menghitung tidak boleh merusak My Profile - banner saja yang hilang.
+        $onboarding = null;
+        try {
+            $onboarding = app(\App\Services\Onboarding\OnboardingProgressService::class)
+                ->forEmployee((int) $employeeId);
+        } catch (\Throwable $e) {
+            Log::error('My Profile: gagal menghitung progres onboarding', [
+                'employee_id' => $employeeId,
+                'error'       => $e->getMessage(),
+            ]);
         }
 
         return view('master.employee.show', [
@@ -104,6 +131,84 @@ class ProfileController extends Controller
             'isOwnProfile'           => true,
             'profileSectionHidden'   => $profileSectionHidden,
             'profileSectionReadonly' => $profileSectionReadonly,
+            'onboarding'             => $onboarding,
+            'profileLocked'          => $profileLocked,
+        ]);
+    }
+
+    /**
+     * Foto profil MILIK SENDIRI untuk avatar di topbar. Identitas dari sesi (bukan dari URL), jadi tidak ada cara membaca foto orang lain
+     * lewat rute ini, dan tidak butuh izin seksi hr_profile (avatar tampil untuk semua akun yang punya foto).
+     */
+    public function myPhoto()
+    {
+        $user = session('user');
+        $id = (int) ($user['id'] ?? 0);
+        if (!$id || ($user['type'] ?? 'employee') !== 'employee') {
+            abort(404);
+        }
+
+        $file = app(\App\Services\HrProfile\HrProfileService::class)->imageFile($id, 'photo');
+        if (!$file) {
+            abort(404);
+        }
+
+        // URL membawa versi (?v=hash nama berkas) → aman di-cache peramban; foto baru = URL baru.
+        return response()->file($file['path'], [
+            'Content-Type'           => $file['mime'],
+            'Content-Disposition'    => 'inline',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control'          => 'private, max-age=86400',
+        ]);
+    }
+
+    /**
+     * Progres kelengkapan data MILIK SENDIRI (JSON) - dipakai banner My Profile untuk
+     * memperbarui diri setelah pegawai menyimpan seksi lewat AJAX (halaman tidak dimuat ulang).
+     * Identitas dari sesi, bukan dari request; hanya butir + angka yang dikembalikan.
+     */
+    public function myOnboardingProgress()
+    {
+        $sessionUser = session('user');
+        if (!$sessionUser || ($sessionUser['type'] ?? null) !== 'employee') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $p = app(\App\Services\Onboarding\OnboardingProgressService::class)
+                ->forEmployee((int) $sessionUser['id']);
+        } catch (\Throwable $e) {
+            Log::error('My Profile: gagal menghitung progres onboarding (refresh)', [
+                'employee_id' => $sessionUser['id'],
+                'error'       => $e->getMessage(),
+            ]);
+            return response()->json(['success' => false, 'message' => 'Could not load progress'], 500);
+        }
+
+        if ($p === null) {
+            return response()->json(['success' => false, 'message' => 'Not found'], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'done'    => $p['done'],
+                'total'   => $p['total'],
+                'percent' => $p['percent'],
+                'status'  => $p['status'],
+                'groups'  => array_map(fn ($g) => ['label' => $g['label'], 'done' => $g['done'], 'total' => $g['total']], $p['groups']),
+                'items'   => array_map(fn ($i) => [
+                    'key'     => $i['key'],
+                    'group'   => $i['group'],
+                    'label'   => $i['label'],
+                    'section' => $i['section'],
+                    'hint'    => $i['hint'] ?? null,
+                    'field'   => $i['field'] ?? null,
+                    'prefill' => $i['prefill'] ?? null,
+                    'hr_only' => (bool) ($i['hr_only'] ?? false),
+                    'done'    => (bool) $i['done'],
+                ], $p['items']),
+            ],
         ]);
     }
 

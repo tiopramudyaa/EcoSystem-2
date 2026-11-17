@@ -26,15 +26,17 @@ class RoleController extends Controller
 
     public function index()
     {
-        $roles = EmployeeRole::withCount('employees')->orderBy('id')->get();
+        // `menus_count`: how many menus the role can open (View) - the same number the Menu Access page and Menu List agree on.
+        $roles = EmployeeRole::withCount(['employees', 'menus as menus_count' => fn ($q) => $q->where('role_menu.can_view', true)])->orderBy('id')->get();
         return response()->json(['success' => true, 'data' => $roles]);
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:100|unique:employee_role,name',
-            'description' => 'nullable|string|max:255',
+            'name'          => 'required|string|max:100|unique:employee_role,name',
+            'description'   => 'nullable|string|max:255',
+            'period_domain' => 'nullable|in:project,support',
         ]);
 
         $role = EmployeeRole::create($data);
@@ -52,8 +54,9 @@ class RoleController extends Controller
         $role = EmployeeRole::findOrFail($id);
 
         $data = $request->validate([
-            'name'        => 'required|string|max:100|unique:employee_role,name,' . $id,
-            'description' => 'nullable|string|max:255',
+            'name'          => 'required|string|max:100|unique:employee_role,name,' . $id,
+            'description'   => 'nullable|string|max:255',
+            'period_domain' => 'nullable|in:project,support',
         ]);
 
         $role->update($data);
@@ -201,6 +204,7 @@ class RoleController extends Controller
         $employee->roles()->syncWithoutDetaching($request->role_ids);
 
         Cache::forget("perm_slugs_{$employee->employee_id}");
+        Cache::forget("perm_matrix_{$employee->employee_id}");
 
         $after = $employee->roles()->pluck('name')->values()->all();
         $label = $employee->name ?? ('Employee #' . $employee->employee_id);
@@ -249,6 +253,7 @@ class RoleController extends Controller
         $employee->roles()->sync($request->role_ids);
 
         Cache::forget("perm_slugs_{$employee->employee_id}");
+        Cache::forget("perm_matrix_{$employee->employee_id}");
 
         $after = $employee->roles()->pluck('name')->values()->all();
         $label = $employee->name ?? ('Employee #' . $employee->employee_id);
@@ -274,6 +279,7 @@ class RoleController extends Controller
         $employee->roles()->detach($roleId);
 
         Cache::forget("perm_slugs_{$employee->employee_id}");
+        Cache::forget("perm_matrix_{$employee->employee_id}");
 
         $label = $employee->name ?? ('Employee #' . $employee->employee_id);
 
@@ -295,6 +301,7 @@ class RoleController extends Controller
     {
         $role->employees()->pluck('employee.employee_id')->each(function ($empId) {
             Cache::forget("perm_slugs_{$empId}");
+            Cache::forget("perm_matrix_{$empId}");
         });
     }
 }

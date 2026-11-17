@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
-use App\Enums\RoleId;
 use App\Exports\EmployeeExport;
 use App\Http\Controllers\Concerns\RequiresStepUpAuth;
 use App\Models\AuditLog;
@@ -36,7 +36,7 @@ class EmployeeController extends Controller
         try {
             $user = session('user');
             
-            Log::info('=== EMPLOYEE INDEX PAGE ACCESSED ===', [
+            Log::debug('=== EMPLOYEE INDEX PAGE ACCESSED ===', [
                 'user_id' => $user['id'] ?? null,
                 'user_type' => $user['type'] ?? null,
                 'user_name' => $user['name'] ?? null,
@@ -44,7 +44,8 @@ class EmployeeController extends Controller
             ]);
 
             return view('master.employee.index', [
-                'user' => $user
+                'user' => $user,
+                'summary' => $this->listSummary(),
             ]);
 
         } catch (\Exception $e) {
@@ -60,14 +61,61 @@ class EmployeeController extends Controller
     }
 
     /**
+     * Hitungan kartu ringkasan di atas daftar Master Employee (cakupan sama dengan daftar: karyawan INTERNAL, termasuk Internship).
+     * `active` = tidak diblokir & tidak dihapus (sama dengan filter Status "Active").
+     *
+     * @return array{total:int,active:int,blocked:int,internship:int,locked:int}
+     */
+    private function listSummary(): array
+    {
+        $hasProfile = \App\Support\SchemaCache::hasTable('employee_hr_profile');
+        $locked = $hasProfile
+            ? "SUM(CASE WHEN EXISTS (SELECT 1 FROM employee_hr_profile hp WHERE hp.employee_id = e.employee_id AND hp.locked_at IS NOT NULL) THEN 1 ELSE 0 END)"
+            : '0';
+
+        // Satu kueri berkondisi (dulu 5 kueri hitung terpisah dengan join yang sama). Semantik tiap angka sama dengan sebelumnya.
+        $row = DB::table('employee as e')->leftJoin('employee_basic_data as eb', 'e.employee_id', '=', 'eb.employee_id')
+            ->where(fn ($q) => $q->whereNull('eb.employee_type')->orWhere('eb.employee_type', '!=', 'External'))
+            ->selectRaw("COUNT(*) AS total,
+                SUM(CASE WHEN eb.block = 0 AND eb.deletion_flag = 0 THEN 1 ELSE 0 END) AS active,
+                SUM(CASE WHEN eb.block = 1 THEN 1 ELSE 0 END) AS blocked,
+                SUM(CASE WHEN eb.employee_group = 'INTERNSHIP' THEN 1 ELSE 0 END) AS internship,
+                {$locked} AS locked")
+            ->first();
+
+        return [
+            'total'      => (int) ($row->total ?? 0),
+            'active'     => (int) ($row->active ?? 0),
+            'blocked'    => (int) ($row->blocked ?? 0),
+            'internship' => (int) ($row->internship ?? 0),
+            'locked'     => (int) ($row->locked ?? 0),
+        ];
+    }
+
+    /**
      * Display single employee detail page
      */
     public function show($id)
     {
+        return $this->renderDetail($id, 'employee');
+    }
+
+    /**
+     * Halaman edit KONSULTAN di External → Consultants: tampilan sama dengan detail Master Employee, tetapi izin per tab memakai
+     * `external.section.*` (diatur Admin terpisah dari HR). Hanya untuk karyawan berjenis External.
+     */
+    public function showExternal($id)
+    {
+        return $this->renderDetail($id, 'external');
+    }
+
+    /** @param string $scope 'employee' (Master Employee, target Internal) | 'external' (External → Consultants, target External) */
+    private function renderDetail($id, string $scope)
+    {
         try {
             $user = session('user');
             
-            Log::info('=== EMPLOYEE DETAIL PAGE ACCESSED ===', [
+            Log::debug('=== EMPLOYEE DETAIL PAGE ACCESSED ===', [
                 'employee_id' => $id,
                 'user_id' => $user['id'] ?? null,
                 'user_type' => $user['type'] ?? null,
@@ -152,7 +200,22 @@ class EmployeeController extends Controller
                 ]);
             }
 
-            Log::info('=== EMPLOYEE DATA LOADED SUCCESSFULLY ===', [
+            // Pemisahan menurut JENIS: Internal hanya lewat Master Employee, External hanya lewat External → Consultants.
+            // Pembuka yang berhak atas halaman lawannya diarahkan ke sana; selain itu ditolak (tidak bisa menjangkau lewat ID di URL).
+            $guard = Employee::find($user['id'] ?? null);
+            $isExternalTarget = (($employee->employee_type ?? null) ?: 'Internal') === 'External';
+            if ($scope === 'employee' && $isExternalTarget) {
+                abort_unless($guard?->canAccessMenu('general.external.consultants'), 403, 'This is an external consultant. Open it from External → Consultants.');
+
+                return redirect()->route('general.external.consultants.edit', $id);
+            }
+            if ($scope === 'external' && !$isExternalTarget) {
+                abort_unless($guard?->canAccessMenu('master.employee'), 403, 'This is an internal employee. Open it from Master Employee.');
+
+                return redirect()->route('master.employee.detail', $id);
+            }
+
+            Log::debug('=== EMPLOYEE DATA LOADED SUCCESSFULLY ===', [
                 'employee_id' => $id,
                 'eci' => $employee->eci ?? null
             ]);
@@ -163,22 +226,34 @@ class EmployeeController extends Controller
             // walaupun checkbox-nya dimatikan di Control Center.
             // Padanan untuk halaman /profile ada di ProfileController.
             $viewer   = Employee::find($user['id'] ?? null);
+            $matrix   = $viewer?->allPermissionMatrix() ?? [];
             $hidden   = [];
             $readonly = [];
+            $crud     = [];
+            $prefix = $scope === 'external' ? 'external.section' : 'employee.section';
             foreach (array_keys(SettingsController::PROFILE_SECTIONS) as $key) {
-                $canView   = (bool) $viewer?->canAccessMenu("employee.section.{$key}.view");
-                $canUpdate = (bool) $viewer?->canAccessMenu("employee.section.{$key}.update");
+                $canView   = (bool) $viewer?->canAccessMenu("{$prefix}.{$key}.view");
+                $canUpdate = (bool) $viewer?->canAccessMenu("{$prefix}.{$key}.update");
+                // Create / Delete of a tab are the flags of its `.view` row (Menu Access boxes); Edit is `.update`.
+                $canCreate = $canView && (bool) ($matrix["{$prefix}.{$key}.view"]['create'] ?? false);
+                $canDelete = $canView && (bool) ($matrix["{$prefix}.{$key}.view"]['delete'] ?? false);
                 $hidden[$key]   = !$canView;
-                $readonly[$key] = $canView && !$canUpdate;
+                $readonly[$key] = $canView && !$canUpdate && !$canCreate && !$canDelete;
+                $crud[$key]     = ['create' => $canCreate, 'edit' => $canUpdate, 'delete' => $canDelete];
             }
 
             return view('master.employee.show', [
                 'employee'               => $employee,
                 'user'                   => $user,
+                'detailScope'            => $scope,
                 'profileSectionHidden'   => $hidden,
                 'profileSectionReadonly' => $readonly,
+                'profileSectionCrud'     => $crud,
+                'profileLocked'          => app(\App\Services\HrProfile\ProfileLockService::class)->isLocked((int) $id),
             ]);
 
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e;   // 403 dari penjaga jenis: biarkan sampai ke pengguna
         } catch (\Exception $e) {
             Log::error('=== ERROR LOADING EMPLOYEE DETAIL PAGE ===', [
                 'employee_id' => $id,
@@ -198,7 +273,7 @@ class EmployeeController extends Controller
     public function getData(Request $request)
     {
         try {
-            Log::info('=== API: FETCHING EMPLOYEES ===', [
+            Log::debug('=== API: FETCHING EMPLOYEES ===', [
                 'filters' => $request->all(),
                 'user_ip' => $request->ip()
             ]);
@@ -232,6 +307,15 @@ class EmployeeController extends Controller
                     'eb.block',
                     'eb.deletion_flag'
                 );
+
+            // Profil terkunci oleh HR (Onboarding › Verify & Lock). Subquery, bukan join, supaya tidak menggandakan
+            // baris; tabel belum ada (rilis sebelum migrasi) → kolom diabaikan.
+            if (\App\Support\SchemaCache::hasTable('employee_hr_profile')) {
+                $query->selectSub(
+                    DB::table('employee_hr_profile as hp')->select('hp.locked_at')->whereColumn('hp.employee_id', 'e.employee_id')->limit(1),
+                    'profile_locked_at'
+                );
+            }
 
             $this->applyEmployeeListFilters($query, $request);
 
@@ -307,7 +391,7 @@ class EmployeeController extends Controller
                 return $emp;
             });
 
-            Log::info('=== API: EMPLOYEES FETCHED SUCCESSFULLY ===', [
+            Log::debug('=== API: EMPLOYEES FETCHED SUCCESSFULLY ===', [
                 'count' => $employees->count(),
                 'total' => $paginator->total(),
                 'filters_applied' => $request->all()
@@ -348,7 +432,7 @@ class EmployeeController extends Controller
      */
     public function exportToExcel(Request $request)
     {
-        Log::info('=== API: EXPORTING EMPLOYEES ===', [
+        Log::debug('=== API: EXPORTING EMPLOYEES ===', [
             'filters' => $request->all(),
             'user_ip' => $request->ip()
         ]);
@@ -483,7 +567,7 @@ class EmployeeController extends Controller
                     $query->where('eb.deletion_flag', true);
                     break;
             }
-            Log::info('Filter applied: status', ['status' => $request->status]);
+            Log::debug('Filter applied: status', ['status' => $request->status]);
         }
 
         // Filter by ECI - separate column filter from Name below (each has its
@@ -579,7 +663,28 @@ class EmployeeController extends Controller
         // Global search
         if ($request->filled('search')) {
             $this->applyNameSearch($query, $request->search, true);
-            Log::info('Global search applied', ['search' => $request->search]);
+            Log::debug('Global search applied', ['search' => $request->search]);
+        }
+
+        // Filter by profile lock state (Onboarding › Verify & Lock): 'locked' | 'unlocked'.
+        if (in_array($request->input('lock'), ['locked', 'unlocked'], true) && \App\Support\SchemaCache::hasTable('employee_hr_profile')) {
+            $locked = DB::table('employee_hr_profile as hpf')->selectRaw('1')
+                ->whereColumn('hpf.employee_id', 'e.employee_id')->whereNotNull('hpf.locked_at');
+            $request->input('lock') === 'locked' ? $query->whereExists($locked) : $query->whereNotExists($locked);
+        }
+
+        // Master Employee hanya memuat karyawan INTERNAL (termasuk Internship). Konsultan eksternal dikelola di
+        // External → Consultants (keputusan pemilik 13 Okt 2026; datanya tetap satu tabel).
+        $query->where(fn ($q) => $q->whereNull('eb.employee_type')->orWhere('eb.employee_type', '!=', 'External'));
+
+        // Filter by employee group / division (multi-select, comma-separated).
+        foreach (['employee_group' => 'eb.employee_group', 'division' => 'eb.division'] as $param => $column) {
+            if ($request->filled($param)) {
+                $values = array_values(array_filter(array_map('trim', explode(',', $request->input($param))), fn ($v) => $v !== ''));
+                if ($values) {
+                    $query->whereIn($column, $values);
+                }
+            }
         }
 
         // Filter by home base (multi-select, comma-separated).
@@ -587,7 +692,7 @@ class EmployeeController extends Controller
             $homeBases = array_filter(explode(',', $request->home_base));
             if (!empty($homeBases)) {
                 $query->whereIn('eb.home_base', $homeBases);
-                Log::info('Filter applied: home_base', ['home_base' => $homeBases]);
+                Log::debug('Filter applied: home_base', ['home_base' => $homeBases]);
             }
         }
 
@@ -597,7 +702,7 @@ class EmployeeController extends Controller
             $positions = array_values(array_filter(array_map('trim', explode(',', $request->position)), fn ($p) => $p !== ''));
             if (!empty($positions)) {
                 $query->whereIn('eb.position', $positions);
-                Log::info('Filter applied: position', ['position' => $positions]);
+                Log::debug('Filter applied: position', ['position' => $positions]);
             }
         }
 
@@ -614,7 +719,7 @@ class EmployeeController extends Controller
                         ->join('modules as m', 'eq.module_id', '=', 'm.id')
                         ->whereIn('m.name', $moduleNames);
                 });
-                Log::info('Filter applied: modules', ['modules' => $moduleNames]);
+                Log::debug('Filter applied: modules', ['modules' => $moduleNames]);
             }
         }
     }
@@ -677,7 +782,7 @@ class EmployeeController extends Controller
     public function getDetail($id)
     {
         try {
-            Log::info('=== API: FETCHING EMPLOYEE DETAIL ===', [
+            Log::debug('=== API: FETCHING EMPLOYEE DETAIL ===', [
                 'employee_id' => $id
             ]);
 
@@ -746,7 +851,7 @@ class EmployeeController extends Controller
                 ], 404);
             }
 
-            Log::info('=== API: EMPLOYEE DETAIL FETCHED SUCCESSFULLY ===', [
+            Log::debug('=== API: EMPLOYEE DETAIL FETCHED SUCCESSFULLY ===', [
                 'employee_id' => $id,
                 'eci' => $employee->eci
             ]);
@@ -775,6 +880,12 @@ class EmployeeController extends Controller
      */
     public function store(Request $request)
     {
+        // Konsultan EXTERNAL hanya boleh dibuat oleh pemegang izin Create pada External → Consultants (bukan hanya Master Employee).
+        if (mb_strtoupper(trim((string) $request->employee_group)) === 'EXTERNAL'
+            && !Employee::find(session('user.id'))?->hasMenuPermission('general.external.consultants', 'can_create')) {
+            return response()->json(['success' => false, 'message' => 'You do not have permission to add an external consultant. Ask an administrator for the Create permission on External → Consultants.'], 403);
+        }
+
         // Get current user's ECI
         $currentUserECI = $this->getCurrentUserECI();
 
@@ -792,14 +903,22 @@ class EmployeeController extends Controller
             'nick_name' => 'required|string|max:100|unique:employee_basic_data,nick_name',
             'role' => 'nullable|integer',
             'gender' => 'nullable|in:Male,Female',
-            'religion' => 'nullable|in:Islam,Christian,Catholic,Hindu,Buddhist,Confucian',
+            'religion' => 'nullable|in:Islam,Christian,Catholic,Hindu,Buddhist,Konghucu,Confucian',   // 'Confucian' = nilai lama, tetap diterima
             'marital_status' => 'nullable|in:Single,Married,Divorced,Widow/Widower',
+            'title' => 'nullable|in:Mr.,Mrs.,Ms.,Dr.,Prof.',
+            'birth_date' => 'nullable|date|before_or_equal:today',
+            'birth_place' => 'nullable|string|max:100',
+            'since_date' => 'nullable|date',
             'email_work' => 'required|email|unique:auth_users,email|max:255',
             'cell_phone' => 'nullable|string|max:50',
         ], [
             'eci.required' => 'Employee ID is required',
             'eci.unique' => 'Employee ID already exists',
             'first_name.required' => 'First name is required',
+            'birth_date.date' => 'Birth Date must be a valid date.',
+            'birth_date.before_or_equal' => 'Birth Date cannot be in the future.',
+            'since_date.date' => 'Since Date must be a valid date.',
+            'title.in' => 'Title must be one of Mr., Mrs., Ms., Dr., Prof.',
             'nick_name.required' => 'Nick Name is required.',
             'nick_name.unique' => 'Nick Name is already taken. Please choose a different nick name.',
             'password.required' => 'Password is required',
@@ -825,16 +944,15 @@ class EmployeeController extends Controller
         DB::beginTransaction();
 
         try {
-            // Create employee - default primary role: EC User (3)
+            // Create employee - default roles come from config/roles.php (new_employee_roles)
             $employeeId = DB::table('employee')->insertGetId([
                 'eci'       => $request->eci,
                 'is_active' => 1,
             ]);
 
-            // Assign: User System Registered + EC User (keduanya wajib untuk bisa login)
-            $userSystemRegisteredId = DB::table('employee_role')->where('name', 'User System Registered')->value('id');
+            // Assign the default roles (wajib untuk bisa login) - config/roles.php → new_employee_roles
             $now = now();
-            foreach (array_filter([$userSystemRegisteredId, RoleId::EC_USER->value]) as $roleId) {
+            foreach (\App\Models\EmployeeRole::newEmployeeRoleIds() as $roleId) {
                 DB::table('employee_role_assignment')->insertOrIgnore([
                     'employee_id' => $employeeId,
                     'role_id'     => $roleId,
@@ -843,10 +961,18 @@ class EmployeeController extends Controller
                 ]);
             }
 
+            // Konsultan eksternal juga mendapat role self-service "External Consultant" (profil, timesheet & invoice sendiri).
+            if (mb_strtoupper(trim((string) $request->employee_group)) === 'EXTERNAL'
+                && ($externalRoleId = DB::table('employee_role')->where('name', 'External Consultant')->value('id'))) {
+                DB::table('employee_role_assignment')->insertOrIgnore([
+                    'employee_id' => $employeeId, 'role_id' => $externalRoleId, 'created_at' => $now, 'updated_at' => $now,
+                ]);
+            }
+
             Log::info('Employee record created', [
                 'employee_id' => $employeeId,
                 'eci' => $request->eci,
-                'role_id' => RoleId::EC_USER->value
+                'role_ids' => \App\Models\EmployeeRole::newEmployeeRoleIds(),
             ]);
 
             // Create basic data
@@ -876,8 +1002,8 @@ class EmployeeController extends Controller
                 'manager' => $request->manager,
                 'authorization_group' => $request->authorization_group,
                 'home_base' => $request->home_base,
-                // Internal/External diturunkan dari home_base ("Others" → External).
-                'employee_type' => \App\Models\EmployeeBasicData::deriveEmployeeType($request->home_base),
+                // Internal/External mengikuti Employee Group (bukan Home Base).
+                'employee_type' => \App\Models\EmployeeBasicData::typeForGroup($request->employee_group),
                 'created_by' => $currentUserECI,  // ✅ Gunakan ECI
                 'created_on' => now(),
                 'block' => false,
@@ -1013,7 +1139,7 @@ class EmployeeController extends Controller
 
             $firstName = $row->first_name ?? '';
             $lastName  = $row->last_name  ?? '';
-            $initials  = strtoupper(substr($firstName, 0, 1) . substr($lastName, 0, 1)) ?: 'NA';
+            $initials  = \App\Support\Initials::make(trim("$firstName $lastName"), 'NA');
 
             if (!empty($row->deletion_flag)) {
                 $statusClass = 'bg-red-100 text-red-800';
@@ -1084,7 +1210,7 @@ class EmployeeController extends Controller
             'first_name' => 'required|string|max:255',
             'nick_name' => 'required|string|max:100|unique:employee_basic_data,nick_name,' . $basicDataId . ',basic_data_id',
             'gender' => 'nullable|in:Male,Female',
-            'religion' => 'nullable|in:Islam,Christian,Catholic,Hindu,Buddhist,Confucian',
+            'religion' => 'nullable|in:Islam,Christian,Catholic,Hindu,Buddhist,Konghucu,Confucian',   // 'Confucian' = nilai lama, tetap diterima
             'marital_status' => 'nullable|in:Single,Married,Divorced,Widow/Widower',
         ], [
             'nick_name.required' => 'Nick Name is required.',
@@ -1155,8 +1281,8 @@ class EmployeeController extends Controller
                         'manager' => $request->manager,
                         'authorization_group' => $request->authorization_group,
                         'home_base' => $request->home_base,
-                        // Internal/External diturunkan dari home_base ("Others" → External).
-                        'employee_type' => \App\Models\EmployeeBasicData::deriveEmployeeType($request->home_base),
+                        // Internal/External mengikuti Employee Group (bukan Home Base).
+                        'employee_type' => \App\Models\EmployeeBasicData::typeForGroup($request->employee_group),
                         'last_changed_by' => $currentUserECI,  // ✅ Gunakan ECI
                         'last_changed_on' => now(),
                         'updated_at' => now(),
@@ -1406,129 +1532,90 @@ public function getRoles()
     }
 
     /**
-     * Change an employee's ECI (Employee ID) - deliberately separate from the
-     * general update() form because ECI doubles as the login username
-     * (auth_users.username, see AuthController::login). This keeps both tables
-     * in sync atomically, requires the ACTING ADMIN's own password as a
-     * re-auth step, and force-logs-out the affected employee's existing
-     * sessions so nothing is left pointing at a login ID that no longer
-     * matches what's shown in Master Employee.
+     * Ganti ECI (kode karyawan) - API. Wajib kata sandi AKUN YANG MENGGANTI (bukan kata sandi karyawan itu).
+     *
+     * - ECI harus unik; hanya huruf/angka/titik/garis bawah/strip (sama dengan ECI yang sudah ada: K22005, DEMO-INT01, ECI_ADMIN).
+     * - Bila username login karyawan itu SAMA dengan ECI lamanya, username ikut diganti (login dengan ECI baru tetap jalan; login dengan
+     *   email tidak berubah). Karyawan yang username-nya bukan ECI tidak disentuh - ECI barunya tetap bisa dipakai login (cadangan di AuthController).
+     * - Slip payroll yang sudah terbit menyimpan salinan ECI lama (`payroll_slips.employee_eci`) dan sengaja tidak diubah (dokumen historis).
+     * - Tercatat di riwayat karyawan dan log.
      */
     public function changeEci(Request $request, $id)
     {
-        $currentUserECI = $this->getCurrentUserECI();
-
-        Log::info('=== API: CHANGE EMPLOYEE ECI ===', [
-            'employee_id'    => $id,
-            'requested_eci'  => $request->new_eci,
-            'changed_by_eci' => $currentUserECI,
-        ]);
-
         $validator = Validator::make($request->all(), [
-            'new_eci'        => 'required|string|max:50|unique:employee,eci,' . $id . ',employee_id|unique:auth_users,username',
-            'admin_password' => 'required|string',
+            'eci'      => ['required', 'string', 'min:2', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\-]*$/'],
+            'password' => ['required', 'string'],
         ], [
-            'new_eci.required' => 'New Employee ID is required.',
-            'new_eci.unique'   => 'This Employee ID is already taken.',
+            'eci.required'      => 'New ECI is required',
+            'eci.regex'         => 'ECI may only contain letters, numbers, dot, underscore and hyphen, and must start with a letter or number',
+            'eci.min'           => 'ECI must be at least 2 characters',
+            'eci.max'           => 'ECI must be at most 50 characters',
+            'password.required' => 'Enter your password to confirm',
         ]);
-
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => $validator->errors()->first(),
-                'errors'  => $validator->errors(),
-            ], 422);
+            return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
         }
 
-        // Re-auth: verify it's really the acting admin's own password, not the
-        // target employee's - session('user.id') is the ADMIN currently logged
-        // in and making this request (not $id, the employee being changed).
-        $actingAdminId   = session('user.id');
-        $actingAuthUser  = DB::table('auth_users')->where('employee_id', $actingAdminId)->first();
-
-        if (!$actingAuthUser || !Hash::check($request->admin_password, $actingAuthUser->password)) {
-            Log::warning('=== API: CHANGE ECI - WRONG ADMIN PASSWORD ===', [
-                'employee_id' => $id,
-                'admin_id'    => $actingAdminId,
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Your password is incorrect.',
-                'errors'  => ['admin_password' => ['Your password is incorrect.']],
-            ], 422);
+        $employee = DB::table('employee')->where('employee_id', $id)->first();
+        if (!$employee) {
+            return response()->json(['success' => false, 'message' => 'Employee not found'], 404);
         }
 
-        $targetAuthUser = DB::table('auth_users')->where('employee_id', $id)->first();
-
-        if (!$targetAuthUser) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Auth account for this employee not found',
-            ], 404);
+        $actorId  = (int) (session('user.id') ?? 0);
+        $actorHash = $actorId ? DB::table('auth_users')->where('employee_id', $actorId)->value('password') : null;
+        if (!$actorHash || !Hash::check((string) $request->password, $actorHash)) {
+            return response()->json(['success' => false, 'message' => 'Your password is incorrect', 'errors' => ['password' => ['Your password is incorrect']]], 422);
         }
 
-        DB::beginTransaction();
+        $old = (string) $employee->eci;
+        $new = trim((string) $request->eci);
+        if ($new === $old) {
+            return response()->json(['success' => false, 'message' => 'The new ECI is the same as the current one'], 422);
+        }
+        if (DB::table('employee')->where('eci', $new)->where('employee_id', '!=', $id)->exists()) {
+            return response()->json(['success' => false, 'message' => 'This ECI is already used by another employee', 'errors' => ['eci' => ['This ECI is already used by another employee']]], 422);
+        }
 
         try {
-            $employee = Employee::find($id);
+            $usernameChanged = false;
+            DB::transaction(function () use ($id, $old, $new, $actorId, &$usernameChanged) {
+                DB::table('employee')->where('employee_id', $id)->update(['eci' => $new, 'updated_at' => now()]);
 
-            if (!$employee) {
-                DB::rollBack();
+                $auth = DB::table('auth_users')->where('employee_id', $id)->first();
+                if ($auth && strcasecmp((string) $auth->username, $old) === 0) {
+                    if (DB::table('auth_users')->where('username', $new)->where('id', '!=', $auth->id)->exists()) {
+                        throw new \DomainException('This ECI is already used as a login username by another account');
+                    }
+                    DB::table('auth_users')->where('id', $auth->id)->update(['username' => $new, 'updated_at' => now()]);
+                    $usernameChanged = true;
+                }
 
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Employee not found',
-                ], 404);
-            }
-
-            $oldEci = $employee->eci;
-
-            // Eloquent save (not DB::table()->update()) so the model's Auditable
-            // trait/observer captures the eci change in the audit log.
-            $employee->eci = $request->new_eci;
-            $employee->save();
-
-            DB::table('auth_users')
-                ->where('employee_id', $id)
-                ->update([
-                    'username'   => $request->new_eci,
-                    'updated_at' => now(),
+                \App\Models\EmployeeHistory::create([
+                    'employee_id'  => $id,
+                    'action'       => 'ECI changed',
+                    'description'  => "ECI changed from {$old} to {$new}" . ($usernameChanged ? ' (login username updated too)' : ''),
+                    'performed_by' => $actorId,
+                    'performed_at' => now(),
                 ]);
+            });
+        } catch (\DomainException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage(), 'errors' => ['eci' => [$e->getMessage()]]], 422);
+        } catch (\Throwable $e) {
+            Log::error('=== API: ERROR CHANGING ECI ===', ['employee_id' => $id, 'error' => $e->getMessage()]);
 
-            // Force logout: drop the employee's existing database sessions and
-            // clear their remember-me token, mirroring AuthController::logout().
-            DB::table('sessions')->where('user_id', $targetAuthUser->id)->delete();
-            DB::table('auth_users')->where('id', $targetAuthUser->id)->update(['remember_token' => null]);
-
-            DB::commit();
-
-            Log::info('=== API: EMPLOYEE ECI CHANGED SUCCESSFULLY ===', [
-                'employee_id'    => $id,
-                'old_eci'        => $oldEci,
-                'new_eci'        => $request->new_eci,
-                'changed_by_eci' => $currentUserECI,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Employee ID changed successfully',
-                'data'    => ['eci' => $request->new_eci],
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            Log::error('=== API: ERROR CHANGING ECI ===', [
-                'employee_id' => $id,
-                'error'       => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to change Employee ID',
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Failed to change ECI'], 500);
         }
+
+        if ((int) $id === $actorId) {
+            session()->put('user.eci', $new);   // yang diganti akun yang sedang login: sesi ikut diperbarui
+        }
+        Log::info('=== API: EMPLOYEE ECI CHANGED ===', ['employee_id' => $id, 'from' => $old, 'to' => $new, 'by' => $actorId, 'username_updated' => $usernameChanged]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ECI changed successfully',
+            'data'    => ['eci' => $new, 'username_updated' => $usernameChanged],
+        ]);
     }
 
     /**
@@ -1673,6 +1760,7 @@ public function getRoles()
             DB::table('employee_role_assignment')->insert($pivotRows);
 
             Cache::forget("perm_slugs_{$id}");
+            Cache::forget("perm_matrix_{$id}"); // dulu terlewat: matriks C/E/D basi ≤ 60 menit
 
             $roles = DB::table('employee_role')->whereIn('id', $roleIds)->select('id', 'name')->get();
 

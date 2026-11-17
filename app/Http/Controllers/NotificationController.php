@@ -12,27 +12,65 @@ class NotificationController extends Controller
     /**
      * GET /notifications
      * Web page - list all notifications for the current employee.
+     *
+     * Mendukung `?tab=unread|read|all` (bawaan: all), `?q=` pencarian teks
+     * bebas pada kolom `preview`, dan `?type=pending_approval` - ditambahkan
+     * Keputusan HC-D39/HC-D40 untuk menyamai pola "Pusat Notifikasi" ESH
+     * (kartu ringkasan + tab + cari) DAN menjadi tujuan klik langsung dari
+     * kotak "N Pending Approval" di Command Center (Dashboard): filter
+     * `type=pending_approval` mempersempit daftar ke 5 tipe `*_pending_approval`
+     * - dokumen yang BENAR-BENAR menunggu tindakan orang ini, bukan seluruh
+     * riwayat notifikasi. Hitungan Unread/Total pada kartu ringkasan dihitung
+     * dari SELURUH baris milik karyawan ini (dalam cakupan filter yang sama),
+     * bukan hanya halaman yang sedang tampil.
      */
-    public function index()
+    public function index(Request $request)
     {
         $sessionUser = session('user');
         if (!$sessionUser) {
             return redirect()->route('login');
         }
 
-        $employeeId = $sessionUser['id'];
+        $employeeId     = $sessionUser['id'];
+        $tab            = in_array($request->query('tab'), ['unread', 'read'], true) ? $request->query('tab') : 'all';
+        $search         = trim((string) $request->query('q', ''));
+        $pendingOnly    = $request->query('type') === 'pending_approval';
 
-        $notifications = Notification::with([
+        $base = Notification::where('employee_id', $employeeId)
+            ->when($pendingOnly, fn ($q) => $q->where('type', 'like', '%_pending_approval'));
+
+        $unreadCount = (clone $base)->where('is_read', false)->count();
+        $totalCount  = (clone $base)->count();
+
+        $query = Notification::with([
                 'ticket:ticket_id,ticket_number,customer_id',
                 'ticket.customer:customer_id,customer_code',
             ])
             ->where('employee_id', $employeeId)
-            ->orderBy('created_at', 'desc')
-            ->paginate(30);
+            ->when($pendingOnly, fn ($q) => $q->where('type', 'like', '%_pending_approval'));
+
+        if ($tab === 'unread') {
+            $query->where('is_read', false);
+        } elseif ($tab === 'read') {
+            $query->where('is_read', true);
+        }
+
+        if ($search !== '') {
+            $query->where('preview', 'like', '%' . $search . '%');
+        }
+
+        $notifications = $query->orderBy('created_at', 'desc')
+            ->paginate(30)
+            ->withQueryString();
 
         return view('notifications.index', [
             'user'          => $sessionUser,
             'notifications' => $notifications,
+            'tab'           => $tab,
+            'search'        => $search,
+            'pendingOnly'   => $pendingOnly,
+            'unreadCount'   => $unreadCount,
+            'totalCount'    => $totalCount,
         ]);
     }
 
@@ -61,20 +99,28 @@ class NotificationController extends Controller
             ->limit(20)
             ->select([
                 'n.id', 'n.type', 'n.ticket_id', 'n.message_id',
-                'n.from_name', 'n.preview', 'n.link', 'n.is_read', 'n.created_at',
+                'n.from_name', 'n.from_employee_id', 'n.preview', 'n.link', 'n.is_read', 'n.created_at',
                 't.ticket_number',
                 'c.customer_code',
             ])
-            ->get()
+            ->get();
+
+        // Older rows kept the sender's id but not the name: look the names up once, for the whole list.
+        $senderNames = \App\Models\Employee::with('basicData')
+            ->whereIn('employee_id', $notifications->whereNull('from_name')->pluck('from_employee_id')->filter()->unique())
+            ->get()->mapWithKeys(fn ($e) => [$e->employee_id => $e->fullNameLabel()]);
+
+        $notifications = $notifications
             ->map(fn ($n) => [
                 'id'            => $n->id,
                 'type'          => $n->type,
+                'title'         => Notification::titleFor($n->type, $n->from_name ?: ($senderNames[$n->from_employee_id] ?? null)),
                 'ticket_id'     => $n->ticket_id,
                 'ticket_number' => $n->ticket_number,
                 'customer_name' => $n->customer_code,
                 'message_id'    => $n->message_id,
-                'from_name'     => $n->from_name,
-                'preview'       => Notification::stripDashes($n->preview),
+                'from_name'     => $n->from_name ?: ($senderNames[$n->from_employee_id] ?? null),
+                'preview'       => $n->preview,
                 'link'          => $n->link,
                 'is_read'       => (bool) $n->is_read,
                 'created_at'    => $n->created_at ? \Carbon\Carbon::parse($n->created_at)->diffForHumans() : null,
@@ -107,16 +153,14 @@ class NotificationController extends Controller
 
         // Unified badge count - now includes chat/message types too, so ticket
         // replies show up in the bell like any other notification.
-        $count = Notification::where('employee_id', $employeeId)
-            ->where('is_read', false)
-            ->count();
+        // Satu query (dulu dua COUNT) - endpoint ini dipanggil tiap 15 detik oleh setiap tab yang terbuka.
+        $agg = Notification::where('employee_id', $employeeId)->where('is_read', false)
+            ->selectRaw('COUNT(*) as total, COALESCE(SUM(type IN (?, ?)), 0) as messages', $messageTypes)->first();
+        $count = (int) ($agg->total ?? 0);
 
         // Message-type subset of the count above - the frontend uses this to
         // decide when to play the chat sound (vs the generic ticket sound).
-        $messageCount = Notification::where('employee_id', $employeeId)
-            ->whereIn('type', $messageTypes)
-            ->where('is_read', false)
-            ->count();
+        $messageCount = (int) ($agg->messages ?? 0);
 
         return response()->json([
             'success'             => true,

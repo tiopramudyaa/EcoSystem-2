@@ -31,7 +31,7 @@ Schedule::command('schedule-monitor:heartbeat')
     ->name('scheduler-heartbeat');
 
 // Proses email masuk tiap 30 detik → buat tiket / tambah pesan ke tiket.
-// Sub-menit butuh `schedule:work` (supervisord) — dengan cron `schedule:run`
+// Sub-menit butuh `schedule:work` (supervisord) - dengan cron `schedule:run`
 // Laravel menahan prosesnya sepanjang menit itu untuk tick detik ke-30.
 // Run yang tumpang tindih sudah dijaga lock internal processInbox()
 // ("already_running").
@@ -75,6 +75,16 @@ Schedule::command('notifications:project-reminders')
 // timesheet hari ini (draft sudah dihitung terisi). Tidak jalan di akhir pekan /
 // tanggal merah - command-nya sendiri yang mengecek HolidayService.
 Schedule::command('notifications:timesheet-reminders')->dailyAt('15:00');
+
+// Remind requesters to file the report (CAR) of an approved cash advance: before the deadline, on the day, and while overdue.
+// One reminder per document per day at most, so running it again the same day is harmless.
+Schedule::command('cash-advance:car-reminders')->dailyAt('08:30')->withoutOverlapping();
+
+// Contracts waiting for a signature (employee deadline close / approver waiting): one bell reminder per person per day.
+Schedule::command('contracts:signing-reminders')->dailyAt('08:00');
+// Legal Basis: pemilik aturan diingatkan (lonceng) saat ulasan 12 bulan hampir jatuh tempo / terlambat; paling banyak sekali per aturan per 7 hari.
+Schedule::command('legal-basis:review-reminders')->dailyAt('08:15');
+Schedule::command('offboarding:process')->dailyAt('00:10');
 
 // Periksa & perbaiki share link OneDrive tiap hari 02:30 - link bisa mati sendiri
 // (kebijakan expiry "Anyone links", scope diturunkan tenant, izin dicabut manual)

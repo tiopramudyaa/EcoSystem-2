@@ -97,6 +97,25 @@
             .se-wrap.opens-up.is-open .se-panel {
                 transform: translateY(0);
             }
+            /* Panel dengan kotak cari: TANPA padding atas. Dulu padding 6 px di atas kepala cari yang lengket (sticky) menjadi celah tempat
+               item yang digulir tampak "menembus" di atas kotak cari. Kepala cari kini menempel di tepi atas dan menutupnya penuh. */
+            .se-panel.has-search { padding-top: 0; scroll-padding-top: 3.25rem; }
+            .se-search-head {
+                position: sticky; top: 0; z-index: 3;
+                background: #fff; padding: 0.5rem; border-bottom: 1px solid #f3f4f6;
+                border-radius: 0.75rem 0.75rem 0 0;
+                box-shadow: 0 6px 8px -8px rgba(15, 23, 42, 0.35);
+            }
+            .se-search-head .se-search-input {
+                width: 100%; box-sizing: border-box; padding: 0.4375rem 0.625rem 0.4375rem 2rem;
+                font-size: 0.8125rem; color: #111827; background: #f9fafb;
+                border: 1px solid #e5e7eb; border-radius: 0.5rem; outline: none;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m21 21-5.2-5.2m0 0A7.5 7.5 0 1 0 5.2 5.2a7.5 7.5 0 0 0 10.6 10.6Z'/%3E%3C/svg%3E");
+                background-repeat: no-repeat; background-position: 0.5rem center; background-size: 1rem;
+                transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+            }
+            .se-search-head .se-search-input:focus { background-color: #fff; border-color: #991b1b; box-shadow: 0 0 0 2px rgba(153, 27, 27, 0.12); }
+            .se-panel { scrollbar-width: thin; scrollbar-color: #d1d5db transparent; }
             .se-item {
                 display: block; width: 100%;
                 padding: 0.5rem 1rem;
@@ -158,6 +177,9 @@
         // Swal2 manapun di seluruh aplikasi. Select di dalam popup Swal2 juga
         // tidak pernah butuh enhancement kita - Swal2 sudah punya styling sendiri.
         if (sel.closest('.swal2-popup')) return true;
+        // Skip select milik kalender flatpickr (pilihan bulan): dikelola flatpickr sendiri; kalau di-enhance,
+        // kalender tertimpa widget lain dan header bulannya rusak.
+        if (sel.closest('.flatpickr-calendar')) return true;
         return false;
     }
 
@@ -218,6 +240,10 @@
             if (opt.disabled) item.classList.add('is-disabled');
             if (idx === sel.selectedIndex) item.classList.add('is-active');
             item.dataset.index = String(idx);
+            item.setAttribute('role', 'option');
+            item.setAttribute('aria-selected', idx === sel.selectedIndex ? 'true' : 'false');
+            if (opt.disabled) item.setAttribute('aria-disabled', 'true');
+            item.tabIndex = -1; // reached with the arrow keys; Tab moves on to the next field instead of walking every option
             item.textContent = opt.textContent.trim() || ' ';
             item.title = opt.textContent.trim();
             panel.appendChild(item);
@@ -249,17 +275,18 @@
 
         const searchWrap = document.createElement('div');
         searchWrap.className = 'se-search-head';
-        searchWrap.style.cssText = 'position:sticky;top:0;background:#fff;border-bottom:1px solid #f3f4f6;padding:0.375rem 0.5rem;z-index:1;';
 
         const input = document.createElement('input');
         input.type = 'text';
+        input.className = 'se-search-input';
         input.placeholder = sel.dataset.searchPlaceholder || 'Search...';
-        input.style.cssText = 'width:100%;padding:0.375rem 0.625rem;font-size:0.8125rem;border:1px solid #e5e7eb;border-radius:0.375rem;outline:none;box-sizing:border-box;';
-        input.addEventListener('focus', () => { input.style.borderColor = '#991b1b'; input.style.boxShadow = '0 0 0 2px rgba(153,27,27,0.1)'; });
-        input.addEventListener('blur',  () => { input.style.borderColor = '#e5e7eb'; input.style.boxShadow = ''; });
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('spellcheck', 'false');
+        input.setAttribute('aria-label', input.placeholder);
 
         searchWrap.appendChild(input);
         panel.insertBefore(searchWrap, panel.firstChild);
+        panel.classList.add('has-search');
 
         const empty = document.createElement('div');
         empty.style.cssText = 'display:none;padding:0.75rem 1rem;font-size:0.875rem;color:#9ca3af;text-align:center;';
@@ -288,7 +315,7 @@
 
         // Keyboard: Escape tutup, Enter pilih satu-satunya hasil
         input.addEventListener('keydown', e => {
-            if (e.key === 'Escape') { e.preventDefault(); closeOpen(); return; }
+            // Escape / arrows are handled on the panel (enhance → kbdHandler), which also returns focus to the trigger.
             if (e.key === 'Enter') {
                 e.preventDefault();
                 const visible = Array.from(panel.querySelectorAll('.se-item')).filter(i => i.style.display !== 'none');
@@ -489,9 +516,47 @@
                 sel.dispatchEvent(new Event('input',  { bubbles: true }));
                 sel.dispatchEvent(new Event('change', { bubbles: true }));
             }
+            const keyboardPick = panel.contains(document.activeElement);
             closeOpen();
             renderItems(sel, panel, label);   // refresh active highlight
+            if (keyboardPick) btn.focus();
         });
+
+        // Keyboard: the trigger opens with Enter / Space / arrows; arrows, Home and End walk the options; Esc closes and
+        // returns focus to the trigger; Tab closes and moves on.
+        function kbdItems() {
+            return Array.from(panel.querySelectorAll('.se-item')).filter(i => i.style.display !== 'none' && !i.classList.contains('is-disabled'));
+        }
+        function kbdMove(dir, absolute) {
+            const items = kbdItems();
+            if (!items.length) return;
+            const at = items.indexOf(document.activeElement);
+            let next;
+            if (absolute === 'start') next = 0;
+            else if (absolute === 'end') next = items.length - 1;
+            else if (at < 0) next = dir > 0 ? Math.max(0, items.findIndex(i => i.classList.contains('is-active'))) : items.length - 1;
+            else next = (at + dir + items.length) % items.length;
+            items[next].focus();
+            items[next].scrollIntoView({ block: 'nearest' });
+        }
+        function kbdHandler(e) {
+            const isOpen = wrap.classList.contains('is-open');
+            if (e.key === 'Tab') { if (isOpen) closeOpen(); return; }
+            if (e.key === 'Escape') { if (isOpen) { e.preventDefault(); e.stopPropagation(); closeOpen(); btn.focus(); } return; }
+            const down = e.key === 'ArrowDown', up = e.key === 'ArrowUp';
+            if (!down && !up && e.key !== 'Home' && e.key !== 'End') return;
+            if (e.target === panel._seSearch && (e.key === 'Home' || e.key === 'End')) return; // caret movement in the search box
+            e.preventDefault();
+            if (!isOpen) {
+                if (sel.disabled || !(down || up)) return;
+                openWrapEl(wrap, sel);
+                if (!panel._seSearch) requestAnimationFrame(() => kbdMove(down ? 1 : -1));
+                return;
+            }
+            kbdMove(down ? 1 : -1, e.key === 'Home' ? 'start' : e.key === 'End' ? 'end' : null);
+        }
+        btn.addEventListener('keydown', kbdHandler);
+        panel.addEventListener('keydown', kbdHandler);
 
         // Sinkronisasi balik: kalau kode lain mengubah nilai/option select secara
         // programmatic, ikut update tampilan.

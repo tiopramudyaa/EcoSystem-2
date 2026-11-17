@@ -769,8 +769,11 @@
             </button>
         </div>
         <div id="errorModalBody" class="p-5 max-h-80 overflow-y-auto space-y-1.5"></div>
-        <div class="px-5 pb-4">
-            <button onclick="closeErrorModal()" class="w-full px-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium hover:bg-gray-200 transition">Close</button>
+        <div class="px-5 pb-4 flex gap-2">
+            <button type="button" onclick="downloadImportErrors(window._importErrors, 'import-errors')" class="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition whitespace-nowrap">
+                <i class="fas fa-download text-xs mr-1" aria-hidden="true"></i> Download CSV
+            </button>
+            <button onclick="closeErrorModal()" class="flex-1 px-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium hover:bg-gray-200 transition">Close</button>
         </div>
     </div>
 </div>
@@ -976,6 +979,7 @@ function showImportResult(type, json) {
 // ── Error Modal ───────────────────────────────────────────────────────────────
 
 function openErrorModal(errors) {
+    window._importErrors = errors;
     const body = document.getElementById('errorModalBody');
     body.innerHTML = errors.map(e =>
         `<div class="flex items-start gap-2 bg-red-50 rounded-lg px-3 py-2">

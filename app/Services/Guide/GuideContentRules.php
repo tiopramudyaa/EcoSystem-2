@@ -51,9 +51,10 @@ final class GuideContentRules
             $add('title', 'Title is required.');
         }
 
-        foreach (['title', 'summary', 'body'] as $field) {
-            if (preg_match('/[\x{2013}\x{2014}]/u', $draft[$field])) {
-                $add($field, 'Remove em dashes and en dashes; use a comma, colon or full stop instead.');
+        // Tulisan persis di layar (mis. `— choose an approver —`) ditulis dalam `kode` dan boleh memuat tanda ini.
+        foreach (['title' => $draft['title'], 'summary' => $draft['summary'], 'body' => $this->withoutInlineCode($draft['body'])] as $field => $text) {
+            if (preg_match('/[\x{2013}\x{2014}]/u', $text)) {
+                $add($field, 'Remove em dashes and en dashes; use a comma, colon or full stop instead (exact screen text inside `code` is allowed).');
             }
         }
         if (trim($draft['body']) === '') {
@@ -68,6 +69,11 @@ final class GuideContentRules
         }
 
         return $errors;
+    }
+
+    private function withoutInlineCode(string $text): string
+    {
+        return preg_replace('/`[^`\n]*`/u', '', $text) ?? $text;
     }
 
     /** @param string[] $requires @return string[] */

@@ -236,7 +236,7 @@ final class UserGuideService
     }
 
     /**
-     * Front matter sederhana (tanpa paket YAML, karena symfony/yaml hanya ada di lingkungan pengembangan, tidak di produksi):
+     * Front matter sederhana (tanpa paket YAML - symfony/yaml hanya ada di lingkungan pengembangan, tidak di produksi):
      * baris `kunci: nilai`; nilai berupa teks (boleh diberi tanda kutip), angka, atau daftar sebaris `[a, "b"]`.
      * Komentar ` # …` di akhir baris diabaikan.
      *

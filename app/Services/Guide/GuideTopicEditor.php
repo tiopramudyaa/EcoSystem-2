@@ -139,6 +139,28 @@ final class GuideTopicEditor
         return str_replace('src="images/guide/', 'src="' . asset('images/guide') . '/', $html);
     }
 
+    /**
+     * Data untuk penyunting visual: judul tiap topik (mengubah [[key]] menjadi tautan bernama) dan daftar topik untuk pemilih tautan.
+     *
+     * @return array{titles:array<string,string>,topics:array<int,array{key:string,title:string,chapter:string}>}
+     */
+    public function linkTargets(string $locale): array
+    {
+        $chapters = config('user_guide.chapters');
+        $titles = [];
+        $topics = [];
+        foreach ($this->rows($locale) as $row) {
+            $titles[$row['key']] = $row['title'];
+            $topics[] = [
+                'key'     => $row['key'],
+                'title'   => $row['title'],
+                'chapter' => $chapters[$row['chapter']]['title'][$locale] ?? $chapters[$row['chapter']]['title']['en'] ?? $row['chapter'],
+            ];
+        }
+
+        return ['titles' => $titles, 'topics' => $topics];
+    }
+
     /** @return string[] */
     public function chapters(): array
     {

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Concerns\ChecksMenuAccess;
@@ -12,7 +11,7 @@ class AuditLogController extends Controller
     use ChecksMenuAccess;
 
     /**
-     * Admin-only: render the audit log page.
+     * Needs the control-center.audit-log permission: render the audit log page.
      */
     public function index(Request $request)
     {
@@ -28,7 +27,7 @@ class AuditLogController extends Controller
     }
 
     /**
-     * Admin-only: return paginated audit log data as JSON.
+     * Needs the control-center.audit-log permission: return paginated audit log data as JSON.
      * GET /api/admin/audit-logs?page=1&per_page=25&search=&module=&event=&date_from=&date_to=
      */
     public function getData(Request $request)
@@ -133,7 +132,7 @@ class AuditLogController extends Controller
     }
 
     /**
-     * Admin-only: distinct module values for the filter dropdown.
+     * Needs the control-center.audit-log permission: distinct module values for the filter dropdown.
      * GET /api/admin/audit-logs/modules
      */
     public function modules(Request $request)

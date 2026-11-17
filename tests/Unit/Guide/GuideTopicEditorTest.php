@@ -14,11 +14,14 @@ use Tests\TestCase;
 /** Lapisan sunting: timpa topik berkas, topik baru, kembali ke bawaan, status "default berubah", dan efeknya pada UserGuideService. */
 class GuideTopicEditorTest extends TestCase
 {
-    private const KEY = 'sign-in-and-security';
+    private const KEY = 'welcome';
 
     protected function setUp(): void
     {
         parent::setUp();
+        if (!extension_loaded('pdo_sqlite')) {
+            $this->markTestSkipped('pdo_sqlite is not loaded (run: php -d extension=pdo_sqlite -d extension=sqlite3 vendor/bin/phpunit).');
+        }
         (require base_path('database/migrations/2026_10_28_000001_create_user_guide_topics_table.php'))->up();
         Schema::create('menu', fn ($t) => $t->string('slug'));
         Schema::create('employee_role', fn ($t) => $t->string('name'));
@@ -114,8 +117,7 @@ class GuideTopicEditorTest extends TestCase
 
     public function test_a_missing_translation_starts_from_the_english_text_and_is_flagged(): void
     {
-        $topic = $this->editor()->find('brand-new-en-only', 'id');
-        $this->assertNull($topic);
+        $this->assertNull($this->editor()->find('brand-new-en-only', 'id'));
 
         $this->editor()->save('only-english', 'en', $this->data(), null);
         $this->assertTrue($this->editor()->find('only-english', 'id') === null || $this->editor()->find('only-english', 'id')['borrowed']);
@@ -140,10 +142,22 @@ class GuideTopicEditorTest extends TestCase
 
     public function test_the_preview_renders_images_from_public_and_links_known_topics(): void
     {
-        $html = $this->editor()->preview("See [[" . self::KEY . "]].\n\n![Alt](images/guide/sign-in-login.png)", 'x', 'en');
+        $html = $this->editor()->preview("See [[" . self::KEY . "]].\n\n![Alt](images/guide/example.png)", 'x', 'en');
 
-        $this->assertStringContainsString('src="' . asset('images/guide') . '/sign-in-login.png"', $html);
+        $this->assertStringContainsString('src="' . asset('images/guide') . '/example.png"', $html);
         $this->assertStringContainsString('href="#topic-' . self::KEY . '"', $html);
+    }
+
+    public function test_link_targets_feed_the_visual_editor_with_titles_and_chapter_names(): void
+    {
+        $this->editor()->save('custom-link', 'en', $this->data(['title' => 'Custom link target']), null);
+
+        $targets = $this->editor()->linkTargets('en');
+        $this->assertSame('Custom link target', $targets['titles']['custom-link']);
+        $this->assertArrayHasKey(self::KEY, $targets['titles']);
+        $row = collect($targets['topics'])->firstWhere('key', 'custom-link');
+        $this->assertSame('Getting started', $row['chapter']);
+        $this->assertSame('Memulai', collect($this->editor()->linkTargets('id')['topics'])->firstWhere('key', self::KEY)['chapter']);
     }
 
     public function test_the_content_rules_see_database_topics_and_reference_data(): void

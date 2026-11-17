@@ -1,0 +1,1661 @@
+<?php
+
+use App\Http\Controllers\HR_General\ApprovalWorkflowController;
+use App\Http\Controllers\HR_General\AttendanceCorrectionController;
+use App\Http\Controllers\HR_General\AttendanceRecapController;
+use App\Http\Controllers\HR_General\AttendanceSettingController;
+use App\Http\Controllers\HR_General\AttendanceSourceController;
+use App\Http\Controllers\HR_General\CashAdvanceController;
+use App\Http\Controllers\HR_General\CashAdvanceReportController;
+use App\Http\Controllers\HR_General\CashAdvanceSettingController;
+use App\Http\Controllers\Legal\ContractController;
+use App\Http\Controllers\Legal\ContractSettingController;
+use App\Http\Controllers\Legal\ContractSigningController;
+use App\Http\Controllers\Legal\ContractTemplateController;
+use App\Http\Controllers\Legal\ExistingContractController;
+use App\Http\Controllers\HR_General\DashboardAttendanceController;
+use App\Http\Controllers\HR_General\MyCashAdvanceController;
+use App\Http\Controllers\HR_General\MyCashAdvanceReportController;
+use App\Http\Controllers\HR_General\GeoLookupController;
+use App\Http\Controllers\HR_General\InventoryController;
+use App\Http\Controllers\HR_General\InventorySettingController;
+use App\Http\Controllers\HR_General\LetterComposeController;
+use App\Http\Controllers\HR_General\LetterDashboardController;
+use App\Http\Controllers\HR_General\LetterRegisterController;
+use App\Http\Controllers\HR_General\LetterRequestController;
+use App\Http\Controllers\HR_General\LetterDesignController;
+use App\Http\Controllers\HR_General\LetterTemplateController;
+use App\Http\Controllers\HR_General\MyLetterRequestController;
+use App\Http\Controllers\HR_General\MyAttendanceController;
+use App\Http\Controllers\HR_General\MyOvertimeController;
+use App\Http\Controllers\HR_General\MyPurchaseRequestController;
+use App\Http\Controllers\HR_General\DataTransferController;
+use App\Http\Controllers\HR_General\MyReimbursementController;
+use App\Http\Controllers\HR_General\PurchaseOrderController;
+use App\Http\Controllers\HR_General\PurchaseRequestController;
+use App\Http\Controllers\HR_General\PurchaseRequestSettingController;
+use App\Http\Controllers\HR_General\OnboardingController;
+use App\Http\Controllers\SidebarFavoriteController;
+use App\Http\Controllers\HR_General\OvertimeReviewController;
+use App\Http\Controllers\HR_General\OvertimeSettingController;
+use App\Http\Controllers\HR_General\RecruitmentCandidateController;
+use App\Http\Controllers\HR_General\RecruitmentController;
+use App\Http\Controllers\HR_General\RecruitmentInterviewController;
+use App\Http\Controllers\HR_General\RecruitmentJobController;
+use App\Http\Controllers\HR_General\RecruitmentOfferController;
+use App\Http\Controllers\HR_General\RecruitmentSettingController;
+use App\Http\Controllers\HR_General\ReimbursementController;
+use App\Http\Controllers\HR_General\ReimbursementImportController;
+use App\Http\Controllers\HR_General\ReimbursementSettingController;
+use App\Http\Controllers\HR_General\ShiftController;
+use App\Http\Middleware\CheckAuthToken;
+use Illuminate\Support\Facades\Route;
+
+/**
+ * ============================================================================
+ * HR & GENERAL - ROUTES
+ * ============================================================================
+ *
+ * Prefix: /general
+ * Menu induk: `general` (menu id 20)
+ *
+ * Sub-modul:
+ *   Settings -> Branches   master cabang + titik geofence
+ *   Settings -> Shifts     pola jam kerja
+ *   Settings -> Overtime   aturan lembur + alur persetujuan
+ *   Settings -> Reimburse. aturan reimbursement + alur persetujuan
+ *   Attendance             rekap presensi (harian & bulanan) + koreksi
+ *   My Attendance          presensi mandiri, untuk SELURUH karyawan
+ *   Overtime               peninjauan & persetujuan lembur
+ *   My Overtime            pengajuan lembur mandiri, untuk SELURUH karyawan
+ *
+ * Otorisasi memakai middleware `menu:` yang sudah ada. Setiap rute dilindungi
+ * slug-nya sendiri, dan setiap tombol di Blade dibungkus @if($can(...)) dengan
+ * slug yang sama - supaya pengguna tidak pernah menemui 403 dari tombol yang
+ * terlihat.
+ *
+ * =============================================================================
+ * 🔴 HANYA GET DAN POST - TIDAK ADA PUT / PATCH / DELETE
+ * =============================================================================
+ * Seluruh rute pengubah data di berkas ini memakai POST dengan akhiran aksi
+ * yang eksplisit (`/update`, `/delete`, `/cancel`, `/release`).
+ *
+ * ALASANNYA:
+ * Sebagian penyedia hosting, proxy, dan WAF menolak metode PUT/PATCH/DELETE,
+ * dan sebagian lainnya menyaring field `_method` yang dipakai Laravel untuk
+ * memalsukan metode. Selama seluruh perubahan data lewat POST biasa, modul ini
+ * tidak bergantung pada satu pun dari keduanya.
+ *
+ * CATATAN JUJUR: form Blade dengan @method('DELETE') sebenarnya SUDAH mengirim
+ * POST di kabel - Laravel yang menerjemahkannya lewat `_method`. Jadi perubahan
+ * ini bukan memperbaiki yang rusak, melainkan MENGHAPUS KETERGANTUNGAN pada
+ * mekanisme itu, dan memastikan kode JavaScript yang ditambahkan kelak tidak
+ * diam-diam mengirim DELETE sungguhan lewat fetch().
+ *
+ * BERLAKU HANYA UNTUK BERKAS INI. Modul lain (Ticket, Delivery, Timesheet,
+ * Master Data) masih memakai PUT/DELETE dan SENGAJA TIDAK DISENTUH - mengubah
+ * rute yang sedang dipakai produksi berisiko tanpa manfaat yang diminta.
+ *
+ * Nama rute TIDAK berubah saat verbanya diubah, sehingga seluruh `route()` di
+ * Blade tetap bekerja tanpa disunting.
+ */
+Route::prefix('general')
+    ->name('general.')
+    ->middleware(CheckAuthToken::class)
+    ->group(function () {
+
+        // =====================================================================
+        // DOCUMENT IDENTITY page - one place for letterheads and signers, linked from HR (Letter Templates) and Legal (Contract).
+        // Opens for either slug; each step shows only what the viewer's slug allows.
+        Route::get('document-identity', [LetterTemplateController::class, 'identity'])
+            ->name('document-identity.index')
+            ->middleware('menu:general.letters.settings.letterheads,general.letters.settings.signers');
+
+        // =====================================================================
+        // MY APPROVALS - kotak masuk persetujuan lintas modul
+        // =====================================================================
+        // Dibuka oleh PENUNJUKAN pada alur persetujuan modul mana pun, bukan oleh slug menu: kepala departemen, direktur,
+        // atau finance yang hanya menyetujui tidak perlu menu HR / umum. Isinya hanya dokumen yang menunggu orang itu.
+        Route::get('approvals', [\App\Http\Controllers\HR_General\ApprovalInboxController::class, 'index'])
+            ->name('approvals.index')
+            ->middleware('menu.approver:any,general.approvals');
+
+        // One document for the approver - the approver-only page (no HR layout). Taking part in the document opens it.
+        Route::get('approvals/{module}/{id}', [\App\Http\Controllers\HR_General\ApprovalInboxController::class, 'show'])
+            ->whereNumber('id')
+            ->name('approvals.show')
+            ->middleware('menu.approver:any');
+
+        // =====================================================================
+        // MY ATTENDANCE - presensi mandiri, untuk SELURUH karyawan
+        // =====================================================================
+        // Seluruh rute di bawah memakai satu slug yang sama: siapa pun yang
+        // boleh membuka halamannya boleh melakukan presensi untuk DIRINYA
+        // SENDIRI. Identitas karyawan diambil dari sesi, bukan dari request,
+        // sehingga tidak ada jalan mencatat presensi atas nama orang lain.
+        Route::prefix('my-attendance')
+            ->name('my-attendance.')
+            ->middleware('menu:general.my-attendance')
+            ->group(function () {
+                Route::get('/', [MyAttendanceController::class, 'index'])->name('index');
+                Route::get('/today', [MyAttendanceController::class, 'today'])->name('today');
+                Route::post('/check-in', [MyAttendanceController::class, 'checkIn'])->name('check-in');
+                Route::post('/check-out', [MyAttendanceController::class, 'checkOut'])->name('check-out');
+
+                // Pengajuan koreksi milik sendiri. Kepemilikan diperiksa dari
+                // sesi di dalam controller, bukan dari parameter rute.
+                Route::post('/correction', [AttendanceCorrectionController::class, 'store'])->name('correction.store');
+                Route::post('/correction/{correction}/cancel', [AttendanceCorrectionController::class, 'cancel'])->name('correction.cancel');
+            });
+
+        // =====================================================================
+        // ATTENDANCE - REKAP (sisi HR)
+        // =====================================================================
+        // Rute ekspor didaftarkan SEBELUM rute rekap bulanan agar tidak
+        // tertimpa, dan dilindungi slug ekspor tersendiri.
+        Route::prefix('attendance')->name('attendance.')->group(function () {
+
+            Route::get('/', [AttendanceRecapController::class, 'daily'])
+                ->name('daily')
+                ->middleware('menu:general.attendance');
+
+            Route::get('/export', [AttendanceRecapController::class, 'exportDaily'])
+                ->name('export')
+                ->middleware('menu:general.attendance.export');
+
+            Route::get('/monthly', [AttendanceRecapController::class, 'monthly'])
+                ->name('monthly')
+                ->middleware('menu:general.attendance.monthly');
+
+            Route::get('/monthly/export', [AttendanceRecapController::class, 'exportMonthly'])
+                ->name('monthly.export')
+                ->middleware('menu:general.attendance.export');
+        });
+
+        // =====================================================================
+        // ATTENDANCE - PENINJAUAN KOREKSI (sisi HR)
+        // =====================================================================
+        Route::prefix('attendance/corrections')->name('attendance.corrections.')->group(function () {
+
+            Route::get('/', [AttendanceCorrectionController::class, 'index'])
+                ->name('index')
+                ->middleware('menu:general.attendance.correction');
+
+            // Menyetujui/menolak dilindungi slug TERPISAH dari sekadar melihat
+            // daftar: sebagian pemegang akses HR boleh memantau tanpa berwenang
+            // mengubah jam presensi orang lain.
+            Route::middleware('menu:general.attendance.correction.approve')->group(function () {
+                Route::post('/{correction}/approve', [AttendanceCorrectionController::class, 'approve'])->name('approve');
+                Route::post('/{correction}/reject', [AttendanceCorrectionController::class, 'reject'])->name('reject');
+            });
+        });
+
+        // =====================================================================
+        // ATTENDANCE HUB - Branches, Shifts, Settings sebagai TAB (D175)
+        // =====================================================================
+        // 🔴 URI & NAMA RUTE pindah ke bawah prefix `attendance/*`, supaya
+        // seluruh permukaan HR untuk presensi hidup di satu ruang navigasi -
+        // sejalan dengan Daily/Monthly Recap dan Corrections yang sudah ada di
+        // sana. SLUG IZIN TIDAK BERUBAH SATU HURUF PUN: `general.settings.
+        // branches`, `.manage`, `general.settings.shifts`, `.manage`, dan
+        // `general.settings.attendance` tetap identik dengan sebelumnya, jadi
+        // grant yang sudah dibagikan lewat Control Center tetap berlaku apa
+        // adanya begitu kode ini di-deploy - nol regrant diperlukan.
+        //
+        // URL LAMA (general/settings/branches, .../shifts, .../attendance)
+        // TETAP HIDUP sebagai redirect - lihat blok "ALIAS URL LAMA" di bawah.
+
+        // ── Shifts ───────────────────────────────────────────────────────────
+        Route::prefix('attendance/shifts')->name('attendance.shifts.')->group(function () {
+
+            Route::get('/', [ShiftController::class, 'index'])
+                ->name('index')
+                ->middleware('menu:general.settings.shifts');
+
+            Route::middleware('menu:general.settings.shifts.manage')->group(function () {
+                Route::get('/create', [ShiftController::class, 'create'])->name('create');
+                Route::post('/', [ShiftController::class, 'store'])->name('store');
+                Route::get('/{shift}/edit', [ShiftController::class, 'edit'])->name('edit');
+                Route::post('/{shift}/update', [ShiftController::class, 'update'])->name('update');
+                Route::post('/{shift}/delete', [ShiftController::class, 'destroy'])->name('destroy');
+
+                // Penugasan karyawan ke shift
+                Route::get('/{shift}/assign', [ShiftController::class, 'assign'])->name('assign');
+                Route::post('/{shift}/assign', [ShiftController::class, 'storeAssignment'])->name('assign.store');
+                Route::post('/{shift}/assign/{assignment}/release', [ShiftController::class, 'releaseAssignment'])->name('assign.release');
+            });
+        });
+
+        // ── Attendance Rules (Settings tab) ─────────────────────────────────
+        // Katup pengaman modul: bila kebijakan yang dipilih ternyata memblokir
+        // presensi, pemilik sistem dapat melonggarkannya sendiri dari sini.
+        Route::prefix('attendance/settings')
+            ->name('attendance.settings.')
+            ->middleware('menu:general.settings.attendance')
+            ->group(function () {
+                Route::get('/', [AttendanceSettingController::class, 'edit'])->name('edit');
+                Route::post('/update', [AttendanceSettingController::class, 'update'])->name('update');
+            });
+
+        // Master sumber presensi. Dipisah dari pengaturan karena berupa daftar
+        // yang dapat bertambah, bukan satu baris nilai. Tetap bersarang di
+        // bawah tab Settings - sama slug, sama tab, hanya sub-aksi.
+        Route::prefix('attendance/settings/sources')
+            ->name('attendance.settings.sources.')
+            ->middleware('menu:general.settings.attendance')
+            ->group(function () {
+                Route::post('/', [AttendanceSourceController::class, 'store'])->name('store');
+                Route::post('/{source}/update', [AttendanceSourceController::class, 'update'])->name('update');
+                Route::post('/{source}/delete', [AttendanceSourceController::class, 'destroy'])->name('destroy');
+            });
+
+        // ── ALIAS URL LAMA - bookmark & kebiasaan tim tetap jalan ───────────
+        // 🔴 Hanya rute GET yang dialiaskan: itulah satu-satunya yang mungkin
+        // dibuka lewat bookmark atau diketik manual. Rute POST (store/update/
+        // delete) tidak perlu dialiaskan - begitu view-nya diganti, tidak ada
+        // form lama yang tersisa menembak URL lama.
+        Route::get('/settings/branches', fn () => redirect()->route('management.branches.index'));
+        Route::get('/settings/branches/create', fn () => redirect()->route('management.branches.create'));
+        Route::get('/settings/branches/{branch}/edit', fn ($branch) => redirect()->route('management.branches.edit', $branch));
+
+        Route::get('/settings/shifts', fn () => redirect()->route('general.attendance.shifts.index'));
+        Route::get('/settings/shifts/create', fn () => redirect()->route('general.attendance.shifts.create'));
+        Route::get('/settings/shifts/{shift}/edit', fn ($shift) => redirect()->route('general.attendance.shifts.edit', $shift));
+        Route::get('/settings/shifts/{shift}/assign', fn ($shift) => redirect()->route('general.attendance.shifts.assign', $shift));
+
+        Route::get('/settings/attendance', fn () => redirect()->route('general.attendance.settings.edit'));
+
+        // =====================================================================
+        // MY OVERTIME - pengajuan lembur mandiri, untuk SELURUH karyawan
+        // =====================================================================
+        // Seperti My Attendance, seluruh rute di bawah memakai satu slug yang
+        // sama: siapa pun yang boleh membuka halamannya boleh mengajukan lembur
+        // untuk DIRINYA SENDIRI. Identitas diambil dari sesi, bukan dari
+        // request, sehingga tidak ada jalan mengajukan atas nama orang lain.
+        Route::prefix('my-overtime')
+            ->name('my-overtime.')
+            ->middleware('menu:general.my-overtime')
+            ->group(function () {
+                Route::get('/', [MyOvertimeController::class, 'index'])->name('index');
+                Route::get('/create', [MyOvertimeController::class, 'create'])->name('create');
+                Route::post('/', [MyOvertimeController::class, 'store'])->name('store');
+
+                // Pembanding presensi saat tanggal diganti di form.
+                Route::get('/attendance-hint', [MyOvertimeController::class, 'attendanceHint'])->name('attendance-hint');
+
+                // Kepemilikan diperiksa dari sesi di dalam service, bukan dari
+                // parameter rute.
+                Route::post('/{overtimeRequest}/cancel', [MyOvertimeController::class, 'cancel'])->name('cancel');
+            });
+
+        // =====================================================================
+        // OVERTIME - PENINJAUAN & PERSETUJUAN (sisi HR / penyetuju)
+        // =====================================================================
+        Route::prefix('overtime')->name('overtime.')->group(function () {
+
+            // Terbuka bagi pemegang slug ATAU karyawan yang ditunjuk sebagai
+            // penyetuju pada alur persetujuan (lihat CheckMenuOrDesignatedApprover).
+            Route::get('/', [OvertimeReviewController::class, 'index'])
+                ->name('index')
+                ->middleware('menu.approver:overtime,general.overtime');
+
+            // Didaftarkan SEBELUM rute berparameter agar tidak tertimpa.
+            Route::get('/export', [OvertimeReviewController::class, 'export'])
+                ->name('export')
+                ->middleware('menu:general.overtime.export');
+
+            // Menyetujui/menolak dilindungi slug TERPISAH dari sekadar melihat
+            // daftar. Slug ini hanya gerbang HALAMAN; siapa yang berwenang pada
+            // sebuah pengajuan tetap ditentukan langkah persetujuannya.
+            Route::middleware('menu.approver:overtime,general.overtime.approve')->group(function () {
+                Route::post('/{overtimeRequest}/approve', [OvertimeReviewController::class, 'approve'])->name('approve');
+                Route::post('/{overtimeRequest}/reject', [OvertimeReviewController::class, 'reject'])->name('reject');
+            });
+        });
+
+        // =====================================================================
+        // OVERTIME HUB - Settings sebagai TAB kedua (D175)
+        // =====================================================================
+        // Sama seperti Attendance di atas: URI & nama rute pindah ke bawah
+        // `overtime/*`, slug izin (`general.settings.overtime`) tidak berubah.
+        // 🔴 Halaman Settings memuat DUA bagian dengan hak terpisah: Aturan
+        // (`general.settings.overtime`) dan Alur Persetujuan
+        // (`general.approval-workflow.overtime`). Membukanya cukup salah satu;
+        // view hanya merender bagian yang slug-nya dipegang, dan POST
+        // penyimpanan masing-masing dijaga slug-nya sendiri.
+        Route::prefix('overtime/settings')
+            ->name('overtime.settings.')
+            ->group(function () {
+                Route::get('/', [OvertimeSettingController::class, 'edit'])
+                    ->name('edit')
+                    ->middleware('menu:general.settings.overtime,general.approval-workflow.overtime');
+
+                Route::post('/update', [OvertimeSettingController::class, 'update'])
+                    ->name('update')
+                    ->middleware('menu:general.settings.overtime');
+            });
+
+        // 🔴 D180 - Rute langkah persetujuan DIPISAH dari grup Settings di atas,
+        // dijaga slug BARU `general.approval-workflow.overtime`, BUKAN lagi
+        // `general.settings.overtime`. Ini bukan kosmetik: kalau tetap di slug
+        // lama, siapa pun yang diberi hak "Approval Workflow" (tapi TIDAK
+        // diberi hak Settings) akan melihat tombolnya di halaman baru lalu
+        // kena 403 saat menekannya - tombol jebakan, kelas cacat D154. Nama
+        // rute TIDAK berubah (`general.overtime.settings.steps.*`), supaya
+        // seluruh form yang sudah ada tetap bekerja tanpa disunting.
+        Route::prefix('overtime/settings')
+            ->name('overtime.settings.')
+            ->middleware('menu:general.approval-workflow.overtime')
+            ->group(function () {
+                // One Save for the whole workflow (shared editor).
+                Route::post('/steps/sync', [OvertimeSettingController::class, 'syncSteps'])->name('steps.sync');
+                Route::post('/steps', [OvertimeSettingController::class, 'storeStep'])->name('steps.store');
+                Route::post('/steps/{step}/update', [OvertimeSettingController::class, 'updateStep'])->name('steps.update');
+                Route::post('/steps/{step}/delete', [OvertimeSettingController::class, 'destroyStep'])->name('steps.destroy');
+                Route::post('/steps/{step}/move', [OvertimeSettingController::class, 'moveStep'])->name('steps.move');
+            });
+
+        // Alias URL lama.
+        Route::get('/settings/overtime', fn () => redirect()->route('general.overtime.settings.edit'));
+
+        // =====================================================================
+        // MY REIMBURSEMENT - pengajuan mandiri, untuk SELURUH karyawan
+        // =====================================================================
+        // Seperti My Attendance dan My Overtime, seluruh rute di bawah memakai
+        // satu slug yang sama. Identitas diambil dari sesi, bukan dari request.
+        //
+        // BEDANYA dari dua sub-modul itu: `show` dan `print` menerima parameter
+        // dokumen, sehingga slug saja TIDAK cukup - slug hanya menjawab "boleh
+        // membuka halaman ini?", bukan "dokumen siapa ini?". Kepemilikan
+        // diperiksa di controller lewat abort_if(), kalau tidak siapa pun yang
+        // boleh mengajukan dapat membaca dokumen keuangan rekannya dengan
+        // menebak id-nya.
+        //
+        // TIDAK ADA rute pembatalan: karyawan tidak dapat membatalkan
+        // dokumennya sendiri (Keputusan D111, mengikuti aplikasi acuan).
+        Route::prefix('my-reimbursement')
+            ->name('my-reimbursement.')
+            ->middleware('menu:general.my-reimbursement')
+            ->group(function () {
+                Route::get('/', [MyReimbursementController::class, 'index'])->name('index');
+                Route::get('/create', [MyReimbursementController::class, 'create'])->name('create');
+                Route::post('/', [MyReimbursementController::class, 'store'])->name('store');
+
+                // Didaftarkan SESUDAH /create agar tidak menangkapnya sebagai id.
+                Route::get('/{reimbursementRequest}', [MyReimbursementController::class, 'show'])->name('show');
+                Route::get('/{reimbursementRequest}/print', [MyReimbursementController::class, 'print'])->name('print');
+            });
+
+        // =====================================================================
+        // MY PURCHASE REQUEST - pengajuan mandiri, untuk SELURUH karyawan
+        // =====================================================================
+        // Slug `general.my-purchase-request` menjaga pintunya, tetapi TIDAK
+        // menjawab "dokumen siapa ini?". Kepemilikan diperiksa di controller
+        // lewat abort_if() pada show, print, dan cancel - kalau tidak, siapa pun
+        // yang boleh mengajukan dapat membaca atau MEMBATALKAN dokumen rekannya
+        // hanya dengan menebak id-nya.
+        //
+        // 🔴 ADA rute pembatalan di sini, berbeda dari My Reimbursement
+        // (Keputusan D131): purchase request belum menimbulkan komitmen uang,
+        // jadi alasan D111 tidak berlaku. Syaratnya - status masih `submitted`
+        // DAN sakelar `allow_requester_cancel` menyala - ditegakkan di service,
+        // bukan hanya oleh tombol yang disembunyikan.
+        Route::prefix('my-purchase-request')
+            ->name('my-purchase-request.')
+            ->middleware('menu:general.my-purchase-request')
+            ->group(function () {
+                Route::get('/', [MyPurchaseRequestController::class, 'index'])->name('index');
+                Route::get('/create', [MyPurchaseRequestController::class, 'create'])->name('create');
+                Route::post('/', [MyPurchaseRequestController::class, 'store'])->name('store');
+
+                // Didaftarkan SESUDAH /create agar tidak menangkapnya sebagai id.
+                Route::get('/{purchaseRequest}', [MyPurchaseRequestController::class, 'show'])->name('show');
+                Route::get('/{purchaseRequest}/print', [MyPurchaseRequestController::class, 'print'])->name('print');
+                Route::post('/{purchaseRequest}/cancel', [MyPurchaseRequestController::class, 'cancel'])->name('cancel');
+            });
+
+        // =====================================================================
+        // MY CASH ADVANCE - pengajuan uang muka mandiri, untuk SELURUH karyawan
+        // =====================================================================
+        // Slug `general.my-cash-advance` menjaga pintunya, tetapi TIDAK menjawab
+        // "dokumen siapa ini?". Kepemilikan diperiksa di controller pada show,
+        // print, dan cancel - bukan hanya oleh tombol yang disembunyikan.
+        //
+        // 🔴 Modul ini mengeluarkan uang perusahaan. Membaca atau membatalkan
+        // dokumen rekan hanya dengan menebak id bukan kebocoran yang murah.
+        Route::prefix('my-cash-advance')
+            ->name('my-cash-advance.')
+            ->middleware('menu:general.my-cash-advance')
+            ->group(function () {
+                Route::get('/', [MyCashAdvanceController::class, 'index'])->name('index');
+                Route::get('/create', [MyCashAdvanceController::class, 'create'])->name('create');
+                Route::post('/', [MyCashAdvanceController::class, 'store'])->name('store');
+
+                // Didaftarkan SESUDAH /create agar tidak menangkapnya sebagai id
+                // dokumen - jebakan yang sudah terbukti di langkah P6.
+                Route::get('/{cashAdvance}', [MyCashAdvanceController::class, 'show'])->name('show');
+                Route::get('/{cashAdvance}/print', [MyCashAdvanceController::class, 'print'])->name('print');
+                Route::post('/{cashAdvance}/cancel', [MyCashAdvanceController::class, 'cancel'])->name('cancel');
+            });
+
+        // =====================================================================
+        // CASH ADVANCE - PENGELOLAAN (sisi HR / Finance / penyetuju)
+        // =====================================================================
+        // Slug dipisah berlapis (D77): membuka halaman, bertindak pada langkah,
+        // mengubah/menghapus, dan mengekspor adalah empat hak yang berbeda.
+        //
+        Route::prefix('cash-advance')->name('cash-advance.')->group(function () {
+
+            Route::get('/', [CashAdvanceController::class, 'index'])
+                ->name('index')
+                ->middleware('menu:general.cash-advance');
+
+            // Tab Dashboard of Cash Advance Management: its own slug, so a role can be given the overview
+            // without the document lists (and the other way round).
+            Route::get('/dashboard', [CashAdvanceController::class, 'dashboard'])
+                ->name('dashboard')
+                ->middleware('menu:general.cash-advance-dashboard');
+
+            // ── Rute STATIS, WAJIB mendahului rute berparameter ──────────────
+            //
+            // 🔴 `/create` dan `/export` harus berada DI ATAS `/{cashAdvance}`,
+            // kalau tidak keduanya tertangkap sebagai id dokumen dan halamannya
+            // tidak pernah terbuka. Jebakan yang sudah terbukti di langkah P6.
+            Route::middleware('menu:general.cash-advance.create')->group(function () {
+                Route::get('/create', [CashAdvanceController::class, 'create'])->name('create');
+                Route::post('/', [CashAdvanceController::class, 'store'])->name('store');
+            });
+
+            Route::get('/export', [CashAdvanceController::class, 'export'])
+                ->name('export')
+                ->middleware('menu:general.cash-advance.export');
+
+            // ->withTrashed() disengaja pada SELURUH rute baca: dokumen yang
+            // dihapus tetap harus dapat dibuka, dicetak, dan diekspor - itulah
+            // gunanya soft delete (D109). Tanpa ini, filter "Status → Deleted"
+            // menampilkan baris yang tidak bisa diklik sama sekali.
+            // `menu.approver`: besides the slug, a person NAMED on the workflow opens the documents they take part in
+            // (ApprovalEngine) - a finance officer or director who approves need not hold the HR menus.
+            Route::get('/{cashAdvance}', [CashAdvanceController::class, 'show'])
+                ->name('show')
+                ->middleware('menu.approver:cash-advance,general.cash-advance')
+                ->withTrashed();
+
+            Route::get('/{cashAdvance}/print', [CashAdvanceController::class, 'print'])
+                ->name('print')
+                ->middleware('menu.approver:cash-advance,general.cash-advance')
+                ->withTrashed();
+
+            // Bertindak pada langkah yang sedang menunggu DIRINYA. Slug ini
+            // hanya membuka pintunya; siapa yang ditunggu ditentukan langkah
+            // persetujuan milik dokumen itu sendiri.
+            // Export / Delete of ONE document: HR slugs, or a designated approver given "My Approvals › Export / Delete"
+            // (checked again in the controller - the middleware only decides who may reach the document).
+            Route::get('/{cashAdvance}/export', [CashAdvanceController::class, 'exportSingle'])
+                ->name('export.single')
+                ->middleware('menu.approver:cash-advance,general.cash-advance.export')
+                ->withTrashed();
+
+            Route::middleware('menu.approver:cash-advance,general.cash-advance.approve')->group(function () {
+                Route::post('/{cashAdvance}/approve', [CashAdvanceController::class, 'approve'])->name('approve');
+                Route::post('/{cashAdvance}/reject', [CashAdvanceController::class, 'reject'])->name('reject');
+            });
+
+            // Mengubah dokumen. Gerbang rutenya slug HALAMAN, bukan `.manage` -
+            // hak DAN keadaan dokumen diputuskan CashAdvanceController::
+            // canEditDocument(), karena "dokumen ini masih terbuka?" adalah
+            // pertanyaan yang tidak dapat dijawab slug mana pun. Pola yang sama
+            // dengan approve/reject, dan diperiksa ULANG di kedua method.
+            Route::middleware('menu.approver:cash-advance,general.cash-advance')->group(function () {
+                Route::get('/{cashAdvance}/edit', [CashAdvanceController::class, 'edit'])->name('edit');
+                Route::post('/{cashAdvance}/update', [CashAdvanceController::class, 'update'])->name('update');
+            });
+
+            // Menghapus TETAP menuntut `.manage`. Memberi hak meninjau tidak
+            // boleh otomatis memberi hak menghapus dokumen yang menjadi dasar
+            // keluarnya uang perusahaan.
+            Route::post('/{cashAdvance}/delete', [CashAdvanceController::class, 'destroy'])
+                ->name('destroy')
+                ->middleware('menu.approver:cash-advance,general.cash-advance.manage');
+        });
+
+        // =====================================================================
+        // MY CASH ADVANCE REPORT - pertanggungjawaban mandiri (ESS)
+        // =====================================================================
+        // 🔴 Dokumen ini SELALU lahir dari sebuah CA, jadi `/create` menuntut
+        // parameter `?ca=`. Kelayakan CA-nya diperiksa DUA KALI - saat form
+        // dibuka dan saat disimpan - karena data dapat berubah di antara
+        // keduanya.
+        Route::prefix('my-cash-advance-report')
+            ->name('my-cash-advance-report.')
+            ->middleware('menu:general.my-cash-advance-report')
+            ->group(function () {
+                Route::get('/', [MyCashAdvanceReportController::class, 'index'])->name('index');
+                Route::get('/create', [MyCashAdvanceReportController::class, 'create'])->name('create');
+                Route::post('/', [MyCashAdvanceReportController::class, 'store'])->name('store');
+
+                // Didaftarkan SESUDAH /create agar tidak menangkapnya sebagai id.
+                Route::get('/{cashAdvanceReport}', [MyCashAdvanceReportController::class, 'show'])->name('show');
+                Route::get('/{cashAdvanceReport}/print', [MyCashAdvanceReportController::class, 'print'])->name('print');
+                Route::post('/{cashAdvanceReport}/cancel', [MyCashAdvanceReportController::class, 'cancel'])->name('cancel');
+            });
+
+        // =====================================================================
+        // CASH ADVANCE REPORT - PENGELOLAAN (sisi HR / Finance / penyetuju)
+        // =====================================================================
+        // 🔴 Menyetujui langkah TERAKHIR di sini ikut MENUTUP BUKU CA induknya,
+        // dalam transaksi yang sama. Itulah alasan seluruh sub-modul ini ada.
+        //
+        Route::prefix('cash-advance-report')->name('cash-advance-report.')->group(function () {
+
+            Route::get('/', [CashAdvanceReportController::class, 'index'])
+                ->name('index')
+                ->middleware('menu:general.cash-advance-report');
+
+            // ── Rute STATIS, WAJIB mendahului rute berparameter ──────────────
+            //
+            // 🔴 `/create` menuntut `?ca=` - laporan tanpa uang muka induk tidak
+            // punya arti. Berbeda dari "New CA", TIDAK ada dropdown karyawan di
+            // sini: pemiliknya sudah ditentukan CA-nya.
+            Route::middleware('menu:general.cash-advance-report.create')->group(function () {
+                Route::get('/create', [CashAdvanceReportController::class, 'create'])->name('create');
+                Route::post('/', [CashAdvanceReportController::class, 'store'])->name('store');
+            });
+
+            Route::get('/export', [CashAdvanceReportController::class, 'export'])
+                ->name('export')
+                ->middleware('menu:general.cash-advance-report.export');
+
+            Route::get('/{cashAdvanceReport}', [CashAdvanceReportController::class, 'show'])
+                ->name('show')
+                ->middleware('menu.approver:cash-advance-report,general.cash-advance-report')
+                ->withTrashed();
+
+            Route::get('/{cashAdvanceReport}/print', [CashAdvanceReportController::class, 'print'])
+                ->name('print')
+                ->middleware('menu.approver:cash-advance-report,general.cash-advance-report')
+                ->withTrashed();
+
+            Route::get('/{cashAdvanceReport}/export', [CashAdvanceReportController::class, 'exportSingle'])
+                ->name('export.single')
+                ->middleware('menu.approver:cash-advance-report,general.cash-advance-report.export')
+                ->withTrashed();
+
+            Route::middleware('menu.approver:cash-advance-report,general.cash-advance-report.approve')->group(function () {
+                Route::post('/{cashAdvanceReport}/approve', [CashAdvanceReportController::class, 'approve'])->name('approve');
+                Route::post('/{cashAdvanceReport}/reject', [CashAdvanceReportController::class, 'reject'])->name('reject');
+            });
+
+            // Gerbang rutenya slug HALAMAN; hak `.manage` DAN keadaan laporan
+            // diputuskan canEditDocument(), lalu diperiksa ULANG di kedua method.
+            Route::middleware('menu.approver:cash-advance-report,general.cash-advance-report')->group(function () {
+                Route::get('/{cashAdvanceReport}/edit', [CashAdvanceReportController::class, 'edit'])->name('edit');
+                Route::post('/{cashAdvanceReport}/update', [CashAdvanceReportController::class, 'update'])->name('update');
+            });
+
+            // 🔴 Menghapus laporan MEMBUKA KEMBALI buku CA induknya, dalam
+            // transaksi yang sama. Karena itu haknya terpisah dan tetap
+            // menuntut `.manage`.
+            Route::post('/{cashAdvanceReport}/delete', [CashAdvanceReportController::class, 'destroy'])
+                ->name('destroy')
+                ->middleware('menu.approver:cash-advance-report,general.cash-advance-report.manage');
+        });
+
+        // =====================================================================
+        // SETTINGS - REIMBURSEMENT RULES & APPROVAL WORKFLOW
+        // =====================================================================
+        // Katup pengaman sub-modul Reimbursement, dengan alasan yang sama
+        // seperti Overtime: setiap kebijakan yang dapat MENOLAK pengajuan -
+        // batas mundur, batas jumlah item, batas nominal bermode `block`,
+        // penguncian periode - harus dapat dilonggarkan dari sini tanpa
+        // perubahan kode.
+        //
+        // Didaftarkan lebih dulu daripada halaman operasionalnya (My
+        // Reimbursement dan Reimbursement Management, langkah R4-R5) karena
+        // tanpa satu langkah persetujuan aktif, dokumen tidak dapat diajukan
+        // sama sekali.
+        //
+        // 🔴 D177 - DIPINDAH KE SINI, DI ATAS blok "Reimbursement - Pengelolaan"
+        // di bawah, dan itu BUKAN kosmetik. Blok itu punya rute
+        // `GET /{reimbursementRequest}` (show dokumen). Prefix-nya ('reimbursement/
+        // settings') SAMA-SAMA berada di bawah 'reimbursement/*', jadi kalau
+        // rute berparameter itu terdaftar LEBIH DULU, Laravel mencocokkan
+        // /reimbursement/settings ke /{reimbursementRequest} DULUAN - "settings"
+        // dibaca sebagai ID dokumen, gagal dicari, 404. Persis jebakan yang
+        // sudah diperingatkan di komentar blok Pengelolaan ("/create, /export,
+        // /import harus SEBELUM /{id}") - kali ini kelewat karena blok baru ini
+        // ditambahkan di TEMPAT LAIN dalam berkas, bukan di dalam grup yang
+        // sama, jadi peringatan lama tidak terlihat saat menulisnya. Ditemukan
+        // pemilik sistem lewat uji nyata di peramban (404 di /general/
+        // purchase-request/settings), bukan lewat uji asap - uji asap yang ada
+        // memanggil controller LANGSUNG (`app()->call(...)`), jadi tidak pernah
+        // melalui pencocokan rute sungguhan yang justru jadi sumber cacatnya.
+        // SLUG middleware TIDAK berubah: `general.settings.reimbursement` tetap
+        // sama, supaya hak yang sudah diberikan ke role mana pun tidak perlu
+        // diberikan ulang.
+        // Membukanya cukup salah satu dari slug Aturan atau slug Alur Persetujuan;
+        // view hanya merender bagian yang slug-nya dipegang (lihat Overtime).
+        Route::prefix('reimbursement/settings')
+            ->name('reimbursement.settings.')
+            ->group(function () {
+                Route::get('/', [ReimbursementSettingController::class, 'edit'])
+                    ->name('edit')
+                    ->middleware('menu:general.settings.reimbursement,general.approval-workflow.reimbursement');
+
+                Route::post('/update', [ReimbursementSettingController::class, 'update'])
+                    ->name('update')
+                    ->middleware('menu:general.settings.reimbursement');
+            });
+
+        // 🔴 D180 - sama seperti Overtime di atas: rute langkah dipisah, dijaga
+        // slug BARU `general.approval-workflow.reimbursement`.
+        Route::prefix('reimbursement/settings')
+            ->name('reimbursement.settings.')
+            ->middleware('menu:general.approval-workflow.reimbursement')
+            ->group(function () {
+                // Satu simpan untuk seluruh alur (tambah / ubah / hapus / urutan).
+                Route::post('/steps/sync', [ReimbursementSettingController::class, 'syncSteps'])->name('steps.sync');
+            });
+
+        // URL lama - dipertahankan sebagai alias GET (D177), pola sama dengan D175.
+        Route::get('/settings/reimbursement', fn () => redirect()->route('general.reimbursement.settings.edit'));
+
+        // =====================================================================
+        // SETTINGS -> PURCHASE REQUEST  (aturan dokumen + alur persetujuan)
+        // =====================================================================
+        // Didaftarkan lebih dulu daripada halaman operasionalnya (My Purchase
+        // Request dan Purchase Request Management, langkah P4-P5) karena tanpa
+        // satu langkah persetujuan aktif, dokumen tidak dapat diajukan sama
+        // sekali - persis alasan yang sama dengan blok Reimbursement di atas.
+        //
+        // 🔴 D177 - DIPINDAH KE SINI juga, alasan SAMA PERSIS dengan
+        // Reimbursement di atas: blok "Purchase Request - Pengelolaan" di
+        // bawah punya `GET /{purchaseRequest}`, dan tanpa ini
+        // /general/purchase-request/settings tertangkap sebagai id="settings"
+        // lalu 404 - inilah yang dilaporkan pemilik sistem lewat tangkapan
+        // layar. Slug middleware tidak berubah.
+        Route::prefix('purchase-request/settings')
+            ->name('purchase-request.settings.')
+            ->group(function () {
+                Route::get('/', [PurchaseRequestSettingController::class, 'edit'])
+                    ->name('edit')
+                    ->middleware('menu:general.settings.purchase-request,general.approval-workflow.purchase-request');
+
+                Route::post('/update', [PurchaseRequestSettingController::class, 'update'])
+                    ->name('update')
+                    ->middleware('menu:general.settings.purchase-request');
+            });
+
+        // 🔴 D180 - sama seperti Overtime/Reimbursement di atas: rute langkah
+        // dipisah, dijaga slug BARU `general.approval-workflow.purchase-request`.
+        Route::prefix('purchase-request/settings')
+            ->name('purchase-request.settings.')
+            ->middleware('menu:general.approval-workflow.purchase-request')
+            ->group(function () {
+                // One Save for the whole workflow (shared editor).
+                Route::post('/steps/sync', [PurchaseRequestSettingController::class, 'syncSteps'])->name('steps.sync');
+                Route::post('/steps', [PurchaseRequestSettingController::class, 'storeStep'])->name('steps.store');
+                Route::post('/steps/{step}/update', [PurchaseRequestSettingController::class, 'updateStep'])->name('steps.update');
+                Route::post('/steps/{step}/delete', [PurchaseRequestSettingController::class, 'destroyStep'])->name('steps.destroy');
+                Route::post('/steps/{step}/move', [PurchaseRequestSettingController::class, 'moveStep'])->name('steps.move');
+            });
+
+        // URL lama - dipertahankan sebagai alias GET (D177).
+        Route::get('/settings/purchase-request', fn () => redirect()->route('general.purchase-request.settings.edit'));
+
+        // =====================================================================
+        // REIMBURSEMENT - PENGELOLAAN (sisi HR / GA / penyetuju)
+        // =====================================================================
+        // 🔴 URUTAN PENDAFTARAN PENTING: /create, /export, dan /import harus
+        // berada SEBELUM /{reimbursementRequest}, kalau tidak ketiganya
+        // tertangkap sebagai id dokumen. Jebakan yang sama sudah pernah ditemui
+        // pada rekap Attendance dan Overtime. 🔴 Blok Settings di atas juga
+        // WAJIB tetap di atas blok ini - lihat komentarnya (D177).
+        Route::prefix('reimbursement')->name('reimbursement.')->group(function () {
+
+            Route::get('/', [ReimbursementController::class, 'index'])
+                ->name('index')
+                ->middleware('menu:general.reimbursement');
+
+            // Statis: WAJIB mendahului /{reimbursementRequest}.
+            Route::get('/dashboard', [ReimbursementController::class, 'dashboard'])
+                ->name('dashboard')
+                ->middleware('menu:general.reimbursement');
+
+            // Membuat atas nama karyawan. Slug terpisah dari `.manage`: yang
+            // boleh membuatkan belum tentu boleh menghapus.
+            Route::middleware('menu:general.reimbursement.create')->group(function () {
+                Route::get('/create', [ReimbursementController::class, 'create'])->name('create');
+                Route::post('/', [ReimbursementController::class, 'store'])->name('store');
+            });
+
+            Route::get('/export', [ReimbursementController::class, 'export'])
+                ->name('export')
+                ->middleware('menu:general.reimbursement.export');
+
+            Route::middleware('menu:general.reimbursement.import')->group(function () {
+                Route::get('/import', [ReimbursementImportController::class, 'form'])->name('import.form');
+                Route::get('/import/template', [ReimbursementImportController::class, 'template'])->name('import.template');
+                Route::post('/import', [ReimbursementImportController::class, 'store'])->name('import.store');
+            });
+
+            // ── Rute berparameter, didaftarkan TERAKHIR ──────────────────────
+            //
+            // ->withTrashed() disengaja pada ketiga rute baca: dokumen yang
+            // dihapus tetap harus dapat dibuka, dicetak, dan diekspor - itulah
+            // gunanya soft delete (Keputusan D109). Tanpa ini, filter
+            // "Status -> Deleted" akan menampilkan baris yang tidak bisa
+            // diklik sama sekali.
+            Route::get('/{reimbursementRequest}', [ReimbursementController::class, 'show'])
+                ->name('show')
+                ->middleware('menu.approver:reimbursement,general.reimbursement')
+                ->withTrashed();
+
+            Route::get('/{reimbursementRequest}/print', [ReimbursementController::class, 'print'])
+                ->name('print')
+                ->middleware('menu.approver:reimbursement,general.reimbursement')
+                ->withTrashed();
+
+            Route::get('/{reimbursementRequest}/export', [ReimbursementController::class, 'exportSingle'])
+                ->name('export.single')
+                ->middleware('menu.approver:reimbursement,general.reimbursement.export')
+                ->withTrashed();
+
+            // Menyetujui/menolak dilindungi slug TERPISAH dari sekadar melihat
+            // daftar. Slug ini hanya gerbang HALAMAN; siapa yang berwenang pada
+            // sebuah dokumen tetap ditentukan langkah persetujuannya.
+            Route::middleware('menu.approver:reimbursement,general.reimbursement.approve')->group(function () {
+                Route::post('/{reimbursementRequest}/approve', [ReimbursementController::class, 'approve'])->name('approve');
+                Route::post('/{reimbursementRequest}/reject', [ReimbursementController::class, 'reject'])->name('reject');
+            });
+
+            // Payment: after approval Finance records that it was paid (and can reverse a mistake). Its own slug - approving
+            // a document does not give the right to pay it out.
+            Route::middleware('menu:general.reimbursement.pay')->group(function () {
+                Route::post('/{reimbursementRequest}/pay', [ReimbursementController::class, 'pay'])->name('pay');
+                Route::post('/{reimbursementRequest}/pay/reverse', [ReimbursementController::class, 'reversePayment'])->name('pay.reverse');
+            });
+
+            // Mengubah dokumen: gerbang rute hanya setingkat HALAMAN, karena ada
+            // DUA jalan sah menuju ke sini -
+            //   1. pemegang `general.reimbursement.manage`  (kapan pun, selama terbuka)
+            //   2. penyetuju yang sedang mendapat giliran, BILA pengaturan
+            //      `allow_approver_adjust_amount` dinyalakan
+            // Keduanya diputuskan ReimbursementController::canEditDocument(),
+            // yang memeriksa keadaan DOKUMEN - sesuatu yang tidak dapat dijawab
+            // slug. Pola yang sama dengan approve/reject.
+            Route::middleware('menu.approver:reimbursement,general.reimbursement')->group(function () {
+                Route::get('/{reimbursementRequest}/edit', [ReimbursementController::class, 'edit'])->name('edit');
+                Route::post('/{reimbursementRequest}/update', [ReimbursementController::class, 'update'])->name('update');
+            });
+
+            // Menghapus tetap MUTLAK milik pemegang `.manage`. Tidak ada jalan
+            // kedua: dokumen keuangan yang berujung ke pembayaran tidak boleh
+            // dapat dihapus oleh orang yang sekadar kebagian giliran menyetujui.
+            Route::post('/{reimbursementRequest}/delete', [ReimbursementController::class, 'destroy'])
+                ->name('destroy')
+                ->middleware('menu.approver:reimbursement,general.reimbursement.manage');
+        });
+
+        // =====================================================================
+        // PURCHASE ORDER - tab pada menu Purchase Management
+        // =====================================================================
+        // Rute statis (/create, /settings) WAJIB mendahului /{purchaseOrder}.
+        // Karyawan yang dipilih sebagai approver pada sebuah PO otomatis dapat
+        // membuka halamannya (menu.approver); keputusannya tetap diperiksa
+        // service terhadap approver_id dokumen.
+        Route::prefix('purchase-order')->name('purchase-order.')->group(function () {
+            $page = 'menu.approver:purchase-order,general.purchase-order';
+
+            Route::get('/', [PurchaseOrderController::class, 'index'])->name('index')->middleware($page);
+
+            Route::middleware('menu:general.purchase-order.create')->group(function () {
+                Route::get('/create', [PurchaseOrderController::class, 'create'])->name('create');
+                Route::post('/', [PurchaseOrderController::class, 'store'])->name('store');
+            });
+
+            Route::post('/settings', [PurchaseOrderController::class, 'updateSettings'])
+                ->name('settings.update')
+                ->middleware('menu:general.settings.purchase-request');
+
+            Route::get('/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('show')->middleware($page)->withTrashed();
+            Route::get('/{purchaseOrder}/print', [PurchaseOrderController::class, 'print'])->name('print')->middleware($page)->withTrashed();
+
+            Route::middleware('menu:general.purchase-order')->group(function () {
+                Route::get('/{purchaseOrder}/edit', [PurchaseOrderController::class, 'edit'])->name('edit');
+                Route::post('/{purchaseOrder}/update', [PurchaseOrderController::class, 'update'])->name('update');
+            });
+
+            Route::middleware($page)->group(function () {
+                Route::post('/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve'])->name('approve');
+                Route::post('/{purchaseOrder}/reject', [PurchaseOrderController::class, 'reject'])->name('reject');
+            });
+
+            Route::post('/{purchaseOrder}/delete', [PurchaseOrderController::class, 'destroy'])
+                ->name('destroy')
+                ->middleware('menu:general.purchase-order.manage');
+        });
+
+        // =====================================================================
+        // PURCHASE REQUEST MANAGEMENT (sisi HR / GA / penyetuju)
+        // =====================================================================
+        // Rute BERPARAMETER didaftarkan TERAKHIR di dalam grup ini; rute statis
+        // seperti /create dan /export (menyusul di P6) harus mendahuluinya, kalau
+        // tidak keduanya tertangkap sebagai id dokumen. 🔴 Blok Settings di atas
+        // juga WAJIB tetap terdaftar SEBELUM grup ini - lihat komentarnya (D177).
+        Route::prefix('purchase-request')->name('purchase-request.')->group(function () {
+
+            Route::get('/', [PurchaseRequestController::class, 'index'])
+                ->name('index')
+                ->middleware('menu:general.purchase-request');
+
+            // ── Rute STATIS, WAJIB mendahului rute berparameter ──────────────
+            //
+            // 🔴 `/create` dan `/export` harus berada DI ATAS `/{purchaseRequest}`,
+            // kalau tidak keduanya tertangkap sebagai id dokumen dan halamannya
+            // tidak pernah terbuka.
+            Route::middleware('menu:general.purchase-request.create')->group(function () {
+                Route::get('/create', [PurchaseRequestController::class, 'create'])->name('create');
+                Route::post('/', [PurchaseRequestController::class, 'store'])->name('store');
+            });
+
+            Route::get('/export', [PurchaseRequestController::class, 'export'])
+                ->name('export')
+                ->middleware('menu:general.purchase-request.export');
+
+            // ->withTrashed() disengaja pada kedua rute baca: dokumen yang
+            // dihapus tetap harus dapat dibuka dan dicetak - itulah gunanya soft
+            // delete (Keputusan D109). Tanpa ini, filter "Status -> Deleted"
+            // menampilkan baris yang tidak bisa diklik sama sekali.
+            Route::get('/{purchaseRequest}', [PurchaseRequestController::class, 'show'])
+                ->name('show')
+                ->middleware('menu.approver:purchase-request,general.purchase-request')
+                ->withTrashed();
+
+            Route::get('/{purchaseRequest}/print', [PurchaseRequestController::class, 'print'])
+                ->name('print')
+                ->middleware('menu.approver:purchase-request,general.purchase-request')
+                ->withTrashed();
+
+            // Menyetujui/menolak dilindungi slug TERPISAH dari sekadar melihat
+            // daftar. Slug ini hanya gerbang HALAMAN; siapa yang berwenang pada
+            // sebuah dokumen tetap ditentukan langkah persetujuannya, lewat
+            // PurchaseRequestService::canAct().
+            Route::get('/{purchaseRequest}/export', [PurchaseRequestController::class, 'exportSingle'])
+                ->name('export.single')
+                ->middleware('menu.approver:purchase-request,general.purchase-request.export')
+                ->withTrashed();
+
+            // Menyetujui/menolak dilindungi slug TERPISAH dari sekadar melihat
+            // daftar. Slug ini hanya gerbang HALAMAN; siapa yang berwenang pada
+            // sebuah dokumen tetap ditentukan langkah persetujuannya, lewat
+            // PurchaseRequestService::canAct().
+            Route::middleware('menu.approver:purchase-request,general.purchase-request.approve')->group(function () {
+                Route::post('/{purchaseRequest}/approve', [PurchaseRequestController::class, 'approve'])->name('approve');
+                Route::post('/{purchaseRequest}/reject', [PurchaseRequestController::class, 'reject'])->name('reject');
+            });
+
+            // Mengubah dokumen: gerbang rute hanya setingkat HALAMAN, karena ada
+            // DUA jalan sah menuju ke sini -
+            //   1. pemegang `general.purchase-request.manage` (kapan pun, selama terbuka)
+            //   2. penyetuju yang sedang mendapat giliran, BILA pengaturan
+            //      `allow_approver_adjust_items` dinyalakan
+            // Keduanya diputuskan PurchaseRequestController::canEditDocument(),
+            // yang memeriksa keadaan DOKUMEN - sesuatu yang tidak dapat dijawab
+            // slug. Pola yang sama dengan approve/reject.
+            Route::middleware('menu.approver:purchase-request,general.purchase-request')->group(function () {
+                Route::get('/{purchaseRequest}/edit', [PurchaseRequestController::class, 'edit'])->name('edit');
+                Route::post('/{purchaseRequest}/update', [PurchaseRequestController::class, 'update'])->name('update');
+            });
+
+            // Menghapus TETAP menuntut `.manage` - memberi hak meninjau tidak
+            // boleh otomatis memberi hak menghapus dokumen pengadaan.
+            Route::post('/{purchaseRequest}/delete', [PurchaseRequestController::class, 'destroy'])
+                ->name('destroy')
+                ->middleware('menu.approver:purchase-request,general.purchase-request.manage');
+        });
+
+        // =====================================================================
+        // BLOK DASHBOARD - pemasok data untuk kartu Attendance di halaman utama
+        // =====================================================================
+        // SENGAJA TANPA middleware `menu:`, dan itu bukan kelalaian.
+        //
+        // Endpoint ini melayani DUA izin sekaligus (`general.my-attendance` untuk
+        // bagian pribadi, `general.attendance` untuk ringkasan HR); satu slug di
+        // middleware pasti salah untuk salah satu dari keduanya. Penjagaannya
+        // dipindah ke dalam controller, PER BAGIAN: yang tidak memegang izinnya
+        // menerima `null`, bukan data orang lain. Bagian pribadi pun hanya
+        // pernah membaca sesi pemanggil, sehingga tidak ada data yang dapat
+        // bocor lewat parameter.
+        //
+        // CheckAuthToken pada grup induk tetap berlaku - tamu tidak sampai sini.
+        Route::get('/dashboard/attendance', [DashboardAttendanceController::class, 'widget'])
+            ->name('dashboard.attendance');
+
+        // =====================================================================
+        // PENCARIAN LOKASI (proxy Nominatim / OpenStreetMap)
+        // =====================================================================
+        // Dipakai HANYA oleh form cabang. Dilindungi izin pengelolaan cabang
+        // supaya tidak menjadi endpoint terbuka yang memakai kuota Nominatim
+        // atas nama alamat IP kantor.
+        Route::prefix('geo')
+            ->name('geo.')
+            ->middleware('menu:management.branches.manage')
+            ->group(function () {
+                Route::get('/search', [GeoLookupController::class, 'search'])->name('search');
+                Route::get('/reverse', [GeoLookupController::class, 'reverse'])->name('reverse');
+            });
+
+        // =====================================================================
+        // ESS - MY KPI (presensi mandiri KPI, untuk SELURUH karyawan)
+        // =====================================================================
+        // Setiap karyawan melihat KPI milik DIRINYA SENDIRI. Identitas karyawan
+        // selalu diambil dari sesi, tidak pernah dari parameter rute.
+        // Self-assessment bersifat wajib tetapi order-independent dengan
+        // penilaian supervisor. HR hanya bisa menyetujui setelah KEDUANYA selesai.
+        Route::prefix('my-kpi')
+            ->name('my-kpi.')
+            ->middleware('menu:general.my-kpi')
+            ->group(function () {
+                Route::get('/', [\App\Http\Controllers\HR_General\MyKpiController::class, 'index'])->name('index');
+                Route::get('/{id}/self-assessment', [\App\Http\Controllers\HR_General\MyKpiController::class, 'selfAssessmentForm'])
+                    ->name('self-assessment');
+                Route::post('/{id}/self-assessment', [\App\Http\Controllers\HR_General\MyKpiController::class, 'submitSelfAssessment'])
+                    ->name('self-assessment.submit');
+
+                // A lead's own scoring page (draft / send to HR) - lives in My KPI, not in
+                // the HR "KPI Evaluation" area. Only the assigned reviewer can open it.
+                Route::get('/{id}/lead-review', [\App\Http\Controllers\HR_General\MyKpiController::class, 'leadReviewForm'])
+                    ->name('lead-review');
+                Route::post('/{id}/lead-review', [\App\Http\Controllers\HR_General\MyKpiController::class, 'submitLeadReview'])
+                    ->name('lead-review.submit');
+
+                // Same handlers, but each assessment type gets its own URL / name so the
+                // address bar matches the page (upward and peer are not "self" / "lead").
+                Route::get('/{id}/upward-assessment', [\App\Http\Controllers\HR_General\MyKpiController::class, 'selfAssessmentForm'])
+                    ->name('upward-assessment');
+                Route::post('/{id}/upward-assessment', [\App\Http\Controllers\HR_General\MyKpiController::class, 'submitSelfAssessment'])
+                    ->name('upward-assessment.submit');
+                Route::get('/{id}/peer-review', [\App\Http\Controllers\HR_General\MyKpiController::class, 'leadReviewForm'])
+                    ->name('peer-review');
+                Route::post('/{id}/peer-review', [\App\Http\Controllers\HR_General\MyKpiController::class, 'submitLeadReview'])
+                    ->name('peer-review.submit');
+            });
+
+        // =====================================================================
+        // HR - KPI EVALUATION (dashboard, daftar, review, persetujuan)
+        // =====================================================================
+        Route::prefix('kpi-evaluation')
+            ->name('kpi-evaluation.')
+            ->middleware('menu:general.kpi-evaluation')
+            ->group(function () {
+                // Dashboard
+                Route::get('/', [\App\Http\Controllers\HR\KpiController::class, 'dashboard'])->name('index');
+
+                // Evaluation list (detailed, paginated)
+                Route::get('/list', [\App\Http\Controllers\HR\KpiController::class, 'evaluationList'])->name('list');
+
+                // Create evaluation (HR creates record, assigns employee + supervisor + template)
+                Route::post('/store', [\App\Http\Controllers\HR\KpiController::class, 'storeEvaluation'])
+                    ->name('store')
+                    ->middleware('menu:general.kpi-evaluation.create');
+
+                // Review / supervisor scoring
+                Route::get('/{id}/review', [\App\Http\Controllers\HR\KpiController::class, 'reviewEvaluation'])
+                    ->name('review');
+                Route::post('/{id}/review', [\App\Http\Controllers\HR\KpiController::class, 'submitReview'])
+                    ->name('review.submit')
+                    ->middleware('menu:general.kpi-evaluation.review');
+
+                // Approve / Reject (HR decision - makes result visible to employee)
+                Route::post('/{id}/approve', [\App\Http\Controllers\HR\KpiController::class, 'approveEvaluation'])
+                    ->name('approve')
+                    ->middleware('menu:general.kpi-evaluation.approve');
+                Route::post('/{id}/reject', [\App\Http\Controllers\HR\KpiController::class, 'rejectEvaluation'])
+                    ->name('reject')
+                    ->middleware('menu:general.kpi-evaluation.approve');
+
+                // Publish the anonymized average of an upward-assessment group
+                // (all approved rater submissions for one supervisor+template+period)
+                Route::post('/{id}/publish-upward', [\App\Http\Controllers\HR\KpiController::class, 'publishUpwardAverage'])
+                    ->name('publish-upward')
+                    ->middleware('menu:general.kpi-evaluation.approve');
+
+                // Delete (draft or rejected only)
+                Route::post('/{id}/delete', [\App\Http\Controllers\HR\KpiController::class, 'deleteEvaluation'])
+                    ->name('delete')
+                    ->middleware('menu:general.kpi-evaluation.create');
+
+                // Update deadline (HR extends missed self/supervisor deadline)
+                Route::post('/{id}/update-deadline', [\App\Http\Controllers\HR\KpiController::class, 'updateDeadline'])
+                    ->name('update-deadline')
+                    ->middleware('menu:general.kpi-evaluation.create');
+
+                // Update template (HR updates assigned template for an evaluation)
+                Route::post('/{id}/update-template', [\App\Http\Controllers\HR\KpiController::class, 'updateTemplate'])
+                    ->name('update-template')
+                    ->middleware('menu:general.kpi-evaluation.create');
+
+                // Export CSV
+                Route::get('/export', [\App\Http\Controllers\HR\KpiController::class, 'exportEvaluations'])
+                    ->name('export')
+                    ->middleware('menu:general.kpi-evaluation.export');
+
+                // AJAX dashboard data
+                Route::get('/dashboard-data', [\App\Http\Controllers\HR\KpiController::class, 'getDashboardData'])
+                    ->name('dashboard-data');
+
+                // Re-sync coverage with template targeting for a period
+                Route::post('/sync', [\App\Http\Controllers\HR\KpiController::class, 'syncAssignments'])
+                    ->name('sync')
+                    ->middleware('menu:general.kpi-evaluation.create');
+
+                // -------------------------------------------------------------
+                // LEAD & PROJECT - read-only reporting-line tab. The leader
+                // shown is derived (project manager → employee_basic_data
+                // .direct_supervision → none); it can only be changed from
+                // master employee data. See KpiController::resolveReportsTo().
+                // -------------------------------------------------------------
+                Route::get('/teams', [\App\Http\Controllers\HR\KpiController::class, 'teams'])
+                    ->name('teams')
+                    ->middleware('menu:general.kpi-evaluation.teams');
+
+                // -------------------------------------------------------------
+                // ASSESSMENT TEMPLATES - rendered as a tab inside this page.
+                // Supervisor (Penilaian Atasan) and Self (Evaluasi Mandiri)
+                // templates are managed here; the old standalone KPI Settings
+                // menu was retired.
+                // -------------------------------------------------------------
+                Route::prefix('templates')
+                    ->name('templates.')
+                    ->middleware('menu:general.kpi-evaluation.templates')
+                    ->group(function () {
+                        Route::get('/', [\App\Http\Controllers\HR\KpiTemplateController::class, 'index'])->name('index');
+                        // Full-page create / edit form (replaces the old crowded modal)
+                        Route::get('/create', [\App\Http\Controllers\HR\KpiTemplateController::class, 'create'])
+                            ->name('create')
+                            ->middleware('menu:general.kpi-evaluation.templates.manage');
+                        Route::get('/{id}/edit', [\App\Http\Controllers\HR\KpiTemplateController::class, 'edit'])
+                            ->name('edit')
+                            ->middleware('menu:general.kpi-evaluation.templates.manage');
+                        Route::post('/store', [\App\Http\Controllers\HR\KpiTemplateController::class, 'store'])
+                            ->name('store')
+                            ->middleware('menu:general.kpi-evaluation.templates.manage');
+                        Route::post('/{id}/update', [\App\Http\Controllers\HR\KpiTemplateController::class, 'update'])
+                            ->name('update')
+                            ->middleware('menu:general.kpi-evaluation.templates.manage');
+                        Route::post('/{id}/toggle', [\App\Http\Controllers\HR\KpiTemplateController::class, 'toggleActive'])
+                            ->name('toggle')
+                            ->middleware('menu:general.kpi-evaluation.templates.manage');
+                        Route::post('/{id}/delete', [\App\Http\Controllers\HR\KpiTemplateController::class, 'delete'])
+                            ->name('delete')
+                            ->middleware('menu:general.kpi-evaluation.templates.manage');
+                        // AJAX: get indicators for a template (for form auto-population)
+                        Route::get('/{id}/indicators', [\App\Http\Controllers\HR\KpiTemplateController::class, 'getIndicators'])
+                            ->name('indicators');
+                    });
+            });
+
+        // =====================================================================
+        // REKRUTMEN - dashboard, kandidat/pipeline, jadwal interview, lowongan
+        // (sinkronisasi Microsoft Teams Calendar lewat Graph API)
+        // =====================================================================
+        // 🔴 Hak akses SELURUHNYA diatur di Management → Roles, per tab:
+        //   `menu:{slug}`               -> kotak V (View) - membuka tab.
+        //   `menu.can:{slug},{aksi}`    -> kotak C / E / D milik slug tab yang SAMA.
+        // Tidak ada slug "manage" terpisah. Arti tiap kotak:
+        //
+        //   Selection Process  C tambah kandidat · E ubah kandidat & dokumennya · D hapus kandidat
+        //   Schedule           C jadwalkan interview · E reschedule / sync · D cancel
+        //   Job Openings       C buat · E ubah / tutup · D hapus
+        //   Settings           E simpan pengaturan & ubah opsi · C tambah opsi · D hapus opsi
+        //   Offering Letter    C buat surat · E ubah / tanda tangani / kirim / terima / tolak
+        //   Offering Settings  E simpan pengaturan & ubah komponen · C tambah komponen · D hapus komponen
+        //
+        // Rute STATIS ('settings', 'jobs', 'candidates', 'schedule') memakai
+        // prefix-nya SENDIRI-SENDIRI, bukan berbagi prefix 'recruitment/{id}'
+        // dengan rute berparameter - jadi tidak ada jebakan urutan di sini.
+        Route::prefix('recruitment/settings')
+            ->name('recruitment.settings.')
+            ->middleware('menu:general.recruitment.settings')
+            ->group(function () {
+                $can = fn (string $action) => "menu.can:general.recruitment.settings,{$action}";
+
+                Route::get('/', [RecruitmentSettingController::class, 'edit'])->name('edit');
+                Route::post('/update', [RecruitmentSettingController::class, 'update'])->name('update')->middleware($can('edit'));
+                // Read-only against Microsoft Graph, so View is enough.
+                Route::post('/test-connection', [RecruitmentSettingController::class, 'testConnection'])->name('test-connection');
+
+                // Dropdown lists of the module (source platforms, employment types, document types).
+                Route::post('/options', [RecruitmentSettingController::class, 'storeOption'])
+                    ->name('options.store')->middleware($can('create'));
+                Route::post('/options/{option}/update', [RecruitmentSettingController::class, 'updateOption'])
+                    ->name('options.update')->middleware($can('edit'));
+                Route::post('/options/{option}/delete', [RecruitmentSettingController::class, 'destroyOption'])
+                    ->name('options.destroy')->middleware($can('delete'));
+            });
+
+        Route::prefix('recruitment')->name('recruitment.')->group(function () {
+            Route::get('/', [RecruitmentController::class, 'index'])
+                ->name('index')
+                ->middleware('menu:general.recruitment');
+
+            Route::prefix('candidates')->name('candidates.')->middleware('menu:general.recruitment.candidates')->group(function () {
+                $can = fn (string $action) => "menu.can:general.recruitment.candidates,{$action}";
+
+                Route::get('/', [RecruitmentCandidateController::class, 'index'])->name('index');
+                Route::post('/', [RecruitmentCandidateController::class, 'store'])
+                    ->name('store')->middleware($can('create'));
+                Route::get('/{candidate}', [RecruitmentCandidateController::class, 'show'])->name('show');
+                Route::post('/{candidate}/update', [RecruitmentCandidateController::class, 'update'])
+                    ->name('update')->middleware($can('edit'));
+                Route::post('/{candidate}/delete', [RecruitmentCandidateController::class, 'destroy'])
+                    ->name('destroy')->middleware($can('delete'));
+                Route::get('/{candidate}/documents/{document}', [RecruitmentCandidateController::class, 'downloadDocument'])
+                    ->name('documents.download');
+                Route::post('/{candidate}/documents/{document}/delete', [RecruitmentCandidateController::class, 'destroyDocument'])
+                    ->name('documents.destroy')->middleware($can('edit'));
+            });
+
+            Route::prefix('schedule')->name('schedule.')->middleware('menu:general.recruitment.schedule')->group(function () {
+                $can = fn (string $action) => "menu.can:general.recruitment.schedule,{$action}";
+
+                Route::get('/', [RecruitmentInterviewController::class, 'index'])->name('index');
+                Route::post('/', [RecruitmentInterviewController::class, 'store'])
+                    ->name('store')->middleware($can('create'));
+                Route::post('/{interview}/update', [RecruitmentInterviewController::class, 'update'])
+                    ->name('update')->middleware($can('edit'));
+                Route::post('/{interview}/sync', [RecruitmentInterviewController::class, 'sync'])
+                    ->name('sync')->middleware($can('edit'));
+                Route::post('/{interview}/cancel', [RecruitmentInterviewController::class, 'cancel'])
+                    ->name('cancel')->middleware($can('delete'));
+            });
+
+            Route::prefix('jobs')->name('jobs.')->middleware('menu:general.recruitment.jobs')->group(function () {
+                $can = fn (string $action) => "menu.can:general.recruitment.jobs,{$action}";
+
+                Route::get('/', [RecruitmentJobController::class, 'index'])->name('index');
+                Route::get('/create', [RecruitmentJobController::class, 'create'])
+                    ->name('create')->middleware($can('create'));
+                Route::post('/', [RecruitmentJobController::class, 'store'])
+                    ->name('store')->middleware($can('create'));
+                // Opens read-only for a role without Edit, so View is enough to reach it.
+                Route::get('/{job}/edit', [RecruitmentJobController::class, 'edit'])->name('edit');
+                Route::post('/{job}/update', [RecruitmentJobController::class, 'update'])
+                    ->name('update')->middleware($can('edit'));
+                Route::post('/{job}/close', [RecruitmentJobController::class, 'close'])
+                    ->name('close')->middleware($can('edit'));
+                Route::post('/{job}/delete', [RecruitmentJobController::class, 'destroy'])
+                    ->name('destroy')->middleware($can('delete'));
+            });
+
+            // ── Offering Letter - entri sidebar sendiri, dua tab: Letters & Settings ──
+            // 🔴 Grup Settings WAJIB terdaftar SEBELUM grup Letters: keduanya
+            // berbagi prefix 'offers', dan tanpa urutan ini (plus whereNumber di
+            // bawah) 'settings' tertangkap sebagai {offer} - jebakan D177.
+            Route::prefix('offers/settings')->name('offers.settings.')->middleware('menu:general.recruitment.offers.settings')->group(function () {
+                $can = fn (string $action) => "menu.can:general.recruitment.offers.settings,{$action}";
+
+                Route::get('/', [RecruitmentOfferController::class, 'settings'])->name('edit');
+                Route::post('/update', [RecruitmentOfferController::class, 'updateSettings'])
+                    ->name('update')->middleware($can('edit'));
+
+                // Compensation components offered on a letter.
+                Route::post('/components', [RecruitmentOfferController::class, 'storeComponent'])
+                    ->name('components.store')->middleware($can('create'));
+                Route::post('/components/{component}/update', [RecruitmentOfferController::class, 'updateComponent'])
+                    ->name('components.update')->middleware($can('edit'));
+                Route::post('/components/{component}/delete', [RecruitmentOfferController::class, 'destroyComponent'])
+                    ->name('components.destroy')->middleware($can('delete'));
+            });
+
+            Route::prefix('offers')->name('offers.')->middleware('menu:general.recruitment.offers')->group(function () {
+                $can = fn (string $action) => "menu.can:general.recruitment.offers,{$action}";
+
+                Route::get('/', [RecruitmentOfferController::class, 'index'])->name('index');
+                Route::post('/', [RecruitmentOfferController::class, 'store'])
+                    ->name('store')->middleware($can('create'));
+
+                Route::whereNumber('offer')->group(function () use ($can) {
+                    Route::get('/{offer}/print', [RecruitmentOfferController::class, 'print'])->name('print');
+                    Route::post('/{offer}/update', [RecruitmentOfferController::class, 'update'])->name('update')->middleware($can('edit'));
+                    // Sign with the signatory's signature from the employee master data; only a signed letter is sent.
+                    Route::post('/{offer}/sign', [RecruitmentOfferController::class, 'sign'])->name('sign')->middleware($can('edit'));
+                    Route::post('/{offer}/send', [RecruitmentOfferController::class, 'send'])->name('send')->middleware($can('edit'));
+                    Route::post('/{offer}/accept', [RecruitmentOfferController::class, 'accept'])->name('accept')->middleware($can('edit'));
+                    Route::post('/{offer}/reject', [RecruitmentOfferController::class, 'reject'])->name('reject')->middleware($can('edit'));
+                });
+            });
+        });
+
+        // =====================================================================
+        // CONTRACT - Contracts · Templates (HC-D66)
+        // =====================================================================
+        // 🔴 Dua tab, slug SENDIRI-SENDIRI; kotak V / C / E / D diatur di Management → Roles (keduanya masuk
+        // `crud_enforced`, dijaga `menu.can`). Nilai gaji butuh slug ketiga `general.contracts.salary`.
+        //
+        //   Contracts   V daftar, halaman karyawan, dokumen · C buat kontrak · E ubah / ganti status · D hapus Draft
+        //   Templates   V lihat & pratinjau · C buat · E ubah · D hapus (bukan bawaan sistem)
+        //
+        // Modul ini hanya GET & POST (aksi: /update, /delete). Rute statis (templates/…) ditaruh SEBELUM `{contractId}`.
+        Route::prefix('contracts')->name('contracts.')->group(function () {
+            $tabs = 'menu:general.contracts.list,general.contracts.templates';
+            $list = 'menu:general.contracts.list';
+            $listCan = fn (string $action) => "menu.can:general.contracts.list,{$action}";
+            $tplCan = fn (string $action) => "menu.can:general.contracts.templates,{$action}";
+
+            // Pintu masuk sidebar: membuka tab pertama yang boleh dibuka.
+            Route::get('/', [ContractController::class, 'home'])->name('index')->middleware($tabs);
+
+            Route::get('/dashboard', [ContractController::class, 'dashboard'])->name('dashboard')->middleware($list);
+            Route::get('/list', [ContractController::class, 'index'])->name('list')->middleware($list);
+
+            Route::prefix('templates')->name('templates.')->middleware('menu:general.contracts.templates')->group(function () use ($tplCan) {
+                Route::get('/', [ContractTemplateController::class, 'index'])->name('index');
+                Route::get('/create', [ContractTemplateController::class, 'create'])->name('create')->middleware($tplCan('create'));
+                Route::post('/', [ContractTemplateController::class, 'store'])->name('store')->middleware($tplCan('create'));
+                Route::post('/preview', [ContractTemplateController::class, 'previewDraft'])->name('preview')->middleware('throttle:30,1');
+                // Ekspor / impor berkas JSON (memindahkan template antarlingkungan, memulihkannya sesudah database dibersihkan).
+                Route::get('/export', [ContractTemplateController::class, 'export'])->name('export');
+                Route::post('/import/preview', [ContractTemplateController::class, 'importPreview'])->name('import.preview')->middleware([$tplCan('create'), 'throttle:20,1']);
+                Route::post('/import/apply', [ContractTemplateController::class, 'importApply'])->name('import.apply')->middleware([$tplCan('create'), 'throttle:10,1']);
+                Route::whereNumber('templateId')->group(function () use ($tplCan) {
+                    Route::get('/{templateId}', [ContractTemplateController::class, 'show'])->name('show');
+                    Route::get('/{templateId}/pdf', [ContractTemplateController::class, 'pdf'])->name('pdf');
+                    Route::get('/{templateId}/edit', [ContractTemplateController::class, 'edit'])->name('edit')->middleware($tplCan('edit'));
+                    Route::post('/{templateId}/update', [ContractTemplateController::class, 'update'])->name('update')->middleware($tplCan('edit'));
+                    Route::post('/{templateId}/delete', [ContractTemplateController::class, 'destroy'])->name('destroy')->middleware($tplCan('delete'));
+                });
+            });
+
+            // Settings tab: contract types (rename / on-off) and position types of the INTERNAL contract forms.
+            // The menu a settings route belongs to is a route default, never a request value.
+            Route::prefix('settings')->name('settings.')->middleware('menu:general.contracts.settings')->group(function () {
+                $can = fn (string $action) => "menu.can:general.contracts.settings,{$action}";
+
+                Route::get('/', [ContractSettingController::class, 'index'])->name('index')->defaults('scope', 'internal');
+                Route::post('/options', [ContractSettingController::class, 'store'])->name('store')->middleware($can('create'))->defaults('scope', 'internal');
+                Route::whereNumber('optionId')->group(function () use ($can) {
+                    Route::post('/options/{optionId}/update', [ContractSettingController::class, 'update'])->name('update')->middleware($can('edit'))->defaults('scope', 'internal');
+                    Route::post('/options/{optionId}/move', [ContractSettingController::class, 'move'])->name('move')->middleware($can('edit'))->defaults('scope', 'internal');
+                    Route::post('/options/{optionId}/delete', [ContractSettingController::class, 'destroy'])->name('destroy')->middleware($can('delete'))->defaults('scope', 'internal');
+                });
+            });
+
+            Route::middleware($list)->group(function () use ($listCan) {
+                Route::get('/list/employee/{employeeId}', [ContractController::class, 'show'])->whereNumber('employeeId')->name('show');
+                // Generates the text from the form for the editor under it; saves nothing (the controller checks Create / Edit).
+                Route::post('/list/employee/{employeeId}/preview', [ContractController::class, 'preview'])->whereNumber('employeeId')->name('preview')->middleware('throttle:30,1');
+                Route::post('/list/employee/{employeeId}/store', [ContractController::class, 'store'])->whereNumber('employeeId')->name('store')->middleware($listCan('create'));
+                // "Add existing contract": a paper contract recorded with its scanned PDF (slug general.contracts.import + the Contracts boxes).
+                Route::post('/list/employee/{employeeId}/existing', [ExistingContractController::class, 'store'])->whereNumber('employeeId')->name('existing.store')
+                    ->middleware(['menu:general.contracts.import', $listCan('create'), 'throttle:30,1']);
+                Route::whereNumber('contractId')->group(function () use ($listCan) {
+                    Route::get('/list/{contractId}/document', [ContractController::class, 'document'])->name('document');
+                    Route::get('/list/{contractId}/pdf', [ContractController::class, 'pdf'])->name('pdf');
+                    Route::get('/list/{contractId}/signed', [ContractController::class, 'signedCopy'])->name('signed');
+                    Route::post('/list/{contractId}/signed', [ContractController::class, 'uploadSigned'])->name('signed.upload')->middleware($listCan('edit'));
+                    Route::post('/list/{contractId}/signed/delete', [ContractController::class, 'removeSigned'])->name('signed.remove')->middleware($listCan('edit'));
+                    Route::post('/list/{contractId}/existing/update', [ExistingContractController::class, 'update'])->name('existing.update')->middleware(['menu:general.contracts.import', $listCan('edit'), 'throttle:30,1']);
+                    Route::post('/list/{contractId}/existing/delete', [ExistingContractController::class, 'destroy'])->name('existing.destroy')->middleware(['menu:general.contracts.import', $listCan('delete')]);
+                    Route::post('/list/{contractId}/update', [ContractController::class, 'update'])->name('update')->middleware($listCan('edit'));
+                    Route::post('/list/{contractId}/delete', [ContractController::class, 'destroy'])->name('destroy')->middleware($listCan('delete'));
+
+                    // Signing workflow after the e-stamp (Legal's side). The employee and the approver sign from My Profile.
+                    Route::get('/list/{contractId}/signing/record', [ContractSigningController::class, 'record'])->name('signing.record');
+                    Route::get('/list/{contractId}/signing/file', [ContractSigningController::class, 'file'])->name('signing.file');
+                    Route::middleware('menu:general.contracts.signing')->group(function () {
+                        Route::post('/list/{contractId}/signing/send', [ContractSigningController::class, 'send'])->name('signing.send');
+                        Route::post('/list/{contractId}/signing/forward', [ContractSigningController::class, 'forward'])->name('signing.forward');
+                        Route::post('/list/{contractId}/signing/release', [ContractSigningController::class, 'release'])->name('signing.release');
+                        Route::post('/list/{contractId}/signing/cancel', [ContractSigningController::class, 'cancel'])->name('signing.cancel');
+                    });
+                });
+            });
+        });
+
+        // =====================================================================
+        // LETTER TEMPLATES - hub surat: Dashboard · Requests · Letter Register ·
+        // Create Letter · Settings (docs/planning/letters-hub-plan.md)
+        // =====================================================================
+        // 🔴 Setiap tab punya slug SENDIRI, kotak V / C / E / D-nya diatur di
+        // Management → Roles. Arti tiap kotak:
+        //
+        //   Dashboard        V saja (ringkasan)
+        //   Requests         E proses / tolak / tanda tangani / selesaikan & kirim / kirim ulang
+        //                      (Process juga butuh C di Create Letter)
+        //   Letter Register  C catat surat manual · E ubah catatan / unggah scan ·
+        //                    D void surat keluar / hapus surat masuk manual
+        //   Create Letter    C buat surat · E ubah & buat ulang / tanda tangani / kirim · D void
+        //   Settings         C tambah kop / kode · E ubah pengaturan · D hapus kop / kode
+        //
+        // Grup `general.letters` di Menu Access hanyalah INDUK tab-tab ini; ia
+        // tidak menjaga rute mana pun - Dashboard punya slug sendiri.
+        // Alamat lama halaman ini (sebelum menjadi hub).
+        Route::redirect('letter-templates', '/general/letters/settings')->name('letter-templates.legacy');
+
+        Route::prefix('letters')->name('letters.')->group(function () {
+            $tabs = 'menu:general.letters.dashboard,general.letters.requests,general.letters.register,general.letters.compose,general.letter-templates';
+
+            // Pintu masuk sidebar: membuka tab pertama yang boleh dibuka.
+            Route::get('/', [LetterDashboardController::class, 'home'])->name('index')->middleware($tabs);
+
+            Route::get('/dashboard', [LetterDashboardController::class, 'index'])->name('dashboard')->middleware('menu:general.letters.dashboard');
+
+            Route::prefix('requests')->name('requests.')->middleware('menu:general.letters.requests')->group(function () {
+                $edit = 'menu.can:general.letters.requests,edit';
+
+                Route::get('/', [LetterRequestController::class, 'index'])->name('index');
+                Route::whereNumber('letterRequest')->group(function () use ($edit) {
+                    Route::post('/{letterRequest}/process', [LetterRequestController::class, 'process'])->name('process')->middleware($edit);
+                    Route::post('/{letterRequest}/reject', [LetterRequestController::class, 'reject'])->name('reject')->middleware($edit);
+                    Route::post('/{letterRequest}/sign', [LetterRequestController::class, 'sign'])->name('sign')->middleware($edit);
+                    Route::post('/{letterRequest}/complete', [LetterRequestController::class, 'complete'])->name('complete')->middleware($edit);
+                    Route::post('/{letterRequest}/resend', [LetterRequestController::class, 'resend'])->name('resend')->middleware($edit);
+                });
+            });
+
+            Route::prefix('register')->name('register.')->middleware('menu:general.letters.register')->group(function () {
+                $can = fn (string $action) => "menu.can:general.letters.register,{$action}";
+
+                Route::get('/', [LetterRegisterController::class, 'index'])->name('index');
+                Route::get('/create', [LetterRegisterController::class, 'create'])->name('create')->middleware($can('create'));
+                Route::post('/', [LetterRegisterController::class, 'store'])->name('store')->middleware($can('create'));
+                Route::whereNumber('letter')->group(function () use ($can) {
+                    Route::get('/{letter}/edit', [LetterRegisterController::class, 'edit'])->name('edit')->middleware($can('edit'));
+                    Route::post('/{letter}/update', [LetterRegisterController::class, 'update'])->name('update')->middleware($can('edit'));
+                    Route::post('/{letter}/void', [LetterRegisterController::class, 'void'])->name('void')->middleware($can('delete'));
+                    Route::post('/{letter}/delete', [LetterRegisterController::class, 'destroy'])->name('destroy')->middleware($can('delete'));
+                });
+            });
+
+            Route::prefix('compose')->name('compose.')->middleware('menu:general.letters.compose')->group(function () {
+                $can = fn (string $action) => "menu.can:general.letters.compose,{$action}";
+
+                Route::get('/', [LetterComposeController::class, 'index'])->name('index');
+                // Pratinjau: tidak menyimpan dan tidak memakai nomor - cukup hak View.
+                Route::post('/preview', [LetterComposeController::class, 'preview'])->name('preview');
+                Route::post('/', [LetterComposeController::class, 'store'])->name('store')->middleware($can('create'));
+                Route::whereNumber('letter')->group(function () use ($can) {
+                    Route::get('/{letter}/edit', [LetterComposeController::class, 'edit'])->name('edit')->middleware($can('edit'));
+                    Route::post('/{letter}/update', [LetterComposeController::class, 'update'])->name('update')->middleware($can('edit'));
+                    Route::post('/{letter}/sign', [LetterComposeController::class, 'sign'])->name('sign')->middleware($can('edit'));
+                    Route::post('/{letter}/send', [LetterComposeController::class, 'send'])->name('send')->middleware($can('edit'));
+                    Route::post('/{letter}/void', [LetterComposeController::class, 'void'])->name('void')->middleware($can('delete'));
+                });
+            });
+
+            Route::prefix('settings')->name('settings.')->middleware('menu:general.letter-templates')->group(function () {
+                $can = fn (string $action) => "menu.can:general.letter-templates,{$action}";
+
+                Route::get('/', [LetterTemplateController::class, 'index'])->name('index');
+                Route::post('/templates', [LetterTemplateController::class, 'updateTemplates'])->name('templates.update')->middleware($can('edit'));
+                Route::post('/numbering', [LetterTemplateController::class, 'updateNumbering'])->name('numbering.update')->middleware($can('edit'));
+
+                // Signers and letterheads moved to Document Identity (below): their own slugs, shared by HR and Legal.
+
+                // What employees can request in My Letter Requests.
+                Route::post('/request-types', [LetterTemplateController::class, 'storeRequestType'])->name('request-types.store')->middleware($can('create'));
+                Route::post('/request-types/settings', [LetterTemplateController::class, 'updateRequestSettings'])->name('request-types.settings')->middleware($can('edit'));
+                Route::post('/request-types/{requestType}/update', [LetterTemplateController::class, 'updateRequestType'])->whereNumber('requestType')->name('request-types.update')->middleware($can('edit'));
+                Route::post('/request-types/{requestType}/delete', [LetterTemplateController::class, 'destroyRequestType'])->whereNumber('requestType')->name('request-types.destroy')->middleware($can('delete'));
+
+                Route::post('/codes', [LetterTemplateController::class, 'storeCode'])->name('codes.store')->middleware($can('create'));
+                Route::post('/codes/{code}/update', [LetterTemplateController::class, 'updateCode'])->name('codes.update')->middleware($can('edit'));
+                Route::post('/codes/{code}/delete', [LetterTemplateController::class, 'destroyCode'])->name('codes.destroy')->middleware($can('delete'));
+
+                // Template Designs: the wording and fields of each letter template, written in the Word-style editor.
+                Route::prefix('designs')->name('designs.')->group(function () use ($can) {
+                    Route::get('/', [LetterDesignController::class, 'index'])->name('index');
+                    Route::get('/create', [LetterDesignController::class, 'create'])->name('create')->middleware($can('create'));
+                    Route::post('/', [LetterDesignController::class, 'store'])->name('store')->middleware($can('create'));
+                    Route::post('/preview', [LetterDesignController::class, 'previewDraft'])->name('preview')->middleware('throttle:30,1');
+                    Route::whereNumber('design')->group(function () use ($can) {
+                        Route::get('/{design}', [LetterDesignController::class, 'show'])->name('show');
+                        Route::get('/{design}/edit', [LetterDesignController::class, 'edit'])->name('edit')->middleware($can('edit'));
+                        Route::post('/{design}/update', [LetterDesignController::class, 'update'])->name('update')->middleware($can('edit'));
+                        Route::post('/{design}/reset', [LetterDesignController::class, 'reset'])->name('reset')->middleware($can('edit'));
+                        Route::post('/{design}/delete', [LetterDesignController::class, 'destroy'])->name('destroy')->middleware($can('delete'));
+                    });
+                });
+
+            });
+
+            // =====================================================================
+            // DOCUMENT IDENTITY - letterheads and signers, shared by HR and Legal
+            // =====================================================================
+            // Contracts and letters print on a letterhead and are signed by a signer from this list. They have their OWN slugs
+            // (View / Edit each) so Legal can manage them without getting numbering, letter types or request types, which stay with
+            // the Letter Templates slug (HR). URLs and route names are the ones they always had.
+            Route::prefix('settings')->name('settings.')->group(function () {
+                $signers = 'general.letters.settings.signers';
+                $heads = 'general.letters.settings.letterheads';
+
+                Route::post('/signers', [LetterTemplateController::class, 'storeSigner'])->name('signers.store')->middleware(["menu:{$signers}", "menu.can:{$signers},edit"]);
+                Route::post('/signers/{signer}/update', [LetterTemplateController::class, 'updateSigner'])->whereNumber('signer')->name('signers.update')->middleware(["menu:{$signers}", "menu.can:{$signers},edit"]);
+                Route::post('/signers/{signer}/delete', [LetterTemplateController::class, 'destroySigner'])->whereNumber('signer')->name('signers.destroy')->middleware(["menu:{$signers}", "menu.can:{$signers},edit"]);
+
+                Route::post('/letterheads', [LetterTemplateController::class, 'store'])->name('store')->middleware(["menu:{$heads}", "menu.can:{$heads},edit"]);
+                Route::get('/letterheads/{letterhead}/image', [LetterTemplateController::class, 'image'])->name('image')->middleware("menu:{$heads},general.letter-templates");
+                Route::post('/letterheads/{letterhead}/update', [LetterTemplateController::class, 'update'])->name('update')->middleware(["menu:{$heads}", "menu.can:{$heads},edit"]);
+                Route::post('/letterheads/{letterhead}/delete', [LetterTemplateController::class, 'destroy'])->name('destroy')->middleware(["menu:{$heads}", "menu.can:{$heads},edit"]);
+            });
+
+            // Berkas surat - dari tab mana pun yang mendaftar surat.
+            Route::whereNumber('letter')->middleware('menu:general.letters.dashboard,general.letters.requests,general.letters.register,general.letters.compose')
+                ->group(function () {
+                    Route::get('/{letter}/pdf', [LetterRegisterController::class, 'pdf'])->name('pdf');
+                    Route::get('/{letter}/file', [LetterRegisterController::class, 'file'])->name('file');
+                });
+        });
+
+        // =====================================================================
+        // MY LETTER REQUESTS - layanan mandiri, untuk SELURUH karyawan
+        // =====================================================================
+        // Slug `general.my-letter-requests` (role User System Registered)
+        // menjaga pintunya, TETAPI kepemilikan diperiksa di controller pada
+        // setiap aksi - kalau tidak, siapa pun dapat membaca surat rekannya
+        // hanya dengan menebak id-nya.
+        Route::prefix('my-letter-requests')->name('my-letter-requests.')->middleware('menu:general.my-letter-requests')->group(function () {
+            $can = fn (string $action) => "menu.can:general.my-letter-requests,{$action}";
+
+            Route::get('/', [MyLetterRequestController::class, 'index'])->name('index');
+            Route::post('/', [MyLetterRequestController::class, 'store'])->name('store')->middleware($can('create'));
+            Route::get('/letters/{letter}/download', [MyLetterRequestController::class, 'downloadLetter'])->whereNumber('letter')->name('letters.download');
+            Route::whereNumber('letterRequest')->group(function () use ($can) {
+                Route::post('/{letterRequest}/update', [MyLetterRequestController::class, 'update'])->name('update')->middleware($can('edit'));
+                Route::post('/{letterRequest}/cancel', [MyLetterRequestController::class, 'cancel'])->name('cancel')->middleware($can('delete'));
+                Route::get('/{letterRequest}/download', [MyLetterRequestController::class, 'download'])->name('download');
+            });
+        });
+    });
+
+/**
+ * =============================================================================
+ * CASH ADVANCE SETTINGS - DI LUAR PREFIX `general`, SENGAJA
+ * =============================================================================
+ *
+ * Prefix: /management/cash-advance-settings
+ * Slug  : management.cash-advance-settings   (induk menu `management`, id 59)
+ *
+ * 🔴 KENAPA GRUP TERPISAH (Keputusan D141). Halaman ini mengatur aturan uang
+ * muka, dan pemilik sistem meminta haknya dapat diberikan ke role mana pun -
+ * Finance, Accounting, Direksi - TANPA ikut membuka apa pun di dropdown
+ * "HR & General". Tiga sub-modul sebelumnya menaruh setelannya di
+ * `general/settings/*`, sehingga memberi hak itu berarti memberi slug yang
+ * serumah dengan absensi, lembur, dan reimbursement.
+ *
+ * Berkas rutenya TETAP di sini dan bukan di web.php: nama BERKAS tidak mengikat
+ * prefix URL, dan menaruhnya bersama sisa sub-modul membuat seluruh Cash Advance
+ * terbaca dalam satu tempat. Kontrak "berkas lama yang boleh disentuh" pun tidak
+ * bertambah - `routes/web.php` tidak ikut tersentuh.
+ *
+ * Aturan verb yang sama berlaku: HANYA GET & POST, akhiran aksi eksplisit.
+ *
+ * 🔴 D177 - TETAP DI SINI, SENGAJA TIDAK DIPINDAH. Reimbursement Settings dan
+ * Purchase Request Settings pindah URL jadi tab di hub masing-masing (mengikuti
+ * D175), tetapi halaman ini sudah punya alasan KUAT untuk berdiri sendiri
+ * (D141 di atas) - memindah URL/prefix-nya ke bawah `general/cash-advance/*`
+ * hanya kosmetik dan mempertaruhkan pemisahan yang sudah teruji tanpa manfaat.
+ * Yang berubah HANYA tampilannya: halaman ini kini menyertakan tab bar yang
+ * sama dengan "Cash Advance (CA)" (lihat hr-general/cash-advance/components/hub-tabs.blade.php),
+ * jadi terasa satu hub bagi yang memegang kedua slug, sementara siapa pun yang
+ * HANYA memegang `management.cash-advance-settings` tetap membuka halaman ini
+ * lewat URL dan slug yang sama persis seperti sebelumnya.
+ */
+Route::prefix('management/cash-advance-settings')
+    ->name('management.cash-advance-settings.')
+    ->middleware([CheckAuthToken::class])
+    ->group(function () {
+        // Halaman memuat Aturan (`management.cash-advance-settings`) dan dua
+        // editor alur (CA / CAR) dengan slug sendiri-sendiri; membukanya cukup
+        // salah satu, dan view hanya merender bagian yang slug-nya dipegang.
+        Route::get('/', [CashAdvanceSettingController::class, 'edit'])
+            ->name('edit')
+            ->middleware('menu:management.cash-advance-settings,management.approval-workflow.cash-advance,management.approval-workflow.cash-advance-report');
+
+        Route::post('/update', [CashAdvanceSettingController::class, 'update'])
+            ->name('update')
+            ->middleware('menu:management.cash-advance-settings');
+    });
+
+/**
+ * 🔴 D180 - Rute langkah persetujuan (store/update/destroy/move) DIPISAH dari
+ * grup Settings di atas. Middleware gerbangnya adalah GABUNGAN (OR) kedua slug
+ * baru - `management.approval-workflow.cash-advance` ATAU
+ * `management.approval-workflow.cash-advance-report` - karena SATU set rute
+ * ini melayani DUA modul sekaligus (D136), dan permintaan pemilik sistem
+ * justru meminta keduanya bisa diberikan TERPISAH satu sama lain.
+ *
+ * Middleware `menu:` di rute HANYA menjawab "boleh masuk pintu ini sama
+ * sekali?" - TIDAK tahu modul mana (CA atau CAR) yang sedang diproses,
+ * karena itu baru diketahui dari isi request (field `module` untuk
+ * storeStep, atau `$step->module` untuk update/destroy/move). Pemisahan hak
+ * yang SEBENARNYA - "orang ini boleh CA tapi tidak boleh CAR" - diperiksa
+ * ULANG di dalam controller lewat
+ * CashAdvanceSettingController::assertCanManageWorkflow(), pola yang sama
+ * dengan bagaimana CashAdvanceController memeriksa ulang canEditDocument() di
+ * dalam method meski gerbang rutenya cuma satu slug halaman.
+ */
+Route::prefix('management/cash-advance-settings')
+    ->name('management.cash-advance-settings.')
+    ->middleware([
+        CheckAuthToken::class,
+        'menu:management.approval-workflow.cash-advance,management.approval-workflow.cash-advance-report',
+    ])
+    ->group(function () {
+        // One Save for the whole workflow of one module (shared editor); the module is posted with it.
+        Route::post('/steps/sync', [CashAdvanceSettingController::class, 'syncSteps'])->name('steps.sync');
+        Route::post('/steps', [CashAdvanceSettingController::class, 'storeStep'])->name('steps.store');
+        Route::post('/steps/{step}/update', [CashAdvanceSettingController::class, 'updateStep'])->name('steps.update');
+        Route::post('/steps/{step}/delete', [CashAdvanceSettingController::class, 'destroyStep'])->name('steps.destroy');
+        Route::post('/steps/{step}/move', [CashAdvanceSettingController::class, 'moveStep'])->name('steps.move');
+    });
+
+/**
+ * HUMAN CAPITAL - ONBOARDING (progres kelengkapan data master employee).
+ *
+ * v1 hanya MEMBACA (HC-D14): dua rute GET, tanpa tabel baru. Dijaga satu slug,
+ * `general.onboarding`, karena halaman ini menampilkan progres SEMUA karyawan.
+ * Karyawan melihat progres dirinya sendiri lewat banner di My Profile.
+ */
+Route::prefix('general/onboarding')
+    ->name('general.onboarding.')
+    ->middleware([CheckAuthToken::class, 'menu:general.onboarding'])
+    ->group(function () {
+        Route::get('/', [OnboardingController::class, 'index'])->name('index');
+        Route::get('/{employeeId}', [OnboardingController::class, 'show'])->whereNumber('employeeId')->name('show');
+
+        // Kunci massal "semua yang siap" (mengikuti filter aktif); izin = kunci satuan.
+        Route::post('/lock-ready', [OnboardingController::class, 'lockReady'])
+            ->middleware(['menu:general.onboarding.lock', 'throttle:6,1'])->name('lock-ready');
+
+        // Kunci profil (H3.11): POST-only; izin terpisah untuk mengunci dan membuka.
+        Route::post('/{employeeId}/lock', [OnboardingController::class, 'lock'])
+            ->whereNumber('employeeId')->middleware(['menu:general.onboarding.lock', 'throttle:60,1'])->name('lock');
+        Route::post('/{employeeId}/unlock', [OnboardingController::class, 'unlock'])
+            ->whereNumber('employeeId')->middleware(['menu:general.onboarding.unlock', 'throttle:60,1'])->name('unlock');
+
+        // Alat join date HR (HC-D64): isi tanggal, impor CSV (pratinjau → terapkan), pengingat. POST-only, izin sendiri.
+        Route::prefix('join-dates')->name('join-dates.')->middleware(['menu:general.onboarding.join-date', 'throttle:30,1'])->group(function () {
+            Route::post('/save',    [OnboardingController::class, 'joinDatesSave'])->name('save');
+            Route::post('/preview', [OnboardingController::class, 'joinDatesPreview'])->name('preview');
+            Route::post('/import',  [OnboardingController::class, 'joinDatesImport'])->name('import');
+            Route::post('/remind',  [OnboardingController::class, 'joinDatesRemind'])->name('remind');
+        });
+    });
+
+/**
+ * GENERAL AFFAIRS - INVENTORY & ASSETS. Satu halaman, empat tab, slug sendiri-sendiri:
+ *
+ *   Overview   (general.inventory.overview)  V rekap kedua daftar
+ *   Inventory  (general.inventory.items)     V daftar · C tambah · E ubah / sesuaikan stok · D hapus   (stok barang habis pakai)
+ *   Assets     (general.inventory.assets)    V daftar · C tambah · E ubah / serahkan · D hapus         (satu baris per unit aset)
+ *   Settings   (general.inventory.settings)  V lihat · C tambah opsi · E ubah nama / urutan / nonaktifkan · D hapus opsi yang tak dipakai (daftar dropdown)
+ *
+ * Hanya GET & POST (aksi: /update, /delete). Tambah / ubah lewat modal di halaman daftar (tanpa halaman create/edit).
+ * Foto disajikan lewat rute `/photo` yang dijaga slug tabnya (disk privat, bukan URL publik).
+ */
+Route::prefix('general/inventory')
+    ->name('general.inventory.')
+    ->middleware(CheckAuthToken::class)
+    ->group(function () {
+        $itemsCan = fn (string $action) => "menu.can:general.inventory.items,{$action}";
+        $assetsCan = fn (string $action) => "menu.can:general.inventory.assets,{$action}";
+        $settingsCan = fn (string $action) => "menu.can:general.inventory.settings,{$action}";
+
+        Route::get('/', [InventoryController::class, 'home'])->name('index')->middleware('menu:general.inventory.overview,general.inventory.items,general.inventory.assets,general.inventory.settings');
+        Route::get('/overview', [InventoryController::class, 'overview'])->name('overview')->middleware('menu:general.inventory.overview');
+
+        Route::prefix('items')->name('items.')->middleware('menu:general.inventory.items')->group(function () use ($itemsCan) {
+            Route::get('/', [InventoryController::class, 'items'])->name('index');
+            Route::post('/', [InventoryController::class, 'storeItem'])->name('store')->middleware($itemsCan('create'));
+            Route::whereNumber('item')->group(function () use ($itemsCan) {
+                Route::get('/{item}/photo', [InventoryController::class, 'itemPhoto'])->name('photo');
+                Route::post('/{item}/update', [InventoryController::class, 'updateItem'])->name('update')->middleware($itemsCan('edit'));
+                Route::post('/{item}/delete', [InventoryController::class, 'destroyItem'])->name('destroy')->middleware($itemsCan('delete'));
+            });
+        });
+
+        Route::prefix('assets')->name('assets.')->middleware('menu:general.inventory.assets')->group(function () use ($assetsCan) {
+            Route::get('/', [InventoryController::class, 'assets'])->name('index');
+            Route::post('/', [InventoryController::class, 'storeAsset'])->name('store')->middleware($assetsCan('create'));
+            Route::whereNumber('asset')->group(function () use ($assetsCan) {
+                Route::get('/{asset}/photo', [InventoryController::class, 'assetPhoto'])->name('photo');
+                Route::post('/{asset}/update', [InventoryController::class, 'updateAsset'])->name('update')->middleware($assetsCan('edit'));
+                Route::post('/{asset}/delete', [InventoryController::class, 'destroyAsset'])->name('destroy')->middleware($assetsCan('delete'));
+            });
+        });
+
+        Route::prefix('settings')->name('settings.')->middleware('menu:general.inventory.settings')->group(function () use ($settingsCan) {
+            Route::get('/', [InventorySettingController::class, 'index'])->name('index');
+            Route::post('/', [InventorySettingController::class, 'store'])->name('store')->middleware($settingsCan('create'));
+            Route::whereNumber('option')->group(function () use ($settingsCan) {
+                Route::post('/{option}/update', [InventorySettingController::class, 'update'])->name('update')->middleware($settingsCan('edit'));
+                Route::post('/{option}/toggle', [InventorySettingController::class, 'toggle'])->name('toggle')->middleware($settingsCan('edit'));
+                Route::post('/{option}/move/{direction}', [InventorySettingController::class, 'move'])->whereIn('direction', ['up', 'down'])->name('move')->middleware($settingsCan('edit'));
+                Route::post('/{option}/delete', [InventorySettingController::class, 'destroy'])->name('destroy')->middleware($settingsCan('delete'));
+            });
+        });
+    });
+
+/**
+ * SIDEBAR - MENU FAVORIT (HC-D25). Satu rute POST, semantik "replace": browser
+ * mengirim daftar jalur terurut. Identitas dari sesi; jalur divalidasi sebagai rute
+ * GET yang ada. Ditaruh di berkas ini karena berkas ini dimuat web.php tanpa
+ * menambah baris `require` baru pada berkas rute produksi.
+ */
+Route::post('/sidebar/favorites', [SidebarFavoriteController::class, 'sync'])
+    ->middleware([CheckAuthToken::class, 'throttle:60,1'])
+    ->name('sidebar.favorites.sync');
+
+// Excel export / import for HR & General tables (see App\Support\DataTransfer\Registry).
+// Permissions are checked per table inside the controller, using each page's own menu slug.
+Route::prefix('general/data')
+    ->name('general.data.')
+    ->middleware(CheckAuthToken::class)
+    ->group(function () {
+        Route::get('/{dataset}/export', [DataTransferController::class, 'export'])->name('export');
+        Route::get('/{dataset}/template', [DataTransferController::class, 'template'])->name('template');
+        Route::post('/{dataset}/import', [DataTransferController::class, 'import'])->name('import')->middleware('throttle:20,1');
+    });

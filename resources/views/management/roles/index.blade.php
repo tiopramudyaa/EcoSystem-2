@@ -13,6 +13,12 @@
         </button>
     </div>
 
+    @include('partials.page-hint', [
+        'key'   => 'roles',
+        'title' => 'How roles work',
+        'text'  => 'A role decides which menus an employee sees and what they may do there (view, create, edit, delete). Create the role first, then open its Menu Access to tick the boxes; members get the change at their next page load.',
+    ])
+
     <!-- Filter -->
     <div class="mb-4">
         <input type="text" id="roleSearch" placeholder="Search role name or description..."
@@ -28,19 +34,20 @@
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Members</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" title="How many employees currently hold this role">Members <i class="fas fa-info-circle text-gray-400 normal-case" aria-hidden="true"></i></th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" title="How many menus this role can open. Use the Menu Access button to change them">Menu access <i class="fas fa-info-circle text-gray-400 normal-case" aria-hidden="true"></i></th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody id="rolesTableBody" class="divide-y divide-gray-100">
-                <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
             </tbody>
         </table>
     </div>
 </div>
 
 <!-- ── Modal: Create / Edit Role ──────────────────────────────────────────── -->
-<div id="roleModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+<div id="roleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
         <div class="flex justify-between items-center p-6 border-b border-gray-100">
             <h3 id="roleModalTitle" class="text-lg font-bold text-gray-900">Add Role</h3>
@@ -62,6 +69,15 @@
                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent resize-none"
                     placeholder="Optional description..."></textarea>
             </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5" for="rolePeriodDomain">Timesheet period domain</label>
+                <select id="rolePeriodDomain" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800">
+                    <option value="">None - not restricted by periods</option>
+                    <option value="project">Project domain</option>
+                    <option value="support">Support domain</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Members can submit timesheets only while their domain's period is open (or with an approved late-access request). Who can open and close periods is set in Menu Access (Period Management).</p>
+            </div>
             <div class="flex gap-3 justify-end pt-2">
                 <button type="button" onclick="closeModal('roleModal')" class="px-4 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all">Cancel</button>
                 <button type="submit" class="px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all">Save</button>
@@ -71,7 +87,7 @@
 </div>
 
 <!-- ── Modal: Members ─────────────────────────────────────────────────────── -->
-<div id="membersModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+<div id="membersModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
         <div class="flex justify-between items-center p-6 border-b border-gray-100">
             <h3 id="membersModalTitle" class="text-lg font-bold text-gray-900">Members</h3>
@@ -109,33 +125,10 @@
     </div>
 </div>
 
-<!-- ── Modal: Menu Access ─────────────────────────────────────────────────── -->
-<div id="menuAccessModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
-        <div class="flex justify-between items-center p-6 border-b border-gray-100 flex-shrink-0">
-            <h3 id="menuAccessTitle" class="text-lg font-bold text-gray-900">Menu Access</h3>
-            <button onclick="closeModal('menuAccessModal')" class="text-gray-400 hover:text-gray-600 transition-colors">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-
-        <!-- Search -->
-        <div class="px-6 py-3 border-b border-gray-100 flex-shrink-0">
-            <input type="text" id="menuSearch" placeholder="Search menu name..." oninput="filterMenuRows()"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800">
-        </div>
-
-        <div id="menuAccessList" class="overflow-y-auto flex-1 divide-y divide-gray-100">
-            <div class="px-4 py-8 text-center text-gray-400 text-sm">Loading...</div>
-        </div>
-    </div>
-</div>
-
+<script src="{{ asset('js/permission-sync.js') }}?v={{ @filemtime(public_path('js/permission-sync.js')) }}"></script>
 <script>
 let rolesData = [];
-let allMenusData = [];
 let currentRoleId = null;
-let roleMenuPermissions = {};
 
 // ── Load ─────────────────────────────────────────────────────────────────────
 
@@ -144,12 +137,6 @@ async function loadRoles() {
     const json = await res.json();
     rolesData = json.data || [];
     renderRoles();
-}
-
-async function loadAllMenus() {
-    const res = await fetch('/api/menus/all');
-    const json = await res.json();
-    allMenusData = json.data || [];
 }
 
 // ── Filter ────────────────────────────────────────────────────────────────────
@@ -170,7 +157,7 @@ function renderRoles() {
         : rolesData;
 
     if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">${query ? 'No roles match your search.' : 'No roles found.'}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">${query ? 'No roles match your search.' : 'No roles yet - use “Add Role” above to create the first one.'}</td></tr>`;
         return;
     }
     tbody.innerHTML = filtered.map(role => `
@@ -185,11 +172,16 @@ function renderRoles() {
                 </button>
             </td>
             <td class="px-4 py-3">
+                <a href="/management/roles/${role.id}/menu-access" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 hover:bg-green-100 transition-colors" title="Menus this role can open">
+                    ${role.menus_count ?? 0} menu${(role.menus_count ?? 0) !== 1 ? 's' : ''}
+                </a>
+            </td>
+            <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
-                    <button onclick="openMenuAccessModal(${role.id}, '${escHtml(role.name)}')"
+                    <a href="/management/roles/${role.id}/menu-access"
                         class="px-3 py-1.5 text-xs font-semibold bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
                         <i class="fas fa-key mr-1"></i> Menu Access
-                    </button>
+                    </a>
                     <button onclick="openEditRoleModal(${role.id})"
                         class="px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
                         <i class="fas fa-pen mr-1"></i> Edit
@@ -211,6 +203,7 @@ function openCreateRoleModal() {
     document.getElementById('roleId').value = '';
     document.getElementById('roleName').value = '';
     document.getElementById('roleDescription').value = '';
+    document.getElementById('rolePeriodDomain').value = '';
     openModal('roleModal');
 }
 
@@ -221,6 +214,7 @@ function openEditRoleModal(id) {
     document.getElementById('roleId').value = role.id;
     document.getElementById('roleName').value = role.name;
     document.getElementById('roleDescription').value = role.description || '';
+    document.getElementById('rolePeriodDomain').value = role.period_domain || '';
     openModal('roleModal');
 }
 
@@ -230,6 +224,7 @@ async function submitRole(e) {
     const payload = {
         name:        document.getElementById('roleName').value.trim(),
         description: document.getElementById('roleDescription').value.trim(),
+        period_domain: document.getElementById('rolePeriodDomain').value || null,
     };
     const url    = id ? `/api/roles/${id}` : '/api/roles';
     const method = id ? 'PUT' : 'POST';
@@ -307,283 +302,6 @@ async function openEmployeesModal(id) {
     `;
 }
 
-// ── Menu Access Modal ─────────────────────────────────────────────────────────
-
-let menuTree = [];
-let expandedMenus = new Set();
-let savingMenu = {};
-
-async function openMenuAccessModal(id, roleName) {
-    currentRoleId = id;
-    document.getElementById('menuAccessTitle').textContent = `Menu Access - ${roleName}`;
-    document.getElementById('menuAccessList').innerHTML = '<div class="px-4 py-8 text-center text-gray-400 text-sm">Loading...</div>';
-    openModal('menuAccessModal');
-
-    const [permRes, menuRes] = await Promise.all([
-        fetch(`/api/roles/${id}/permissions`),
-        allMenusData.length ? Promise.resolve(null) : fetch('/api/menus/all'),
-    ]);
-
-    const permJson = await permRes.json();
-    if (menuRes) {
-        allMenusData = (await menuRes.json()).data || [];
-    }
-
-    roleMenuPermissions = {};
-    (permJson.data || []).forEach(m => { roleMenuPermissions[m.id] = m.pivot; });
-
-    menuTree = buildMenuTree(allMenusData, null);
-    expandedMenus.clear();
-    menuTree.forEach(n => expandedMenus.add(n.id)); // expand level 1
-    renderMenuAccessTree();
-}
-
-function buildMenuTree(items, parentId) {
-    return items
-        .filter(m => m.parent_id == parentId)
-        .sort((a, b) => (a.order_seq || 0) - (b.order_seq || 0))
-        .map(m => ({ ...m, children: buildMenuTree(items, m.id) }));
-}
-
-function renderMenuAccessTree() {
-    const search = document.getElementById('menuSearch').value.toLowerCase().trim();
-    const container = document.getElementById('menuAccessList');
-    container.innerHTML = '';
-
-    let hasAny = false;
-    menuTree.forEach(node => {
-        hasAny = renderMenuNode(node, 0, container, search) || hasAny;
-    });
-
-    if (!hasAny) {
-        container.innerHTML = '<div class="px-4 py-8 text-center text-gray-400 text-sm">Tidak ada menu.</div>';
-    }
-}
-
-function renderMenuNode(node, depth, container, search, parentAccessible = true) {
-    if (search && !menuNodeMatches(node, search)) return false;
-
-    const hasChildren  = node.children && node.children.length > 0;
-    const isExpanded   = expandedMenus.has(node.id);
-    const hasAccess    = !!(roleMenuPermissions[node.id]?.can_view);
-    const isDisabled   = !parentAccessible; // disable jika parent tidak punya akses
-
-    const typeStyle = {
-        group:    { icon: 'fa-layer-group text-purple-400', textCls: 'font-semibold text-gray-900', bg: 'bg-white' },
-        page:     { icon: 'fa-file-alt text-blue-400',      textCls: 'font-medium text-gray-800',   bg: 'bg-white' },
-        function: { icon: 'fa-bolt text-orange-400',        textCls: 'text-gray-700',               bg: 'bg-gray-50' },
-    }[node.type] || { icon: 'fa-circle text-gray-400', textCls: 'text-gray-700', bg: 'bg-white' };
-
-    // Jika parent tidak accessible, row di-gray-out
-    const rowOpacity  = isDisabled ? 'opacity-40' : '';
-    const labelCls    = isDisabled ? 'text-gray-400' : typeStyle.textCls;
-
-    const div = document.createElement('div');
-    div.className = `flex items-center gap-2 px-4 py-2.5 transition-colors border-b border-gray-100 ${typeStyle.bg} ${rowOpacity} ${isDisabled ? '' : 'hover:bg-blue-50/30'}`;
-    div.style.paddingLeft = `${16 + depth * 22}px`;
-    if (isDisabled) div.title = 'Parent menu is inactive - enable the parent first';
-
-    div.innerHTML = `
-        ${hasChildren
-            ? `<button onclick="toggleMenuNode(${node.id})"
-                    class="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 flex-shrink-0 focus:outline-none">
-                   <i class="fas ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-xs"></i>
-               </button>`
-            : `<span class="w-5 flex-shrink-0"></span>`
-        }
-        <i class="fas ${typeStyle.icon} text-xs w-4 text-center flex-shrink-0"></i>
-        <span class="text-sm ${labelCls} flex-1 leading-tight">${escHtml(node.name)}</span>
-        <input type="checkbox" ${hasAccess ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}
-            class="w-4 h-4 rounded flex-shrink-0 ${isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer accent-red-800'}"
-            onchange="toggleMenuAccess(${node.id}, this)"
-            title="${escHtml(node.name)}">
-    `;
-
-    container.appendChild(div);
-
-    if (hasChildren && isExpanded) {
-        // Child accessible hanya jika parent ini juga accessible
-        const childAccessible = parentAccessible && hasAccess;
-        node.children.forEach(child => renderMenuNode(child, depth + 1, container, search, childAccessible));
-    }
-
-    return true;
-}
-
-function menuNodeMatches(node, search) {
-    if (node.name.toLowerCase().includes(search)) return true;
-    return (node.children || []).some(c => menuNodeMatches(c, search));
-}
-
-function toggleMenuNode(id) {
-    expandedMenus.has(id) ? expandedMenus.delete(id) : expandedMenus.add(id);
-    renderMenuAccessTree();
-}
-
-function filterMenuRows() {
-    if (document.getElementById('menuSearch').value) {
-        allMenusData.forEach(m => expandedMenus.add(m.id));
-    }
-    renderMenuAccessTree();
-}
-
-async function toggleMenuAccess(menuId, checkbox) {
-    const key = `${currentRoleId}-${menuId}`;
-    if (savingMenu[key]) { checkbox.checked = !checkbox.checked; return; }
-
-    const grant = checkbox.checked;
-    const menuName = checkbox.title || 'menu ini';
-    const roleName = document.getElementById('menuAccessTitle').textContent.replace('Menu Access - ', '');
-    const node = findMenuNode(menuTree, menuId);
-    const hasChildren = !!(node?.children?.length);
-
-    if (grant) {
-        const message = hasChildren
-            ? `Grant access to "${menuName}" and all its sub-items for role "${roleName}"?`
-            : `Grant access to "${menuName}" for role "${roleName}"?`;
-        const confirmed = await customConfirm({
-            title:    'Grant Access?',
-            message,
-            okLabel:  'Yes, Grant',
-            okClass:  'bg-green-600 hover:bg-green-700',
-            icon:     'fas fa-key',
-            iconBg:   'bg-green-50',
-            iconColor:'text-green-600',
-        });
-        if (!confirmed) { checkbox.checked = false; return; }
-    } else {
-        const confirmed = await customConfirm({
-            title:    'Revoke Access?',
-            message:  `Revoke access to "${menuName}" from role "${roleName}"?`,
-            okLabel:  'Yes, Revoke',
-            okClass:  'bg-red-600 hover:bg-red-700',
-            icon:     'fas fa-ban',
-            iconBg:   'bg-red-50',
-            iconColor:'text-red-500',
-        });
-        if (!confirmed) { checkbox.checked = true; return; }
-    }
-
-    savingMenu[key] = true;
-    checkbox.disabled = true;
-    let ok = false;
-    try {
-        if (grant) {
-            const res = await fetch(`/api/roles/${currentRoleId}/permissions/${menuId}`, {
-                method: 'PUT', headers: jsonHeaders(),
-                body: JSON.stringify({ can_view: true, can_create: false, can_edit: false, can_delete: false }),
-            });
-            ok = (await res.json()).success;
-        } else {
-            const res = await fetch(`/api/roles/${currentRoleId}/permissions/${menuId}/revoke`, {
-                method: 'POST', headers: jsonHeaders(),
-            });
-            ok = (await res.json()).success;
-        }
-    } catch(e) { ok = false; }
-
-    if (!ok) {
-        checkbox.checked = !grant;
-        showToast('Failed to update access. Please try again.', 'error');
-    } else {
-        if (grant) {
-            roleMenuPermissions[menuId] = { can_view: true, can_create: false, can_edit: false, can_delete: false };
-            if (hasChildren) await cascadeGrantChildren(menuId);
-            showToast(`Access to "${menuName}"${hasChildren ? ' and all sub-items' : ''} granted successfully.`, 'success');
-        } else {
-            delete roleMenuPermissions[menuId];
-            await cascadeRevokeChildren(menuId);
-            showToast(`Access to "${menuName}" revoked successfully.`, 'success');
-        }
-        renderMenuAccessTree();
-    }
-
-    checkbox.disabled = false;
-    delete savingMenu[key];
-}
-
-// Kumpulkan semua descendant ID yang belum punya akses, lalu grant paralel
-async function cascadeGrantChildren(parentId) {
-    const toGrant = [];
-    function collect(pId) {
-        const n = findMenuNode(menuTree, pId);
-        if (!n?.children?.length) return;
-        for (const child of n.children) {
-            if (!roleMenuPermissions[child.id]) toGrant.push(child.id);
-            collect(child.id);
-        }
-    }
-    collect(parentId);
-    if (!toGrant.length) return;
-
-    await Promise.all(toGrant.map(async id => {
-        try {
-            const res = await fetch(`/api/roles/${currentRoleId}/permissions/${id}`, {
-                method: 'PUT', headers: jsonHeaders(),
-                body: JSON.stringify({ can_view: true, can_create: false, can_edit: false, can_delete: false }),
-            });
-            if ((await res.json()).success) {
-                roleMenuPermissions[id] = { can_view: true, can_create: false, can_edit: false, can_delete: false };
-            }
-        } catch(e) {}
-    }));
-}
-
-// Kumpulkan semua descendant ID yang punya akses, lalu revoke paralel
-async function cascadeRevokeChildren(parentId) {
-    const toRevoke = [];
-    function collect(pId) {
-        const n = findMenuNode(menuTree, pId);
-        if (!n?.children?.length) return;
-        for (const child of n.children) {
-            if (roleMenuPermissions[child.id]) toRevoke.push(child.id);
-            collect(child.id);
-        }
-    }
-    collect(parentId);
-    if (!toRevoke.length) return;
-
-    await Promise.all(toRevoke.map(async id => {
-        try {
-            await fetch(`/api/roles/${currentRoleId}/permissions/${id}/revoke`, {
-                method: 'POST', headers: jsonHeaders(),
-            });
-        } catch(e) {}
-        delete roleMenuPermissions[id];
-    }));
-}
-
-// Rekursif beri akses semua children (dan panggil API grant)
-async function cascadeGrantChildren(parentId) {
-    const node = findMenuNode(menuTree, parentId);
-    if (!node || !node.children?.length) return;
-
-    for (const child of node.children) {
-        if (!roleMenuPermissions[child.id]) {
-            try {
-                const res = await fetch(`/api/roles/${currentRoleId}/permissions/${child.id}`, {
-                    method: 'PUT', headers: jsonHeaders(),
-                    body: JSON.stringify({ can_view: true, can_create: false, can_edit: false, can_delete: false }),
-                });
-                if ((await res.json()).success) {
-                    roleMenuPermissions[child.id] = { can_view: true, can_create: false, can_edit: false, can_delete: false };
-                }
-            } catch(e) {}
-        }
-        // Rekursif ke grandchildren
-        await cascadeGrantChildren(child.id);
-    }
-}
-
-function findMenuNode(nodes, id) {
-    for (const n of nodes) {
-        if (n.id === id) return n;
-        const found = findMenuNode(n.children || [], id);
-        if (found) return found;
-    }
-    return null;
-}
-
 // ── Custom Confirm Dialog ─────────────────────────────────────────────────────
 
 function customConfirm({ title, message, okLabel = 'Confirm', okClass = 'bg-red-600 hover:bg-red-700', icon = 'fas fa-exclamation-triangle', iconBg = 'bg-red-50', iconColor = 'text-red-500' } = {}) {
@@ -638,7 +356,7 @@ function escHtml(str) {
 }
 
 // Close modal on backdrop click
-['roleModal','membersModal','menuAccessModal'].forEach(id => {
+['roleModal','membersModal'].forEach(id => {
     document.getElementById(id)?.addEventListener('click', function(e) {
         if (e.target === this) closeModal(id);
     });
@@ -646,5 +364,9 @@ function escHtml(str) {
 
 // Init
 loadRoles();
+
+// In step with the Menu Access page and the Menu List: their saves change the "Menu access" count here.
+PermissionSync.subscribe(() => loadRoles());
+PermissionSync.onStale(() => loadRoles());
 </script>
 @endsection

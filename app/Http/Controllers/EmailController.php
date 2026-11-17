@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RoleId;
 use App\Exceptions\EmailSendException;
 use App\Models\Customer;
 use App\Models\Notification;
@@ -485,11 +484,22 @@ class EmailController extends Controller
     // PUBLIC ENDPOINTS
     // =========================================================================
 
+    /** Kotak surat perusahaan: hanya pemegang izin `email.mailbox` (sama dengan reprocessAttachments). Mengembalikan respons 403 bila tidak berhak. */
+    private function denyUnlessMailStaff()
+    {
+        $allowed = \App\Models\Employee::find(session('user.id'))?->hasPermission('email.mailbox') ?? false;
+
+        return $allowed ? null : response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+    }
+
     /**
      * Ambil daftar pesan terbaru dari inbox (untuk debug / preview).
      */
     public function inbox()
     {
+        if ($deny = $this->denyUnlessMailStaff()) {
+            return $deny;
+        }
         $email = config('services.microsoft_graph.sender_email');
 
         $data = $this->graphGet("/users/{$email}/mailFolders/inbox/messages", [
@@ -506,6 +516,9 @@ class EmailController extends Controller
      */
     public function send(Request $request)
     {
+        if ($deny = $this->denyUnlessMailStaff()) {
+            return $deny;
+        }
         $data = $request->validate([
             'to'      => ['required', 'email'],
             'subject' => ['required', 'string', 'max:255'],
@@ -535,6 +548,9 @@ class EmailController extends Controller
      */
     public function reply(Request $request)
     {
+        if ($deny = $this->denyUnlessMailStaff()) {
+            return $deny;
+        }
         $data = $request->validate([
             'to'          => ['required', 'email'],
             'subject'     => ['required', 'string', 'max:255'],
@@ -1652,7 +1668,7 @@ class EmailController extends Controller
     public function reprocessAttachments(Request $request, int $messageId)
     {
         $sessionUser = session('user');
-        if (!$sessionUser || !in_array($sessionUser['role']['id'], array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::HELPDESK_GROUP), true)) {
+        if (!$sessionUser || $this->denyUnlessMailStaff()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 

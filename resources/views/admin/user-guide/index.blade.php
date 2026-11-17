@@ -20,20 +20,24 @@
     .uge-row:last-child { border-bottom: 0; }
     .uge-title { font-size: 14px; font-weight: 600; color: #111827; text-decoration: none; }
     .uge-title:hover { color: var(--uge-accent); }
-    .uge-meta { font-size: 12px; color: #6b7280; margin-top: 2px; }
+    .uge-meta { font-size: 12px; color: #6b7280; margin-top: 2px; word-break: break-word; }
     .uge-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; margin-left: 6px; }
     .uge-pill.default { background: #f3f4f6; color: #4b5563; }
-    .uge-pill.edited { background: #fecaca; color: #7f1d1d; }
+    .uge-pill.edited { background: var(--uge-tint); color: var(--uge-accent-dark); }
     .uge-pill.custom { background: #dcfce7; color: #166534; }
     .uge-pill.stale { background: #fef3c7; color: #92400e; }
     .uge-pill.todo { background: #fee2e2; color: #991b1b; }
     .uge-actions { display: flex; gap: 14px; font-size: 13px; flex-shrink: 0; }
     .uge-actions a { color: var(--uge-accent); text-decoration: none; }
-    .uge-note { font-size: 12px; color: #4b5563; background: var(--uge-tint); border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; line-height: 1.6; }
+    .uge-note { font-size: 12px; color: #4b5563; background: var(--uge-tint); border: 1px solid var(--uge-ring); border-radius: 10px; padding: 10px 14px; line-height: 1.6; }
+    @media (max-width: 640px) { .uge-row { flex-direction: column; align-items: flex-start; } }
 </style>
 @endpush
 
 @section('content')
+@php
+    $byChapter = collect($rows)->groupBy('chapter');
+@endphp
 <div class="space-y-5 uge-scope">
     <div class="uge-note">
         Employees only see topics that match their menu access or role, as set in each topic's <strong>Visible to</strong>.
@@ -50,7 +54,6 @@
         <a class="uge-btn" href="{{ route('admin.user-guide.create', ['lang' => $locale]) }}"><i class="fas fa-plus text-xs"></i> New topic</a>
     </div>
 
-    @php($byChapter = collect($rows)->groupBy('chapter'))
     <div class="uge-card">
         @forelse ($chapters as $chapterId => $def)
             @continue(!$byChapter->has($chapterId))

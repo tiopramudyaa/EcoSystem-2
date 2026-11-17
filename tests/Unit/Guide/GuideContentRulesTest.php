@@ -43,13 +43,20 @@ class GuideContentRulesTest extends TestCase
         ])));
     }
 
-    public function test_em_and_en_dashes_are_rejected_everywhere(): void
+    public function test_em_and_en_dashes_are_rejected_in_plain_text(): void
     {
         $dash = "\u{2014}";
         $e = $this->rules()->violations($this->draft(['title' => "A $dash B", 'summary' => "A \u{2013} B", 'body' => "x $dash y"]));
         $this->assertArrayHasKey('title', $e);
         $this->assertArrayHasKey('summary', $e);
         $this->assertArrayHasKey('body', $e);
+    }
+
+    public function test_exact_screen_text_in_code_may_contain_a_dash(): void
+    {
+        $dash = "\u{2014}";
+        $this->assertSame([], $this->rules()->violations($this->draft(['body' => "Pick `{$dash} choose an approver {$dash}` from the list."])));
+        $this->assertArrayHasKey('body', $this->rules()->violations($this->draft(['body' => "Pick `ok` {$dash} then go."])));
     }
 
     public function test_key_chapter_and_required_fields(): void

@@ -1,0 +1,734 @@
+<?php
+
+namespace App\Http\Controllers\HR;
+
+use App\Http\Controllers\Controller;
+use App\Models\DeliveryProject;
+use App\Models\Employee;
+use App\Models\Position;
+use App\Models\EmployeeRole;
+use App\Models\KpiEvaluation;
+use App\Models\KpiEvaluationDetail;
+use App\Models\KpiIndicator;
+use App\Models\KpiScoringScale;
+use App\Models\KpiTemplate;
+use App\Support\KpiAssignments;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * KPI Template Controller
+ *
+ * Manages the KPI template library:
+ *   - Role-based templates (one template → one role)
+ *   - Dynamic indicator management (add/remove rows with weight validation)
+ *   - Toggle active/inactive without deleting
+ *
+ * Accessible via Management → HR & General → KPI Settings.
+ */
+class KpiTemplateController extends Controller
+{
+    /**
+     * List all KPI templates.
+     */
+    public function index(Request $request)
+    {
+        $user = session('user');
+        $search = $request->query('search', '');
+        $statusFilter = $request->query('status', '');
+        $periodTypeFilter = $request->query('period_type', '');
+
+        $templates = KpiTemplate::with(['role', 'indicators', 'scoringScales'])
+            ->withCount('evaluations')
+            ->orderByDesc('is_active')
+            ->orderBy('name')
+            ->get();
+
+        $roles = EmployeeRole::orderBy('name')->get();
+
+        $canManage = $this->can('general.kpi-evaluation.templates.manage');
+        $canCreate = $this->canDo('general.kpi-evaluation.templates', 'create') || $canManage;
+        $canEdit   = $this->canDo('general.kpi-evaluation.templates', 'edit')   || $canManage;
+        $canDelete = $this->canDo('general.kpi-evaluation.templates', 'delete') || $canManage;
+
+        return view('hr-general.kpi.templates', compact(
+            'user',
+            'templates',
+            'roles',
+            'canManage',
+            'canCreate',
+            'canEdit',
+            'canDelete',
+            'search',
+            'statusFilter',
+            'periodTypeFilter'
+        ));
+    }
+
+    /**
+     * Full-page create form.
+     */
+    public function create()
+    {
+        $template   = new KpiTemplate(['target_type' => 'supervisor', 'period_type' => 'monthly', 'score_divisor' => 5]);
+        $indicators = collect();
+        $scales     = collect(KpiScoringScale::defaultRows())->map(fn ($r) => (object) $r);
+        $mode       = 'create';
+
+        return view('hr-general.kpi.template-form', array_merge(
+            compact('template', 'indicators', 'scales', 'mode'),
+            $this->formOptions()
+        ));
+    }
+
+    /**
+     * Full-page edit form.
+     */
+    public function edit(int $id)
+    {
+        $template   = KpiTemplate::with(['indicators', 'scoringScales'])->findOrFail($id);
+        $indicators = $template->indicators->sortBy('order_seq')->values();
+        $scales     = $template->scoringScales->isNotEmpty()
+            ? $template->scoringScales->sortBy('scale_value')->values()
+            : collect(KpiScoringScale::defaultRows())->map(fn ($r) => (object) $r);
+        $mode       = 'edit';
+
+        return view('hr-general.kpi.template-form', array_merge(
+            compact('template', 'indicators', 'scales', 'mode'),
+            $this->formOptions()
+        ));
+    }
+
+    /**
+     * Deadline columns from the form. Only the parts that matter for the chosen
+     * period type are kept, so switching type never leaves stale month/year behind.
+     */
+    private function deadlineFields(Request $request): array
+    {
+        $day = $request->filled('deadline_day') ? (int) $request->deadline_day : null;
+        if (!$day) {
+            return ['deadline_day' => null, 'deadline_month' => null, 'deadline_year' => null];
+        }
+        $type = $request->period_type;
+        return [
+            'deadline_day'   => $day,
+            'deadline_month' => in_array($type, ['quarterly', 'annual'], true) && $request->filled('deadline_month') ? (int) $request->deadline_month : null,
+            'deadline_year'  => $type === 'annual' && $request->filled('deadline_year') ? (int) $request->deadline_year : null,
+        ];
+    }
+
+    private function applyDeadlineToOpenEvaluations(KpiTemplate $template, string $periodMonth): void
+    {
+        $deadline = $template->deadlineFor($periodMonth);
+        $column   = in_array($template->target_type, ['self', 'upward'], true) ? 'self_deadline' : 'supervisor_deadline';
+
+        KpiEvaluation::where('template_id', $template->id)
+            ->where('period_month', $periodMonth)
+            ->where('status', '!=', KpiEvaluation::STATUS_HR_APPROVED)
+            ->update([$column => $deadline?->toDateString()]);
+    }
+
+    /** Roles, positions, employees and projects offered as targeting options on the form. */
+    private function formOptions(): array
+    {
+        $roles = EmployeeRole::orderBy('name')->get(['id', 'name']);
+
+        // Master data > Positions (active rows), the same list the employee Basic Data dropdown uses.
+        $positions = collect(Position::options());
+
+        $employees = Employee::with(['basicData', 'roles', 'deliveryProjects'])
+            ->where('is_active', true)
+            ->get()
+            ->map(fn ($e) => [
+                'id'        => (string) $e->employee_id,
+                'name'      => $e->basicData?->full_name ?: $e->eci,
+                'meta'      => trim(($e->eci ?? '') . ' · ' . ($e->basicData?->position ?? ''), ' ·'),
+                // Direct supervisor from master data - lets the form cross-filter
+                // the "who fills" / "for who" pickers by reporting line.
+                'leader_id' => ($lid = $e->basicData?->supervisorEmployeeId()) ? (string) $lid : null,
+                // Peer pairs must share one of these.
+                'position'    => $e->basicData?->position,
+                'role_ids'    => $e->roles->pluck('id')->map(fn ($v) => (string) $v)->values(),
+                'project_ids' => $e->deliveryProjects->pluck('id')->map(fn ($v) => (string) $v)->values(),
+            ])
+            ->sortBy('name')
+            ->values();
+
+        $projects = DeliveryProject::select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($p) => ['id' => (string) $p->id, 'name' => $p->name])
+            ->values();
+
+        $unitOptions = ['%', 'score', 'points', 'count', 'days', 'hours', 'rating', 'IDR', 'ratio'];
+
+        return compact('roles', 'positions', 'employees', 'projects', 'unitOptions');
+    }
+
+    /**
+     * POST: Create a new template with its indicators.
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name'                => 'required|string|max:200',
+            'description'         => 'nullable|string',
+            'role_id'             => 'nullable|integer|exists:employee_role,id',
+            'period_type'         => 'required|in:monthly,quarterly,annual',
+            'deadline_day'        => 'nullable|integer|min:1|max:31',
+            'deadline_month'      => 'nullable|integer|min:1|max:12',
+            'deadline_year'       => 'nullable|integer|min:2000|max:2100',
+            'target_type'         => 'nullable|in:self,supervisor,peer,upward',
+            'is_anonymous'        => 'nullable|boolean',
+            'target_roles'        => 'nullable|array',
+            'target_roles.*'      => 'integer|exists:employee_role,id',
+            'target_positions'    => 'nullable|array',
+            'target_positions.*'  => 'string|max:150',
+            'target_employees'    => 'nullable|array',
+            'target_employees.*'  => 'integer',
+            'target_projects'     => 'nullable|array',
+            'target_projects.*'   => 'integer',
+            'subject_employees'   => 'nullable|array',
+            'subject_employees.*' => 'integer',
+            'peer_groups'         => 'nullable|array',
+            'score_divisor'       => 'nullable|integer|min:1|max:100',
+            'indicators'                => 'required|array|min:1',
+            'indicators.*.name'         => 'required|string|max:300',
+            'indicators.*.answer_type'  => 'nullable|in:rating,paragraph',
+            'indicators.*.rating_max'   => 'nullable|integer|min:1|max:100',
+            'indicators.*.weight'       => 'nullable|numeric|min:0|max:100',
+            'indicators.*.target_value' => 'nullable|numeric|min:0|max:99999999',
+            'scales'                    => 'nullable|array',
+            'scales.*.scale_value'      => 'required_with:scales|integer|min:1|max:100',
+            'scales.*.category'         => 'nullable|string|max:100',
+        ]);
+
+        if ($msg = $this->weightError($request)) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->withInput()->with('error', $msg);
+        }
+
+        if ($msg = $this->peerGroupsError($request)) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->withInput()->with('error', $msg);
+        }
+
+        if ($msg = $this->subjectOverlapError($request)) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->withInput()->with('error', $msg);
+        }
+
+        DB::beginTransaction();
+        try {
+            $user = session('user');
+            $targetType = $request->target_type ?? 'supervisor';
+
+            $template = KpiTemplate::create([
+                'name'             => $request->name,
+                'description'      => $request->description,
+                'role_id'         => $request->role_id,
+                'period_type'     => $request->period_type,
+                ...$this->deadlineFields($request),
+                'target_type'     => $targetType,
+                'is_anonymous'    => $request->boolean('is_anonymous'),
+                // Peer templates are driven by pairs alone - no audience / subject lists.
+                'target_roles'    => $targetType === 'peer' ? null : $this->cleanList($request->input('target_roles', [])),
+                'target_positions'=> $targetType === 'peer' ? null : $this->cleanList($request->input('target_positions', [])),
+                'target_employees'=> $targetType === 'peer' ? null : $this->cleanList($request->input('target_employees', [])),
+                'target_projects' => $targetType === 'peer' ? null : $this->cleanList($request->input('target_projects', [])),
+                // Not applicable to Self - the filler and subject are always the same person.
+                'subject_employees'=> in_array($targetType, ['self', 'peer'], true) ? null : $this->cleanList($request->input('subject_employees', [])),
+                'peer_groups'     => $targetType === 'peer' ? $this->cleanGroups($request) : null,
+                'score_divisor'   => $this->resolveDivisor($request),
+                'is_active'       => true,
+                'created_by'      => $user['id'] ?? null,
+                'updated_by'      => $user['id'] ?? null,
+            ]);
+
+            $this->syncIndicators($template, $request);
+            $this->syncScales($template, $request);
+
+            DB::commit();
+
+            // Materialise this template's assignments for the current period so the
+            // coverage table + My KPI reflect it immediately - no per-employee clicks.
+            KpiAssignments::syncPeriod(Carbon::now()->format('Y-m'), $user['id'] ?? null, true);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success'     => true,
+                    'message'     => 'KPI template created successfully.',
+                    'template_id' => $template->id,
+                ]);
+            }
+
+            return redirect()->route('general.kpi-evaluation.templates.index')
+                ->with('success', 'KPI template "' . $template->name . '" created successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->back()->withInput()->with('error', 'Failed to create template.');
+        }
+    }
+
+    /**
+     * POST: Update an existing template and its indicators.
+     * Indicators are replaced completely (delete + re-insert) to avoid drift.
+     * Cannot edit if the template has approved evaluations.
+     */
+    public function update(Request $request, int $id)
+    {
+        $template = KpiTemplate::with('indicators')->findOrFail($id);
+
+        $request->validate([
+            'name'                => 'required|string|max:200',
+            'description'         => 'nullable|string',
+            'role_id'             => 'nullable|integer|exists:employee_role,id',
+            'period_type'         => 'required|in:monthly,quarterly,annual',
+            'deadline_day'        => 'nullable|integer|min:1|max:31',
+            'deadline_month'      => 'nullable|integer|min:1|max:12',
+            'deadline_year'       => 'nullable|integer|min:2000|max:2100',
+            'target_type'         => 'nullable|in:self,supervisor,peer,upward',
+            'is_anonymous'        => 'nullable|boolean',
+            'target_roles'        => 'nullable|array',
+            'target_roles.*'      => 'integer|exists:employee_role,id',
+            'target_positions'    => 'nullable|array',
+            'target_positions.*'  => 'string|max:150',
+            'target_employees'    => 'nullable|array',
+            'target_employees.*'  => 'integer',
+            'target_projects'     => 'nullable|array',
+            'target_projects.*'   => 'integer',
+            'subject_employees'   => 'nullable|array',
+            'subject_employees.*' => 'integer',
+            'peer_groups'         => 'nullable|array',
+            'score_divisor'       => 'nullable|integer|min:1|max:100',
+            'indicators'                => 'required|array|min:1',
+            'indicators.*.name'         => 'required|string|max:300',
+            'indicators.*.answer_type'  => 'nullable|in:rating,paragraph',
+            'indicators.*.rating_max'   => 'nullable|integer|min:1|max:100',
+            'indicators.*.weight'       => 'nullable|numeric|min:0|max:100',
+            'indicators.*.target_value' => 'nullable|numeric|min:0|max:99999999',
+            'scales'                    => 'nullable|array',
+            'scales.*.scale_value'      => 'required_with:scales|integer|min:1|max:100',
+            'scales.*.category'         => 'nullable|string|max:100',
+        ]);
+
+        if ($msg = $this->weightError($request)) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->withInput()->with('error', $msg);
+        }
+
+        if ($msg = $this->peerGroupsError($request)) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->withInput()->with('error', $msg);
+        }
+
+        if ($msg = $this->subjectOverlapError($request)) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->withInput()->with('error', $msg);
+        }
+
+        DB::beginTransaction();
+        try {
+            $user = session('user');
+            $targetType = $request->target_type ?? $template->target_type ?? 'supervisor';
+
+            $template->update([
+                'name'             => $request->name,
+                'description'      => $request->description,
+                'role_id'         => $request->role_id,
+                'period_type'     => $request->period_type,
+                ...$this->deadlineFields($request),
+                'target_type'     => $targetType,
+                'is_anonymous'    => $request->boolean('is_anonymous'),
+                'target_roles'    => $targetType === 'peer' ? null : $this->cleanList($request->input('target_roles', [])),
+                'target_positions'=> $targetType === 'peer' ? null : $this->cleanList($request->input('target_positions', [])),
+                'target_employees'=> $targetType === 'peer' ? null : $this->cleanList($request->input('target_employees', [])),
+                'target_projects' => $targetType === 'peer' ? null : $this->cleanList($request->input('target_projects', [])),
+                'subject_employees'=> in_array($targetType, ['self', 'peer'], true) ? null : $this->cleanList($request->input('subject_employees', [])),
+                'peer_groups'     => $targetType === 'peer' ? $this->cleanGroups($request) : null,
+                'score_divisor'   => $this->resolveDivisor($request),
+                'updated_by'      => $user['id'] ?? null,
+            ]);
+
+            // Replace indicators + scale rows wholesale (avoids complex diffing).
+            // Indicators get brand-new IDs on every save; the FK cascade on
+            // kpi_evaluation_details.indicator_id wipes any detail rows tied to
+            // the old indicator IDs for every evaluation already using this
+            // template - so those rows must be recreated below, or the
+            // employee's fill form / HR's review both render an empty table.
+            $template->indicators()->delete();
+            $this->syncIndicators($template, $request);
+
+            $template->scoringScales()->delete();
+            $this->syncScales($template, $request);
+
+            $freshIndicatorIds = $template->indicators()->pluck('id');
+            $evalIds = KpiEvaluation::where('template_id', $template->id)->pluck('id');
+            if ($evalIds->isNotEmpty() && $freshIndicatorIds->isNotEmpty()) {
+                $rows = [];
+                $now = now();
+                foreach ($evalIds as $evalId) {
+                    foreach ($freshIndicatorIds as $indId) {
+                        $rows[] = [
+                            'evaluation_id' => $evalId,
+                            'indicator_id'  => $indId,
+                            'created_at'    => $now,
+                            'updated_at'    => $now,
+                        ];
+                    }
+                }
+                KpiEvaluationDetail::insertOrIgnore($rows);
+            }
+
+            // Indicators/scales were replaced above; make sure "last changed"
+            // moves even when the template's own columns were untouched.
+            $template->touch();
+
+            // Push the (possibly changed) deadline onto this period's open evaluations.
+            $this->applyDeadlineToOpenEvaluations($template->fresh(), Carbon::now()->format('Y-m'));
+
+            DB::commit();
+
+            // Materialise this template's assignments for the current period so the
+            // coverage table + My KPI reflect it immediately - no per-employee clicks.
+            KpiAssignments::syncPeriod(Carbon::now()->format('Y-m'), $user['id'] ?? null, true);
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Template updated successfully.']);
+            }
+
+            return redirect()->route('general.kpi-evaluation.templates.index')
+                ->with('success', 'KPI template updated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->back()->withInput()->with('error', 'Failed to update template.');
+        }
+    }
+
+    /**
+     * POST: Toggle active/inactive.
+     */
+    public function toggleActive(Request $request, int $id)
+    {
+        $template = KpiTemplate::findOrFail($id);
+        $template->is_active = !$template->is_active;
+        $template->save();
+
+        // Activating fills in the period's assignments; deactivating prunes the
+        // untouched ones.
+        KpiAssignments::syncPeriod(Carbon::now()->format('Y-m'), session('user')['id'] ?? null, true);
+
+        $label = $template->is_active ? 'activated' : 'deactivated';
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success'   => true,
+                'message'   => "Template {$label}.",
+                'is_active' => $template->is_active,
+            ]);
+        }
+        return redirect()->back()->with('success', "Template {$label}.");
+    }
+
+    /**
+     * POST: Delete a template (only if no evaluations reference it).
+     */
+    public function delete(Request $request, int $id)
+    {
+        $template = KpiTemplate::withCount('evaluations')->findOrFail($id);
+
+        if ($template->evaluations_count > 0) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot delete: {$template->evaluations_count} evaluation(s) reference this template. Deactivate it instead.",
+                ], 422);
+            }
+            return redirect()->back()
+                ->with('error', "Cannot delete: this template is used by {$template->evaluations_count} evaluation(s). Deactivate it instead.");
+        }
+
+        $template->indicators()->delete();
+        $template->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Template deleted.']);
+        }
+        return redirect()->route('general.kpi-evaluation.templates.index')->with('success', 'Template deleted.');
+    }
+
+    /**
+     * AJAX: Return indicators for a given template (for dynamic form population).
+     */
+    public function getIndicators(int $id)
+    {
+        $template = KpiTemplate::with('indicators')->findOrFail($id);
+        return response()->json([
+            'template'   => [
+                'id'                => $template->id,
+                'name'              => $template->name,
+                'description'       => $template->description,
+                'role_id'           => $template->role_id,
+                'period_type'       => $template->period_type,
+                'target_type'       => $template->target_type ?? 'supervisor',
+                'target_type_label' => $template->target_type_label,
+            ],
+            'indicators' => $template->indicators->map(fn($i) => [
+                'id'               => $i->id,
+                'name'             => $i->name,
+                'answer_type'      => $i->answer_type ?? 'rating',
+                'rating_max'       => $i->rating_max,
+                'description'      => $i->description,
+                'measurement_unit' => $i->measurement_unit,
+                'target_value'     => $i->target_value,
+                'weight'           => $i->weight,
+                'order_seq'        => $i->order_seq,
+            ]),
+        ]);
+    }
+
+    /** Rating indicators must sum to 100%. Paragraph rows are ignored. Returns an error string or null. */
+    private function weightError(Request $request): ?string
+    {
+        $total = collect($request->input('indicators', []))
+            ->reject(fn ($ind) => ($ind['answer_type'] ?? 'rating') === 'paragraph')
+            ->sum(fn ($ind) => (float) ($ind['weight'] ?? 0));
+
+        if (abs($total - 100) > 0.01) {
+            $shown = rtrim(rtrim(number_format($total, 2), '0'), '.');
+            return "Scored indicator weights must sum to 100%. Current total: {$shown}%";
+        }
+        return null;
+    }
+
+    /**
+     * Peer groups from the request: [{name, basis, value, members[]}] with clean
+     * types and de-duplicated members. Null when none.
+     */
+    private function cleanGroups(Request $request): ?array
+    {
+        $out = [];
+        foreach ((array) $request->input('peer_groups', []) as $g) {
+            $out[] = [
+                'name'    => trim((string) ($g['name'] ?? '')),
+                'basis'   => (string) ($g['basis'] ?? ''),
+                'value'   => trim((string) ($g['value'] ?? '')),
+                'members' => array_values(array_unique(array_filter(array_map('intval', (array) ($g['members'] ?? []))))),
+            ];
+        }
+
+        return $out ?: null;
+    }
+
+    /**
+     * A Peer template is one or more named pairs (groups). Each has a single
+     * basis (role / position / project) + value, 2..10 members, and every member
+     * must actually belong to that value.
+     */
+    private function peerGroupsError(Request $request): ?string
+    {
+        if ($request->input('target_type') !== 'peer') {
+            return null;
+        }
+
+        $groups = $this->cleanGroups($request);
+        if (!$groups) {
+            return 'A Peer template needs at least one pair (group).';
+        }
+
+        $ids = collect($groups)->flatMap(fn ($g) => $g['members'])->unique()->all();
+        $emps = Employee::with(['basicData', 'roles', 'deliveryProjects'])
+            ->whereIn('employee_id', $ids)->get()->keyBy('employee_id');
+
+        foreach ($groups as $i => $g) {
+            $label = $g['name'] !== '' ? "\"{$g['name']}\"" : 'Pair ' . ($i + 1);
+
+            if (!in_array($g['basis'], ['role', 'position', 'project'], true) || $g['value'] === '') {
+                return "{$label}: choose a role, position or project.";
+            }
+            $n = count($g['members']);
+            if ($n < 2) {
+                return "{$label}: pick at least 2 employees.";
+            }
+            if ($n > KpiTemplate::PEER_GROUP_MAX) {
+                return "{$label}: at most " . KpiTemplate::PEER_GROUP_MAX . ' employees per pair - create another pair for the rest.';
+            }
+
+            foreach ($g['members'] as $mid) {
+                $e = $emps->get($mid);
+                $ok = $e && match ($g['basis']) {
+                    'role'     => $e->roles->pluck('id')->contains((int) $g['value']),
+                    'position' => ($e->basicData?->position ?? '') === $g['value'],
+                    'project'  => $e->deliveryProjects->pluck('id')->contains((int) $g['value']),
+                };
+                if (!$ok) {
+                    $name = $e ? ($e->basicData?->full_name ?: $e->eci) : "#{$mid}";
+                    return "{$label}: {$name} doesn't belong to the chosen {$g['basis']}.";
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Guards against an employee being their own counterpart: reject if any
+     * "for who"/"who fills" (subject_employees) pick also matches the
+     * template's own audience targeting (explicit employee id, or a role /
+     * position / project the subject also belongs to).
+     */
+    private function subjectOverlapError(Request $request): ?string
+    {
+        if (($request->input('target_type') ?: 'supervisor') === 'self') {
+            return null; // subject_employees is discarded for Self regardless
+        }
+
+        // Peer pairs replace the audience / subject lists entirely.
+        if ($request->input('target_type') === 'peer' && $this->cleanGroups($request)) {
+            return null;
+        }
+
+        $subjectIds = array_map('intval', $this->cleanList($request->input('subject_employees', [])) ?? []);
+        if (empty($subjectIds)) {
+            return null;
+        }
+
+        $explicitAudience = array_map('intval', $this->cleanList($request->input('target_employees', [])) ?? []);
+        $directHit = array_intersect($subjectIds, $explicitAudience);
+        if ($directHit) {
+            $names = Employee::with('basicData')->whereIn('employee_id', $directHit)->get()
+                ->map(fn ($e) => $e->basicData?->full_name ?: $e->eci)->implode(', ');
+            return "An employee can't be both a filler and the subject of the same template: {$names}.";
+        }
+
+        // Also check the dynamic pools (role/position/project) the audience
+        // resolves to, since a subject could match one of those without
+        // being explicitly listed.
+        $probe = new KpiTemplate([
+            'target_roles'     => $this->cleanList($request->input('target_roles', [])),
+            'target_positions' => $this->cleanList($request->input('target_positions', [])),
+            'target_employees' => $this->cleanList($request->input('target_employees', [])),
+            'target_projects'  => $this->cleanList($request->input('target_projects', [])),
+        ]);
+
+        $subjects = Employee::with(['basicData', 'roles', 'deliveryProjects'])
+            ->whereIn('employee_id', $subjectIds)
+            ->get();
+
+        $hits = $subjects->filter(fn ($e) => $probe->appliesTo($e));
+        if ($hits->isNotEmpty()) {
+            $names = $hits->map(fn ($e) => $e->basicData?->full_name ?: $e->eci)->implode(', ');
+            return "An employee can't be both a filler and the subject of the same template: {$names}. Narrow the audience criteria or remove them from the subject list.";
+        }
+
+        return null;
+    }
+
+    /**
+     * Divisor for the weighted-score formula. Always derived from the
+     * Scoring Scale rows - the number of rows defined (e.g. 5 rows = a
+     * 5-point scale) - never taken from client input (the form field is
+     * read-only for the same reason), so it can never silently drift out of
+     * sync with the scale itself. Falls back to 5 when no scale rows are
+     * submitted.
+     */
+    private function resolveDivisor(Request $request): int
+    {
+        $count = collect($request->input('scales', []))
+            ->pluck('scale_value')
+            ->filter(fn ($v) => $v !== null && $v !== '')
+            ->count();
+
+        return $count ?: 5;
+    }
+
+    /** (Re)create indicator rows from the submitted repeater. */
+    private function syncIndicators(KpiTemplate $template, Request $request): void
+    {
+        foreach (array_values($request->input('indicators', [])) as $seq => $ind) {
+            $isPara = ($ind['answer_type'] ?? 'rating') === 'paragraph';
+            KpiIndicator::create([
+                'template_id'      => $template->id,
+                'name'             => $ind['name'],
+                'answer_type'      => $isPara ? 'paragraph' : 'rating',
+                'rating_max'       => (!$isPara && !empty($ind['rating_max'])) ? (int) $ind['rating_max'] : null,
+                'description'      => $ind['description'] ?? null,
+                'measurement_unit' => $ind['measurement_unit'] ?? null,
+                'target_value'     => ($ind['target_value'] ?? '') === '' ? null : $ind['target_value'],
+                'weight'           => $isPara ? 0 : (float) ($ind['weight'] ?? 0),
+                'order_seq'        => $seq + 1,
+            ]);
+        }
+    }
+
+    /** (Re)create the scoring-scale rows; skip entirely blank rows. */
+    private function syncScales(KpiTemplate $template, Request $request): void
+    {
+        $rows = collect($request->input('scales', []))
+            ->filter(fn ($r) => ($r['scale_value'] ?? '') !== '' || ($r['category'] ?? '') !== '')
+            ->values();
+
+        foreach ($rows as $seq => $r) {
+            KpiScoringScale::create([
+                'template_id'       => $template->id,
+                'scale_value'       => (int) $r['scale_value'],
+                'category'          => $r['category'] ?? null,
+                'definition'        => $r['definition'] ?? null,
+                'achievement_label' => $r['achievement_label'] ?? null,
+                'achievement_min'   => ($r['achievement_min'] ?? '') === '' ? null : $r['achievement_min'],
+                'achievement_max'   => ($r['achievement_max'] ?? '') === '' ? null : $r['achievement_max'],
+                'description'        => $r['description'] ?? null,
+                'order_seq'         => $seq + 1,
+            ]);
+        }
+    }
+
+    /** Drop empty/blank entries; return null when nothing is left. */
+    private function cleanList($list): ?array
+    {
+        $clean = array_values(array_filter(
+            is_array($list) ? $list : [],
+            fn($v) => $v !== null && $v !== ''
+        ));
+        return $clean ?: null;
+    }
+
+    private function can(string $slug): bool
+    {
+        $shared = \Illuminate\Support\Facades\View::getShared();
+        $slugs  = $shared['permSlugs'] ?? [];
+        return in_array($slug, $slugs);
+    }
+
+    /**
+     * Granular capability check (view|create|edit|delete) for a menu slug,
+     * backed by the permMatrix shared from ShareMenuPermissions.
+     */
+    private function canDo(string $slug, string $action = 'view'): bool
+    {
+        $shared = \Illuminate\Support\Facades\View::getShared();
+        $matrix = $shared['permMatrix'] ?? [];
+        return (bool) ($matrix[$slug][$action] ?? false);
+    }
+}

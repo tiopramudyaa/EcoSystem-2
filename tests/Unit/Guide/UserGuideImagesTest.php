@@ -70,16 +70,15 @@ class UserGuideImagesTest extends TestCase
         $topics = [
             'a' => ['html' => '<p><img src="images/guide/my-profile.png" alt="x"></p><img src="images/guide/does-not-exist.png" alt="y">'],
         ];
-        $chapters = ['c' => ['topics' => $topics]];
 
-        $m = new \ReflectionMethod(UserGuideController::class, 'inlineImages');
+        $m = new \ReflectionMethod(UserGuideController::class, 'images');
         $m->setAccessible(true);
-        $out = $m->invoke(new UserGuideController($this->svc), $chapters);
-        $html = $out['c']['topics']['a']['html'];
+        $out = $m->invoke(new UserGuideController($this->svc), $topics, true);
+        $html = $out['a']['html'];
 
         $this->assertStringContainsString('src="data:image/png;base64,', $html);
         $this->assertStringNotContainsString('src="images/guide/my-profile.png"', $html);
-        $this->assertStringContainsString('src="images/guide/does-not-exist.png"', $html);   // berkas tak ada: dibiarkan, tidak merusak PDF
+        $this->assertStringContainsString('src="' . asset('images/guide/does-not-exist.png') . '"', $html);   // berkas tak ada: alamat asset(), tidak merusak PDF
     }
 
     public function test_image_files_stay_small_enough_for_the_pdf(): void

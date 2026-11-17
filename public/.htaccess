@@ -24,40 +24,26 @@
     RewriteRule ^ index.php [L]
 </IfModule>
 
-# Long-lived caching for static assets. Safe site-wide: Vite build output
-# (public/build/**) is content-hashed, and every hand-written asset under
-# public/js /public/css referenced from a Blade view is loaded with a
-# `?v=<version>` cache-busting query string (filemtime or a bumped constant),
-# so a stale cached copy is never served after a real change - see e.g.
-# select-enhance.js / custom-dropdown.js references across resources/views.
+# ── Performa (20 Okt 2026) ───────────────────────────────────────────────────
+# Semua blok dibungkus <IfModule>: bila modul tidak aktif di hosting, blok dilewati tanpa galat.
+# Kompresi teks (HTML/CSS/JS/JSON/SVG) - mengurangi ukuran unduhan.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml application/xml
+</IfModule>
+
+# Cache berkas statis. CSS/JS hanya 1 jam (tidak semuanya diberi ?v=) supaya perubahan setelah deploy cepat terlihat;
+# gambar, font, dan suara jarang berubah → 30 hari.
 <IfModule mod_expires.c>
     ExpiresActive On
-    ExpiresByType text/css                "access plus 1 year"
-    ExpiresByType application/javascript  "access plus 1 year"
-    ExpiresByType text/javascript         "access plus 1 year"
-    ExpiresByType image/png               "access plus 1 year"
-    ExpiresByType image/jpeg              "access plus 1 year"
-    ExpiresByType image/gif               "access plus 1 year"
-    ExpiresByType image/svg+xml           "access plus 1 year"
-    ExpiresByType image/webp              "access plus 1 year"
-    ExpiresByType image/x-icon            "access plus 1 year"
-    ExpiresByType font/woff2              "access plus 1 year"
-    ExpiresByType font/woff               "access plus 1 year"
-</IfModule>
-
-<IfModule mod_headers.c>
-    <FilesMatch "\.(css|js|png|jpe?g|gif|svg|webp|ico|woff2?)$">
-        Header set Cache-Control "public, max-age=31536000, immutable"
-    </FilesMatch>
-</IfModule>
-
-# Compress text-based responses (HTML pages, CSS, JS, JSON, SVG, fonts) -
-# applies to the dynamically-rendered page (e.g. /ticket, ~300KB raw HTML) as
-# well as static files, cutting transfer size regardless of caching above.
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
-    AddOutputFilterByType DEFLATE application/javascript application/x-javascript application/json
-    AddOutputFilterByType DEFLATE application/xml application/rss+xml
-    AddOutputFilterByType DEFLATE image/svg+xml
-    AddOutputFilterByType DEFLATE font/woff font/woff2 application/font-woff application/font-woff2
+    ExpiresByType image/png  "access plus 30 days"
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType image/x-icon "access plus 30 days"
+    ExpiresByType font/woff2 "access plus 30 days"
+    ExpiresByType audio/mpeg "access plus 30 days"
+    ExpiresByType audio/wav  "access plus 30 days"
+    ExpiresByType text/css "access plus 1 hour"
+    ExpiresByType application/javascript "access plus 1 hour"
+    ExpiresByType text/javascript "access plus 1 hour"
 </IfModule>

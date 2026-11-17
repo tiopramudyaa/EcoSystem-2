@@ -13,6 +13,7 @@ use Carbon\Carbon;
 class CalendarController extends Controller
 {
     use \App\Http\Controllers\Concerns\ChecksMenuAccess;
+    public const EVENT_SLUG = 'calendar.events';
 
     /**
      * Display calendar index view
@@ -27,7 +28,12 @@ class CalendarController extends Controller
      */
     public function events()
     {
-        return view('calendar.events');
+        return view('calendar.events', [
+            // Company-wide events are HR's. These three decide which buttons the calendar shows; the API enforces them again.
+            'canPublish'      => $this->canManagePublic('create'),
+            'canEditPublic'   => $this->canManagePublic('edit'),
+            'canDeletePublic' => $this->canManagePublic('delete'),
+        ]);
     }
 
     /**
@@ -109,19 +115,98 @@ class CalendarController extends Controller
             'isHead'       => $isHead,
             'isAdmin'      => $isAdmin,
             'isHoS'        => $isHoS,
-            'roleId'       => $roleId,
             'lockedType'   => $lockedType,
             'allowedTypes' => $allowedTypes,
+            'roleId'       => $roleId,
         ]);
     }
 
+    // ═════════════════════════════════════════════════════════════════════════
+    // Events API
+    //
+    // An event is PERSONAL (only its creator sees it, only its creator changes it) or COMPANY-WIDE (`is_public`: every
+    // employee sees it). Company-wide events are HR's: making, editing or deleting one needs the Create / Edit / Delete box
+    // of `calendar.events` in Management → Roles - the same boxes as every other module, no hard-coded role.
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /** The signed-in employee's id (the session stores it as `id`), or null for a non-employee session. */
+    private function me(): ?int
+    {
+        $user = session('user');
+
+        return ($user['type'] ?? null) === 'employee' && !empty($user['id']) ? (int) $user['id'] : null;
+    }
+
+    /** Whether the signed-in employee holds one box (create | edit | delete) of Events - i.e. may manage COMPANY-WIDE events. */
+    private function canManagePublic(string $action): bool
+    {
+        $me = $this->me();
+
+        return $me !== null && (bool) Employee::find($me)?->hasMenuPermission(self::EVENT_SLUG, "can_{$action}");
+    }
+
+    /** Edit / delete right on one event: company-wide → the HR boxes; personal → its creator only. */
+    private function canChange(Event $event, string $action): bool
+    {
+        return $event->is_public
+            ? $this->canManagePublic($action)
+            : ($this->me() !== null && (int) $event->created_by === $this->me());
+    }
+
+    /** One event as the calendar needs it: plain Y-m-d / H:i strings (the model's own JSON turns dates into UTC timestamps) plus what the viewer may do. */
+    private function present(Event $event): array
+    {
+        return [
+            'id'              => $event->id,
+            'title'           => $event->title,
+            'description'     => $event->description,
+            'start_date'      => $event->start_date?->format('Y-m-d'),
+            'start_time'      => substr((string) $event->start_time, 0, 5),
+            'end_date'        => ($event->end_date ?? $event->start_date)?->format('Y-m-d'),
+            'end_time'        => $event->end_time ? substr((string) $event->end_time, 0, 5) : null,
+            'location'        => $event->location,
+            'type'            => $event->type,
+            'all_day'         => (bool) $event->all_day,
+            'color'           => $event->color,
+            'is_public'       => (bool) $event->is_public,
+            'is_mine'         => $this->me() !== null && (int) $event->created_by === $this->me(),
+            'created_by_name' => $event->creator?->fullNameLabel(),
+            'can_edit'        => $this->canChange($event, 'edit'),
+            'can_delete'      => $this->canChange($event, 'delete'),
+        ];
+    }
+
+    private function deny(string $message = 'Only HR can create, change or delete company-wide events.')
+    {
+        return response()->json(['success' => false, 'message' => $message], 403);
+    }
+
+    private function eventRules(): array
+    {
+        return [
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'start_date' => 'required|date',
+            'start_time' => 'required',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'end_time' => 'nullable',
+            'location' => 'nullable|string|max:255',
+            'type' => 'required|in:meeting,task,deadline,urgent,reminder',
+            'all_day' => 'boolean',
+            'is_public' => 'boolean',
+            'color' => 'nullable|string|max:7',
+            'employee_id' => 'nullable|exists:employee,employee_id',
+            'customer_id' => 'nullable|exists:customer,id',
+        ];
+    }
+
     /**
-     * Get all events (API)
+     * Get the events the signed-in employee can see (API): company-wide + their own.
      */
     public function getEvents(Request $request)
     {
         try {
-            $query = Event::with(['creator', 'employee', 'customer']);
+            $query = Event::visibleTo($this->me())->with('creator.basicData');
 
             // Filter by date range if provided
             if ($request->has('start_date') && $request->has('end_date')) {
@@ -145,14 +230,19 @@ class CalendarController extends Controller
 
             $events = $query->orderBy('start_date', 'asc')
                            ->orderBy('start_time', 'asc')
-                           ->get();
+                           ->get()
+                           ->map(fn (Event $e) => $this->present($e))
+                           ->values();
 
             return response()->json([
                 'success' => true,
                 'data' => $events,
+                'can_publish' => $this->canManagePublic('create'),
                 'message' => 'Events retrieved successfully'
             ]);
         } catch (\Exception $e) {
+            report($e);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve events'
@@ -165,20 +255,17 @@ class CalendarController extends Controller
      */
     public function show($id)
     {
-        try {
-            $event = Event::with(['creator', 'employee', 'customer'])->findOrFail($id);
+        $event = Event::visibleTo($this->me())->with('creator.basicData')->find($id);
 
-            return response()->json([
-                'success' => true,
-                'data' => $event,
-                'message' => 'Event retrieved successfully'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Event not found'
-            ], 404);
+        if (!$event) {
+            return response()->json(['success' => false, 'message' => 'Event not found'], 404);
         }
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->present($event),
+            'message' => 'Event retrieved successfully'
+        ]);
     }
 
     /**
@@ -195,32 +282,24 @@ class CalendarController extends Controller
         }
 
         try {
-            $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'nullable|string',
-                'start_date' => 'required|date',
-                'start_time' => 'required',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
-                'end_time' => 'nullable',
-                'location' => 'nullable|string|max:255',
-                'type' => 'required|in:meeting,task,deadline,urgent,reminder',
-                'all_day' => 'boolean',
-                'color' => 'nullable|string|max:7',
-                'employee_id' => 'nullable|exists:employee,employee_id',
-                'customer_id' => 'nullable|exists:customer,id',
-            ]);
+            $validated = $request->validate($this->eventRules());
 
-            // Set created_by from session
-            $user = session('user');
-            if ($user && isset($user['employee_id'])) {
-                $validated['created_by'] = $user['employee_id'];
+            $me = $this->me();
+            if ($me === null) {
+                return $this->deny('Only employees can add events.');
             }
+
+            $validated['is_public'] = (bool) ($validated['is_public'] ?? false);
+            if ($validated['is_public'] && !$this->canManagePublic('create')) {
+                return $this->deny();
+            }
+            $validated['created_by'] = $me;
 
             $event = Event::create($validated);
 
             return response()->json([
                 'success' => true,
-                'data' => $event->load(['creator', 'employee', 'customer']),
+                'data' => $this->present($event->load('creator.basicData')),
                 'message' => 'Event created successfully'
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -230,6 +309,8 @@ class CalendarController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
+            report($e);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create event'
@@ -243,28 +324,27 @@ class CalendarController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $event = Event::findOrFail($id);
+            $event = Event::visibleTo($this->me())->find($id);
+            if (!$event) {
+                return response()->json(['success' => false, 'message' => 'Event not found'], 404);
+            }
+            if (!$this->canChange($event, 'edit')) {
+                return $this->deny($event->is_public ? 'Only HR can change company-wide events.' : 'You can only change your own events.');
+            }
 
-            $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'nullable|string',
-                'start_date' => 'required|date',
-                'start_time' => 'required',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
-                'end_time' => 'nullable',
-                'location' => 'nullable|string|max:255',
-                'type' => 'required|in:meeting,task,deadline,urgent,reminder',
-                'all_day' => 'boolean',
-                'color' => 'nullable|string|max:7',
-                'employee_id' => 'nullable|exists:employee,employee_id',
-                'customer_id' => 'nullable|exists:customer,id',
-            ]);
+            $validated = $request->validate($this->eventRules());
+
+            // Switching a personal event to company-wide is publishing it - that needs the Create box.
+            $validated['is_public'] = (bool) ($validated['is_public'] ?? $event->is_public);
+            if ($validated['is_public'] && !$event->is_public && !$this->canManagePublic('create')) {
+                return $this->deny();
+            }
 
             $event->update($validated);
 
             return response()->json([
                 'success' => true,
-                'data' => $event->load(['creator', 'employee', 'customer']),
+                'data' => $this->present($event->load('creator.basicData')),
                 'message' => 'Event updated successfully'
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -274,6 +354,8 @@ class CalendarController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
+            report($e);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update event'
@@ -287,7 +369,14 @@ class CalendarController extends Controller
     public function destroy($id)
     {
         try {
-            $event = Event::findOrFail($id);
+            $event = Event::visibleTo($this->me())->find($id);
+            if (!$event) {
+                return response()->json(['success' => false, 'message' => 'Event not found'], 404);
+            }
+            if (!$this->canChange($event, 'delete')) {
+                return $this->deny($event->is_public ? 'Only HR can delete company-wide events.' : 'You can only delete your own events.');
+            }
+
             $event->delete();
 
             return response()->json([
@@ -295,6 +384,8 @@ class CalendarController extends Controller
                 'message' => 'Event deleted successfully'
             ]);
         } catch (\Exception $e) {
+            report($e);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete event'
@@ -303,24 +394,27 @@ class CalendarController extends Controller
     }
 
     /**
-     * Get events statistics (API)
+     * Get events statistics (API) - over the events the signed-in employee can see.
      */
     public function statistics(Request $request)
     {
         try {
+            $me = $this->me();
             $startDate = $request->input('start_date', Carbon::now()->startOfMonth());
             $endDate = $request->input('end_date', Carbon::now()->endOfMonth());
 
             $stats = [
-                'total_events' => Event::dateRange($startDate, $endDate)->count(),
-                'by_type' => Event::dateRange($startDate, $endDate)
+                'total_events' => Event::visibleTo($me)->dateRange($startDate, $endDate)->count(),
+                'by_type' => Event::visibleTo($me)->dateRange($startDate, $endDate)
                     ->selectRaw('type, COUNT(*) as count')
                     ->groupBy('type')
                     ->pluck('count', 'type'),
-                'upcoming_events' => Event::where('start_date', '>=', Carbon::now())
+                'upcoming_events' => Event::visibleTo($me)->with('creator.basicData')->where('start_date', '>=', Carbon::now())
                     ->orderBy('start_date', 'asc')
                     ->limit(5)
-                    ->get(),
+                    ->get()
+                    ->map(fn (Event $e) => $this->present($e))
+                    ->values(),
             ];
 
             return response()->json([
@@ -329,6 +423,8 @@ class CalendarController extends Controller
                 'message' => 'Statistics retrieved successfully'
             ]);
         } catch (\Exception $e) {
+            report($e);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve statistics'

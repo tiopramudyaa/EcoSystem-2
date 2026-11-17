@@ -7,10 +7,30 @@ use App\Models\EmployeeAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Services\Management\EmployeeMasterData as MD;
 use Illuminate\Support\Facades\Log;
 
 class EmployeeAddressController extends Controller
 {
+    /** Nama kolom yang tampil di pesan galat (sama dengan label di formulir). */
+    private const FIELD_LABELS = [
+        'address_type' => 'Address Type', 'country' => 'Country', 'region' => 'Region', 'city' => 'City', 'district' => 'District',
+        'rural_urban_village' => 'Rural / Urban Village', 'street' => 'Street', 'house_number' => 'House Number', 'postal_code' => 'Postal Code',
+        'language' => 'Language', 'cell_phone_country' => 'Cell Phone Country', 'telephone_country' => 'Telephone Country', 'fax_country' => 'Fax Country',
+        'preferred_communication' => 'Preferred Communication', 'cell_phone' => 'Cell Phone', 'telephone' => 'Telephone',
+        'telephone_extension' => 'Telephone Extension', 'fax' => 'Fax', 'fax_extension' => 'Fax Extension', 'email_personal' => 'Email (Personal)',
+        'email_work' => 'Email (Work)', 'website' => 'Website', 'valid_from' => 'Valid From', 'valid_to' => 'Valid To',
+    ];
+
+    /** Pesan umum yang mudah dipahami (aturan khusus per kolom di atas tetap didahulukan). */
+    private const GENERIC_MESSAGES = [
+        'max'        => ':Attribute is too long (maximum :max characters).',
+        'email'      => ':Attribute must be a valid email address, e.g. name@company.com.',
+        'url'        => ':Attribute must be a full web address starting with http:// or https://.',
+        'date'       => ':Attribute is not a valid date.',
+        'boolean'    => ':Attribute must be yes or no.',
+    ];
+
     /**
      * Get all employee addresses
      */
@@ -149,17 +169,18 @@ class EmployeeAddressController extends Controller
             'data' => $request->all()
         ]);
 
+        $cur = null;
         $validator = Validator::make($request->all(), [
             // 🏠 ADDRESS INFORMATION
-            'address_type' => 'required|string|max:255',
-            'country' => 'nullable|string|max:255',
+            'address_type' => array_filter(['required', 'string', 'max:255', MD::inRule('address', 'address_type', $cur->address_type ?? null)]),
+            'country' => array_filter(['nullable', 'string', 'max:255', MD::inRule('address', 'country', $cur->country ?? null)]),
             'region' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:255',
             'district' => 'nullable|string|max:255',
             'rural_urban_village' => 'nullable|string|max:255',
-            'street' => 'nullable|string|max:255',
-            'house_number' => 'nullable|string|max:50',
-            'postal_code' => 'nullable|string|max:20',
+            'street' => [MD::presence('address', 'require_street'), 'string', 'max:' . MD::maxLength('address', 'street_max_length')],
+            'house_number' => ['nullable', 'string', 'max:' . MD::maxLength('address', 'house_number_max_length')],
+            'postal_code' => [MD::presence('address', 'require_postal_code'), 'string', 'max:' . MD::maxLength('address', 'postal_code_max_length')],
             
             // 📞 COMMUNICATION
             'language' => 'nullable|string|max:50',
@@ -191,6 +212,8 @@ class EmployeeAddressController extends Controller
             'website.url' => 'Website must be a valid URL',
         ]);
 
+        $validator->setAttributeNames(self::FIELD_LABELS)->setCustomMessages($validator->customMessages + self::GENERIC_MESSAGES);
+
         if ($validator->fails()) {
             Log::warning('Validation failed for address', [
                 'employee_id' => $employeeId,
@@ -199,7 +222,7 @@ class EmployeeAddressController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Employee address data is invalid.',
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -300,17 +323,18 @@ class EmployeeAddressController extends Controller
             'data' => $request->all()
         ]);
 
+        $cur = DB::table('employee_address')->where('address_id', $addressId)->first();
         $validator = Validator::make($request->all(), [
             // 🏠 ADDRESS INFORMATION
-            'address_type' => 'required|string|max:255',
-            'country' => 'nullable|string|max:255',
+            'address_type' => array_filter(['required', 'string', 'max:255', MD::inRule('address', 'address_type', $cur->address_type ?? null)]),
+            'country' => array_filter(['nullable', 'string', 'max:255', MD::inRule('address', 'country', $cur->country ?? null)]),
             'region' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:255',
             'district' => 'nullable|string|max:255',
             'rural_urban_village' => 'nullable|string|max:255',
-            'street' => 'nullable|string|max:255',
-            'house_number' => 'nullable|string|max:50',
-            'postal_code' => 'nullable|string|max:20',
+            'street' => [MD::presence('address', 'require_street'), 'string', 'max:' . MD::maxLength('address', 'street_max_length')],
+            'house_number' => ['nullable', 'string', 'max:' . MD::maxLength('address', 'house_number_max_length')],
+            'postal_code' => [MD::presence('address', 'require_postal_code'), 'string', 'max:' . MD::maxLength('address', 'postal_code_max_length')],
             
             // 📞 COMMUNICATION
             'language' => 'nullable|string|max:50',
@@ -342,6 +366,8 @@ class EmployeeAddressController extends Controller
             'website.url' => 'Website must be a valid URL',
         ]);
 
+        $validator->setAttributeNames(self::FIELD_LABELS)->setCustomMessages($validator->customMessages + self::GENERIC_MESSAGES);
+
         if ($validator->fails()) {
             Log::warning('Validation failed for address update', [
                 'employee_id' => $employeeId,
@@ -351,7 +377,7 @@ class EmployeeAddressController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Employee address data is invalid.',
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors()
             ], 422);
         }

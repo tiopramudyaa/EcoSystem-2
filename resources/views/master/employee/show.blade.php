@@ -5,6 +5,8 @@
 
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
+{{-- Brand colour of this page follows Settings → Appearance (Accent colour), like the sidebar. --}}
+@include('partials.accent-brand-red')
 
 {{-- ── Loading state ────────────────────────────────────────────────────────
      Halaman ini dirender server-side, TAPI isi form (Basic Data) baru diisi
@@ -103,7 +105,7 @@
                 Back to Dashboard
             </a>
         @else
-            <a href="{{ route('master.employee.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-all">
+            <a href="{{ ($detailScope ?? 'employee') === 'external' ? route('general.external.consultants.index') : route('master.employee.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
                 </svg>
@@ -115,38 +117,35 @@
     <!-- Employee Profile Card -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-center sm:text-left">
-            <div id="headerInitials" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-red-800 to-red-950 text-white flex items-center justify-center font-bold text-3xl sm:text-4xl flex-shrink-0">
-                {{ strtoupper(substr(($employee->first_name ?? 'N'), 0, 1) . substr(($employee->last_name ?? 'A'), 0, 1)) }}
+            <img id="headerPhoto" alt="" class="hidden w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover flex-shrink-0 border border-gray-200">
+            <div id="headerInitials" class="emp-avatar w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-red-800 to-red-950 text-white flex items-center justify-center font-bold text-3xl sm:text-4xl flex-shrink-0">
+                {{ \App\Support\Initials::make(trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')), 'NA') }}
             </div>
             <div class="flex-1 w-full min-w-0">
-                <div class="flex flex-col sm:flex-row items-center sm:items-start sm:justify-between gap-2 mb-4">
-                    <div>
+                <div class="flex flex-col sm:flex-row items-center sm:items-start sm:justify-between gap-2 sm:gap-4 mb-4">
+                    <div class="min-w-0">
                         <h1 id="headerFullName" class="text-2xl sm:text-3xl font-bold text-gray-900">{{ trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')) ?: 'N/A' }}</h1>
                         <p id="headerPosition" class="text-lg text-gray-600 mt-1">{{ $employee->position ?? 'N/A' }}</p>
                     </div>
-                    @php
-                        $statusClass = 'bg-gray-100 text-gray-800';
-                        $statusLabel = 'Unknown';
-
-                        if (isset($employee->deletion_flag) && $employee->deletion_flag) {
-                            $statusClass = 'bg-red-100 text-red-800';
-                            $statusLabel = 'Flagged for Deletion';
-                        } elseif (isset($employee->block) && $employee->block) {
-                            $statusClass = 'bg-yellow-100 text-yellow-800';
-                            $statusLabel = 'Blocked';
-                        } elseif (isset($employee->is_active) && $employee->is_active) {
-                            $statusClass = 'bg-green-100 text-green-800';
-                            $statusLabel = 'Active';
-                        } else {
+                    <div class="gap-2 flex flex-wrap items-center justify-center sm:justify-start">
+                        @php
                             $statusClass = 'bg-gray-100 text-gray-800';
-                            $statusLabel = 'Inactive';
-                        }
-                    @endphp
-                    {{-- Grouped so both badges act as ONE flex item next to the name block -
-                         previously they were two separate siblings under `justify-between`,
-                         which spread all three (name block, Active, Internal) apart instead
-                         of keeping the badges together on the right. --}}
-                    <div class="flex items-center gap-2">
+                            $statusLabel = 'Unknown';
+
+                            if (isset($employee->deletion_flag) && $employee->deletion_flag) {
+                                $statusClass = 'bg-red-100 text-red-800';
+                                $statusLabel = 'Flagged for Deletion';
+                            } elseif (isset($employee->block) && $employee->block) {
+                                $statusClass = 'bg-yellow-100 text-yellow-800';
+                                $statusLabel = 'Blocked';
+                            } elseif (isset($employee->is_active) && $employee->is_active) {
+                                $statusClass = 'bg-green-100 text-green-800';
+                                $statusLabel = 'Active';
+                            } else {
+                                $statusClass = 'bg-gray-100 text-gray-800';
+                                $statusLabel = 'Inactive';
+                            }
+                        @endphp
                         <span id="headerStatusBadge" class="inline-block px-4 py-2 text-sm font-semibold rounded-full {{ $statusClass }}">
                             {{ $statusLabel }}
                         </span>
@@ -195,6 +194,10 @@
         // Master selalu editable penuh berapa pun izin yang dicentang.
         $hidden   = $profileSectionHidden   ?? [];
         $ro       = $profileSectionReadonly ?? [];
+        // Create / Delete per tab (Master only, from the Menu Access boxes). My Profile sends none: there the
+        // single Update permission covers adding, changing and removing, so a tab that is not read-only allows all.
+        $crud     = $profileSectionCrud ?? [];
+        $allows   = fn (string $key, string $what) => $crud[$key][$what] ?? !($ro[$key] ?? false);
         $sec      = ['employee' => $employee, 'employeeId' => $employee->id];
 
         // Sections config: key => [tab-id, label, partial]
@@ -209,19 +212,128 @@
             'bank'           => ['bank',            'Bank Account',  'bank'],
             'payment'        => ['payment',         'Basic Payment', 'payment'],
             'attachment'     => ['attachment',      'Attachment',    'attachment'],
+            // Payroll Fase 0: hanya Master > Employee (slug employee.section.compensation.*; My Profile tak punya padanannya).
+            'compensation'   => ['compensation',    'Compensation',  'compensation'],
         ];
         $visibleSections = array_filter($allSections, fn($k) => !($hidden[$k] ?? false), ARRAY_FILTER_USE_KEY);
+        // Profil per jenis (13 Okt 2026, mengikuti aturan Onboarding): konsultan EXTERNAL hanya diminta kontak, alamat, KTP, NPWP,
+        // rekening, dan dokumen. Tab khusus karyawan internal (keluarga/kontak darurat, kontrak & gaji, payment, compensation)
+        // disembunyikan; datanya TIDAK dihapus dan muncul lagi bila Employee Group kembali INTERNAL.
+        $isExternalEmp = (($employee->employee_type ?? null) ?: 'Internal') === 'External';
+        if ($isExternalEmp) {
+            $visibleSections = array_diff_key($visibleSections, array_flip(['family', 'contract', 'payment', 'compensation']));
+        }
+        // History (audit trail) belongs to HR's Master > Employee page only: My Profile has no menu slug for it.
+        if (!($isOwnProfile ?? false)) {
+            $visibleSections['history'] = ['history', 'History', 'history'];
+        }
+        // 16 Okt 2026 - Compensation DIGABUNG ke tab Contract (tampilan saja): Riwayat Kontrak, Salary Components, dan Tax & BPJS
+        // tampil dalam satu tab. Datanya tetap tiga sumber dan izinnya tetap tiga (employee.section.contract / salary / compensation):
+        // kartu hanya muncul bagi yang berizin, dan My Profile TIDAK pernah menampilkan kartu Tax & BPJS.
+        $ownView     = isset($isOwnProfile) && $isOwnProfile;
+        $compVisible = isset($visibleSections['compensation']) && !$ownView;
+        $contractReal = isset($visibleSections['contract']);     // pembuka tab punya izin Contract sendiri (riwayat kontrak)
+        unset($visibleSections['compensation']);
+        if ($compVisible && !$contractReal) {
+            // Pemegang izin Compensation tanpa izin Contract: tab Contract tetap disediakan sebagai tuan rumah (tanpa riwayat kontrak).
+            $ordered = [];
+            foreach ($allSections as $k => $def) {
+                if ($k === 'compensation') { continue; }
+                if (isset($visibleSections[$k]) || $k === 'contract') { $ordered[$k] = $def; }
+            }
+            $visibleSections = $ordered;
+        }
+        if ($compVisible && isset($visibleSections['contract'])) {
+            $visibleSections['contract'][1] = 'Contract & Compensation';
+        }
+        // HC-D54: fragmen data HR yang diletakkan di tab lain (golongan darah/ibu kandung di Basic Data, kontak darurat di Family).
+        // Hanya untuk yang punya izin seksi hr_profile dan karyawan Internal (form konsultan ESH tidak memilikinya).
+        $hrShow = !($hidden['hr_profile'] ?? true) && ((($employee->employee_type ?? null) ?: 'Internal') !== 'External');
+        // Konsultan External: tab Family tidak ada, tetapi kontak darurat (opsional) tampil di Basic Data bila punya izin seksi hr_profile.
+        $hrExtEmergency = !($hidden['hr_profile'] ?? true) && ((($employee->employee_type ?? null) ?: 'Internal') === 'External');
+        $hrFrag = ['hrPersonal' => $hrShow, 'hrEmergency' => $hrShow, 'hrEmergencyBasic' => $hrExtEmergency, 'hrRo' => (bool) ($ro['hr_profile'] ?? false)];
         $firstKey = array_key_first($visibleSections);
     @endphp
+
+    @if(!empty($profileLocked))
+        <div class="bg-gray-50 border border-gray-300 rounded-xl px-5 py-3 mb-5 flex items-start gap-3 text-sm text-gray-700">
+            <i class="fas fa-lock mt-0.5 text-gray-500"></i>
+            <p>
+                @if(isset($isOwnProfile) && $isOwnProfile)
+                    <span class="font-semibold">Your profile is verified and locked by HR.</span> Basic Data, Address, Identification, Bank Account and HR Profile are view-only. Please contact HR to request a change.
+                @else
+                    <span class="font-semibold">This profile is locked.</span> The employee cannot change it; as HR you can. Unlock it from the Onboarding page when changes are needed, then lock it again.
+                @endif
+            </p>
+        </div>
+    @endif
+
+    {{-- HC-D14/D27/D50 - Kartu "Data readiness" ala ESH (HANYA My Profile; $onboarding tidak dikirim halaman Master).
+         Dikelompokkan (Personal, Payroll, BPJS, Contract); tiap butir yang kurang adalah TOMBOL yang membuka tab dan
+         menyorot kolom isiannya. Butir yang tidak dapat diisi pemilik (seksi View Only / dikelola HR) tampil sebagai
+         penanda "HR". Dirender sepenuhnya di sisi klien dari data awal (data-initial) dan disegarkan setelah simpan. --}}
+    @php
+        $onb = $onboarding ?? null;
+        $onbSectionNames = [
+            'basic-data' => 'Basic Data', 'address' => 'Address', 'identification' => 'Identification',
+            'bank' => 'Bank Account', 'contract' => 'Contract',
+        ];
+        // Seksi yang tampak DAN tidak read-only bagi pemilik.
+        $onbEditableSections = [];
+        foreach (array_keys($onbSectionNames) as $onbSec) {
+            $onbSecKey = str_replace('-', '_', $onbSec);
+            // Contract is a recap on My Profile (HR manages it), so its items are never fillable by the owner.
+            if ($onbSec !== 'contract' && isset($visibleSections[$onbSecKey]) && !($ro[$onbSecKey] ?? false)) {
+                $onbEditableSections[] = $onbSec;
+            }
+        }
+        $onbPayload = $onb ? [
+            'done' => $onb['done'], 'total' => $onb['total'], 'percent' => $onb['percent'], 'status' => $onb['status'],
+            'groups' => array_map(fn ($g) => ['label' => $g['label'], 'done' => $g['done'], 'total' => $g['total']], $onb['groups']),
+            'items' => array_map(fn ($i) => [
+                'key' => $i['key'], 'group' => $i['group'], 'label' => $i['label'], 'section' => $i['section'],
+                'hint' => $i['hint'] ?? null, 'field' => $i['field'] ?? null, 'prefill' => $i['prefill'] ?? null, 'hr_only' => (bool) ($i['hr_only'] ?? false), 'done' => (bool) $i['done'],
+            ], $onb['items']),
+        ] : null;
+        // Peta butir → tab + kolom, untuk tautan ?section=&field=<key> dari halaman Onboarding (HR).
+        $onbFieldMap = [];
+        foreach ((array) config('hc_onboarding.items', []) as $cfgItem) {
+            $onbFieldMap[$cfgItem['key']] = ['section' => $cfgItem['section'] ?? null, 'field' => $cfgItem['field'] ?? null, 'prefill' => $cfgItem['prefill'] ?? null];
+        }
+    @endphp
+    @if($onb)
+    <div id="onboardingBanner" class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5"
+         data-url="{{ route('profile.onboarding-progress') }}"
+         data-editable='@json($onbEditableSections)'
+         data-names='@json($onbSectionNames)'
+         data-initial='@json($onbPayload)'>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+                <h3 class="text-base font-bold text-gray-900">Data readiness</h3>
+                <p id="onbSubtitle" class="text-sm mt-0.5 text-gray-600">&nbsp;</p>
+            </div>
+            <div class="md:w-72">
+                <div class="flex items-end justify-between">
+                    <span id="onbCount" class="text-xs text-gray-500">&nbsp;</span>
+                    <span id="onbPercent" class="text-2xl font-bold text-gray-900">{{ $onb['percent'] }}%</span>
+                </div>
+                <div class="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div id="onbBar" class="h-2 rounded-full primary-solid" style="width: {{ $onb['percent'] }}%"></div>
+                </div>
+            </div>
+        </div>
+        <div id="onbGroups" class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4"></div>
+    </div>
+    @endif
 
     <!-- Tabs Navigation -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200">
         <div class="border-b border-gray-200">
-            <nav class="flex -mb-px overflow-x-auto">
+            <nav class="flex -mb-px overflow-x-auto" aria-label="Profile sections">
                 @foreach($visibleSections as $key => [$tabId, $label, $partial])
                 <button onclick="switchSection('{{ $tabId }}')" data-section="{{ $tabId }}"
                     class="section-tab px-6 py-4 text-sm font-semibold border-b-2 whitespace-nowrap
-                        {{ $key === $firstKey ? 'border-red-800 text-red-800' : 'border-transparent text-gray-600 hover:text-red-800 hover:border-gray-300' }}">
+                        {{ $key === $firstKey ? 'border-red-800 text-red-800 bg-red-50/60' : 'border-transparent text-gray-600 hover:text-red-800 hover:bg-gray-50 hover:border-gray-300' }}">
                     {{ $label }}
                 </button>
                 @endforeach
@@ -230,9 +342,63 @@
 
         <!-- Tab Content -->
         <div class="p-6">
+            {{-- Pemuatan data tab DITUNDA sampai tab pertama kali tampil (tab yang langsung tampil dimuat saat DOMContentLoaded seperti semula).
+                 Tanpa ini ±20 permintaan /api berjalan sekaligus setiap kali halaman dibuka, walau tab-nya tidak dilihat. --}}
+            <script>
+                window.__lazySections = window.__lazySections || {};
+                window.runSectionLoaders = function (tab, viaSwitch) {
+                    const q = window.__lazySections[tab];
+                    if (!q || !q.length) { return false; }
+                    window.__lazySections[tab] = [];
+                    q.forEach(function (f) { try { f(!!viaSwitch); } catch (e) { console.error(e); } });
+                    return true;
+                };
+                window.onSectionFirstShow = function (tab, fn) {
+                    (window.__lazySections[tab] = window.__lazySections[tab] || []).push(fn);
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const el = document.getElementById('section-' + tab);
+                        if (!el || !el.classList.contains('hidden')) { window.runSectionLoaders(tab, false); }
+                    });
+                };
+            </script>
             @forelse($visibleSections as $key => [$tabId, $label, $partial])
-            <div id="section-{{ $tabId }}" class="section-content {{ $key !== $firstKey ? 'hidden' : '' }}">
-                @include("master.employee.sections.{$partial}", $sec + ['isReadonly' => (bool)($ro[$key] ?? false)])
+            <div id="section-{{ $tabId }}" class="section-content {{ $key !== $firstKey ? 'hidden' : '' }} {{ $allows($key, 'create') ? '' : 'sec-no-create' }} {{ $allows($key, 'delete') ? '' : 'sec-no-delete' }}">
+                {{-- My Profile shows Basic Payment as a paystub recap (read-only); Master keeps the payment records. --}}
+                @php $ownProfile = isset($isOwnProfile) && $isOwnProfile; @endphp
+                @if($key !== 'contract' || $contractReal)
+                    @include('master.employee.sections.' . ($ownProfile && $key === 'payment' ? 'payment-recap' : $partial), $sec + $hrFrag + ['isReadonly' => (bool)($ro[$key] ?? false)])
+                @endif
+                {{-- My Profile: read-only salary recap under the contract history. Fed by its own self-only endpoint
+                     (/api/profile/salary-summary), so it needs no salary permission and widens nothing. --}}
+                @if($key === 'contract' && $ownProfile)
+                    <div class="mt-6">
+                        @include('master.employee.sections.salary-recap', $sec)
+                    </div>
+                @endif
+                {{-- Salary Components: kotak yang dapat dibuka di dalam tab Contract (sumber utama payroll, BPJS, referensi kontrak).
+                     Izin sendiri (employee.section.salary.*), hanya Master - My Profile memakai salary-recap di atas. --}}
+                @if($key === 'contract' && !$ownProfile && !($hidden['salary'] ?? true))
+                    <div class="mt-6 {{ $allows('salary', 'create') ? '' : 'sec-no-create' }} {{ $allows('salary', 'delete') ? '' : 'sec-no-delete' }}">
+                        @include('master.employee.sections.salary', $sec + [
+                            'canCreate' => $allows('salary', 'create'),
+                            'canEdit'   => $crud['salary']['edit'] ?? false,
+                            'canDelete' => $allows('salary', 'delete'),
+                        ])
+                    </div>
+                @endif
+                {{-- Tax & BPJS (dulu tab Compensation): penanda PTKP/BPJS untuk payroll. Izin sendiri (employee.section.compensation.*), hanya Master. --}}
+                @if($key === 'contract' && $compVisible)
+                    <div class="mt-6 {{ $allows('compensation', 'create') ? '' : 'sec-no-create' }} {{ $allows('compensation', 'delete') ? '' : 'sec-no-delete' }}">
+                        @include('master.employee.sections.compensation', $sec + ['isReadonly' => (bool)($ro['compensation'] ?? false)])
+                    </div>
+                @endif
+                {{-- HC-D51: foto, tanda tangan, status kepegawaian, data darurat, (konsultan) engagement ditampilkan di DALAM tab
+                     Basic Data - bukan tab sendiri. Hanya untuk yang punya izin seksi `hr_profile` (data tersimpan di tabel terpisah). --}}
+                @if($key === 'basic_data' && !($hidden['hr_profile'] ?? true))
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        @include('master.employee.sections.hrprofile', $sec + ['isReadonly' => (bool)($ro['hr_profile'] ?? false)])
+                    </div>
+                @endif
             </div>
             @empty
             <div class="py-12 text-center">
@@ -274,6 +440,16 @@
 .profile-readonly .se-wrap { pointer-events: none !important; cursor: not-allowed !important; }
 .profile-readonly .se-btn { background: #f9fafb !important; color: #6b7280 !important; border-color: #e5e7eb !important; }
 .profile-readonly .js-section-action { display: none !important; }
+/* Create / Delete of a tab follow their own boxes in Menu Access: hide "New", "Copy", upload / "Delete" without them. */
+.sec-no-create .js-act-create { display: none !important; }
+.sec-no-delete .js-act-delete { display: none !important; }
+
+/* Text-only action buttons in every section (New / Save / Copy / Delete …): clear keyboard focus + disabled look. */
+.js-section-action button:focus-visible, button.js-section-action:focus-visible,
+#section-basic-data button[onclick*="save"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(153, 27, 27, .25); }
+.js-section-action button:disabled, button.js-section-action:disabled { opacity: .6; cursor: not-allowed; }
+/* Fields: a visible focus ring so the user always sees where they are typing. */
+#profileContent input:focus, #profileContent select:focus, #profileContent textarea:focus { border-color: #991b1b; }
 </style>
 
 <script>
@@ -282,35 +458,51 @@
     // dirender sama sekali (lihat $visibleSections di atas).
     let currentSection = @json($firstKey ? $visibleSections[$firstKey][0] : 'basic-data');
 
+    /**
+     * Teks galat dari respons API (422): satu galat = kalimatnya; beberapa = daftar per kolom. Server sudah menulis tiap galat dengan
+     * nama kolom dan batasnya (mis. "Account Number must be 6-20 digits - you entered 10"), jadi cukup ditampilkan apa adanya.
+     */
+    window.apiErrorText = function (data, fallback) {
+        const lines = [];
+        if (data && data.errors && typeof data.errors === 'object') {
+            Object.values(data.errors).forEach(function (list) { (Array.isArray(list) ? list : [list]).forEach(function (m) { if (m) { lines.push(String(m)); } }); });
+        }
+        if (lines.length === 1) { return lines[0]; }
+        if (lines.length > 1) { return 'Please correct the following:\n' + lines.map(function (l) { return '\u2022 ' + l; }).join('\n'); }
+        return (data && data.message) ? data.message : fallback;
+    };
+
     // Switch between sections/tabs
     function switchSection(sectionName) {
         currentSection = sectionName;
-        
+
         // Hide all sections
         document.querySelectorAll('.section-content').forEach(section => {
             section.classList.add('hidden');
         });
-        
+
         // Remove active from all tabs
         document.querySelectorAll('.section-tab').forEach(tab => {
-            tab.classList.remove('border-red-800', 'text-red-800');
+            tab.classList.remove('border-red-800', 'text-red-800', 'bg-red-50/60');
             tab.classList.add('border-transparent', 'text-gray-600');
         });
-        
+
         // Show selected section
         const selectedSection = document.getElementById('section-' + sectionName);
         if (selectedSection) {
             selectedSection.classList.remove('hidden');
         }
-        
+
         // Add active to selected tab
         const selectedTab = document.querySelector(`[data-section="${sectionName}"]`);
         if (selectedTab) {
-            selectedTab.classList.add('border-red-800', 'text-red-800');
+            selectedTab.classList.add('border-red-800', 'text-red-800', 'bg-red-50/60');
             selectedTab.classList.remove('border-transparent', 'text-gray-600');
+            selectedTab.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
         }
-        
-        // Load data for specific sections
+
+        // Muat data tab yang baru pertama kali dibuka (pemuatan awal ditunda), lalu data khusus bagi Basic Data / Address.
+        if (window.runSectionLoaders) { window.runSectionLoaders(sectionName, true); }
         loadSectionData(sectionName);
     }
 
@@ -357,6 +549,8 @@
         switch(currentSection) {
             case 'basic-data':
                 saveEmployeeBasicData(employeeId);
+                // HC-D54: golongan darah + ibu kandung (tabel profil HR) ikut tersimpan bersama Basic Data.
+                if (typeof hrSavePersonal === 'function') { hrSavePersonal(); }
                 break;
             case 'address':
                 if (typeof saveAddresses === 'function') {
@@ -369,6 +563,13 @@
     }
 
     // Refresh the header card from server without full page reload
+    // Jenis saat halaman dibuka; bila Employee Group diubah dan jenisnya berganti, halaman dimuat ulang agar tab & field menyesuaikan.
+    const EMP_TYPE_INITIAL = @json($isExternalEmp ? 'External' : 'Internal');
+    function applyTypeProfile() {
+        if (EMP_TYPE_INITIAL === 'External') document.querySelectorAll('.js-internal-only').forEach(el => el.classList.add('hidden'));
+    }
+    document.addEventListener('DOMContentLoaded', applyTypeProfile);
+
     window.refreshHeader = async function(id) {
         try {
             const res = await fetch(`/api/employees/${id}/header`, {
@@ -387,8 +588,9 @@
             const typeBadge = document.getElementById('headerTypeBadge');
             if (typeBadge) {
                 const t = d.employee_type || 'Internal';
+                if (t !== EMP_TYPE_INITIAL) { window.location.reload(); return; }
                 typeBadge.textContent = t;
-                typeBadge.className = 'inline-block px-4 py-2 text-sm font-semibold rounded-full ' +
+                typeBadge.className = 'inline-block mt-2 px-4 py-2 text-sm font-semibold rounded-full ' +
                     (t === 'External' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700');
             }
             document.getElementById('headerEci').textContent         = d.eci          || 'N/A';
@@ -416,24 +618,25 @@
             });
 
             const result = await response.json();
-            
+
             if (result.success && result.data) {
                 const basicData = result.data;
-                
+
                 // General Information
                 setValue('title', basicData.title);
                 setValue('firstName', basicData.first_name);
                 setValue('lastName', basicData.last_name);
                 setValue('nickName', basicData.nick_name);
                 setValue('gender', basicData.gender);
-                setValue('religion', basicData.religion);
+                setValue('religion', ({ Confucian: 'Konghucu', Budha: 'Buddhist' })[basicData.religion] || basicData.religion);   // nilai lama ditampilkan dengan nama yang benar
                 setValue('searchTerm1', basicData.search_term_1);
                 setValue('searchTerm2', basicData.search_term_2);
                 setValue('maritalStatus', basicData.marital_status);
+                setValue('educationLevel', basicData.education_level);
                 setValue('birthDate', basicData.birth_date);
                 setValue('birthPlace', basicData.birth_place);
                 setValue('sinceDate', basicData.since_date);
-                
+
                 // Employee Information
                 setValue('personnelArea', basicData.personnel_area);
                 setValue('personnelSubarea', basicData.personnel_subarea);
@@ -451,13 +654,13 @@
                 // Status
                 setCheckbox('block', basicData.block);
                 setCheckbox('deletionFlag', basicData.deletion_flag);
-                
+
                 // Audit Information
                 setText('createdBy', basicData.created_by);
                 setText('createdOn', formatDateTime(basicData.created_on));
                 setText('lastChangedBy', basicData.last_changed_by);
                 setText('lastChangedOn', formatDateTime(basicData.last_changed_on));
-                
+
             } else {
             }
         } catch (error) {
@@ -485,6 +688,7 @@
             search_term_1: v('searchTerm1'),
             search_term_2: v('searchTerm2'),
             marital_status: v('maritalStatus'),
+            education_level: v('educationLevel'),
             birth_date: v('birthDate'),
             birth_place: v('birthPlace'),
             since_date: v('sinceDate'),
@@ -518,7 +722,7 @@
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 showNotification('Basic data saved successfully!', 'success');
                 loadEmployeeBasicData(employeeId);
@@ -526,7 +730,7 @@
             } else {
                 const fieldLabels = {
                     first_name: 'First Name', last_name: 'Last Name', nick_name: 'Nick Name',
-                    gender: 'Gender', religion: 'Religion', marital_status: 'Marital Status',
+                    gender: 'Gender', religion: 'Religion', marital_status: 'Marital Status', education_level: 'Education Level',
                     birth_date: 'Birth Date', birth_place: 'Birth Place', since_date: 'Since Date',
                     title: 'Title',
                 };
@@ -621,6 +825,194 @@
         } finally {
             clearTimeout(profileRevealFallback);
             revealProfilePage();
+        }
+
+        // HC-D50: peta butir → tab + kolom (dipakai tautan ?section=&field=<key> dari Onboarding HR dan kartu kesiapan).
+        window.__onbFields = @json($onbFieldMap);
+
+        // Pindah ke tab, isi otomatis dropdown (mis. tipe identitas), lalu gulir + sorot kolom isiannya.
+        function focusOnboardingField(spec) {
+            if (!spec || !spec.section) { return; }
+            if (document.getElementById('section-' + spec.section)) { switchSection(spec.section); }
+            setTimeout(function () {
+                if (spec.prefill) {
+                    Object.keys(spec.prefill).forEach(function (id) {
+                        if (typeof setCustomDropdownValue === 'function') { setCustomDropdownValue(id, spec.prefill[id]); }
+                        else { const e = document.getElementById(id); if (e) { e.value = spec.prefill[id]; } }
+                    });
+                }
+                let el = null;
+                try { el = spec.field ? document.querySelector(spec.field) : null; } catch (e) { el = null; }
+                // Dropdown kustom: kolom aslinya <input type="hidden"> - sorot tombolnya.
+                if (el && el.type === 'hidden') { el = (el.closest('.custom-dd') && el.closest('.custom-dd').querySelector('.custom-dd-btn')) || el; }
+                const target = el || document.getElementById('section-' + spec.section);
+                if (!target) { return; }
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (el) {
+                    try { el.focus({ preventScroll: true }); } catch (e) { /* tidak dapat difokuskan */ }
+                    el.classList.add('ring-2', 'ring-offset-2', 'ring-red-600');
+                    setTimeout(function () { el.classList.remove('ring-2', 'ring-offset-2', 'ring-red-600'); }, 2400);
+                }
+            }, 150);
+        }
+        window.focusOnboardingField = focusOnboardingField;
+
+        // HC-D27/D50: kartu kesiapan data - render dari data, segarkan setelah simpan/hapus berhasil di tab mana pun
+        // (seksi menyimpan lewat AJAX, jadi halaman tidak dimuat ulang). Dibangun dengan textContent (tanpa innerHTML):
+        // label/petunjuk datang dari konfigurasi. Dibatasi (debounce) dan hanya satu permintaan ringan.
+        (function () {
+            const banner = document.getElementById('onboardingBanner');
+            if (!banner) { return; }
+            let editable = [], initial = null;
+            try { editable = JSON.parse(banner.dataset.editable || '[]'); initial = JSON.parse(banner.dataset.initial || 'null'); } catch (e) { return; }
+            const META = {
+                profile:  { icon: 'fa-id-card',        title: 'Personal data', note: 'Identity and contact details' },
+                payroll:  { icon: 'fa-wallet',         title: 'Payroll',       note: 'Bank account and tax ID' },
+                bpjs:     { icon: 'fa-shield-alt',     title: 'BPJS',          note: 'Insurance numbers' },
+                contract: { icon: 'fa-file-signature', title: 'Contract',      note: 'Contract and join date' }
+            };
+            // Kelompok yang sedang terbuka - diingat selama halaman terbuka agar tidak menutup sendiri setelah simpan/segarkan.
+            const openGroups = {};
+            let timer = null, seq = 0;
+            const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) { n.className = cls; } if (text !== undefined) { n.textContent = text; } return n; };
+
+            function render(d) {
+                document.getElementById('onbCount').textContent = d.done + ' of ' + d.total + ' items';
+                document.getElementById('onbPercent').textContent = d.percent + '%';
+                document.getElementById('onbBar').style.width = d.percent + '%';
+                const sub = document.getElementById('onbSubtitle');
+                sub.textContent = '';
+                if (d.status === 'complete') {
+                    sub.className = 'text-sm mt-0.5 text-green-700';
+                    sub.appendChild(el('i', 'fas fa-check-circle'));
+                    sub.appendChild(document.createTextNode(' All required data is filled in. Thank you!'));
+                } else {
+                    sub.className = 'text-sm mt-0.5 text-gray-600';
+                    sub.textContent = 'Open a section to see what is missing, then select an item to go straight to it.';
+                }
+
+                const box = document.getElementById('onbGroups');
+                box.textContent = '';
+                box.className = 'grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 items-start';
+                Object.keys(d.groups || {}).forEach(function (gk) {
+                    const g = d.groups[gk];
+                    if (!g.total) { return; }
+                    const meta = META[gk] || { icon: 'fa-list', title: g.label, note: '' };
+                    const items = (d.items || []).filter(function (i) { return i.group === gk; });
+                    const missing = items.filter(function (i) { return !i.done; });
+                    const canFill = function (it) { return !it.hr_only && editable.indexOf(it.section) !== -1; };
+                    const actionable = missing.filter(canFill);
+                    const complete = missing.length === 0;
+                    const withHr = !complete && actionable.length === 0;   // sisanya hanya bisa diisi HR
+                    const isOpen = !complete && !!openGroups[gk];
+
+                    const tone = complete ? 'border-green-200 bg-green-50/40' : (withHr ? 'border-gray-200 bg-white' : 'border-amber-200 bg-white');
+                    const card = el('div', 'rounded-xl border ' + tone);
+
+                    // Kepala kelompok: ikon, judul, ringkasan "Missing: …", lencana status, panah.
+                    const head = el(complete ? 'div' : 'button', 'w-full text-left flex items-start justify-between gap-3 p-4' + (complete ? '' : ' rounded-xl hover:bg-gray-50/70 transition'));
+                    if (!complete) {
+                        head.type = 'button';
+                        head.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                    }
+                    const left = el('div', 'flex items-start gap-3 min-w-0');
+                    left.appendChild(el('i', 'fas ' + meta.icon + ' text-gray-500 mt-0.5'));
+                    const ttl = el('div', 'min-w-0');
+                    ttl.appendChild(el('p', 'text-sm font-semibold text-gray-900', meta.title));
+                    if (complete) {
+                        ttl.appendChild(el('p', 'text-xs text-gray-500', meta.note + ' · ' + g.done + ' of ' + g.total));
+                    } else {
+                        const names = missing.map(function (it) { return it.label + (canFill(it) ? '' : ' (HR)'); });
+                        const shown = names.slice(0, 3).join(', ') + (names.length > 3 ? ' +' + (names.length - 3) + ' more' : '');
+                        ttl.appendChild(el('p', 'text-xs text-gray-500 mt-0.5 break-words', 'Missing: ' + shown));
+                    }
+                    left.appendChild(ttl);
+                    head.appendChild(left);
+
+                    const right = el('div', 'flex items-center gap-2 flex-shrink-0');
+                    let badgeCls = 'bg-green-100 text-green-800', badgeText = 'Done';
+                    if (!complete && !withHr) { badgeCls = 'bg-amber-100 text-amber-800'; badgeText = actionable.length + ' to fill'; }
+                    if (withHr) { badgeCls = 'bg-gray-100 text-gray-600'; badgeText = 'With HR'; }
+                    right.appendChild(el('span', 'px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ' + badgeCls, badgeText));
+                    if (!complete) {
+                        right.appendChild(el('i', 'fas fa-chevron-down text-xs text-gray-400 transition-transform' + (isOpen ? ' rotate-180' : '')));
+                    }
+                    head.appendChild(right);
+                    card.appendChild(head);
+
+                    if (!complete) {
+                        // Isi kelompok: hanya butir yang BELUM terisi, satu baris tiap butir.
+                        const list = el('ul', 'px-4 pb-4 space-y-1' + (isOpen ? '' : ' hidden'));
+                        missing.forEach(function (it) {
+                            const li = el('li');
+                            if (canFill(it)) {
+                                const bt = el('button', 'group w-full text-left flex items-start justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-amber-50');
+                                bt.type = 'button';
+                                const t = el('span');
+                                t.appendChild(el('span', 'text-sm font-medium text-gray-900', it.label));
+                                if (it.hint) { t.appendChild(el('span', 'block text-xs text-gray-500 mt-0.5', it.hint)); }
+                                bt.appendChild(t);
+                                bt.appendChild(el('i', 'fas fa-chevron-right text-[10px] text-gray-400 mt-1.5 group-hover:text-gray-700'));
+                                bt.addEventListener('click', function () { focusOnboardingField(it); });
+                                li.appendChild(bt);
+                            } else {
+                                const row = el('div', 'flex items-start justify-between gap-2 rounded-lg px-2 py-1.5');
+                                const t = el('span');
+                                t.appendChild(el('span', 'text-sm text-gray-600', it.label));
+                                t.appendChild(el('span', 'block text-xs text-gray-400 mt-0.5', it.hint || 'Managed by HR.'));
+                                row.appendChild(t);
+                                const tag = el('span', 'inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 whitespace-nowrap');
+                                tag.appendChild(el('i', 'fas fa-lock text-[9px]'));
+                                tag.appendChild(document.createTextNode(' HR'));
+                                row.appendChild(tag);
+                                li.appendChild(row);
+                            }
+                            list.appendChild(li);
+                        });
+                        card.appendChild(list);
+                        head.addEventListener('click', function () {
+                            openGroups[gk] = list.classList.contains('hidden');
+                            list.classList.toggle('hidden', !openGroups[gk]);
+                            head.setAttribute('aria-expanded', openGroups[gk] ? 'true' : 'false');
+                            const chev = head.querySelector('.fa-chevron-down');
+                            if (chev) { chev.classList.toggle('rotate-180', openGroups[gk]); }
+                        });
+                    }
+                    box.appendChild(card);
+                });
+            }
+
+            function refresh() {
+                const mine = ++seq;
+                fetch(banner.dataset.url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (j) { if (j && j.success && mine === seq) { render(j.data); } })
+                    .catch(function () { /* kartu opsional: biarkan angka lama */ });
+            }
+
+            if (initial) { render(initial); }
+
+            if (typeof window.showNotification === 'function') {
+                const original = window.showNotification;
+                window.showNotification = function (message, type) {
+                    const result = original.apply(this, arguments);
+                    if (type === 'success') { clearTimeout(timer); timer = setTimeout(refresh, 400); }
+                    return result;
+                };
+            }
+        })();
+
+        // HC-D14: tautan ?section=<tab-id> (dari halaman Onboarding) membuka tab yang diminta.
+        // Nilai tak dikenal diabaikan - tab pertama tetap terbuka.
+        let requestedSection = new URLSearchParams(window.location.search).get('section');
+        if (requestedSection === 'compensation') { requestedSection = 'contract'; }   // tab Compensation sudah digabung ke Contract
+        if (requestedSection && document.getElementById('section-' + requestedSection)) {
+            switchSection(requestedSection);
+        }
+        // HC-D50: ?field=<kunci butir> (tombol "Fill in" di Onboarding HR) → sorot kolom isiannya.
+        const requestedField = new URLSearchParams(window.location.search).get('field');
+        if (requestedField && window.__onbFields && window.__onbFields[requestedField]) {
+            focusOnboardingField(window.__onbFields[requestedField]);
         }
     });
 </script>

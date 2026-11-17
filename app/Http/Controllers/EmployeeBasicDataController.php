@@ -7,9 +7,12 @@ use App\Models\EmployeeBasicData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Services\Management\EmployeeMasterData as MD;
 
 class EmployeeBasicDataController extends Controller
 {
+    use \App\Http\Controllers\Concerns\FriendlyValidation;
+
     /**
      * Get current user's ECI
      */
@@ -118,7 +121,7 @@ class EmployeeBasicDataController extends Controller
         // and nullable|string rules pass correctly.
         $nullableFields = [
             'title', 'gender', 'religion', 'last_name',
-            'search_term_1', 'search_term_2', 'marital_status',
+            'search_term_1', 'search_term_2', 'marital_status', 'education_level',
             'birth_date', 'birth_place', 'since_date',
             'personnel_area', 'personnel_subarea', 'employee_group', 'employee_subgroup',
             'position', 'current_assignment', 'division', 'department', 'direct_supervision',
@@ -139,15 +142,16 @@ class EmployeeBasicDataController extends Controller
 
         $validator = Validator::make($request->all(), [
             // Identitas Pribadi
-            'title'     => 'nullable|string|max:10',
-            'nick_name' => 'required|string|max:100|' . $nickNameUnique,
-            'gender' => 'nullable|string|max:10',
-            'religion' => 'nullable|string|max:50',
-            'first_name' => 'required|string|max:255',
+            'title' => array_filter(['nullable', 'string', 'max:10', MD::inRule('basic-data', 'title', null)]),
+            'nick_name' => 'required|string|max:' . MD::maxLength('basic-data', 'nick_name_max_length') . '|' . $nickNameUnique,
+            'gender' => array_filter(['nullable', 'string', 'max:10', MD::inRule('basic-data', 'gender', null)]),
+            'religion' => array_filter(['nullable', 'string', 'max:50', MD::inRule('basic-data', 'religion', null)]),
+            'first_name' => ['required', 'string', 'max:' . MD::maxLength('basic-data', 'first_name_max_length')],
             'last_name' => 'nullable|string|max:255',
             'search_term_1' => 'nullable|string|max:255',
             'search_term_2' => 'nullable|string|max:255',
-            'marital_status' => 'nullable|string|max:50',
+            'marital_status' => array_filter(['nullable', 'string', 'max:50', MD::inRule('basic-data', 'marital_status', null)]),
+            'education_level' => array_filter(['nullable', 'string', 'max:20', MD::inRule('basic-data', 'education_level', null)]),
             'birth_date' => 'nullable|date',
             'birth_place' => 'nullable|string|max:255',
             'since_date' => 'nullable|date',
@@ -161,7 +165,7 @@ class EmployeeBasicDataController extends Controller
             // Informasi Kepegawaian
             'personnel_area' => 'nullable|string|max:100',
             'personnel_subarea' => 'nullable|string|max:100',
-            'employee_group' => 'nullable|string|max:100',
+            'employee_group' => 'nullable|in:INTERNAL,EXTERNAL,INTERNSHIP',
             'employee_subgroup' => 'nullable|string|max:100',
             'position' => 'nullable|string|max:255',
             'current_assignment' => 'nullable|string|max:255',
@@ -185,6 +189,8 @@ class EmployeeBasicDataController extends Controller
             'since_date.date'     => 'Since Date must be a valid date.',
         ]);
 
+        $this->friendly($validator);
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -205,7 +211,7 @@ class EmployeeBasicDataController extends Controller
             $basicDataInput = $request->all();
             $basicDataInput['employee_id'] = $employeeId;
             // Internal/External diturunkan dari home_base ("Others" → External).
-            $basicDataInput['employee_type'] = EmployeeBasicData::deriveEmployeeType($basicDataInput['home_base'] ?? null);
+            $basicDataInput['employee_type'] = EmployeeBasicData::typeForGroup($basicDataInput['employee_group'] ?? null);
             
             // Auto-generate search_term_1 and search_term_2 if not provided
             if (empty($basicDataInput['search_term_1']) && !empty($basicDataInput['first_name'])) {
@@ -223,6 +229,23 @@ class EmployeeBasicDataController extends Controller
             // Check if basic data already exists
             $basicData = EmployeeBasicData::where('employee_id', $employeeId)->first();
             $isNew     = $basicData === null;
+
+            // Memindahkan karyawan antara Internal dan External (mengubah Employee Group) memindahkan datanya ke "rumah" lain:
+            // pelakunya harus berhak atas KEDUA sisi (Master Employee dan External → Consultants).
+            if ($basicData && array_key_exists('employee_group', $basicDataInput)
+                && EmployeeBasicData::typeForGroup($basicDataInput['employee_group']) !== ($basicData->employee_type ?: 'Internal')) {
+                $actor = \App\Models\Employee::find(session('user.id'));
+                if (!($actor?->canAccessMenu('master.employee') && $actor?->canAccessMenu('general.external.consultants'))) {
+                    DB::rollBack();
+                    return response()->json(['success' => false, 'message' => 'Changing between Internal and External needs access to both Master Employee and External → Consultants.'], 403);
+                }
+            }
+
+            // Jenis mengikuti Employee Group; bila kiriman tidak memuat group, jenis yang ada tidak diubah.
+            if ($basicData && !array_key_exists('employee_group', $basicDataInput)) {
+                unset($basicDataInput['employee_type']);
+            }
+            // 27 Okt 2026: Gender, Religion, Marital Status, Birth Date/Place, dan Since Date kini juga berlaku bagi konsultan External (sama dengan Internal).
 
             if ($basicData) {
                 // Update existing data
@@ -284,7 +307,7 @@ class EmployeeBasicDataController extends Controller
 
             $nullableFields = [
                 'title', 'gender', 'religion', 'last_name',
-                'search_term_1', 'search_term_2', 'marital_status',
+                'search_term_1', 'search_term_2', 'marital_status', 'education_level',
                 'birth_date', 'birth_place', 'since_date',
                 'personnel_area', 'personnel_subarea', 'employee_group', 'employee_subgroup',
                 'position', 'current_assignment', 'division', 'department', 'direct_supervision',
@@ -298,21 +321,22 @@ class EmployeeBasicDataController extends Controller
 
             // Validate only provided fields
             $validator = Validator::make($request->all(), [
-                'title' => 'nullable|string|max:10',
+                'title' => array_filter(['nullable', 'string', 'max:10', MD::inRule('basic-data', 'title', null)]),
                 'nick_name' => 'sometimes|required|string|max:100|unique:employee_basic_data,nick_name,' . $basicData->basic_data_id . ',basic_data_id',
-                'gender' => 'nullable|in:Male,Female',
-                'religion' => 'nullable|in:Islam,Christian,Catholic,Hindu,Buddhist,Confucian',
+                'gender' => array_filter(['nullable', 'string', 'max:10', MD::inRule('basic-data', 'gender', $basicData->gender ?? null)]),
+                'religion' => array_filter(['nullable', 'string', 'max:50', MD::inRule('basic-data', 'religion', $basicData->religion ?? null)]),   // the saved value stays valid (e.g. old "Confucian")
                 'first_name' => 'nullable|string|max:255',
                 'last_name' => 'nullable|string|max:255',
                 'search_term_1' => 'nullable|string|max:255',
                 'search_term_2' => 'nullable|string|max:255',
-                'marital_status' => 'nullable|string|max:50',
+                'marital_status' => array_filter(['nullable', 'string', 'max:50', MD::inRule('basic-data', 'marital_status', null)]),
+                'education_level' => array_filter(['nullable', 'string', 'max:20', MD::inRule('basic-data', 'education_level', null)]),
                 'birth_date' => 'nullable|date',
                 'birth_place' => 'nullable|string|max:255',
                 'since_date' => 'nullable|date',
                 'personnel_area' => 'nullable|string|max:100',
                 'personnel_subarea' => 'nullable|string|max:100',
-                'employee_group' => 'nullable|string|max:100',
+                'employee_group' => 'nullable|in:INTERNAL,EXTERNAL,INTERNSHIP',
                 'employee_subgroup' => 'nullable|string|max:100',
                 'position' => 'nullable|string|max:255',
                 'current_assignment' => 'nullable|string|max:255',
@@ -331,6 +355,8 @@ class EmployeeBasicDataController extends Controller
                 'since_date.date'   => 'Since Date must be a valid date.',
             ]);
 
+            $this->friendly($validator);
+
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
@@ -348,7 +374,7 @@ class EmployeeBasicDataController extends Controller
             $updateData = $request->only([
                 'title', 'nick_name', 'gender', 'religion',
                 'first_name', 'last_name', 'search_term_1', 'search_term_2',
-                'marital_status', 'birth_date', 'birth_place', 'since_date',
+                'marital_status', 'education_level', 'birth_date', 'birth_place', 'since_date',
                 'personnel_area', 'personnel_subarea', 'employee_group', 'employee_subgroup',
                 'position', 'current_assignment', 'division', 'department', 'direct_supervision',
                 'manager', 'authorization_group', 'home_base', 'block', 'deletion_flag'
@@ -362,9 +388,10 @@ class EmployeeBasicDataController extends Controller
                 $updateData['search_term_2'] = strtoupper($updateData['last_name']);
             }
 
-            // Bila home_base ikut diupdate, sinkronkan employee_type ("Others" → External).
-            if (array_key_exists('home_base', $updateData)) {
-                $updateData['employee_type'] = EmployeeBasicData::deriveEmployeeType($updateData['home_base']);
+            // Jenis (Internal/External) mengikuti Employee Group. Data field yang tidak berlaku bagi External tidak diubah
+            // (nilainya tetap tersimpan; hanya disembunyikan di form).
+            if (array_key_exists('employee_group', $updateData)) {
+                $updateData['employee_type'] = EmployeeBasicData::typeForGroup($updateData['employee_group']);
             }
 
             // Set last changed info dengan ECI

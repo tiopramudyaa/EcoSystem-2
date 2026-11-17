@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Enums\RoleId;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -145,10 +144,15 @@ class MenuRegistrar
      * Role diresolve lewat NAMA (bukan ID) karena `migrate:fresh` bisa
      * menghasilkan ID role yang berbeda dari DB produksi.
      *
+     * $capabilities menentukan kotak C/E/D (Management → Roles) yang ikut
+     * dicentang untuk SEMUA role penerima, selain View yang selalu aktif.
+     * Kosong = hanya View, perilaku lama.
+     *
      * @param  string[]  $slugs
-     * @param  string[]  $roleNames  nama di employee_role.name
+     * @param  string[]  $roleNames     nama di employee_role.name
+     * @param  string[]  $capabilities  subset dari ['create', 'edit', 'delete']
      */
-    public static function grantToAdminAndRoles(array $slugs, array $roleNames): void
+    public static function grantToAdminAndRoles(array $slugs, array $roleNames, array $capabilities = []): void
     {
         $menuIds = DB::table('menu')->whereIn('slug', $slugs)->pluck('id');
         if ($menuIds->isEmpty()) {
@@ -179,9 +183,9 @@ class MenuRegistrar
                     'role_id'    => $roleId,
                     'menu_id'    => $menuId,
                     'can_view'   => true,
-                    'can_create' => false,
-                    'can_edit'   => false,
-                    'can_delete' => false,
+                    'can_create' => in_array('create', $capabilities, true),
+                    'can_edit'   => in_array('edit', $capabilities, true),
+                    'can_delete' => in_array('delete', $capabilities, true),
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -196,14 +200,13 @@ class MenuRegistrar
     /**
      * ID role EC Administrator.
      *
-     * Diresolve lewat NAMA lebih dulu, karena `migrate:fresh` bisa menghasilkan
-     * ID role yang berbeda dari DB produksi. RoleId::EC_ADMINISTRATOR dipakai
-     * sebagai cadangan terakhir.
+     * Diresolve lewat NAMA (config/roles.php → admin_role_name), karena `migrate:fresh`
+     * bisa menghasilkan ID role yang berbeda dari DB produksi. ID 1 hanya cadangan
+     * terakhir untuk database yang rolenya belum ada.
      */
     public static function adminRoleId(): int
     {
-        return (int) (DB::table('employee_role')->where('name', 'EC Administrator')->value('id')
-            ?? RoleId::EC_ADMINISTRATOR->value);
+        return (int) (DB::table('employee_role')->where('name', config('roles.admin_role_name', 'EC Administrator'))->value('id') ?? 1);
     }
 
     // ── internal ────────────────────────────────────────────────────────────
@@ -238,7 +241,7 @@ class MenuRegistrar
      * Role/Menu/EmployeeController. Migrasi menulis `role_menu` langsung lewat
      * DB facade, jadi tanpa ini menu baru tidak muncul sampai cache kedaluwarsa.
      */
-    private static function flushPermCache($roleIds): void
+    public static function flushPermCache($roleIds): void
     {
         if ($roleIds->isEmpty()) {
             return;
@@ -248,6 +251,9 @@ class MenuRegistrar
             ->whereIn('role_id', $roleIds)
             ->pluck('employee_id')
             ->unique()
-            ->each(fn ($empId) => Cache::forget("perm_slugs_{$empId}"));
+            ->each(function ($empId) {
+                Cache::forget("perm_slugs_{$empId}");
+                Cache::forget("perm_matrix_{$empId}");
+            });
     }
 }

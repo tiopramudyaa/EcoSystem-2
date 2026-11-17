@@ -7,10 +7,13 @@ use App\Models\EmployeeBank;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Services\Management\EmployeeMasterData as MD;
 use Illuminate\Support\Facades\Log;
 
 class EmployeeBankController extends Controller
 {
+    use \App\Http\Controllers\Concerns\FriendlyValidation;
+
     /**
      * Get all employee bank records
      */
@@ -148,11 +151,12 @@ class EmployeeBankController extends Controller
             'data' => $request->all()
         ]);
 
+        $cur = null;
         $validator = Validator::make($request->all(), [
             // Bank Details
-            'bank_name' => 'required|string|max:255',
+            'bank_name' => array_filter(['required', 'string', 'max:255', MD::inRule('bank', 'bank_name', $cur->bank_name ?? null)]),
             'bank_key' => 'nullable|string|max:50',
-            'account_number' => 'required|string|max:50|unique:employee_bank,account_number',
+            'account_number' => 'required|string|max:' . MD::maxLength('bank', 'account_number_max_length') . (MD::rule('bank', 'account_number_digits_only') ? '|regex:/^[0-9]+$/' : '') . '|unique:employee_bank,account_number',
             'account_holder' => 'nullable|string|max:255',
             
             // Validity Period
@@ -171,6 +175,26 @@ class EmployeeBankController extends Controller
             'verify_link.url' => 'Verify link must be a valid URL',
         ]);
 
+        // Nomor rekening: hanya angka, 6-20 digit (spasi dan tanda hubung diabaikan).
+        $validator->after(function ($v) use ($request) {
+            if (!$v->errors()->has('account_number')) {
+                $error = \App\Support\Validation\FieldFormats::bankAccountError((string) $request->account_number);
+                if ($error) {
+                    $v->errors()->add('account_number', $error);
+                } else {
+                    $dup = \Illuminate\Support\Facades\DB::table('employee_bank')->where('account_number', \App\Support\Validation\FieldFormats::bankAccountNormalize((string) $request->account_number));
+                    if ($request->route('bankId')) {
+                        $dup->where('bank_id', '!=', $request->route('bankId'));
+                    }
+                    if ($dup->exists()) {
+                        $v->errors()->add('account_number', 'This Account Number is already in use. Enter a different one.');
+                    }
+                }
+            }
+        });
+
+        $this->friendly($validator);
+
         if ($validator->fails()) {
             Log::warning('Validation failed for bank record', [
                 'employee_id' => $employeeId,
@@ -179,10 +203,12 @@ class EmployeeBankController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Bank account data is invalid.',
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors()
             ], 422);
         }
+
+        $request->merge(['account_number' => \App\Support\Validation\FieldFormats::bankAccountNormalize((string) $request->account_number)]);
 
         try {
             DB::beginTransaction();
@@ -258,11 +284,12 @@ class EmployeeBankController extends Controller
             'data' => $request->all()
         ]);
 
+        $cur = DB::table('employee_bank')->where('bank_id', $bankId)->first();
         $validator = Validator::make($request->all(), [
             // Bank Details
-            'bank_name' => 'required|string|max:255',
+            'bank_name' => array_filter(['required', 'string', 'max:255', MD::inRule('bank', 'bank_name', $cur->bank_name ?? null)]),
             'bank_key' => 'nullable|string|max:50',
-            'account_number' => 'required|string|max:50|unique:employee_bank,account_number,' . $bankId . ',bank_id',
+            'account_number' => 'required|string|max:' . MD::maxLength('bank', 'account_number_max_length') . (MD::rule('bank', 'account_number_digits_only') ? '|regex:/^[0-9]+$/' : '') . '|unique:employee_bank,account_number,' . $bankId . ',bank_id',
             'account_holder' => 'nullable|string|max:255',
             
             // Validity Period
@@ -281,6 +308,26 @@ class EmployeeBankController extends Controller
             'verify_link.url' => 'Verify link must be a valid URL',
         ]);
 
+        // Nomor rekening: hanya angka, 6-20 digit (spasi dan tanda hubung diabaikan).
+        $validator->after(function ($v) use ($request) {
+            if (!$v->errors()->has('account_number')) {
+                $error = \App\Support\Validation\FieldFormats::bankAccountError((string) $request->account_number);
+                if ($error) {
+                    $v->errors()->add('account_number', $error);
+                } else {
+                    $dup = \Illuminate\Support\Facades\DB::table('employee_bank')->where('account_number', \App\Support\Validation\FieldFormats::bankAccountNormalize((string) $request->account_number));
+                    if ($request->route('bankId')) {
+                        $dup->where('bank_id', '!=', $request->route('bankId'));
+                    }
+                    if ($dup->exists()) {
+                        $v->errors()->add('account_number', 'This Account Number is already in use. Enter a different one.');
+                    }
+                }
+            }
+        });
+
+        $this->friendly($validator);
+
         if ($validator->fails()) {
             Log::warning('Validation failed for bank record update', [
                 'employee_id' => $employeeId,
@@ -290,10 +337,12 @@ class EmployeeBankController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Bank account data is invalid.',
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors()
             ], 422);
         }
+
+        $request->merge(['account_number' => \App\Support\Validation\FieldFormats::bankAccountNormalize((string) $request->account_number)]);
 
         try {
             DB::beginTransaction();

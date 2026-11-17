@@ -1,0 +1,426 @@
+<?php
+
+namespace App\Http\Controllers\HR_General;
+
+use App\Http\Controllers\Controller;
+use App\Models\KpiEvaluation;
+use App\Models\KpiEvaluationDetail;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * My KPI Controller (ESS)
+ *
+ * Employee self-service KPI experience:
+ *   - View own KPI progress + approved evaluation history
+ *   - Submit self-assessment for open evaluations
+ *
+ * Identity always comes from session('user') - employees cannot view
+ * or edit other employees' KPI data through this controller.
+ *
+ * Self-assessment is mandatory but order-independent with supervisor scoring.
+ */
+class MyKpiController extends Controller
+{
+    /**
+     * "My KPI" - Employee's KPI dashboard.
+     *
+     * Shows:
+     *   - Current period summary card (score if approved, or pending status)
+     *   - Evaluations pending self-assessment (CTA buttons)
+     *   - History of all evaluations (any status, paginated)
+     */
+    public function index(Request $request)
+    {
+        $user       = session('user');
+        $employeeId = $user['id'] ?? null;
+
+        if (!$employeeId) {
+            abort(403, 'Employee not found in session.');
+        }
+
+        $currentPeriod = Carbon::now()->format('Y-m');
+
+        // Keep this employee's evaluations in step with template targeting so the
+        // tabs below never lag behind what HR configured on the templates.
+        \App\Support\KpiAssignments::syncEmployee((int) $employeeId, $currentPeriod, (int) $employeeId);
+
+        // All evaluations for this employee, newest first
+        $evaluations = KpiEvaluation::with(['template.indicators', 'template.scoringScales', 'supervisor.basicData', 'details.indicator'])
+            ->where('employee_id', $employeeId)
+            ->orderByDesc('period_month')
+            ->get();
+
+        $selectedPeriod = $request->query('period', $currentPeriod);
+
+        // Current period evaluation (if any)
+        $currentEval = $evaluations->firstWhere('period_month', $currentPeriod);
+
+        // Selected period evaluation for the detail card switcher
+        $selectedEval = $evaluations->firstWhere('period_month', $selectedPeriod) ?: $currentEval;
+
+        // Split by assessment kind. Self, Upward and Lead assessments are
+        // separate evaluation rows on separate templates (different indicators).
+        // Upward rows are filled the same way as self rows (self_* fields,
+        // via this same self-assessment pathway) but rate the employee's
+        // supervisor rather than the employee - kept in its own bucket so the
+        // "Lead Assessment" tab never lists them.
+        $selfEvals   = $evaluations->filter(fn($e) => $e->isSelfType())->values();
+        $upwardEvals = $evaluations->filter(fn($e) => $e->isUpwardType())->values();
+        $leadEvals   = $evaluations->filter(fn($e) => $e->isLeadType())->values();
+
+        // Self-assessments and upward evaluations still awaiting the employee's input
+        $pendingSelfAssessment = $selfEvals->concat($upwardEvals)->filter(fn($e) =>
+            !$e->hasSelfAssessment() &&
+            !in_array($e->status, [KpiEvaluation::STATUS_HR_APPROVED])
+        )->values();
+
+        // Anonymized average of upward evaluations *about this employee*
+        // (i.e. where this employee is the supervisor/subject being rated by
+        // subordinates). Individual rater submissions are never exposed here
+        // - only the HR-published average, grouped by template + period.
+        $upwardFeedback = KpiEvaluation::with('template')
+            ->where('supervisor_id', $employeeId)
+            ->whereHas('template', fn($t) => $t->where('target_type', 'upward'))
+            ->whereNotNull('published_at')
+            ->get()
+            ->groupBy(fn($e) => $e->template_id . '|' . $e->period_month)
+            ->map(function ($group) {
+                $first = $group->first();
+                return (object) [
+                    'template'      => $first->template,
+                    'period_month'  => $first->period_month,
+                    'average_score' => round((float) $group->avg('overall_score'), 2),
+                    'rater_count'   => $group->count(),
+                    'published_at'  => $group->max('published_at'),
+                ];
+            })
+            ->sortByDesc('period_month')
+            ->values();
+
+        // Approved evaluations visible to employee
+        $approvedEvaluations = $evaluations->where('status', KpiEvaluation::STATUS_HR_APPROVED);
+
+        // Average approved score (all time)
+        $avgScore = $approvedEvaluations->avg('overall_score');
+
+        // Score trend (last 6 months)
+        $scoreTrend = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $period = Carbon::now()->subMonths($i)->format('Y-m');
+            $eval   = $evaluations->firstWhere('period_month', $period);
+            $selfEval = $selfEvals->first(fn($e) => $e->period_month === $period && $e->hasSelfAssessment());
+            $leadEval = $leadEvals->first(fn($e) => $e->period_month === $period && $e->hasSupervisorReview());
+            $scoreTrend[] = [
+                'period'    => $period,
+                'label'     => Carbon::createFromFormat('Y-m', $period)->format('M Y'),
+                'score'     => ($eval && $eval->status === KpiEvaluation::STATUS_HR_APPROVED)
+                                ? $eval->overall_score
+                                : null,
+                'self'      => $selfEval?->overall_score !== null ? (float) $selfEval->overall_score : null,
+                'lead'      => $leadEval?->overall_score !== null ? (float) $leadEval->overall_score : null,
+                'status'    => $eval?->status ?? 'none',
+            ];
+        }
+
+        $targetPeriod = $selectedPeriod ?: $currentPeriod;
+
+        // Check if user is a supervisor and load direct team members & evaluations (strictly other employees, never self)
+        $subordinates = \App\Models\Employee::with([
+            'basicData',
+            'kpiEvaluations' => fn($q) => $q->where('period_month', $targetPeriod)->with(['template', 'details'])
+        ])
+        ->where('is_active', true)
+        ->where('employee.employee_id', '!=', $employeeId)
+        ->whereHas('basicData', fn($b) => $b->where('direct_supervision', $employeeId))
+        ->get();
+
+        $assignedEvaluations = KpiEvaluation::with(['employee.basicData', 'template', 'details'])
+            ->where('supervisor_id', $employeeId)
+            ->where('employee_id', '!=', $employeeId)
+            ->where('period_month', $targetPeriod)
+            ->get();
+
+        // Everything this user has already scored as a lead, across all periods -
+        // feeds the "My Review History" table (grouped by month in the view).
+        $reviewHistory = KpiEvaluation::with(['employee.basicData', 'template'])
+            ->where('supervisor_id', $employeeId)
+            ->where('employee_id', '!=', $employeeId)
+            ->whereNotNull('reviewed_at')
+            ->orderByDesc('period_month')
+            ->get()
+            ->filter(fn($e) => $e->isLeadType())
+            ->values();
+
+        $hasAnySubordinate =\App\Models\EmployeeBasicData::where('direct_supervision', $employeeId)->where('employee_id', '!=', $employeeId)->exists();
+        $hasAnySupervisedEval = KpiEvaluation::where('supervisor_id', $employeeId)->where('employee_id', '!=', $employeeId)->exists();
+
+        // System administrator (EC Administrator role): sees every My KPI tab.
+        $isSystemAdmin = !empty($user['is_admin'])
+            || \App\Models\Employee::find($employeeId)?->roles()->where('employee_role.id', \App\Support\MenuRegistrar::adminRoleId())->exists();
+
+        $isSupervisor = $subordinates->isNotEmpty() || $assignedEvaluations->isNotEmpty() || $hasAnySubordinate || $hasAnySupervisedEval;
+        $activeTemplates = $isSupervisor ? \App\Models\KpiTemplate::where('is_active', true)->get() : collect([]);
+
+        return view('hr-general.kpi.my-kpi', compact(
+            'user',
+            'evaluations',
+            'selfEvals',
+            'upwardEvals',
+            'upwardFeedback',
+            'leadEvals',
+            'currentEval',
+            'currentPeriod',
+            'selectedPeriod',
+            'selectedEval',
+            'pendingSelfAssessment',
+            'approvedEvaluations',
+            'avgScore',
+            'scoreTrend',
+            'subordinates',
+            'assignedEvaluations',
+            'reviewHistory',
+            'isSupervisor',
+            'isSystemAdmin',
+            'activeTemplates'
+        ));
+    }
+
+    /**
+     * The evaluation this user is the assigned lead / peer reviewer of (never their
+     * own row, never a self / upward row). 404 for anyone else.
+     */
+    private function reviewerEvaluation(int $id, array $with = []): KpiEvaluation
+    {
+        $employeeId = session('user')['id'] ?? null;
+
+        $evaluation = KpiEvaluation::with($with)
+            ->where('supervisor_id', $employeeId)
+            ->where('employee_id', '!=', $employeeId)
+            ->findOrFail($id);
+
+        abort_unless($evaluation->isLeadType(), 404);
+
+        return $evaluation;
+    }
+
+    /**
+     * The lead's scoring page, inside My KPI: draft / send to HR while open, and a
+     * read-only copy (with a disabled send button) once it has been sent.
+     */
+    public function leadReviewForm(int $id)
+    {
+        $user = session('user');
+
+        $evaluation = $this->reviewerEvaluation($id, [
+            'employee.basicData',
+            'supervisor.basicData',
+            'template.indicators',
+            'template.scoringScales',
+            'details.indicator',
+        ]);
+
+        // Peer rows live at /peer-review, lead rows at /lead-review.
+        $isPeer = ($evaluation->template?->target_type ?? '') === 'peer';
+        if ($isPeer && request()->routeIs('general.my-kpi.lead-review')) {
+            return redirect()->route('general.my-kpi.peer-review', $id);
+        }
+        if (!$isPeer && request()->routeIs('general.my-kpi.peer-review')) {
+            return redirect()->route('general.my-kpi.lead-review', $id);
+        }
+
+        return view('hr-general.kpi.review', [
+            'user'                     => $user,
+            'evaluation'               => $evaluation,
+            'canApprove'               => false,
+            'siblingUpwardEvaluations' => collect(),
+            'leadMode'                 => true,
+        ]);
+    }
+
+    /**
+     * POST: save the lead's scores as a draft, or send them to HR. Scoring itself is
+     * shared with the HR controller; this only adds the ownership + lock checks.
+     */
+    public function submitLeadReview(Request $request, int $id)
+    {
+        $evaluation = $this->reviewerEvaluation($id);
+
+        if ($evaluation->hasSupervisorReview()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This assessment was already sent to HR and can no longer be changed.',
+            ], 403);
+        }
+
+        return app(\App\Http\Controllers\HR\KpiController::class)->submitReview($request, $id);
+    }
+
+    /**
+     * Show the self-assessment form for a specific evaluation.
+     */
+    public function selfAssessmentForm(int $id)
+    {
+        $user       = session('user');
+        $employeeId = $user['id'] ?? null;
+
+        $evaluation = KpiEvaluation::with([
+            'template',
+            'template.indicators',
+            'template.scoringScales',
+            'supervisor.basicData',
+            'details.indicator',
+        ])
+        ->where('employee_id', $employeeId) // ownership check
+        ->findOrFail($id);
+
+        // Old "self-assessment" address for an upward row → its own URL.
+        if ($evaluation->isUpwardType() && request()->routeIs('general.my-kpi.self-assessment')) {
+            return redirect()->route('general.my-kpi.upward-assessment', $id);
+        }
+
+        // Only self-type rows are fillable by the employee. Lead-assessment rows
+        // are scored by the manager and are read-only here.
+        if (!$evaluation->isSelfType() && !$evaluation->isUpwardType()) {
+            return redirect()->route('general.my-kpi.index')
+                ->with('error', 'This is a lead assessment and cannot be filled as a self-assessment.');
+        }
+
+        // The form is view-only once the employee has submitted it, or once HR
+        // has approved. The employee can still open it to review their answers.
+        $locked = $evaluation->hasSelfAssessment()
+            || $evaluation->status === KpiEvaluation::STATUS_HR_APPROVED;
+
+        return view('hr-general.kpi.self-assessment', compact(
+            'user',
+            'evaluation',
+            'locked'
+        ));
+    }
+
+    /**
+     * POST: Submit or update self-assessment for an evaluation.
+     * Self-assessment can be submitted/updated before or after supervisor scoring.
+     * Once HR approves, changes are no longer allowed.
+     */
+    public function submitSelfAssessment(Request $request, int $id)
+    {
+        $user       = session('user');
+        $employeeId = $user['id'] ?? null;
+
+        $evaluation = KpiEvaluation::with(['details.indicator', 'template'])
+            ->where('employee_id', $employeeId)
+            ->findOrFail($id);
+
+        if (!$evaluation->isSelfType() && !$evaluation->isUpwardType()) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'This row is a lead assessment, not a self-assessment.'], 422);
+            }
+            return redirect()->route('general.my-kpi.index')->with('error', 'This row is a lead assessment.');
+        }
+
+        // Self-assessment is final: it locks the moment it is submitted, and
+        // again once HR approves. No further edits from the employee.
+        if ($evaluation->hasSelfAssessment() || $evaluation->status === KpiEvaluation::STATUS_HR_APPROVED) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Self-assessment already submitted and locked.'], 422);
+            }
+            return redirect()->route('general.my-kpi.index')
+                ->with('error', 'Self-assessment has already been submitted and is locked.');
+        }
+
+        $request->validate([
+            'achievements'          => 'required|array',
+            'achievements.*.actual' => 'nullable|string|max:255',
+            'achievements.*.notes'  => 'nullable|string|max:2000',
+        ]);
+
+        // Every indicator must be filled before submitting: a rating for scored rows,
+        // and the written text for text-answer rows.
+        foreach ($evaluation->details as $d) {
+            $row = $request->achievements[$d->id] ?? [];
+            $isText = $d->indicator && $d->indicator->isParagraph();
+            $filled = $isText
+                ? trim((string) ($row['notes'] ?? '')) !== ''
+                : (((int) ($row['rating'] ?? 0)) > 0 || (isset($row['achievement']) && $row['achievement'] !== ''));
+            if (!$filled) {
+                $msg = 'Please fill every indicator (a rating, or the text answer) before submitting.';
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+                return redirect()->back()->with('error', $msg);
+            }
+        }
+
+        $scaleMax = $evaluation->template?->scaleMax() ?: 5;
+
+        DB::beginTransaction();
+        try {
+            $now = now();
+
+            foreach ($request->achievements as $detailId => $data) {
+                $detail = $evaluation->details->where('id', (int) $detailId)->first();
+                if (!$detail) continue;
+
+                // Paragraph indicators only carry a text answer - no rating / score.
+                if ($detail->indicator && $detail->indicator->isParagraph()) {
+                    $detail->self_notes        = $data['notes'] ?? null;
+                    $detail->self_submitted_at = $now;
+                    $detail->save();
+                    continue;
+                }
+
+                $max = $detail->indicator?->rating_max ?: $scaleMax;
+
+                if (isset($data['rating']) && (int)$data['rating'] > 0) {
+                    // Clamp to the template's scale so a tampered request can't exceed it.
+                    $detail->star_rating = min($max, (int) $data['rating']);
+                    $detail->self_achievement = round($detail->star_rating / $max * 100, 2);
+                } elseif (isset($data['achievement']) && $data['achievement'] !== '') {
+                    $detail->self_achievement = (float) $data['achievement'];
+                    $detail->star_rating = min($max, max(1, (int) round($detail->self_achievement / 100 * $max)));
+                }
+
+                if (array_key_exists('actual', $data)) {
+                    $detail->actual_achievement = ($data['actual'] !== null && trim($data['actual']) !== '')
+                        ? trim($data['actual'])
+                        : null;
+                }
+
+                $detail->self_notes        = $data['notes'] ?? null;
+                $detail->self_submitted_at = $now;
+                $detail->save();
+            }
+
+            // Mark self-assessment timestamp on evaluation
+            if ($evaluation->status === KpiEvaluation::STATUS_HR_REJECTED) {
+                $evaluation->status = KpiEvaluation::STATUS_DRAFT; // back into the normal flow
+            }
+            $evaluation->self_assessed_at = $now;
+            $evaluation->save();
+            $evaluation->recalculateScore(); // self rows score off self_achievement
+            $evaluation->refreshStatus();
+
+            DB::commit();
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Self-assessment submitted successfully.',
+                    'status'  => $evaluation->fresh()->status,
+                ]);
+            }
+
+            return redirect()->route('general.my-kpi.index')
+                ->with('success', 'Self-assessment submitted successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Failed to submit self-assessment.');
+        }
+    }
+}

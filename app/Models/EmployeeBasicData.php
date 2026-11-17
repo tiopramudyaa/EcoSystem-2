@@ -30,6 +30,7 @@ class EmployeeBasicData extends Model
         'search_term_1',
         'search_term_2',
         'marital_status',
+        'education_level',
         'birth_date',
         'birth_place',
         'since_date',
@@ -76,13 +77,72 @@ class EmployeeBasicData extends Model
     protected $appends = ['full_name'];
 
     /**
-     * Aturan tunggal penentu jenis employee.
-     * Home Base "Others" = External (penanda dari file import HR), selain itu Internal.
-     * Dipakai importer & controller agar employee_type selalu konsisten dgn home_base.
+     * ATURAN TUNGGAL jenis employee (keputusan pemilik 13 Okt 2026): ditentukan oleh EMPLOYEE GROUP, bukan Home Base.
+     * Group EXTERNAL = External; INTERNAL, INTERNSHIP, atau kosong = Internal. Home Base hanyalah lokasi.
+     */
+    public static function typeForGroup(?string $group): string
+    {
+        return mb_strtoupper(trim((string) $group)) === 'EXTERNAL' ? 'External' : 'Internal';
+    }
+
+    /**
+     * @deprecated Jenis kini ditentukan Employee Group - pakai typeForGroup(). Dipertahankan hanya untuk pemanggil lama
+     * (seeder/uji) yang masih memberi Home Base: "Others" = External.
      */
     public static function deriveEmployeeType(?string $homeBase): string
     {
         return mb_strtolower(trim((string) $homeBase)) === 'others' ? 'External' : 'Internal';
+    }
+
+    /**
+     * Resolve a "direct supervisor" reference to that employee's employee_id.
+     *
+     * Accepts the numeric employee_id or an ECI (legacy free-text input), so
+     * KPI / approval code can always rely on an employee_id. Returns null when
+     * blank or when no employee matches.
+     */
+    public static function resolveSupervisorId($value): ?int
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        // Memoised per request: KPI sync resolves every employee × template.
+        static $cache = [];
+        if (array_key_exists($value, $cache)) {
+            return $cache[$value];
+        }
+
+        if (ctype_digit($value) && Employee::where('employee_id', (int) $value)->exists()) {
+            return $cache[$value] = (int) $value;
+        }
+
+        $id = Employee::where('eci', $value)->value('employee_id');
+
+        // Misses are not cached, so an employee created later in the same
+        // request (seeders, imports) is still found.
+        return $id ? ($cache[$value] = (int) $id) : null;
+    }
+
+    /**
+     * Always store the supervisor as an employee_id. An unresolvable value is
+     * kept as typed so nothing is silently lost (the KPI views show "-").
+     */
+    public function setDirectSupervisionAttribute($value): void
+    {
+        $resolved = self::resolveSupervisorId($value);
+        $this->attributes['direct_supervision'] = $resolved !== null
+            ? (string) $resolved
+            : (trim((string) $value) === '' ? null : trim((string) $value));
+    }
+
+    /**
+     * The direct supervisor's employee_id, tolerant of legacy ECI values.
+     */
+    public function supervisorEmployeeId(): ?int
+    {
+        return self::resolveSupervisorId($this->direct_supervision);
     }
 
     /**
@@ -163,6 +223,28 @@ class EmployeeBasicData extends Model
     /**
      * Scope: Search by name (first_name, last_name, search_term)
      */
+    /**
+     * Scope: match a typed name against the nick name, first / last name or the FULL name ("first last").
+     * Every word must match somewhere (AND between words), so "Siti Rahma" finds a Siti whose nick name is "Sita"
+     * and "rahma" alone still works. Used by the Attendance search boxes (they used to look at nick_name only).
+     */
+    public function scopeMatchesName($query, string $search)
+    {
+        $terms = preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return $query->where(function ($outer) use ($terms) {
+            foreach ($terms as $term) {
+                $like = '%' . $term . '%';
+                $outer->where(function ($q) use ($like) {
+                    $q->where('nick_name', 'like', $like)
+                      ->orWhere('first_name', 'like', $like)
+                      ->orWhere('last_name', 'like', $like)
+                      ->orWhereRaw("CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,'')) LIKE ?", [$like]);
+                });
+            }
+        });
+    }
+
     public function scopeSearchByName($query, $searchTerm)
     {
         $searchTerm = strtoupper($searchTerm);

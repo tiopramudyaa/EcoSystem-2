@@ -12,8 +12,9 @@ class AdminNotificationSoundController extends Controller
 {
     private function assertAdmin(): void
     {
-        if ((int) session('user.role.id') !== 1) {
-            abort(403, 'Superadmin only.');
+        // The Notification Sounds page's own menu permission (Control Center).
+        if (!(\App\Models\Employee::find(session('user.id'))?->hasPermission('control-center.sounds') ?? false)) {
+            abort(403, 'Access denied.');
         }
     }
 

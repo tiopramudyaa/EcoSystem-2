@@ -19,6 +19,7 @@ class CheckAuthToken
         // ── 1. Session masih valid (jalur normal) ────────────────────────────
         if (session()->has('auth_token')) {
             $this->hydratePreferences($request);
+            $this->applyLocale();
             return $next($request);
         }
 
@@ -28,6 +29,7 @@ class CheckAuthToken
         if ($rememberCookie) {
             $restored = $this->tryRestoreSession($request, $rememberCookie);
             if ($restored) {
+                $this->applyLocale();
                 return $next($request);
             }
 
@@ -70,6 +72,19 @@ class CheckAuthToken
         }
 
         return $redirect;
+    }
+
+    /**
+     * Terapkan bahasa pilihan user (Settings → Language & Region) ke request ini. Hanya nilai yang ada di daftar
+     * SettingsController::ALLOWED_VALUES yang dipakai; selain itu tetap bahasa bawaan aplikasi.
+     */
+    private function applyLocale(): void
+    {
+        $language = session('user_preferences.language');
+
+        if (is_string($language) && in_array($language, \App\Http\Controllers\SettingsController::ALLOWED_VALUES['language'], true)) {
+            app()->setLocale($language);
+        }
     }
 
     /**

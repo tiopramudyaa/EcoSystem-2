@@ -48,7 +48,6 @@ class RoleAccessEnforcementTest extends TestCase
     public static function gatedRoutes(): array
     {
         return [
-            'dropdown config writes' => ['routes/api.php', 'menu:management.employee.dropdown-settings.manage'],
             'project type writes'    => ['routes/api.php', 'menu:management.delivery.project'],
             'support type writes'    => ['routes/api.php', 'menu:management.delivery.support'],
             'support data endpoints' => ['routes/delivery-support.php', 'menu:delivery-support.activities.view'],

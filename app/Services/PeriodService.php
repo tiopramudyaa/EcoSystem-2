@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\RoleId;
+use App\Models\EmployeeRole;
 use App\Models\Employee;
 use App\Models\PeriodAuditLog;
 use App\Models\PeriodLateExceptionRequest;
@@ -25,11 +25,24 @@ class PeriodService
      */
     public function getDomainForRole(int $roleId): ?string
     {
-        return match($roleId) {
-            RoleId::DELIVERY_PROJECT_USER->value, RoleId::DELIVERY_PROJECT_HEAD->value => self::DOMAIN_PROJECT,
-            RoleId::DELIVERY_SUPPORT_USER->value,         RoleId::DELIVERY_SUPPORT_HEAD->value => self::DOMAIN_SUPPORT,
-            default => null,
-        };
+        $domain = EmployeeRole::query()->whereKey($roleId)->value('period_domain');
+
+        return in_array($domain, [self::DOMAIN_PROJECT, self::DOMAIN_SUPPORT], true) ? $domain : null;
+    }
+
+    /**
+     * The domain an employee is held to: the first of their roles that has one (set per role in Management → Roles).
+     * Null when none of their roles is period-restricted.
+     */
+    public function getDomainForEmployee(int $employeeId): ?string
+    {
+        $domain = EmployeeRole::query()
+            ->whereNotNull('period_domain')
+            ->whereHas('employees', fn ($q) => $q->where('employee.employee_id', $employeeId))
+            ->orderBy('id')
+            ->value('period_domain');
+
+        return in_array($domain, [self::DOMAIN_PROJECT, self::DOMAIN_SUPPORT], true) ? $domain : null;
     }
 
     // ── Period access validation ──────────────────────────────────────────────
@@ -55,9 +68,7 @@ class PeriodService
             return ['allowed' => false, 'reason' => 'Employee not found.'];
         }
 
-        $roleIds = $employee->getRoleIds();
-        $roleId  = $roleIds[0] ?? 0;
-        $domain  = $this->getDomainForRole($roleId);
+        $domain = $this->getDomainForEmployee($employeeId);
 
         // Roles without a domain bypass all period restrictions
         if ($domain === null) {

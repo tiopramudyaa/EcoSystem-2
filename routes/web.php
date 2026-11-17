@@ -15,7 +15,6 @@ use App\Http\Controllers\StagingTicketController;
 use App\Http\Controllers\DeliveryProjectController;
 use App\Http\Controllers\DeliveryProjectCostController;
 use App\Http\Controllers\DeliveryProjectUpdateController;
-use App\Http\Controllers\DeliveryProjectPlanController;
 use App\Http\Controllers\DeliveryProjectPlanningController;
 use App\Http\Controllers\DeliveryProjectGanttController;
 use App\Http\Controllers\DeliveryDynamicPhaseController;
@@ -106,6 +105,10 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // ==================== DASHBOARD ROUTES ====================
     
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('menu:dashboard');
+    Route::get('/coming-soon', function (\Illuminate\Http\Request $request) {
+        $feature = $request->query('feature', 'Feature');
+        return view('coming-soon', compact('feature'));
+    })->name('coming-soon');
 
     // ==================== AI ASSISTANT ====================
     Route::get('/ai-assistant', [\App\Http\Controllers\AiAssistantController::class, 'index'])->name('ai-assistant')->middleware('menu:ai-assistant');
@@ -198,14 +201,16 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     });
 
     // ==================== FINANCIAL ====================
+    
+    // ==================== HR & GENERAL ====================
+    Route::prefix('hr-general')->name('hr-general.')->group(function () {
+        Route::get('/leave-permit', [\App\Http\Controllers\HR\LeavePermitController::class, 'index'])
+            ->name('leave-permit')
+            ->middleware('menu:hr_general.leave_permit');
+    });
     Route::get('/financial', function () {
         return view('financial.financial', ['user' => session('user')]);
     })->name('financial')->middleware('menu:financial');
-
-    // ==================== HR & GENERAL ====================
-    Route::get('/general', function () {
-        return view('general.general', ['user' => session('user')]);
-    })->name('general')->middleware('menu:general');
 
     // ==================== BUSINESS ====================
     Route::get('/business', function () {
@@ -231,9 +236,9 @@ Route::middleware(CheckAuthToken::class)->group(function () {
          ->name('rpmo.periods.index')->middleware('menu:rpmo.periods');
 
     // ==================== LEGAL ====================
-    Route::get('/legal', function () {
-        return view('legal.legal', ['user' => session('user')]);
-    })->name('legal')->middleware('menu:legal');
+    // The old Legal dashboard is gone: each Legal sub menu has its own Dashboard tab. The address (and the route name, which the menu
+    // registry still points to) now leads to Legal Basis.
+    Route::redirect('/legal', '/legal/basis')->name('legal');
 
     // ==================== ADMIN ====================
     Route::prefix('admin')->name('admin.')->group(function () {
@@ -296,6 +301,7 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         // Role mana yang wajib 2FA - admin-configurable, dibaca EnforceTwoFactorForAdmins.
         Route::get('/two-factor-enforcement', [\App\Http\Controllers\TwoFactorEnforcementSettingsController::class, 'index'])->name('two-factor-enforcement')->middleware('menu:control-center.two-factor-enforcement');
         Route::post('/two-factor-enforcement', [\App\Http\Controllers\TwoFactorEnforcementSettingsController::class, 'update'])->name('two-factor-enforcement.update')->middleware('menu:control-center.two-factor-enforcement');
+
     });
 
     // ==================== USER GUIDE ====================
@@ -559,7 +565,20 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     Route::get('/staging-email-attachments/{stagingId}', [StagingTicketController::class, 'proxyEmailAttachment'])
         ->name('staging.email-attachment.proxy');
     Route::get('/my-profile', [ProfileController::class, 'myProfile'])->name('profile.my');
+    Route::get('/my-profile/photo', [ProfileController::class, 'myPhoto'])->name('profile.photo');
+    Route::get('/my-profile/onboarding-progress', [ProfileController::class, 'myOnboardingProgress'])->name('profile.onboarding-progress');
     Route::post('/my-profile/change-password', [ProfileController::class, 'changePassword'])->name('profile.change-password');
+
+    // My Profile → Contract: review and sign my own contract, or approve the contracts forwarded to me. No menu slug:
+    // the contract itself (its employee / its approver) decides who may open it (App\Http\Controllers\MyContractController).
+    Route::get('/my-profile/contract-approvals', [\App\Http\Controllers\MyContractController::class, 'approvals'])->name('profile.contract-approvals');
+    Route::prefix('/my-profile/contracts/{contractId}')->whereNumber('contractId')->name('profile.contracts.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\MyContractController::class, 'show'])->name('show');
+        Route::get('/file', [\App\Http\Controllers\MyContractController::class, 'file'])->name('file');
+        Route::get('/record', [\App\Http\Controllers\MyContractController::class, 'record'])->name('record');
+        Route::post('/sign', [\App\Http\Controllers\MyContractController::class, 'sign'])->name('sign')->middleware('throttle:20,1');
+        Route::post('/revision', [\App\Http\Controllers\MyContractController::class, 'revision'])->name('revision')->middleware('throttle:20,1');
+    });
 
     // ==================== PROJECT PLANNING ROUTES ====================
 
@@ -706,6 +725,12 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::get('/{id}', [TicketViewController::class, 'show'])->name('show');
     });
 
+    // Header quick search (Ctrl+K) - each group is limited inside the controller by the menus the person holds.
+    // "History" tab data (who changed what) - record types and their menus are listed in the controller.
+    Route::get('/history/{type}/{id}', \App\Http\Controllers\RecordHistoryController::class)->whereNumber('id')->name('record-history');
+
+    Route::get('/global-search', \App\Http\Controllers\GlobalSearchController::class)->name('global-search');
+
     // ==================== NOTIFICATIONS ====================
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
 
@@ -715,13 +740,54 @@ Route::middleware(CheckAuthToken::class)->group(function () {
             ->middleware('menu:management.roles')
             ->name('roles.index');
 
+        // Menu Access per role - halaman penuh (HC-D63/D64), menggantikan modal sempit di daftar Role.
+        Route::get('/roles/{id}/menu-access', [\App\Http\Controllers\Management\RoleMenuAccessController::class, 'page'])
+            ->whereNumber('id')
+            ->middleware('menu:management.roles')
+            ->name('roles.menu-access');
+
         Route::get('/permissions', [MenuController::class, 'page'])
             ->middleware('menu:management.permissions')
             ->name('permissions.index');
 
+        Route::get('/ess-settings', [\App\Http\Controllers\Management\EssSettingsController::class, 'index'])
+            ->middleware('menu:management.permissions')
+            ->name('ess-settings.index');
+        Route::post('/ess-settings', [\App\Http\Controllers\Management\EssSettingsController::class, 'update'])
+            ->middleware('menu:management.permissions')
+            ->name('ess-settings.update');
+
+        // D182 - pengelolaan grup dropdown ESS, slug SAMA dengan ESS Settings
+        // di atas (halaman yang sama, bukan fitur terpisah).
+        Route::post('/ess-settings/groups', [\App\Http\Controllers\Management\EssSettingsController::class, 'storeGroup'])
+            ->middleware('menu:management.permissions')
+            ->name('ess-settings.groups.store');
+        Route::post('/ess-settings/groups/{group}/update', [\App\Http\Controllers\Management\EssSettingsController::class, 'updateGroup'])
+            ->middleware('menu:management.permissions')
+            ->name('ess-settings.groups.update');
+        Route::post('/ess-settings/groups/{group}/delete', [\App\Http\Controllers\Management\EssSettingsController::class, 'destroyGroup'])
+            ->middleware('menu:management.permissions')
+            ->name('ess-settings.groups.destroy');
+
         Route::get('/holidays', [\App\Http\Controllers\HolidayManagementController::class, 'page'])
             ->middleware('menu:management.holidays')
             ->name('holidays.index');
+
+        // Master cabang - dipakai banyak menu (Attendance, Reimbursement, Purchase
+        // Request, Cash Advance, ...), karena itu hidup di Management.
+        Route::prefix('branches')->name('branches.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Management\BranchController::class, 'index'])
+                ->middleware('menu:management.branches')
+                ->name('index');
+
+            Route::middleware('menu:management.branches.manage')->group(function () {
+                Route::get('/create', [\App\Http\Controllers\Management\BranchController::class, 'create'])->name('create');
+                Route::post('/', [\App\Http\Controllers\Management\BranchController::class, 'store'])->name('store');
+                Route::get('/{branch}/edit', [\App\Http\Controllers\Management\BranchController::class, 'edit'])->name('edit');
+                Route::post('/{branch}/update', [\App\Http\Controllers\Management\BranchController::class, 'update'])->name('update');
+                Route::post('/{branch}/delete', [\App\Http\Controllers\Management\BranchController::class, 'destroy'])->name('destroy');
+            });
+        });
 
         Route::get('/hidden-tickets', [\App\Http\Controllers\HiddenTicketController::class, 'page'])
             ->middleware('menu:management.hidden-tickets')
@@ -746,18 +812,31 @@ Route::middleware(CheckAuthToken::class)->group(function () {
                 ->name('support.index');
         });
 
+        // Management → Employee: settings of each section of the employee profile (dropdown lists + rules). The tab a route belongs to is a
+        // literal of the route group's own prefix, never a request value; View opens the tab, Create adds an option, Edit changes / moves one or the rules, Delete removes one.
         Route::prefix('employee')->name('employee.')->group(function () {
-            Route::get('/basic-data',     [\App\Http\Controllers\ManagementEmployeeController::class, 'basicData'])    ->middleware('menu:management.employee.basic-data')    ->name('basic-data.index');
-            Route::get('/address',        [\App\Http\Controllers\ManagementEmployeeController::class, 'address'])      ->middleware('menu:management.employee.address')        ->name('address.index');
-            Route::get('/identification', [\App\Http\Controllers\ManagementEmployeeController::class, 'identification'])->middleware('menu:management.employee.identification') ->name('identification.index');
-            Route::get('/family',         [\App\Http\Controllers\ManagementEmployeeController::class, 'family'])       ->middleware('menu:management.employee.family')         ->name('family.index');
-            Route::get('/education',      [\App\Http\Controllers\ManagementEmployeeController::class, 'education'])    ->middleware('menu:management.employee.education')      ->name('education.index');
-            Route::get('/qualification',  [\App\Http\Controllers\ManagementEmployeeController::class, 'qualification']) ->middleware('menu:management.employee.qualification')  ->name('qualification.index');
-            Route::get('/contract',       [\App\Http\Controllers\ManagementEmployeeController::class, 'contract'])     ->middleware('menu:management.employee.contract')       ->name('contract.index');
-            Route::get('/bank',           [\App\Http\Controllers\ManagementEmployeeController::class, 'bank'])         ->middleware('menu:management.employee.bank')           ->name('bank.index');
-            Route::get('/payment',        [\App\Http\Controllers\ManagementEmployeeController::class, 'payment'])      ->middleware('menu:management.employee.payment')        ->name('payment.index');
-            Route::get('/attachment',     [\App\Http\Controllers\ManagementEmployeeController::class, 'attachment'])   ->middleware('menu:management.employee.attachment')     ->name('attachment.index');
-            Route::get('/dropdown-settings', [\App\Http\Controllers\ManagementEmployeeController::class, 'dropdownSettings'])->middleware('menu:management.employee.dropdown-settings')->name('dropdown-settings.index');
+            $pages = [
+                'basic-data' => 'basicData', 'address' => 'address', 'identification' => 'identification', 'family' => 'family', 'education' => 'education',
+                'qualification' => 'qualification', 'contract' => 'contract', 'bank' => 'bank', 'payment' => 'payment', 'attachment' => 'attachment',
+            ];
+
+            foreach ($pages as $section => $action) {
+                $slug = \App\Support\Management\EmployeeMasterSettings::SLUGS[$section];
+                $can = fn (string $ability) => "menu.can:{$slug},{$ability}";
+
+                Route::prefix($section)->name("{$section}.")->middleware("menu:{$slug}")->group(function () use ($action, $can) {
+                    Route::get('/', [\App\Http\Controllers\ManagementEmployeeController::class, $action])->name('index');
+
+                    $settings = \App\Http\Controllers\Management\EmployeeSettingsController::class;
+                    Route::post('/options', [$settings, 'storeOption'])->name('options.store')->middleware($can('create'));
+                    Route::post('/settings', [$settings, 'updateSettings'])->name('settings.update')->middleware($can('edit'));
+                    Route::whereNumber('optionId')->group(function () use ($settings, $can) {
+                        Route::post('/options/{optionId}/update', [$settings, 'updateOption'])->name('options.update')->middleware($can('edit'));
+                        Route::post('/options/{optionId}/move', [$settings, 'moveOption'])->name('options.move')->middleware($can('edit'));
+                        Route::post('/options/{optionId}/delete', [$settings, 'destroyOption'])->name('options.destroy')->middleware($can('delete'));
+                    });
+                });
+            }
         });
     });
 
@@ -766,6 +845,9 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     Route::get('/attachments/{id}', [AttachmentController::class, 'show'])
         ->name('attachments.show')
         ->where('id', '[0-9]+');
+
+    // ==================== LEAVE & PERMIT ATTENDANCE ROUTES ====================
+    Route::get('/my-leave-permit', [\App\Http\Controllers\HR\LeavePermitController::class, 'myLeavePermitIndex'])->name('my-leave-permit');
 });
 
 // ==================== ATTACHMENT PROXY - TAUTAN TEAMS ====================
@@ -796,3 +878,31 @@ Route::get('/', function () {
 // ==================== DELIVERY SUPPORT ROUTES ====================
 // Include delivery support module routes
 require __DIR__ . '/delivery-support.php';
+
+// ==================== HR & GENERAL ROUTES ====================
+// Include HR & General module routes (KPI, Attendance, Branches, Shifts, Reimbursement, Purchase Request)
+require __DIR__ . '/hr-general.php';
+
+// ==================== COMMERCIAL & FINANCE ROUTES ====================
+// Payroll, BPJS, PPh 21 (berkas baru; modul aditif)
+require __DIR__ . '/finance.php';
+
+// ==================== EXTERNAL (KONSULTAN EKSTERNAL) ROUTES ====================
+// Consultants, Timesheet & Payment (placeholder), External Contract, dan tiga surat konsultan (berkas baru; modul aditif)
+require __DIR__ . '/hr-external.php';
+
+// ==================== OFFBOARDING + REGISTER DASAR HUKUM ROUTES ====================
+// Offboarding (HR & General) dan Legal Basis (Finance) - berkas baru; modul aditif
+require __DIR__ . '/hr-offboarding.php';
+
+// ==================== COMPLIANCE ROUTES ====================
+// My Compliance (semua pengguna login) dan manajemen Compliance di Legal (berkas baru; modul aditif)
+require __DIR__ . '/compliance.php';
+
+// ==================== WEB REPORT ROUTES ====================
+// Formulir laporan PUBLIK tanpa login (tombolnya di halaman login) dan Web Report Management di Control Center (berkas baru; modul aditif)
+require __DIR__ . '/web-report.php';
+
+// ==================== SALES COMPLIANCE APPROVAL + VENDOR ONBOARDING ROUTES ====================
+// Business & Legal: persetujuan compliance deal sales dan peninjauan pendaftaran vendor (berkas baru; modul aditif)
+require __DIR__ . '/legal-compliance.php';

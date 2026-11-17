@@ -36,8 +36,7 @@
         if ($support->sales_id           == $_e->employee_id) $teamLabels['sales_id']           = $name;
     }
 
-    $roleId      = session('user.role.id');
-    $canEditType = in_array($roleId, \App\Enums\RoleId::TICKET_MANAGER_GROUP, true);
+    $canEditType = $can('ticket.manage');
 
     $teamFields = [
         ['key' => 'delivery_owner_id',  'label' => 'Delivery Owner',  'placeholder' => 'Select delivery owner',  'value' => $support->delivery_owner_id],

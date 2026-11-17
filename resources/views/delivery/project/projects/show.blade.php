@@ -6821,7 +6821,7 @@ function syncNavWithSidebar() {
     if (!sidebar || !sectionNav) return;
 
     // Check if sidebar is collapsed
-    const isCollapsed = sidebar.classList.contains('w-20');
+    const isCollapsed = (sidebar.classList.contains('w-20') || document.documentElement.getAttribute('data-sb-layout') === 'rail');
 
     if (isCollapsed) {
         sectionNav.style.left = '80px'; // w-20 = 5rem = 80px
@@ -6835,6 +6835,7 @@ const sidebarObserver = new MutationObserver(syncNavWithSidebar);
 const sidebar = document.getElementById('sidebar');
 if (sidebar) {
     sidebarObserver.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(syncNavWithSidebar).observe(document.documentElement, { attributes: true, attributeFilter: ['data-sb-layout'] });
 }
 
 // Initial sync

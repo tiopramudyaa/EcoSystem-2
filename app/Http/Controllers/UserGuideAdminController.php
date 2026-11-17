@@ -93,11 +93,18 @@ class UserGuideAdminController extends Controller
 
     private function form(string $locale, array $topic): View
     {
+        $body = (string) old('body', $topic['body']);
+
         return view('admin.user-guide.form', [
-            'locale'   => $locale,
-            'topic'    => $topic,
-            'chapters' => config('user_guide.chapters'),
-            'options'  => $this->editor->requirementOptions(),
+            'locale'        => $locale,
+            'topic'         => $topic,
+            'chapters'      => config('user_guide.chapters'),
+            'options'       => $this->editor->requirementOptions(),
+            // Penyunting visual: isi awal dirender server dengan aturan yang sama seperti halaman baca.
+            'editorHtml'    => trim($body) === '' ? '<p><br></p>' : $this->editor->preview($body, (string) $topic['key'], $locale),
+            'link'          => $this->editor->linkTargets($locale),
+            'calloutTitles' => collect(['note', 'tip', 'important', 'warning'])
+                ->mapWithKeys(fn ($t) => [$t => config("user_guide.ui.{$locale}.{$t}", ucfirst($t))])->all(),
         ]);
     }
 

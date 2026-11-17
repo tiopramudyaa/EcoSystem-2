@@ -9,16 +9,10 @@
                 @endif
             </div>
             <div class="flex gap-2 js-section-action">
-                <button type="button" onclick="clearIdentificationForm()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-500 text-white text-xs font-semibold rounded-lg hover:bg-gray-600 transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-                    </svg>
+                <button type="button" onclick="clearIdentificationForm()" class="js-act-create inline-flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-300 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-all">
                     New
                 </button>
-                <button type="button" onclick="saveIdentification()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-red-800 text-white text-xs font-semibold rounded-lg hover:bg-red-900 transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
-                    </svg>
+                <button type="button" onclick="saveIdentification()" class="inline-flex items-center px-4 py-2 bg-red-800 text-white text-sm font-semibold rounded-lg hover:bg-red-900 transition-all">
                     <span id="saveButtonText">Save</span>
                 </button>
             </div>
@@ -30,7 +24,7 @@
             <!-- Identification Type -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Identification Type <span class="text-red-600">*</span></label>
-                <div class="custom-dd relative">
+                <div class="custom-dd relative" data-onchange="identOnTypeChange">
                     <button type="button" class="custom-dd-btn w-full flex items-center justify-between px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 transition-all text-left">
                         <span class="custom-dd-label text-gray-500">Select Type</span>
                         <svg class="custom-dd-arrow w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -38,15 +32,10 @@
                     <input type="hidden" id="identificationType" value="">
                     <div class="custom-dd-panel hidden absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 py-1.5 overflow-y-auto" style="max-height:220px;">
                         <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors" data-value="">Select Type</button>
-                        <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors" data-value="KTP">ID Card (KTP)</button>
-                        <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors" data-value="PASSPORT">Passport</button>
-                        <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors" data-value="NPWP">Tax ID (NPWP)</button>
-                        <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors" data-value="DRIVER_LICENSE">Driver License (SIM)</button>
-                        <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors" data-value="BPJS_KESEHATAN">BPJS Kesehatan</button>
-                        <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors" data-value="BPJS_KETENAGAKERJAAN">BPJS Ketenagakerjaan</button>
-                        <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors" data-value="KITAS">KITAS</button>
-                        <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors" data-value="KITAP">KITAP</button>
-                        <button type="button" class="custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors" data-value="OTHER">Other</button>
+                        @php $internalOnly = \App\Services\Management\EmployeeMasterData::internalOnly('identification', 'identification_type'); @endphp
+@foreach(\App\Services\Management\EmployeeMasterData::options('identification', 'identification_type') as $optValue => $optLabel)
+                        <button type="button" class="{{ in_array($optValue, $internalOnly, true) ? 'js-internal-only ' : '' }}custom-dd-item w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors" data-value="{{ $optValue }}">{{ $optLabel }}</button>
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -54,7 +43,8 @@
             <!-- Identification Number -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Identification Number <span class="text-red-600">*</span></label>
-                <input type="text" id="identificationNumber" required class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 bg-white">
+                <input type="text" id="identificationNumber" required autocomplete="off" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 bg-white">
+                <p id="identNumberHint" class="text-[11px] text-gray-500 mt-1">Select a type first to see the expected number format.</p>
             </div>
 
             <!-- Responsible Institution -->
@@ -123,17 +113,11 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <button onclick="copySelectedIdentification()" title="Copy" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
-                    </svg>
+                <button onclick="copySelectedIdentification()" title="Copy" class="js-act-create inline-flex items-center px-3 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-all">
                     Copy
                 </button>
 
-                <button onclick="deleteSelectedIdentification()" title="Delete" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-red-600 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50 transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                    </svg>
+                <button onclick="deleteSelectedIdentification()" title="Delete" class="js-act-delete inline-flex items-center px-3 py-2 bg-white border border-red-600 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50 transition-all">
                     Delete
                 </button>
 
@@ -193,7 +177,7 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div id="confirmDeleteIdentificationModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+<div id="confirmDeleteIdentificationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 items-center justify-center p-4">
     <div class="bg-white rounded-xl max-w-md w-full shadow-2xl">
         <div class="p-6">
             <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
@@ -331,8 +315,8 @@
             'DRIVER_LICENSE': 'Driver License (SIM)',
             'BPJS_KESEHATAN': 'BPJS Kesehatan',
             'BPJS_KETENAGAKERJAAN': 'BPJS Ketenagakerjaan',
-            'KITAS': 'KITAS',
-            'KITAP': 'KITAP',
+            'KITAS': 'KITAS (Temporary Stay Permit)',
+            'KITAP': 'KITAP (Permanent Stay Permit)',
             'OTHER': 'Other'
         };
         return types[type] || type;
@@ -364,6 +348,46 @@
     /**
      * Load identification data to form fields
      */
+
+    // ── Format nomor per jenis (cermin App\Support\Validation\FieldFormats; server tetap memeriksa) ─────────────────────────────
+    const IDENT_FORMATS = {
+        KTP: { label: 'ID Card (KTP / NIK) number', lengths: [16], hint: 'NIK: exactly 16 digits, as printed on the KTP.', example: '3174012345678901' },
+        NPWP: { label: 'Tax ID (NPWP) number', lengths: [15, 16], hint: 'NPWP: 15 digits (old format) or 16 digits (NIK-based). Dots and hyphens are ignored.', example: '12.345.678.9-012.345' },
+        BPJS_KESEHATAN: { label: 'BPJS Kesehatan number', lengths: [13], hint: 'Exactly 13 digits, as printed on the BPJS Kesehatan card.', example: '0001234567890' },
+        BPJS_KETENAGAKERJAAN: { label: 'BPJS Ketenagakerjaan (KPJ) number', lengths: [11], hint: 'KPJ: exactly 11 digits, as printed on the BPJS Ketenagakerjaan card.', example: '12345678901' },
+    };
+    function identDigits(v) { return String(v || '').replace(/[\s.\-]/g, ''); }
+
+    /** Dipanggil saat jenis dipilih / dimuat: tampilkan aturan nomor untuk jenis itu. */
+    function identOnTypeChange(type) {
+        const input = document.getElementById('identificationNumber');
+        const hint = document.getElementById('identNumberHint');
+        const spec = IDENT_FORMATS[String(type || '').toUpperCase()];
+        if (!input || !hint) { return; }
+        if (spec) {
+            hint.textContent = spec.hint;
+            input.placeholder = 'e.g. ' + spec.example;
+            input.setAttribute('inputmode', 'numeric');
+        } else {
+            hint.textContent = type ? 'Any format accepted for this type (maximum 100 characters).' : 'Select a type first to see the expected number format.';
+            input.placeholder = '';
+            input.removeAttribute('inputmode');
+        }
+    }
+    window.identOnTypeChange = identOnTypeChange;
+
+    function identFormatError(type, number) {
+        const spec = IDENT_FORMATS[String(type || '').toUpperCase()];
+        if (!spec) { return null; }
+        const clean = identDigits(String(number || '').trim());
+        if (!/^\d+$/.test(clean)) { return spec.label + ' must contain digits only (spaces, dots and hyphens are ignored). ' + spec.hint; }
+        if (spec.lengths.indexOf(clean.length) === -1) {
+            const need = spec.lengths.length === 1 ? 'exactly ' + spec.lengths[0] : spec.lengths.join(' or ');
+            return spec.label + ' must be ' + need + ' digits \u2014 you entered ' + clean.length + '. ' + spec.hint;
+        }
+        return null;
+    }
+
     async function loadIdentificationToForm(identificationId) {
         try {
             
@@ -386,6 +410,7 @@
                 
                 // Set form values dengan tipe yang sesuai
                 setCustomDropdownValue('identificationType', ident.identification_type || '');
+                identOnTypeChange(ident.identification_type || '');
                 document.getElementById('identificationNumber').value = ident.identification_number || '';
                 document.getElementById('responsibleInstitution').value = ident.responsible_institution || '';
                 document.getElementById('identCountry').value = ident.country || '';
@@ -411,6 +436,7 @@
     function clearIdentificationForm() {
         document.getElementById('editIdentificationId').value = '';
         setCustomDropdownValue('identificationType', '');
+        identOnTypeChange('');
         document.getElementById('identificationNumber').value = '';
         document.getElementById('responsibleInstitution').value = '';
         document.getElementById('identCountry').value = 'Indonesia';
@@ -443,6 +469,12 @@
         
         if (!identificationType || !identificationNumber) {
             showNotification('Identification type and number are required', 'error');
+            return;
+        }
+        const formatError = identFormatError(identificationType, identificationNumber);
+        if (formatError) {
+            showNotification(formatError, 'error');
+            document.getElementById('identificationNumber').focus();
             return;
         }
 
@@ -498,7 +530,7 @@
                     loadIdentificationToForm(identificationId);
                 }
             } else {
-                showNotification('Failed to save identification: ' + (data.message || 'Unknown error'), 'error');
+                showNotification(window.apiErrorText ? window.apiErrorText(data, 'The identification could not be saved. Please try again.') : (data.message || 'The identification could not be saved. Please try again.'), 'error');
             }
         } catch (error) {
             console.error(' Error saving identification:', error);
@@ -591,7 +623,7 @@
      */
 
     // Initialize
-    document.addEventListener('DOMContentLoaded', function() {
+    (window.onSectionFirstShow || function (t, fn) { document.addEventListener('DOMContentLoaded', fn); })('identification', function() {
         loadIdentifications();
     });
 

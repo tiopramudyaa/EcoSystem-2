@@ -1,0 +1,300 @@
+<?php
+
+namespace App\Http\Controllers\Finance;
+
+use App\Http\Controllers\Controller;
+use App\Models\Employee;
+use App\Models\PayrollSetting;
+use App\Services\Payroll\PayrollEngine;
+use App\Services\Payroll\PayrollPeriodService;
+use App\Support\Payroll\PtkpRules;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Finance → Payroll → Settings (kebijakan perhitungan + saklar aktivasi) dan Simulation (hitung tanpa menyimpan).
+ *
+ * Settings: `menu:finance.payroll.settings` (+ `menu.can:…,edit` untuk menyimpan kebijakan). Menyalakan/mematikan modul
+ * butuh slug fungsi TERSENDIRI `finance.payroll.activate` dan tercatat (audit + siapa/kapan). Simulation tidak menulis
+ * apa pun dan tidak bergantung pada saklar - gunanya menguji data sebelum payroll dinyalakan.
+ */
+class PayrollSettingsController extends Controller
+{
+    public function __construct(private readonly PayrollEngine $engine, private readonly PayrollPeriodService $periods)
+    {
+    }
+
+    public function settings(): View
+    {
+        $me = Employee::find(session('user.id'));
+        $row = PayrollSetting::current();
+
+        return view('finance.payroll.settings', [
+            'settings' => $this->engine->settings() + $row->only(['hr_signer_name', 'hr_signer_title', 'finance_signer_name', 'finance_signer_title', 'slip_language',
+                'hr_signer_role_id', 'hr_signer_employee_id', 'finance_signer_role_id', 'finance_signer_employee_id']),
+            'signerRoles' => $this->signerRoles(), 'signerPeople' => $this->signerPeople(), 'signerTitles' => \App\Models\Position::options(),
+            'canEdit' => (bool) $me?->hasMenuPermission('finance.payroll.settings', 'can_edit'),
+            'enabled' => (bool) $row->module_enabled,
+            'enabledAt' => $row->enabled_at,
+            'enabledBy' => $row->enabled_by ? DB::table('employee_basic_data')->where('employee_id', $row->enabled_by)->selectRaw("TRIM(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) as n")->value('n') : null,
+            'periodsCount' => DB::table('payroll_periods')->count(),
+        ]);
+    }
+
+    /** Role yang punya karyawan aktif (untuk dropdown penandatangan). @return array<int,array{id:int,name:string}> */
+    private function signerRoles(): array
+    {
+        return DB::table('employee_role as r')->join('employee_role_assignment as a', 'a.role_id', '=', 'r.id')->join('employee as e', 'e.employee_id', '=', 'a.employee_id')
+            ->where('e.is_active', 1)->groupBy('r.id', 'r.name')->orderBy('r.name')->get(['r.id', 'r.name'])
+            ->map(fn ($r) => ['id' => (int) $r->id, 'name' => $r->name])->all();
+    }
+
+    /** Karyawan aktif beserta role-nya, untuk menyaring dropdown user menurut role. @return array<int,array<string,mixed>> */
+    private function signerPeople(): array
+    {
+        $rows = DB::table('employee as e')->join('employee_role_assignment as a', 'a.employee_id', '=', 'e.employee_id')
+            ->leftJoin('employee_basic_data as b', 'b.employee_id', '=', 'e.employee_id')->where('e.is_active', 1)
+            ->get(['e.employee_id', 'e.eci', 'b.position', 'a.role_id', DB::raw("TRIM(CONCAT(COALESCE(b.first_name,''),' ',COALESCE(b.last_name,''))) as full_name")]);
+        $out = [];
+        foreach ($rows as $r) {
+            $out[$r->employee_id] ??= ['id' => (int) $r->employee_id, 'name' => $r->full_name !== '' ? $r->full_name : $r->eci, 'eci' => $r->eci, 'position' => $r->position, 'roles' => []];
+            $out[$r->employee_id]['roles'][] = (int) $r->role_id;
+        }
+        usort($out, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
+
+        return array_values($out);
+    }
+
+    /** Kirim job uji ke antrean (tidak menyentuh data). Bila antrean `sync`, job langsung selesai di sini. */
+    public function queueTest(): \Illuminate\Http\JsonResponse
+    {
+        $token = \Illuminate\Support\Str::random(16);
+        \Illuminate\Support\Facades\Cache::put('queue_test_pending', ['token' => $token, 'at' => now()->timestamp], now()->addMinutes(30));
+        \App\Jobs\QueueHeartbeatJob::dispatch($token);
+
+        return response()->json(['success' => true]);
+    }
+
+    /** Status antrean untuk kartu Settings: driver, jumlah menunggu/gagal, dan hasil uji worker terakhir. */
+    public function queueStatus(): \Illuminate\Http\JsonResponse
+    {
+        $driver = (string) config('queue.default');
+        $pending = $failed = null;
+        try {
+            if ($driver === 'database' && \Illuminate\Support\Facades\Schema::hasTable('jobs')) { $pending = (int) DB::table('jobs')->count(); }
+            if (\Illuminate\Support\Facades\Schema::hasTable('failed_jobs')) { $failed = (int) DB::table('failed_jobs')->count(); }
+        } catch (\Throwable) {
+            // hitungan hanya informasi
+        }
+        $test = \Illuminate\Support\Facades\Cache::get('queue_test_pending');
+        $state = 'none';
+        $seconds = null;
+        if ($test) {
+            $done = \Illuminate\Support\Facades\Cache::get('queue_test_done_' . $test['token']);
+            $state = $done ? 'ok' : 'waiting';
+            $seconds = $done ? max(0, $done - $test['at']) : (now()->timestamp - $test['at']);
+        }
+
+        return response()->json(['driver' => $driver, 'jobs_table' => $pending, 'failed' => $failed, 'test' => ['state' => $state, 'seconds' => $seconds],
+            'last_seen' => \Illuminate\Support\Facades\Cache::get('queue_worker_last_seen')]);
+    }
+
+    public function saveSettings(Request $request): RedirectResponse
+    {
+        $errors = [];
+        $in = [
+            'work_days_per_week' => (int) $request->input('work_days_per_week'),
+            'overtime_work_days' => $request->input('overtime_work_days') === '' || $request->input('overtime_work_days') === null ? null : (int) $request->input('overtime_work_days'),
+            'final_tax_month' => (int) $request->input('final_tax_month'),
+            'late_grace_minutes' => (int) $request->input('late_grace_minutes'),
+            'workday_base_minutes' => (int) $request->input('workday_base_minutes'),
+            'proration_basis' => (string) $request->input('proration_basis'),
+            'fixed_divisor' => (int) $request->input('fixed_divisor'),
+            'attendance_effective_from' => trim((string) $request->input('attendance_effective_from')) === '' ? null : trim((string) $request->input('attendance_effective_from')),
+            'slip_language' => (string) $request->input('slip_language', 'id'),
+            'overtime_wage_basis' => (string) $request->input('overtime_wage_basis', 'base_fixed'),
+            'overtime_min_minutes' => (int) $request->input('overtime_min_minutes'),
+            'overtime_round_minutes' => (int) $request->input('overtime_round_minutes'),
+            'overtime_round_method' => (string) $request->input('overtime_round_method', 'nearest'),
+            'ter_base_rounding' => (string) $request->input('ter_base_rounding', 'none'),
+            'net_rounding_mode' => (string) $request->input('net_rounding_mode', 'none'),
+            'net_rounding_increment' => (int) $request->input('net_rounding_increment', 1000),
+            'cutoff_day' => (int) $request->input('cutoff_day', 25),
+        ];
+        $notes = trim((string) $request->input('internal_notes'));
+        if (mb_strlen($notes) > 2000) { $errors[] = 'Internal notes are limited to 2000 characters.'; }
+        $in['internal_notes'] = $notes === '' ? null : $notes;
+        // Penandatangan slip: pilih ROLE → USER → jabatan (dropdown). Nama/jabatan disimpan sebagai snapshot teks untuk dicetak di slip.
+        $current = PayrollSetting::current();
+        foreach (['hr' => 'HR', 'finance' => 'Finance'] as $who => $label) {
+            $empId = (int) $request->input("{$who}_signer_employee_id") ?: null;
+            $roleId = (int) $request->input("{$who}_signer_role_id") ?: null;
+            $title = trim((string) $request->input("{$who}_signer_title"));
+            if ($empId) {
+                $emp = DB::table('employee as e')->leftJoin('employee_basic_data as b', 'b.employee_id', '=', 'e.employee_id')
+                    ->where('e.employee_id', $empId)->where('e.is_active', 1)
+                    ->first(['e.employee_id', 'b.position', DB::raw("TRIM(CONCAT(COALESCE(b.first_name,''),' ',COALESCE(b.last_name,''))) as full_name")]);
+                if (!$emp) {
+                    $errors[] = "{$label} signer: choose an active employee.";
+                } elseif ($roleId && !DB::table('employee_role_assignment')->where('employee_id', $empId)->where('role_id', $roleId)->exists()) {
+                    $errors[] = "{$label} signer: that employee does not hold the chosen role.";
+                } else {
+                    $allowed = array_merge(\App\Models\Position::options(), array_filter([$emp->position, $current->{"{$who}_signer_title"}]));
+                    if ($title !== '' && !in_array($title, $allowed, true)) { $errors[] = "{$label} signer: choose the title from the list."; }
+                    $in["{$who}_signer_name"] = $emp->full_name !== '' ? $emp->full_name : null;
+                    $in["{$who}_signer_title"] = $title !== '' ? $title : ($emp->position ?: null);
+                }
+                $in["{$who}_signer_employee_id"] = $empId;
+                $in["{$who}_signer_role_id"] = $roleId;
+            } elseif ($request->boolean("{$who}_signer_keep") && $current->{"{$who}_signer_name"} && !$current->{"{$who}_signer_employee_id"}) {
+                // Nama lama yang diketik sebelum fitur ini: dipertahankan sampai diganti dengan pilihan role + user.
+            } else {
+                $in["{$who}_signer_name"] = null; $in["{$who}_signer_title"] = null;
+                $in["{$who}_signer_employee_id"] = null; $in["{$who}_signer_role_id"] = null;
+            }
+        }
+        $modes = ['none', 'nearest', 'up', 'down'];
+        if (!in_array($in['overtime_wage_basis'], ['base_fixed', 'base_only'], true)) { $errors[] = 'Choose the overtime wage basis.'; }
+        if (!in_array($in['overtime_min_minutes'], [0, 15, 30, 45, 60], true)) { $errors[] = 'Minimum overtime minutes must be 0, 15, 30, 45 or 60.'; }
+        if (!in_array($in['overtime_round_minutes'], [0, 5, 10, 15, 30, 60], true)) { $errors[] = 'Overtime minute rounding must be none, 5, 10, 15, 30 or 60.'; }
+        if (!in_array($in['overtime_round_method'], ['nearest', 'up', 'down'], true)) { $errors[] = 'Choose the overtime rounding method.'; }
+        if (!in_array($in['ter_base_rounding'], $modes, true)) { $errors[] = 'Choose the TER tax-base rounding.'; }
+        if (!in_array($in['net_rounding_mode'], $modes, true)) { $errors[] = 'Choose the net pay rounding.'; }
+        if (!in_array($in['net_rounding_increment'], [100, 500, 1000, 5000], true)) { $errors[] = 'The rounding increment must be 100, 500, 1000 or 5000.'; }
+        if ($in['cutoff_day'] < 1 || $in['cutoff_day'] > 31) { $errors[] = 'The cut-off date must be between 1 and 31.'; }
+        if (!in_array($in['slip_language'], ['id', 'en'], true)) { $errors[] = 'Choose Indonesian or English for the payslip.'; }
+        if (!in_array($in['work_days_per_week'], [5, 6], true)) { $errors[] = 'Weekly work schedule must be 5 or 6 days.'; }
+        if ($in['overtime_work_days'] !== null && !in_array($in['overtime_work_days'], [5, 6], true)) { $errors[] = 'Overtime workweek basis must follow payroll, or be 5 or 6 days.'; }
+        if ($in['final_tax_month'] < 1 || $in['final_tax_month'] > 12) { $errors[] = 'The final tax month must be between 1 and 12.'; }
+        if ($in['late_grace_minutes'] < 0 || $in['late_grace_minutes'] > 240) { $errors[] = 'Grace period must be between 0 and 240 minutes.'; }
+        if ($in['workday_base_minutes'] < 60 || $in['workday_base_minutes'] > 720) { $errors[] = 'Workday base must be between 60 and 720 minutes.'; }
+        if (!in_array($in['proration_basis'], ['fixed_divisor', 'calendar'], true)) { $errors[] = 'Choose a proration basis.'; }
+        if (!in_array($in['fixed_divisor'], [21, 22, 25, 26], true)) { $errors[] = 'The fixed payroll divisor must be 21, 22, 25 or 26.'; }
+        $d = $in['attendance_effective_from'] ? \DateTimeImmutable::createFromFormat('Y-m-d', $in['attendance_effective_from']) : null;
+        if ($in['attendance_effective_from'] && (!$d || $d->format('Y-m-d') !== $in['attendance_effective_from'])) { $errors[] = 'Enter a valid date for “Attendance applies from”.'; }
+        if ($errors) {
+            return redirect()->route('finance.payroll.settings')->withErrors($errors)->withInput();
+        }
+
+        // Memakai model (bukan query langsung) supaya setiap perubahan kebijakan tercatat di audit log.
+        $row = PayrollSetting::current();
+        $row->fill($in + [
+            'overtime_enabled' => $request->boolean('overtime_enabled'),
+            'prorate_partial_period' => $request->boolean('prorate_partial_period'),
+            'attendance_enabled' => $request->boolean('attendance_enabled'),
+            'late_penalty_enabled' => $request->boolean('late_penalty_enabled'),
+            'absence_deduction_enabled' => $request->boolean('absence_deduction_enabled'),
+            'sick_paid' => $request->boolean('sick_paid'),
+            'leave_paid' => $request->boolean('leave_paid'),
+            'permit_paid' => $request->boolean('permit_paid'),
+            'include_reimbursement' => $request->boolean('include_reimbursement'),
+            'bpjs_enabled' => $request->boolean('bpjs_enabled'),
+            'deduct_bpjs_tk_before_pph21' => $request->boolean('deduct_bpjs_tk_before_pph21'),
+            'pph21_enabled' => $request->boolean('pph21_enabled'),
+            'apply_no_npwp_surcharge' => $request->boolean('apply_no_npwp_surcharge'),
+            'cutoff_enabled' => $request->boolean('cutoff_enabled'),
+            'timesheet_allowance_enabled' => $request->boolean('timesheet_allowance_enabled'),
+            'tax_timesheet_allowance' => $request->boolean('tax_timesheet_allowance'),
+            'loan_deduction_enabled' => $request->boolean('loan_deduction_enabled'),
+            'block_on_pending_inputs' => $request->boolean('block_on_pending_inputs'),
+            'calculate_in_background' => $request->boolean('calculate_in_background'),
+        ]);
+        // Kolom baru: dilewati bila migrasinya belum dijalankan (mis. server yang baru menerima berkas kode).
+        if (\App\Support\SchemaCache::hasColumn('payroll_settings', 'auto_publish_slips')) {
+            $row->auto_publish_slips = $request->boolean('auto_publish_slips');
+        }
+        $row->save();
+
+        return redirect()->route('finance.payroll.settings')->with('success', 'Payroll settings saved. They apply the next time a period is calculated; existing payslips do not change.');
+    }
+
+    /** Menyalakan / mematikan modul Payroll. Izin: slug fungsi `finance.payroll.activate` (di rute). */
+    public function activation(Request $request): RedirectResponse
+    {
+        $on = $request->input('state') === 'on';
+        $row = PayrollSetting::current();
+
+        if ($on && !$request->boolean('confirm')) {
+            return redirect()->route('finance.payroll.settings')->withErrors(['Tick the confirmation box before switching payroll on.']);
+        }
+        if (!$on && DB::table('payroll_periods')->where('status', 'open')->whereNotNull('calculated_at')->exists()) {
+            return redirect()->route('finance.payroll.settings')->withErrors(['Payroll cannot be switched off while a calculated period is still open. Lock it first.']);
+        }
+
+        if ($on && ($blocked = app(\App\Services\Legal\LegalBasisService::class)->payrollBlockers())) {
+            return redirect()->route('finance.payroll.settings')->withErrors(['Payroll cannot be switched on: these legal-basis rules are not ready - ' . implode(', ', $blocked) . '. Review them in Business & Legal → Legal Basis, or switch Enforce off there.']);
+        }
+
+        $actor = session('user.id') ? (int) session('user.id') : null;
+        $row->forceFill(['module_enabled' => $on, 'enabled_at' => now(), 'enabled_by' => $actor])->save();
+        Log::info('Payroll module ' . ($on ? 'switched ON' : 'switched OFF'), ['by' => $actor]);
+
+        return redirect()->route('finance.payroll.settings')->with('success', $on ? 'Payroll is now switched on.' : 'Payroll is switched off. Existing periods are kept.');
+    }
+
+    public function simulation(Request $request): View
+    {
+        $employees = DB::table('employee as e')
+            ->leftJoin('employee_basic_data as b', 'b.employee_id', '=', 'e.employee_id')
+            ->leftJoin('employee_hr_profile as h', 'h.employee_id', '=', 'e.employee_id')
+            ->where('e.is_active', 1)->orderBy('b.first_name')
+            ->get(['e.employee_id', 'e.eci', 'b.first_name', 'b.last_name', 'h.payroll_activated']);
+
+        $now = now();
+        $in = $request->query() + [
+            'employee_id' => '', 'month' => $now->month, 'year' => $now->year, 'base_salary' => '', 'fixed_allowance' => '', 'other_taxable' => '',
+            'other_nontaxable' => '', 'manual_overtime' => '', 'overtime_hours' => '', 'overtime_day_type' => 'workday', 'overtime_basis' => '',
+            'reimbursement' => '', 'routine_deduction' => '', 'other_deduction' => '', 'loan_installment' => '', 'divisor' => '',
+            'days_present' => '', 'days_sick' => '', 'days_leave' => '', 'days_permit' => '', 'days_absent' => '', 'late_count' => '', 'late_minutes' => '',
+            'ptkp_code' => 'TK/0',
+        ];
+
+        $result = null;
+        $error = null;
+        if ($request->boolean('run')) {
+            try {
+                $result = $this->engine->simulateManual($in + [
+                    'has_tax_id' => $request->boolean('has_tax_id'), 'bpjs_health' => $request->boolean('bpjs_health'), 'bpjs_employment' => $request->boolean('bpjs_employment'),
+                ]);
+            } catch (\InvalidArgumentException $e) {
+                $error = $e->getMessage();
+            }
+        } else {
+            $in += ['has_tax_id' => 1, 'bpjs_health' => 1, 'bpjs_employment' => 1];
+        }
+        $in['has_tax_id'] = $request->boolean('run') ? $request->boolean('has_tax_id') : true;
+        $in['bpjs_health'] = $request->boolean('run') ? $request->boolean('bpjs_health') : true;
+        $in['bpjs_employment'] = $request->boolean('run') ? $request->boolean('bpjs_employment') : true;
+
+        return view('finance.payroll.simulation', [
+            'employees' => $employees, 'in' => $in, 'result' => $result, 'error' => $error,
+            'ptkpCodes' => PtkpRules::CODES, 'settings' => $this->engine->settings(),
+        ]);
+    }
+
+    /** Isian awal Simulation dari data sebenarnya karyawan (JSON; hanya membaca). */
+    public function simulationSnapshot(Request $request): JsonResponse
+    {
+        $id = (int) $request->query('employee_id', 0);
+        $month = (int) $request->query('month', 0);
+        $year = (int) $request->query('year', 0);
+        if ($id < 1 || $month < 1 || $month > 12 || $year < 2024 || $year > 2100) {
+            return response()->json(['success' => false, 'message' => 'Choose an employee, month and year.'], 422);
+        }
+        $start = sprintf('%04d-%02d-01', $year, $month);
+
+        try {
+            $snap = $this->engine->snapshot($id, $start, date('Y-m-t', strtotime($start)));
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return $snap
+            ? response()->json(['success' => true, 'data' => $snap])
+            : response()->json(['success' => false, 'message' => 'Employee not found or inactive.'], 404);
+    }
+}

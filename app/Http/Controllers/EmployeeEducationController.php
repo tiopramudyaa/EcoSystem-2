@@ -7,10 +7,13 @@ use App\Models\EmployeeEducation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Services\Management\EmployeeMasterData as MD;
 use Illuminate\Support\Facades\Log;
 
 class EmployeeEducationController extends Controller
 {
+    use \App\Http\Controllers\Concerns\FriendlyValidation;
+
     /**
      * Get all employee education records
      */
@@ -149,20 +152,21 @@ class EmployeeEducationController extends Controller
             'data' => $request->all()
         ]);
 
+        $cur = null;
         $validator = Validator::make($request->all(), [
             // 🎓 Education Information
-            'education_type' => 'required|string|max:50',
-            'institute_place' => 'required|string|max:255',
+            'education_type' => array_filter(['required', 'string', 'max:50', MD::inRule('education', 'education_type', $cur->education_type ?? null)]),
+            'institute_place' => ['required', 'string', 'max:' . MD::maxLength('education', 'institute_max_length')],
             'country' => 'nullable|string|max:255',
             'degree' => 'nullable|string|max:255',
             'duration_of_course' => 'nullable|string|max:100',
-            'final_grade' => 'nullable|string|max:50',
+            'final_grade' => ['nullable', 'string', 'max:' . MD::maxLength('education', 'grade_max_length')],
             'branch_of_study' => 'nullable|string|max:255',
             'unit' => 'nullable|string|max:255',
             
             // 📅 Academic Period
-            'start_year' => 'nullable|integer|min:1900|max:2100',
-            'graduation_year' => 'nullable|integer|min:1900|max:2100|gte:start_year',
+            'start_year' => 'nullable|integer|min:' . MD::maxLength('education', 'year_min') . '|max:' . MD::maxLength('education', 'year_max'),
+            'graduation_year' => 'nullable|integer|min:' . MD::maxLength('education', 'year_min') . '|max:' . MD::maxLength('education', 'year_max') . '|gte:start_year',
             
             // ⏳ Validity Period
             'valid_from' => 'nullable|date',
@@ -181,6 +185,8 @@ class EmployeeEducationController extends Controller
             'attachment_drive_link.url' => 'Drive link must be a valid URL',
         ]);
 
+        $this->friendly($validator);
+
         if ($validator->fails()) {
             Log::warning('Validation failed for education record', [
                 'employee_id' => $employeeId,
@@ -189,7 +195,7 @@ class EmployeeEducationController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Employee education record data is invalid.',
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -272,20 +278,21 @@ class EmployeeEducationController extends Controller
             'data' => $request->all()
         ]);
 
+        $cur = DB::table('employee_education')->where('education_id', $educationId)->first();
         $validator = Validator::make($request->all(), [
             // 🎓 Education Information
-            'education_type' => 'required|string|max:50',
-            'institute_place' => 'required|string|max:255',
+            'education_type' => array_filter(['required', 'string', 'max:50', MD::inRule('education', 'education_type', $cur->education_type ?? null)]),
+            'institute_place' => ['required', 'string', 'max:' . MD::maxLength('education', 'institute_max_length')],
             'country' => 'nullable|string|max:255',
             'degree' => 'nullable|string|max:255',
             'duration_of_course' => 'nullable|string|max:100',
-            'final_grade' => 'nullable|string|max:50',
+            'final_grade' => ['nullable', 'string', 'max:' . MD::maxLength('education', 'grade_max_length')],
             'branch_of_study' => 'nullable|string|max:255',
             'unit' => 'nullable|string|max:255',
             
             // 📅 Academic Period
-            'start_year' => 'nullable|integer|min:1900|max:2100',
-            'graduation_year' => 'nullable|integer|min:1900|max:2100|gte:start_year',
+            'start_year' => 'nullable|integer|min:' . MD::maxLength('education', 'year_min') . '|max:' . MD::maxLength('education', 'year_max'),
+            'graduation_year' => 'nullable|integer|min:' . MD::maxLength('education', 'year_min') . '|max:' . MD::maxLength('education', 'year_max') . '|gte:start_year',
             
             // ⏳ Validity Period
             'valid_from' => 'nullable|date',
@@ -304,6 +311,8 @@ class EmployeeEducationController extends Controller
             'attachment_drive_link.url' => 'Drive link must be a valid URL',
         ]);
 
+        $this->friendly($validator);
+
         if ($validator->fails()) {
             Log::warning('Validation failed for education record update', [
                 'employee_id' => $employeeId,
@@ -313,7 +322,7 @@ class EmployeeEducationController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Employee education record data is invalid.',
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors()
             ], 422);
         }

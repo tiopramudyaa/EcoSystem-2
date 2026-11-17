@@ -11,22 +11,9 @@
     $recentTkts  = $data['recent_tickets']  ?? collect();
     $stagingPend = $data['staging_pending'] ?? 0;
 
-    $hour      = now()->hour;
-    $greeting  = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
-    $firstName = explode(' ', $user['name'] ?? 'User')[0];
-    $roleName  = $user['role']['name'] ?? 'User';
-
-    $roleColors = [
-        'EC Administrator'                   => 'text-red-700 bg-red-50 border-red-100',
-        'EC User'                            => 'text-purple-700 bg-purple-50 border-purple-100',
-        'Delivery Support User'              => 'text-green-700 bg-green-50 border-green-100',
-        'Delivery Support Head'              => 'text-blue-700 bg-blue-50 border-blue-100',
-        'Delivery Support Manager'           => 'text-indigo-700 bg-indigo-50 border-indigo-100',
-        'Delivery Support Service Helpdesk'  => 'text-teal-700 bg-teal-50 border-teal-100',
-        'Delivery RPMO Head'                 => 'text-cyan-700 bg-cyan-50 border-cyan-100',
-        'Delivery Project Head'              => 'text-violet-700 bg-violet-50 border-violet-100',
-    ];
-    $roleBadge = $roleColors[$roleName] ?? 'text-gray-700 bg-gray-100 border-gray-200';
+    // Sapaan, nama depan, dan badge peran pindah ke kartu hero milik modul
+    // HR & General yang disisipkan di bawah. Variabelnya dihapus dari sini
+    // supaya tidak ada dua sumber untuk teks yang sama.
 
     $statusCfg = [
         'open'                    => ['label' => 'Open',           'dot' => 'bg-blue-500',   'text' => 'text-blue-700',   'bg' => 'bg-blue-50'  ],
@@ -53,34 +40,146 @@
         + ($stats['hold'] ?? 0);
 
     $cardBase = 'bg-white rounded-2xl border border-gray-200 shadow-sm p-4 transition-all group';
+
+    // Build dynamic KPI cards list based on user role permissions
+    $kpiCards = [];
+
+    if ($can('master.employee')) {
+        $kpiCards[] = [
+            'href' => route('management.employee.basic-data.index'),
+            'icon' => 'fa-users',
+            'bg'   => 'bg-blue-50',
+            'hover' => 'group-hover:bg-blue-100',
+            'color' => 'text-blue-600',
+            'border' => 'hover:border-blue-300',
+            'val'   => number_format($data['employee'] ?? 0),
+            'label' => 'Employees',
+        ];
+    }
+
+    if ($can('master.customer')) {
+        $kpiCards[] = [
+            'href' => route('master.customer.index'),
+            'icon' => 'fa-building',
+            'bg'   => 'bg-green-50',
+            'hover' => 'group-hover:bg-green-100',
+            'color' => 'text-green-600',
+            'border' => 'hover:border-green-300',
+            'val'   => number_format($data['customers'] ?? 0),
+            'label' => 'Customers',
+        ];
+    }
+
+    if ($can('delivery.project')) {
+        $kpiCards[] = [
+            'href' => route('projects.index'),
+            'icon' => 'fa-project-diagram',
+            'bg'   => 'bg-purple-50',
+            'hover' => 'group-hover:bg-purple-100',
+            'color' => 'text-purple-600',
+            'border' => 'hover:border-purple-300',
+            'val'   => number_format($data['active_projects'] ?? 0),
+            'label' => 'Active Projects',
+        ];
+    }
+
+    // ESS Cards DIHAPUS 3 Sep 2026 (bukan diperkecil fontnya).
+    //
+    // Blok ini menaruh Leave & Permit / My Attendance / My Overtime /
+    // Reimbursement sebagai "kartu KPI" berlabel teks di tengah grid yang
+    // seharusnya berisi ANGKA (Employees, Total Tickets, dst). Slot
+    // `text-lg sm:text-2xl font-bold ... truncate` dirancang untuk angka
+    // pendek, sehingga label panjang terpotong ("Leave & Pe...").
+    //
+    // Menghapus, bukan memperkecil font, karena keempatnya murni DUPLIKAT:
+    // Leave & Permit dan My Attendance sudah punya tombol cepat di hero
+    // ("Apply Leave & Permit" / "My Attendance") DAN ubin di Daily Access;
+    // Overtime dan Reimbursement sudah jadi item tingkat atas di sidebar.
+    // Prinsip yang sama sudah dipakai untuk Daily Access sendiri - lihat
+    // komentar di hr-general/dashboard/attendance.blade.php.
+
+    // Tickets Cards
+    if ($can('ticket') || $can('ticket.index') || !empty($stats['total'])) {
+        $kpiCards[] = [
+            'href' => route('ticket.index'),
+            'icon' => 'fa-ticket-alt',
+            'bg'   => 'bg-red-50',
+            'hover' => 'group-hover:bg-red-100',
+            'color' => 'text-red-600',
+            'border' => 'hover:border-red-300',
+            'val'   => number_format($stats['total'] ?? 0),
+            'label' => 'Total Tickets',
+        ];
+        $kpiCards[] = [
+            'href' => route('ticket.index'),
+            'icon' => 'fa-clock',
+            'bg'   => 'bg-blue-50',
+            'hover' => 'group-hover:bg-blue-100',
+            'color' => 'text-blue-600',
+            'border' => 'hover:border-blue-300',
+            'val'   => number_format($activeTickets ?? 0),
+            'label' => 'Active Tickets',
+        ];
+    }
+
+    // Tren mingguan: 7 hari terakhir vs 7 hari sebelumnya, dihitung dari deret grafik 30 hari yang sudah dimuat
+    // controller (TANPA kueri tambahan). Netral (bukan hijau/merah): lebih banyak tiket bukan otomatis "buruk".
+    $chartSeries = array_map('intval', (array) ($data['ticket_chart']['data'] ?? []));
+    if (count($chartSeries) >= 14 && !empty($kpiCards)) {
+        $wk  = array_sum(array_slice($chartSeries, -7));
+        $pwk = array_sum(array_slice($chartSeries, -14, 7));
+        foreach ($kpiCards as $i => $c) {
+            if (($c['label'] ?? '') === 'Total Tickets') {
+                if ($wk > 0 || $pwk > 0) {
+                    $kpiCards[$i]['sub']       = ($wk > $pwk ? '▲ ' : ($wk < $pwk ? '▼ ' : '• ')) . $wk . ' this week';
+                    $kpiCards[$i]['sub_title'] = "{$wk} tickets in the last 7 days vs {$pwk} in the 7 days before";
+                }
+            }
+        }
+    }
+
+    // SLA Compliance
+    if ($can('sla.report')) {
+        $slaVal = ($sla && $sla['compliance_rate'] !== null) ? $sla['compliance_rate'] . '%' : '-';
+        $kpiCards[] = [
+            'href' => route('sla.report'),
+            'icon' => 'fa-stopwatch',
+            'bg'   => 'bg-emerald-50',
+            'hover' => 'group-hover:bg-emerald-100',
+            'color' => 'text-emerald-600',
+            'border' => 'hover:border-emerald-300',
+            'val'   => $slaVal,
+            'label' => 'SLA Compliance',
+        ];
+    }
 @endphp
 
-<div class="space-y-5">
-
-{{-- ── Row 1: Greeting ──────────────────────────────────────────────────────── --}}
-<div class="flex items-center justify-between">
-    <div>
-        <div class="flex items-center gap-2 flex-wrap">
-            <h2 class="text-xl font-bold text-gray-800">{{ $greeting }}, {{ $firstName }}</h2>
-            <span class="text-xs font-semibold border px-2.5 py-0.5 rounded-full {{ $roleBadge }}">{{ $roleName }}</span>
-        </div>
-        <p class="text-xs text-gray-400 mt-0.5">
-            {{ now()->isoFormat('dddd, D MMMM Y') }}
-            @if(!empty($user['position'])) - {{ $user['position'] }}@endif
-        </p>
-    </div>
-    <div class="hidden sm:flex items-center gap-3">
-        @if($stagingPend > 0 && $can('tickets.staging'))
-        <a href="{{ route('staging.index') }}"
-            class="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-100 transition">
-            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-            {{ $stagingPend }} pending validation
-        </a>
-        @endif
-        <span class="text-xs text-gray-400 font-mono" id="dashClock"></span>
-    </div>
+@section('page-actions')
+<div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+    @if($stagingPend > 0 && $can('tickets.staging'))
+    <a href="{{ route('staging.index') }}"
+        title="{{ $stagingPend }} pending validation"
+        class="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg hover:bg-amber-100 transition shadow-sm whitespace-nowrap active:scale-95">
+        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+        <span class="hidden md:inline">{{ $stagingPend }} pending validation</span>
+        <span class="inline md:hidden">{{ $stagingPend }} Pending</span>
+    </a>
+    @endif
+    {{-- Jam perusahaan (WIB), terang dan tenang: tanpa detik (tak ada gerakan yang mengalihkan perhatian). --}}
+    <span class="hidden shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium tabular-nums text-gray-700 lg:inline-flex" title="Company time">
+        <i class="far fa-clock text-gray-400"></i><span id="dashClock">{{ now()->format('H:i') }}</span><span class="text-gray-400">{{ ['Asia/Jakarta' => 'WIB', 'Asia/Makassar' => 'WITA', 'Asia/Jayapura' => 'WIT'][config('app.timezone')] ?? config('app.timezone') }}</span>
+    </span>
 </div>
+@endsection
 
+{{-- Wadah dashboard: LEBAR PENUH dan responsif. Sebelumnya dibatasi 1600 px sehingga saat browser di-zoom-out
+     konten tidak ikut melebar (keluhan pemilik 8 Okt). Kini kolom-kolom grid yang menyesuaikan lebar layar
+     (auto-fit / breakpoint xl), bukan batas lebar tetap. --}}
+<div class="w-full space-y-6">
+
+@php
+    $cardBase = $cardBase ?? 'bg-white rounded-2xl border border-gray-200 shadow-sm p-4 transition-all group';
+@endphp
 {{-- ── Superadmin System Health & Security Snapshot ────────────────────────────
      Only ever populated by the controller for EC Administrator - gated on the
      data being present rather than re-deriving the role check here, so this
@@ -157,220 +256,186 @@
 </div>
 @endif
 
-{{-- ── Command Center: pinned-menu shortcuts (see sidebar's pin button, dashboard.blade.php) ── --}}
-<div class="bg-white rounded-2xl border border-gray-200 shadow-sm px-4 py-3">
-    <div class="flex items-center justify-between mb-2.5">
-        <div class="flex items-center gap-2">
-            <i class="fas fa-bolt text-red-700 text-sm"></i>
-            <h3 class="text-sm font-bold text-gray-800">Command Center</h3>
-        </div>
-        <div class="flex gap-1 bg-gray-100 p-1 rounded-lg">
-            <button type="button" id="ccTabPinned" onclick="ccSwitchTab('pinned')" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors">Pinned</button>
-            <button type="button" id="ccTabAll" onclick="ccSwitchTab('all')" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors">All Menu</button>
+{{-- ── Row 1: Hero + Command Center + blok Attendance (partial modul HR & General) ───────── --}}
+@push('dash-after-hero')
+{{-- Ringkasan perusahaan (didorong ke slot 'dash-after-hero' di partial, tepat di bawah header) - satu kartu bersekat, bukan deretan kartu terpisah ──── --}}
+@if(!empty($kpiCards))
+<section aria-label="Company overview">
+    <div class="mb-2 flex items-end justify-between">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500">Company overview</h3>
+    </div>
+    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        @php
+            // Kolom mengikuti jumlah kartu yang boleh dilihat pengguna, agar strip selalu terisi penuh
+            // (nama kelas ditulis utuh supaya terbaca Tailwind CDN).
+            $kpiCols = [1 => 'xl:grid-cols-1', 2 => 'xl:grid-cols-2', 3 => 'xl:grid-cols-3', 4 => 'xl:grid-cols-4', 5 => 'xl:grid-cols-5'][count($kpiCards)] ?? 'xl:grid-cols-6';
+        @endphp
+        <div class="grid grid-cols-2 sm:grid-cols-3 {{ $kpiCols }} divide-x divide-y divide-gray-100 xl:divide-y-0">
+            @foreach($kpiCards as $card)
+            <a href="{{ $card['href'] }}" class="group relative flex items-center gap-3 px-3 py-3.5 transition-colors hover:bg-gray-50 sm:gap-3.5 sm:px-5 sm:py-4">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ $card['bg'] }}">
+                    <i class="fas {{ $card['icon'] }} {{ $card['color'] }} text-sm"></i>
+                </span>
+                <span class="min-w-0">
+                    <span class="block truncate text-2xl font-bold leading-none tabular-nums text-gray-900">{{ $card['val'] }}</span>
+                    {{-- Label + tren dalam SATU baris, supaya tinggi semua sel sama (sebelumnya sel Total Tickets lebih tinggi). --}}
+                    <span class="mt-1 flex items-baseline gap-2 truncate text-xs font-medium text-gray-500">
+                        <span class="truncate">{{ $card['label'] }}</span>
+                        @if(!empty($card['sub']))
+                        <span class="shrink-0 font-normal text-gray-400" title="{{ $card['sub_title'] ?? '' }}">{{ $card['sub'] }}</span>
+                        @endif
+                    </span>
+                </span>
+                <i class="fas fa-chevron-right absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-gray-300 opacity-0 transition-opacity group-hover:opacity-100"></i>
+            </a>
+            @endforeach
         </div>
     </div>
-    <div id="ccGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;"></div>
-</div>
-
-{{-- ── Row 2: KPI Cards ──────────────────────────────────────────────────────── --}}
-<div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
-
-    {{-- Employees --}}
-    @if($can('master.employee'))
-    <a href="{{ route('master.employee.index') }}" class="{{ $cardBase }} hover:border-blue-300 hover:shadow-md">
-    @else
-    <div class="{{ $cardBase }}">
-    @endif
-        <div class="w-9 h-9 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center mb-3 transition">
-            <i class="fas fa-users text-blue-600 text-sm"></i>
-        </div>
-        <p class="text-2xl font-bold text-gray-800">{{ $data['employee'] ?? 0 }}</p>
-        <p class="text-xs text-gray-400 mt-0.5">Employees</p>
-    @if($can('master.employee'))</a>@else</div>@endif
-
-    {{-- Customers --}}
-    @if($can('master.customer'))
-    <a href="{{ route('master.customer.index') }}" class="{{ $cardBase }} hover:border-green-300 hover:shadow-md">
-    @else
-    <div class="{{ $cardBase }}">
-    @endif
-        <div class="w-9 h-9 rounded-xl bg-green-50 group-hover:bg-green-100 flex items-center justify-center mb-3 transition">
-            <i class="fas fa-building text-green-600 text-sm"></i>
-        </div>
-        <p class="text-2xl font-bold text-gray-800">{{ $data['customers'] ?? 0 }}</p>
-        <p class="text-xs text-gray-400 mt-0.5">Customers</p>
-    @if($can('master.customer'))</a>@else</div>@endif
-
-    {{-- Active Projects --}}
-    @if($can('delivery.project'))
-    <a href="{{ route('projects.index') }}" class="{{ $cardBase }} hover:border-purple-300 hover:shadow-md">
-    @else
-    <div class="{{ $cardBase }}">
-    @endif
-        <div class="w-9 h-9 rounded-xl bg-purple-50 group-hover:bg-purple-100 flex items-center justify-center mb-3 transition">
-            <i class="fas fa-project-diagram text-purple-600 text-sm"></i>
-        </div>
-        <p class="text-2xl font-bold text-gray-800">{{ $data['active_projects'] ?? 0 }}</p>
-        <p class="text-xs text-gray-400 mt-0.5">Active Projects</p>
-    @if($can('delivery.project'))</a>@else</div>@endif
-
-    {{-- Total Tickets --}}
-    <a href="{{ route('ticket.index') }}" class="{{ $cardBase }} hover:border-red-300 hover:shadow-md">
-        <div class="w-9 h-9 rounded-xl bg-red-50 group-hover:bg-red-100 flex items-center justify-center mb-3 transition">
-            <i class="fas fa-ticket-alt text-red-600 text-sm"></i>
-        </div>
-        <p class="text-2xl font-bold text-gray-800">{{ number_format($stats['total'] ?? 0) }}</p>
-        <p class="text-xs text-gray-400 mt-0.5">Total Tickets</p>
-    </a>
-
-    {{-- Active Tickets --}}
-    <a href="{{ route('ticket.index') }}" class="{{ $cardBase }} hover:border-blue-300 hover:shadow-md">
-        <div class="w-9 h-9 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center mb-3 transition">
-            <i class="fas fa-clock text-blue-600 text-sm"></i>
-        </div>
-        <p class="text-2xl font-bold text-gray-800">{{ $activeTickets }}</p>
-        <p class="text-xs text-gray-400 mt-0.5">Active Tickets</p>
-    </a>
-
-    {{-- SLA Compliance --}}
-    @if($can('sla.report'))
-    <a href="{{ route('sla.report') }}" class="{{ $cardBase }} hover:border-emerald-300 hover:shadow-md">
-    @else
-    <div class="{{ $cardBase }}">
-    @endif
-        <div class="w-9 h-9 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center mb-3 transition">
-            <i class="fas fa-stopwatch text-emerald-600 text-sm"></i>
-        </div>
-        @if($sla && $sla['compliance_rate'] !== null)
-            <p class="text-2xl font-bold {{ $sla['compliance_rate'] >= 80 ? 'text-emerald-600' : ($sla['compliance_rate'] >= 60 ? 'text-yellow-600' : 'text-red-600') }}">
-                {{ $sla['compliance_rate'] }}%
-            </p>
-        @else
-            <p class="text-2xl font-bold text-gray-400">-</p>
-        @endif
-        <p class="text-xs text-gray-400 mt-0.5">SLA Compliance</p>
-    @if($can('sla.report'))</a>@else</div>@endif
-
-</div>
-
-{{-- ── Row 3: Ticket Status Breakdown ──────────────────────────────────────── --}}
-@if(!empty($stats))
-<div class="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-4">
-    <div class="flex items-center justify-between mb-3">
-        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ticket Status Breakdown</p>
-        <a href="{{ route('ticket.index') }}" class="text-xs font-semibold text-red-700 hover:text-red-800">View all →</a>
-    </div>
-    <div class="grid grid-cols-4 sm:grid-cols-8 gap-3">
-        @foreach($statusCfg as $key => $cfg)
-        <div class="text-center">
-            <p class="text-xl font-bold text-gray-800">{{ $stats[$key] ?? 0 }}</p>
-            <div class="flex items-center justify-center gap-1 mt-1">
-                <span class="w-1.5 h-1.5 rounded-full {{ $cfg['dot'] }} flex-shrink-0"></span>
-                <p class="text-[10px] text-gray-400 leading-tight">{{ $cfg['label'] }}</p>
-            </div>
-        </div>
-        @endforeach
-    </div>
-</div>
+</section>
 @endif
+@endpush
 
-{{-- ── Row 4: Chart + Team Load ──────────────────────────────────────────────── --}}
-@if(!empty($data['ticket_chart']['labels']))
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+@include('hr-general.dashboard.attendance')
 
-    <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-        <div class="flex items-center justify-between mb-4">
+{{-- ── Row 3: Tiket - ringkasan status + grafik (kiri) dan beban agen (kanan) ──────────── --}}
+@if(!empty($stats) || !empty($data['ticket_chart']['labels']))
+@php $statusTotal = max(1, collect(array_keys($statusCfg))->sum(fn ($k) => (int) ($stats[$k] ?? 0))); @endphp
+<section aria-label="Tickets" class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+
+    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm xl:col-span-2">
+        <div class="flex items-center justify-between border-b border-gray-100 px-5 py-3.5">
             <div>
-                <p class="text-sm font-semibold text-gray-800">Ticket Submissions</p>
-                <p class="text-xs text-gray-400 mt-0.5">Last 30 days</p>
+                <h3 class="text-sm font-semibold text-gray-900">Ticket overview</h3>
+                <p class="text-xs text-gray-500">Status distribution and submissions over the last 30 days</p>
             </div>
-            <span class="text-xs text-gray-400">{{ now()->format('d M Y') }}</span>
+            <a href="{{ route('ticket.index') }}" class="text-xs font-semibold primary-text hover:underline">View all &rarr;</a>
         </div>
-        <canvas id="dashTicketChart" height="80"></canvas>
+
+        @if(!empty($stats))
+        <div class="px-5 pt-5">
+            {{-- Bar bertumpuk: panjang tiap segmen = porsi status itu dari seluruh tiket. --}}
+            <div class="flex h-2 w-full overflow-hidden rounded-full bg-gray-100" role="img" aria-label="Ticket status distribution">
+                @foreach($statusCfg as $key => $cfg)
+                    @php $n = (int) ($stats[$key] ?? 0); @endphp
+                    @if($n > 0)
+                    <span class="{{ $cfg['dot'] }} h-full" style="width: {{ round($n / $statusTotal * 100, 2) }}%" title="{{ $cfg['label'] }}: {{ $n }}"></span>
+                    @endif
+                @endforeach
+            </div>
+            <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+                @foreach($statusCfg as $key => $cfg)
+                <div class="flex items-center gap-2.5">
+                    <span class="h-2 w-2 shrink-0 rounded-full {{ $cfg['dot'] }}"></span>
+                    <div class="min-w-0">
+                        <dt class="truncate text-[11px] text-gray-500">{{ $cfg['label'] }}</dt>
+                        <dd class="text-base font-bold leading-tight tabular-nums text-gray-900">{{ number_format($stats[$key] ?? 0) }}</dd>
+                    </div>
+                </div>
+                @endforeach
+            </dl>
+        </div>
+        @endif
+
+        @if(!empty($data['ticket_chart']['labels']))
+        <div class="px-5 pb-5 pt-5">
+            <div class="relative h-56">
+                <canvas id="dashTicketChart"></canvas>
+            </div>
+        </div>
+        @endif
     </div>
 
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex flex-col">
-        <div class="flex items-center justify-between mb-4">
+    <div class="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div class="flex items-center justify-between border-b border-gray-100 px-5 py-3.5">
             <div>
-                <p class="text-sm font-semibold text-gray-800">Agent Workload</p>
-                <p class="text-xs text-gray-400 mt-0.5">Active tickets per agent</p>
+                <h3 class="text-sm font-semibold text-gray-900">Agent workload</h3>
+                <p class="text-xs text-gray-500">Active tickets per agent</p>
             </div>
-            @if($can('ticket.consultant-workload'))
-            <a href="{{ route('ticket.consultant-workload') }}" class="text-xs font-semibold text-red-700 hover:text-red-800">All →</a>
+            @if($can('master.employee'))
+            <a href="{{ route('master.employee.index') }}" class="text-xs font-semibold primary-text hover:underline">All &rarr;</a>
             @endif
         </div>
         @if($teamLoad->isEmpty())
-        <div class="flex-1 flex items-center justify-center text-center py-6">
+        <div class="flex flex-1 items-center justify-center px-5 py-10 text-center">
             <div>
-                <i class="fas fa-check-circle text-green-400 text-3xl mb-2"></i>
-                <p class="text-xs text-gray-400">No active workload</p>
+                <i class="fas fa-check-circle mb-2 text-3xl text-green-400"></i>
+                <p class="text-xs text-gray-500">No active workload</p>
             </div>
         </div>
         @else
         @php $maxLoad = $teamLoad->max('open_count') ?: 1; @endphp
-        <div class="space-y-3 flex-1">
+        <ul class="flex-1 divide-y divide-gray-100">
             @foreach($teamLoad as $m)
             @php
                 $pct   = round(($m->open_count / $maxLoad) * 100);
                 $barCl = $pct >= 80 ? 'bg-red-500' : ($pct >= 50 ? 'bg-amber-500' : 'bg-emerald-500');
+                $initials = collect(preg_split('/\s+/', trim((string) $m->name)))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
             @endphp
-            <div>
-                <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-medium text-gray-700 truncate max-w-[75%]">{{ $m->name }}</span>
-                    <span class="text-xs font-bold text-gray-800">{{ $m->open_count }}</span>
+            <li class="flex items-center gap-3 px-5 py-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-600">{{ $initials ?: '?' }}</span>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="truncate text-xs font-medium text-gray-800">{{ $m->name }}</span>
+                        <span class="text-xs font-bold tabular-nums text-gray-900">{{ $m->open_count }}</span>
+                    </div>
+                    <div class="mt-1.5 h-1.5 w-full rounded-full bg-gray-100">
+                        <div class="{{ $barCl }} h-1.5 rounded-full transition-all" style="width: {{ $pct }}%"></div>
+                    </div>
                 </div>
-                <div class="w-full bg-gray-100 rounded-full h-1.5">
-                    <div class="{{ $barCl }} h-1.5 rounded-full transition-all" style="width:{{ $pct }}%"></div>
-                </div>
-            </div>
+            </li>
             @endforeach
-        </div>
+        </ul>
         @endif
     </div>
 
-</div>
+</section>
 @endif
 
-{{-- ── Row 5: Recent Tickets + Quick Nav ───────────────────────────────────── --}}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+{{-- ── Row 4: Tiket terbaru (kiri) + navigasi cepat (kanan) ─────────────────────────────── --}}
+<section aria-label="Recent activity" class="grid grid-cols-1 gap-6 xl:grid-cols-3">
 
-    <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center">
-                    <i class="fas fa-ticket-alt text-red-600 text-xs"></i>
-                </div>
-                <p class="text-sm font-semibold text-gray-800">Recent Tickets</p>
+    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm xl:col-span-2">
+        <div class="flex items-center justify-between border-b border-gray-100 px-5 py-3.5">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-900">Recent tickets</h3>
+                <p class="text-xs text-gray-500">Latest tickets across all customers</p>
             </div>
-            <a href="{{ route('ticket.index') }}" class="text-xs font-semibold text-red-700 hover:text-red-800">View all →</a>
+            <a href="{{ route('ticket.index') }}" class="text-xs font-semibold primary-text hover:underline">View all &rarr;</a>
         </div>
         @if($recentTkts->isEmpty())
-        <div class="py-12 text-center text-sm text-gray-400">No tickets yet</div>
+        <div class="py-12 text-center text-sm text-gray-500">No tickets yet</div>
         @else
-        <div class="divide-y divide-gray-50">
+        <div class="hidden grid-cols-12 gap-3 border-b border-gray-100 bg-gray-50/60 px-5 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 md:grid">
+            <span class="col-span-7">Ticket</span>
+            <span class="col-span-2">Priority</span>
+            <span class="col-span-3 text-right">Status</span>
+        </div>
+        <div class="divide-y divide-gray-100">
             @foreach($recentTkts as $t)
             @php
                 $sc = $statusCfg[$t->status] ?? ['dot'=>'bg-gray-400','text'=>'text-gray-500','bg'=>'bg-gray-100','label'=>'Unknown'];
                 $pc = $prioCfg[$t->ticket_priority ?? ''] ?? 'text-gray-500 bg-gray-100';
             @endphp
-            <a href="{{ route('ticket.show', $t->ticket_id) }}"
-                class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50/80 transition-colors group">
-                <span class="w-2 h-2 rounded-full {{ $sc['dot'] }} flex-shrink-0 mt-0.5"></span>
-                <div class="flex-1 min-w-0">
+            <a href="{{ route('ticket.show', $t->ticket_id) }}" class="group grid grid-cols-12 items-center gap-3 px-5 py-3 transition-colors hover:bg-gray-50">
+                <div class="col-span-12 min-w-0 md:col-span-7">
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-gray-700 group-hover:text-red-700 transition-colors font-mono">#{{ $t->ticket_number }}</span>
-                        <span class="text-xs text-gray-500 truncate hidden sm:block">{{ Str::limit($t->description ?? '', 42) }}</span>
+                        <span class="font-mono text-xs font-bold text-gray-800 group-hover:text-red-700">#{{ $t->ticket_number }}</span>
+                        <span class="truncate text-xs text-gray-600">{{ Str::limit($t->description ?? '', 60) }}</span>
                     </div>
-                    <p class="text-[10px] text-gray-400 mt-0.5">
+                    <p class="mt-0.5 truncate text-[11px] text-gray-500">
                         {{ $t->customer_name ?? '-' }} &middot; {{ $t->pic_name ?? 'Unassigned' }} &middot; {{ \Carbon\Carbon::parse($t->created_at)->diffForHumans() }}
                     </p>
                 </div>
-                <div class="flex items-center gap-1.5 flex-shrink-0">
+                <div class="hidden md:col-span-2 md:block">
                     @if($t->ticket_priority)
-                    <span class="text-[10px] font-semibold {{ $pc }} px-1.5 py-0.5 rounded-full hidden md:inline-flex">{{ $t->ticket_priority }}</span>
+                    <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold {{ $pc }}">{{ $t->ticket_priority }}</span>
+                    @else
+                    <span class="text-xs text-gray-400">&ndash;</span>
                     @endif
-                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold {{ $sc['text'] }} {{ $sc['bg'] }} px-2 py-0.5 rounded-full whitespace-nowrap">
-                        {{ $sc['label'] }}
+                </div>
+                <div class="col-span-12 md:col-span-3 md:text-right">
+                    <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold {{ $sc['text'] }} {{ $sc['bg'] }}">
+                        <span class="h-1.5 w-1.5 rounded-full {{ $sc['dot'] }}"></span>{{ $sc['label'] }}
                     </span>
                 </div>
             </a>
@@ -379,8 +444,11 @@
         @endif
     </div>
 
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-        <p class="text-sm font-semibold text-gray-800 mb-4">Quick Navigation</p>
+    <div class="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div class="border-b border-gray-100 px-5 py-3.5">
+            <h3 class="text-sm font-semibold text-gray-900">Quick navigation</h3>
+            <p class="text-xs text-gray-500">Jump to the areas you use most</p>
+        </div>
         @php
             $navItems = [];
             if ($can('tickets.inbox'))
@@ -400,27 +468,49 @@
             if ($can('sla.report'))
                 $navItems[] = ['href' => route('sla.report'),            'icon' => 'fa-stopwatch',       'bg' => 'bg-emerald-50','color' => 'text-emerald-600','label' => 'SLA'];
             if ($can('management'))
-                $navItems[] = ['href' => route('admin.index'),           'icon' => 'fa-shield-alt',      'bg' => 'bg-gray-100',  'color' => 'text-gray-600',   'label' => 'Control'];
+                $navItems[] = ['href' => route('admin.index'),           'icon' => 'fa-shield-alt',      'bg' => 'bg-gray-100',  'color' => 'text-gray-600',   'label' => 'Control Center'];
         @endphp
-        <div class="grid grid-cols-2 gap-2">
+        <ul class="flex-1 divide-y divide-gray-100">
             @foreach($navItems as $nav)
-            <a href="{{ $nav['href'] }}"
-                class="relative flex flex-col items-center gap-2 p-3 rounded-xl {{ $nav['bg'] }} hover:ring-2 hover:ring-offset-1 hover:ring-gray-200 transition-all text-center">
-                @if(!empty($nav['badge']) && $nav['badge'] > 0)
-                <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                    {{ $nav['badge'] > 9 ? '9+' : $nav['badge'] }}
-                </span>
-                @endif
-                <i class="fas {{ $nav['icon'] }} {{ $nav['color'] }} text-base"></i>
-                <p class="text-[11px] font-semibold text-gray-600 leading-tight">{{ $nav['label'] }}</p>
-            </a>
+            <li>
+                <a href="{{ $nav['href'] }}" class="group flex items-center gap-3 px-5 py-2.5 transition-colors hover:bg-gray-50">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ $nav['bg'] }}">
+                        <i class="fas {{ $nav['icon'] }} {{ $nav['color'] }} text-xs"></i>
+                    </span>
+                    <span class="flex-1 text-sm font-medium text-gray-800">{{ $nav['label'] }}</span>
+                    @if(!empty($nav['badge']) && $nav['badge'] > 0)
+                    <span class="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">{{ $nav['badge'] > 99 ? '99+' : $nav['badge'] }}</span>
+                    @endif
+                    <i class="fas fa-chevron-right text-[10px] text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-gray-500"></i>
+                </a>
+            </li>
             @endforeach
-        </div>
+        </ul>
 
-        {{-- System health has its own dedicated panel above (Superadmin Control Panel) - not duplicated here. --}}
+        @if($can('management'))
+        <div class="border-t border-gray-100 bg-gray-50/60 px-5 py-3">
+            <p class="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">System health</p>
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="h-2 w-2 rounded-full bg-green-500" id="dashDbDot"></span>
+                        <span class="text-xs text-gray-600">Database</span>
+                    </div>
+                    <span class="text-xs font-medium text-gray-600" id="dashDbTxt">Checking...</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="h-2 w-2 rounded-full bg-gray-300" id="dashQueueDot"></span>
+                        <span class="text-xs text-gray-600">Queue</span>
+                    </div>
+                    <span class="text-xs font-medium text-gray-600" id="dashQueueTxt">Checking...</span>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 
-</div>
+</section>
 
 </div>
 
@@ -442,7 +532,8 @@
                     borderColor: '#dc2626',
                     backgroundColor: 'rgba(220,38,38,0.07)',
                     borderWidth: 2,
-                    pointRadius: 3,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
                     pointBackgroundColor: '#dc2626',
                     tension: 0.4,
                     fill: true,
@@ -450,6 +541,8 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { display: false },
                     tooltip: { callbacks: { label: c => c.parsed.y + ' ticket' + (c.parsed.y !== 1 ? 's' : '') } }
@@ -462,121 +555,30 @@
         });
     }
 
+    // Jam zona perusahaan + koreksi selisih jam browser (sama dengan jam kartu sapaan); diperbarui tiap 15 dtk.
+    const clockTz = @json(config('app.timezone'));
+    const clockSkew = {{ now()->getTimestampMs() }} - Date.now();
+    const clockFmt = new Intl.DateTimeFormat('en-GB', { timeZone: clockTz, hour: '2-digit', minute: '2-digit', hour12: false });
     function updateClock() {
         const el = document.getElementById('dashClock');
-        if (el) el.textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (el) el.textContent = clockFmt.format(new Date(Date.now() + clockSkew));
     }
-    updateClock();
-    setInterval(updateClock, 1000);
-})();
-</script>
+    setInterval(updateClock, 15000);
 
-<script>
-// Command Center - reads the sidebar's already-rendered nav links (this page
-// and the sidebar share one document) rather than querying a backend menu
-// list, so it only ever shows exactly what this user's sidebar shows them.
-(function () {
-    var ccAllItems = [];
-    var ccCurrentTab = 'pinned';
-
-    function ccEsc(str) {
-        return String(str == null ? '' : str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
-    function ccCollectMenuItems() {
-        var scroll = document.getElementById('sidebarNavScroll');
-        if (!scroll) return [];
-        var items = [];
-
-        scroll.querySelectorAll('a.nav-link').forEach(function (link) {
-            var href = link.getAttribute('href');
-            if (!href || href === '#') return;
-
-            var textEl = link.querySelector('.nav-text');
-            var label = (textEl ? textEl.textContent : link.textContent).trim();
-            if (!label) return;
-
-            var iconEl = link.querySelector('.nav-icon i');
-            var icon = iconEl ? iconEl.className : 'fas fa-circle';
-
-            // Breadcrumb: walk up through every ancestor "...Dropdown" container
-            // and read its toggler button's own label (e.g. Reporting > Support).
-            var crumbs = [];
-            var el = link.parentElement;
-            while (el && el !== scroll) {
-                if (el.id && /Dropdown$/.test(el.id)) {
-                    var toggler = el.previousElementSibling;
-                    var tTextEl = toggler ? toggler.querySelector('.nav-text') : null;
-                    var tText = toggler ? (tTextEl ? tTextEl.textContent : toggler.textContent).trim() : '';
-                    if (tText) crumbs.unshift(tText);
-                }
-                el = el.parentElement;
-            }
-
-            items.push({ href: href, label: label, icon: icon, breadcrumb: crumbs.join(' → ') });
-        });
-
-        return items;
-    }
-
-    function ccRender() {
-        var grid = document.getElementById('ccGrid');
-        if (!grid) return;
-
-        var pinned = window.PINNED_MENUS || [];
-        var items = ccCurrentTab === 'pinned'
-            ? ccAllItems.filter(function (it) { return pinned.indexOf(it.href) !== -1; })
-            : ccAllItems;
-
-        document.getElementById('ccTabPinned').className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ' + (ccCurrentTab === 'pinned' ? 'bg-red-800 text-white' : 'text-gray-500 hover:text-gray-700');
-        document.getElementById('ccTabAll').className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ' + (ccCurrentTab === 'all' ? 'bg-red-800 text-white' : 'text-gray-500 hover:text-gray-700');
-
-        if (!items.length) {
-            grid.innerHTML = '<div class="col-span-full text-center text-xs text-gray-400 py-6">' + (
-                ccCurrentTab === 'pinned'
-                    ? 'No pinned menus yet. Hover any menu in the sidebar and click the <i class="fas fa-thumbtack"></i> icon to add it here.'
-                    : 'No accessible menu items.'
-            ) + '</div>';
-            return;
-        }
-
-        grid.innerHTML = items.map(function (it) {
-            var unpinBtn = ccCurrentTab === 'pinned'
-                ? '<button type="button" class="cc-unpin-btn flex items-center justify-center rounded-full text-gray-300 hover:text-red-600 hover:bg-red-50" style="position:absolute;top:4px;right:4px;width:16px;height:16px;font-size:10px;line-height:1;" data-href="' + ccEsc(it.href) + '" title="Unpin"><i class="fas fa-xmark"></i></button>'
-                : '';
-            return '<a href="' + ccEsc(it.href) + '" class="relative flex items-center rounded-lg border border-gray-200 hover:border-red-300 hover:shadow-sm transition-all" style="gap:10px;padding:8px 10px;">'
-                + '<div class="rounded-md bg-red-50 text-red-700 text-xs flex items-center justify-center flex-shrink-0" style="width:32px;height:32px;"><i class="' + ccEsc(it.icon) + '"></i></div>'
-                + '<div class="min-w-0 flex-1" style="padding-right:14px;">'
-                + '<p class="text-xs font-bold text-gray-800 truncate">' + ccEsc(it.label) + '</p>'
-                + (it.breadcrumb ? '<p class="text-[10px] text-gray-400 truncate">' + ccEsc(it.breadcrumb) + '</p>' : '')
-                + '</div>'
-                + unpinBtn
-                + '</a>';
-        }).join('');
-
-        grid.querySelectorAll('.cc-unpin-btn').forEach(function (btn) {
-            btn.addEventListener('click', function (ev) {
-                ev.preventDefault();
-                ev.stopPropagation();
-                if (typeof window.toggleMenuPin === 'function') window.toggleMenuPin(btn.dataset.href, null);
-                ccRender();
-            });
-        });
-    }
-
-    window.ccSwitchTab = function (tab) {
-        ccCurrentTab = tab;
-        ccRender();
-    };
-
-    // Sidebar's toggleMenuPin() (dashboard.blade.php) calls this after every
-    // pin/unpin so this widget stays in sync without a page reload.
-    window.onPinnedMenusChanged = ccRender;
-
-    document.addEventListener('DOMContentLoaded', function () {
-        ccAllItems = ccCollectMenuItems();
-        ccRender();
-    });
+    @if($can('management'))
+    fetch('/api/health', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(d => {
+            const dbOk = d.checks?.database === 'ok';
+            document.getElementById('dashDbDot').className = 'w-2 h-2 rounded-full ' + (dbOk ? 'bg-green-500' : 'bg-red-500');
+            document.getElementById('dashDbTxt').textContent = dbOk ? 'Connected' : 'Error';
+            const failed  = d.checks?.queue_failed  ?? 0;
+            const pending = d.checks?.queue_pending ?? 0;
+            document.getElementById('dashQueueDot').className = 'w-2 h-2 rounded-full ' + (failed === 0 ? 'bg-green-500' : 'bg-orange-500');
+            document.getElementById('dashQueueTxt').textContent = pending + ' pending' + (failed ? ', ' + failed + ' failed' : '');
+        })
+        .catch(() => {});
+    @endif
 })();
 </script>
 @endpush

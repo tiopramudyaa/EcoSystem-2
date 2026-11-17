@@ -55,6 +55,9 @@ class SettingsController extends Controller
         'bank'           => 'Bank Account',
         'payment'        => 'Basic Payment',
         'attachment'     => 'Attachment',
+        'hr_profile'     => 'HR Profile', // HC-D20: 1:1 employee_hr_profile (slug dibuat 2026_10_02_000001)
+        'salary'         => 'Salary Components', // kotak di tab Contract; slug dibuat 2026_10_07_000004
+        'compensation'   => 'Compensation', // Payroll Fase 0 (HC-D21): komponen gaji + PTKP/BPJS; hanya Master > Employee (slug 2026_10_08_000002)
     ];
 
     public function index(Request $request)
@@ -271,6 +274,34 @@ class SettingsController extends Controller
     }
 
     /**
+     * Pengaman keterbacaan Accent color: teks sidebar & tombol berwarna PUTIH, jadi warna yang terlalu terang
+     * (luminans relatif > 0,40 - kuning, putih, pastel) digelapkan sampai ≤ 0,34. Orange bawaan (#f57c00 ≈ 0,34)
+     * dan seluruh warna siap pakai lolos tanpa perubahan. Aturan SAMA dengan accentReadable() di settings/index.
+     */
+    private static function readableAccent(string $hex): string
+    {
+        $r = hexdec(substr($hex, 1, 2));
+        $g = hexdec(substr($hex, 3, 2));
+        $b = hexdec(substr($hex, 5, 2));
+        $lin = static function (float $v): float {
+            $v /= 255;
+
+            return $v <= 0.03928 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4;
+        };
+        $lum = static fn (float $r, float $g, float $b): float => 0.2126 * $lin($r) + 0.7152 * $lin($g) + 0.0722 * $lin($b);
+
+        if ($lum($r, $g, $b) <= 0.40) {
+            return $hex;
+        }
+        $f = 1.0;
+        while ($lum($r * $f, $g * $f, $b * $f) > 0.34 && $f > 0.2) {
+            $f -= 0.04;
+        }
+
+        return sprintf('#%02x%02x%02x', (int) round($r * $f), (int) round($g * $f), (int) round($b * $f));
+    }
+
+    /**
      * Bersihkan payload dari client: hanya key yang dikenal yang dipertahankan,
      * boolean dinormalkan, dan field enum divalidasi terhadap whitelist
      * (nilai tak dikenal diabaikan sehingga nilai lama tetap dipakai).
@@ -293,7 +324,7 @@ class SettingsController extends Controller
                 }
             } elseif ($key === 'primary_color') {
                 if (is_string($value) && preg_match('/^#[0-9a-fA-F]{6}$/', $value)) {
-                    $clean[$key] = strtolower($value);
+                    $clean[$key] = self::readableAccent(strtolower($value));
                 }
             } elseif (is_array($default)) {
                 // Mis. pinned_menus - tanpa cabang ini nilainya KE-BUANG oleh

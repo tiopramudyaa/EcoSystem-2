@@ -89,6 +89,8 @@ class TableAccess
         // Ditambahkan setelah audit skema - employee_contract.salary adalah data
         // gaji personal persis seperti employee_payment, tapi belum pernah masuk
         // daftar ini sama sekali (celah nyata, bukan cuma kandidat "borderline").
+        // HC-D32 (T4): kolom `salary` kontrak sebelumnya terbuka bagi asisten AI. Pola sama dengan
+        // tabel bank/payment: pemilik hanya melihat barisnya sendiri, orang lain butuh izin seksi kontrak.
         'employee_contract' => [
             'self_field' => 'employee_id',
             'self_permission' => 'my-profile.section.contract.view',
@@ -109,6 +111,91 @@ class TableAccess
             'self_field' => 'employee_id',
             'self_permission' => 'my-profile.section.attachment.view',
             'permission' => 'employee.section.attachment.view',
+        ],
+        // Payroll (Fase 3): gaji, potongan, dan pajak seluruh karyawan. Tertutup bagi asisten AI kecuali pemegang slug periode
+        // payroll; belum ada padanan "slip saya" (paystub ESS), jadi tak ada akses diri sendiri.
+        'payroll_periods'     => ['permission' => 'finance.payroll.periods'],
+        'payroll_slips'       => ['permission' => 'finance.payroll.periods'],
+        'payroll_slip_items'  => ['permission' => 'finance.payroll.periods'],
+        'payroll_adjustments' => ['permission' => 'finance.payroll.periods'],
+        // Komponen gaji (kotak Salary Components; sumber kebenaran gaji pokok payroll). Hanya pemegang slug
+        // `employee.section.salary.view`; tanpa self_field, karyawan pun tak membacanya lewat asisten.
+        'employee_salary_components' => [
+            'permission' => 'employee.section.salary.view',
+        ],
+        // HC-D20/D21: profil HR memuat data kesehatan, kontak darurat pihak ketiga, dan data payroll
+        // NONAKTIF. Slug `*.hr_profile.view` dibuat di langkah H3.4; SEBELUM itu tak seorang pun
+        // memilikinya sehingga tabel tertutup untuk asisten AI (default aman, tabel juga masih kosong).
+        'employee_hr_profile' => [
+            'self_field' => 'employee_id',
+            'self_permission' => 'my-profile.section.hr_profile.view',
+            'permission' => 'employee.section.hr_profile.view',
+        ],
+        // HC-D47: engagement konsultan memuat TARIF. Seluruh tabel hanya terbuka bagi pemegang izin tarif;
+        // konsultan sendiri tidak punya jalur (tanpa self_permission).
+        'employee_engagement' => [
+            'self_field' => null,
+            'self_permission' => null,
+            'permission' => 'external.section.engagement_rate.view',
+        ],
+        // Sales Compliance Approval: harga kontrak, MRP, jamuan, dan pernyataan compliance. Sales melihat permintaannya sendiri
+        // (`employee_id`); tabel anak tidak punya kolom itu, jadi hanya terbuka bagi yang memutuskan (slug `.approve`).
+        'sales_compliance_requests' => [
+            'self_field' => 'employee_id',
+            'self_permission' => 'legal.sales-compliance',
+            'permission' => 'legal.sales-compliance.approve',
+        ],
+        'sales_compliance_answers' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.sales-compliance.approve'],
+        'sales_compliance_attachments' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.sales-compliance.approve'],
+        'sales_compliance_approvals' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.sales-compliance.approve'],
+        'sales_compliance_logs' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.sales-compliance.approve'],
+        // Vendor Onboarding: NPWP/NIB/rekening bank vendor, jawaban due diligence, dan jalur berkas dokumen identitas.
+        'vendor_registrations' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.vendor-onboarding'],
+        'vendor_documents' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.vendor-onboarding'],
+        'vendor_answers' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.vendor-onboarding'],
+        'vendor_approvals' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.vendor-onboarding'],
+        'vendor_status_logs' => ['self_field' => null, 'self_permission' => null, 'permission' => 'legal.vendor-onboarding'],
+        // HC-D65 (J3/X5): data rekrutmen (pelamar, dokumen, jadwal wawancara, kompensasi penawaran) tak punya
+        // jalur "milik sendiri" - pelamar belum menjadi pegawai. Hanya pemegang izin menu rekrutmen yang bersangkutan.
+        'recruitment_candidates' => [
+            'self_field' => null,
+            'self_permission' => null,
+            'permission' => 'general.recruitment.candidates',
+        ],
+        'recruitment_candidate_documents' => [
+            'self_field' => null,
+            'self_permission' => null,
+            'permission' => 'general.recruitment.candidates',
+        ],
+        'recruitment_candidate_status_histories' => [
+            'self_field' => null,
+            'self_permission' => null,
+            'permission' => 'general.recruitment.candidates',
+        ],
+        'recruitment_interviews' => [
+            'self_field' => null,
+            'self_permission' => null,
+            'permission' => 'general.recruitment.schedule',
+        ],
+        'recruitment_interview_interviewers' => [
+            'self_field' => null,
+            'self_permission' => null,
+            'permission' => 'general.recruitment.schedule',
+        ],
+        'recruitment_offers' => [
+            'self_field' => null,
+            'self_permission' => null,
+            'permission' => 'general.recruitment.offers',
+        ],
+        'recruitment_job_openings' => [
+            'self_field' => null,
+            'self_permission' => null,
+            'permission' => 'general.recruitment.jobs',
+        ],
+        'recruitment_job_opening_documents' => [
+            'self_field' => null,
+            'self_permission' => null,
+            'permission' => 'general.recruitment.jobs',
         ],
         'customer_bank' => [
             'self_field' => null,
