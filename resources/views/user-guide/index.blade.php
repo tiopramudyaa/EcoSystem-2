@@ -55,15 +55,15 @@
     /* .guide-body dan .callout: lihat partial user-guide/_body-css */
     /* Tata letak dua kolom (daftar isi di samping artikel). Ditulis sebagai CSS biasa karena build Tailwind aplikasi (public/build) bisa belum memuat
        kelas lg:grid-cols-12 / lg:col-span-* / lg:sticky yang dipakai di sini. Nilainya sama dengan kelas Tailwind itu, jadi aman bila build memuatnya. */
-    .ug-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
-    .ug-aside, .ug-main { min-width: 0; grid-column: auto !important; }
+    .ug-layout { display: grid; grid-template-columns: minmax(0, 1fr) !important; gap: 1rem; align-items: start; }
+    .ug-aside, .ug-main { min-width: 0; }
     @media (min-width: 1024px) {
-        .ug-layout { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); }
+        .ug-layout { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr) !important; }
         .ug-aside { position: sticky; top: 6rem; }
         .ug-toc-scroll { max-height: calc(100vh - 8rem); overflow-y: auto; }
         #ugTocBox > summary { display: none; }
     }
-    @media (min-width: 1280px) { .ug-layout { grid-template-columns: minmax(0, 3fr) minmax(0, 9fr); } }
+    @media (min-width: 1280px) { .ug-layout { grid-template-columns: minmax(0, 3fr) minmax(0, 9fr) !important; } }
     #ugSearch:focus { outline: none; box-shadow: 0 0 0 3px #c7d2fe; }
     /* Pembungkus konten di layout dashboard memakai overflow-x-hidden, yang menjadikannya kontainer gulir dan mematikan position: sticky
        (daftar isi tidak menempel). Hanya pada halaman ini, `clip` tetap memotong luapan mendatar tanpa menjadi kontainer gulir. */
@@ -107,10 +107,10 @@
     @if($visibleCount === 0)
         <div class="ug-card px-5 py-12 text-center text-sm text-gray-500"><i class="far fa-folder-open text-2xl text-gray-300 block mb-2"></i>{{ $ui['empty'] }}</div>
     @else
-    <div class="ug-layout grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+    <div class="ug-layout gap-4 items-start">
 
         {{-- Daftar isi + pencarian --}}
-        <aside class="ug-aside lg:col-span-4 xl:col-span-3 min-w-0 lg:sticky lg:top-24" aria-label="{{ $ui['toc'] }}">
+        <aside class="ug-aside min-w-0" aria-label="{{ $ui['toc'] }}">
             <details class="ug-card lg:!block" id="ugTocBox" open>
                 <summary class="lg:hidden px-4 py-3 text-sm font-bold text-gray-900 cursor-pointer flex items-center justify-between">{{ $ui['toc'] }} <i class="fas fa-chevron-down text-xs text-gray-400"></i></summary>
                 <div class="ug-toc-scroll p-3 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
@@ -152,7 +152,7 @@
         </aside>
 
         {{-- Isi panduan --}}
-        <main class="ug-main lg:col-span-8 xl:col-span-9 min-w-0" id="ugContent">
+        <main class="ug-main min-w-0" id="ugContent">
             @foreach($chapters as $chapter)
                 <section class="ug-chapter mb-6" id="chapter-{{ $chapter['id'] }}">
                     <h2 class="ug-chapter-title"><span class="ug-no">{{ $chapter['no'] }}</span>{{ $chapter['title'] }}</h2>
