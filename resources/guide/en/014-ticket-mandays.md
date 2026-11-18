@@ -5,7 +5,7 @@ order: 14
 title: Customer Mandays and Resolution Days
 summary: The two estimates on a ticket, who approves each one and how they move from draft to approved.
 requires: [ticket.propose-mandays-customer, ticket.propose-mandays-resolution, ticket.review-mandays, ticket.head-mandays, ticket.approve-resolution-days]
-updated: 2026-11-13
+updated: 2026-11-18
 ---
 A ticket that needs effort estimates carries two different proposals. They are easy to mix up, so keep them apart.
 
@@ -70,6 +70,7 @@ Each version shows an `Approval Trail` with every level, who acted, when, and th
 - Proposing Customer Mandays needs the `Propose Mandays Customer` function and proposing Resolution Days needs the `Propose Resolution Days` function in `Menu Access`, on top of being the ticket lead or a member. Saving a review needs `Save Draft` or `Send to Customer`, because sending saves your edits first. Approving a level does not need a function in `Menu Access`: it follows the approvers set in the flow. Without the function the request is refused, even if it is sent directly.
 - When a Customer Mandays proposal is submitted, the Level 1 approvers get a bell notification. When Level 1 approves, the Level 2 approvers are notified. When Level 2 approves, everyone whose role has the review permission in `Role Access` is notified that it is ready to send. When a level rejects, the PIC is notified. When Resolution Days is submitted, everyone whose role has the head or Resolution Days approval permission is notified.
 - Sub-actions in the review screen (edit, save draft, send to customer, cancel) each have their own permission in `Role Access`. A role that can open the review but lacks these sees the proposal without the action buttons.
+- Approvers can also decide in the EcoSystem Lite mobile app under the same rules. A proposal that changed after they opened it must be reloaded first.
 
 ### Resolution Days
 
@@ -95,4 +96,4 @@ Approved days are used for the workload shown in `My Tasks` and in `Consultant W
 
 **I am an approver but see no `Approve` button.** The button only appears while the proposal waits at your level. If it waits at another level, or was submitted before you were set as approver, it is not your turn. Reload the ticket after the proposal is submitted.
 
-<!-- sources: routes/web.php, routes/api.php, app/Http/Controllers/MandaysController.php, app/Services/CustomerMandaysApprovalService.php, resources/views/ticket/show.blade.php, resources/views/ticket/task.blade.php -->
+<!-- sources: routes/web.php, routes/api.php, routes/lite.php, app/Http/Controllers/MandaysController.php, app/Http/Controllers/Lite/LiteCustomerMandaysController.php, app/Services/CustomerMandaysApprovalService.php, app/Services/LiteCustomerMandaysPresenter.php, resources/views/ticket/show.blade.php, resources/views/ticket/task.blade.php -->

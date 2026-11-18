@@ -27,6 +27,11 @@
     - [DELETE /tickets/{ticketId}/messages/{messageId}/internal-note](#58-delete-ticketsticketidmessagesmessageidinternal-note)
     - [GET /tickets/my](#59-get-ticketsmy)
     - [GET /employees/mentionable](#510-get-employeesmentionable)
+    - [Customer Mandays Approval](#customer-mandays-approval-511-sampai-514)
+    - [GET /customer-mandays/approvals](#511-get-customer-mandaysapprovals)
+    - [GET /tickets/{ticketId}/customer-mandays](#512-get-ticketsticketidcustomer-mandays)
+    - [POST /tickets/{ticketId}/customer-mandays/approve](#513-post-ticketsticketidcustomer-mandaysapprove)
+    - [POST /tickets/{ticketId}/customer-mandays/reject](#514-post-ticketsticketidcustomer-mandaysreject)
 6. [Endpoint Profil](#6-endpoint-profil)
     - [GET /profile](#61-get-profile)
     - [PATCH /profile/change-password](#62-patch-profilechange-password)
@@ -612,10 +617,26 @@ Authorization: Bearer <token>
             "resolution_due_at": "2024-06-17T10:30:00.000000Z",
             "resolution_time_hours": null,
             "resolution_status": "pending"
+        },
+        "customer_mandays": {
+            "mandays_id": 812,
+            "version": 1,
+            "status": "pending_approval",
+            "total_mandays": 5,
+            "step_order": 1,
+            "waiting_step": "Admin Approval",
+            "can_act": true
         }
     }
 }
 ```
+
+`customer_mandays` adalah ringkasan proposal Customer Mandays terbaru. Nilainya
+`null` bila user tidak berhak melihat bagian ini (aturan sama dengan web, lihat
+[5.11](#511-get-customer-mandaysapprovals)). Bila berhak tetapi belum ada
+proposal, `status` bernilai `none` dan field lain `null`. Tampilkan tombol
+**Approve** / **Reject** hanya bila `can_act` bernilai `true`, lalu buka detailnya
+lewat [5.12](#512-get-ticketsticketidcustomer-mandays).
 
 #### Contoh Response Error (404)
 
@@ -1254,6 +1275,297 @@ Authorization: Bearer <token>
 
 ---
 
+### Customer Mandays Approval (5.11 sampai 5.14)
+
+Approval Customer Mandays bertingkat: **Level 1 → Level 2 → siap dikirim
+Helpdesk ke customer**. Siapa penyetuju tiap level diatur admin di web
+(`Management` › `Flow` › `Customer Mandays Approval`), berupa satu role atau
+beberapa orang. Aturan approve/reject sama persis dengan web karena keduanya
+memakai `CustomerMandaysApprovalService`.
+
+**Alur di PWA**
+
+1. Penyetuju menerima notifikasi (bell + push) bertipe
+   `customer_mandays_pending_approval` dengan `ticket_id` terisi. Tap untuk membuka
+   ticket.
+2. Atau buka menu **Approval Customer Mandays** →
+   [5.11](#511-get-customer-mandaysapprovals) (daftar yang menunggu giliran user).
+3. Di detail ticket ([5.3](#53-get-ticketsid)) blok `customer_mandays` menentukan
+   apakah bagian ini tampil. Detail lengkap: [5.12](#512-get-ticketsticketidcustomer-mandays).
+4. Bila `can_act: true`: **Approve** ([5.13](#513-post-ticketsticketidcustomer-mandaysapprove)),
+   boleh dengan angka MD yang diubah, atau **Reject** dengan alasan
+   ([5.14](#514-post-ticketsticketidcustomer-mandaysreject)).
+
+**Siapa yang boleh melihat** (sama dengan panel di halaman ticket web): ticket
+harus sudah punya PIC, dan user adalah penyetuju level yang sedang menunggu,
+pemegang izin `Review Mandays Proposal`, atau pemegang izin `Head Mandays &
+Resolution` (hanya lihat).
+
+**Siapa yang boleh bertindak**: hanya penyetuju level yang sedang menunggu
+(`can_act: true`). Satu orang dari level itu sudah cukup. PIC boleh menyetujui
+proposalnya sendiri bila ia termasuk penyetuju level tsb.
+
+**Pemeriksaan versi**: approve/reject wajib mengirim `mandays_id` dan
+`step_order` dari detail yang sedang ditampilkan. Bila proposal sudah berganti
+versi atau levelnya sudah diputuskan orang lain, API menolak dengan **409** dan
+mengirim detail terbaru di `data`. Tampilkan pesan, lalu muat ulang layar.
+
+**Status proposal (`status`)**
+
+| Value              | Label di web        | Deskripsi                                                          |
+| ------------------ | ------------------- | ------------------------------------------------------------------ |
+| `none`             | None                | Belum ada proposal                                                 |
+| `draft`            | Draft               | Masih disusun PIC                                                  |
+| `pending_approval` | Level 1 / Level 2   | Menunggu approval internal, level di `step_order` / `waiting_step` |
+| `pending_helpdesk` | Ready to Send       | Lolos semua level, menunggu Helpdesk mengirim ke customer          |
+| `sent_to_chat`     | Sent to Chat        | Sudah dikirim ke customer, menunggu jawaban customer               |
+| `approved`         | Approved            | Disetujui customer                                                 |
+| `rejected`         | Rejected            | Ditolak di approval internal, PIC membuat versi baru               |
+| `canceled`         | Canceled            | Dibatalkan Helpdesk                                                |
+
+**Status tiap level di `approval_trail`**: `waiting`, `approved`, `rejected`,
+`skipped` (level sesudah level yang menolak).
+
+**Notifikasi terkait** (semuanya membawa `ticket_id`):
+
+| `type`                              | Penerima                                   |
+| ----------------------------------- | ------------------------------------------ |
+| `customer_mandays_pending_approval` | Penyetuju level yang sekarang menunggu     |
+| `customer_mandays_proposed`         | Pemegang izin review: siap dikirim         |
+| `customer_mandays_rejected`         | PIC dan pengusul, saat sebuah level menolak |
+
+---
+
+### 5.11 GET /customer-mandays/approvals
+
+Daftar ticket yang proposal Customer Mandays-nya **sedang menunggu giliran user
+yang login**. Dipakai untuk menu **Approval Customer Mandays** di PWA. Ticket yang
+disembunyikan atau belum punya PIC tidak ditampilkan. Urutan: yang paling lama
+menunggu lebih dulu.
+
+**Method:** `GET`  
+**URL:** `/api/lite/customer-mandays/approvals`  
+**Auth:** Diperlukan
+
+#### Query Parameters
+
+| Parameter  | Type      | Wajib | Deskripsi                                         |
+| ---------- | --------- | ----- | ------------------------------------------------- |
+| `page`     | `integer` | Tidak | Halaman (default `1`)                             |
+| `per_page` | `integer` | Tidak | Jumlah per halaman (default `20`, maks `100`)     |
+| `search`   | `string`  | Tidak | Cari di nomor ticket atau deskripsi ticket        |
+
+#### Contoh Response Sukses (200)
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "ticket_id": 1536,
+            "ticket_number": "26110353",
+            "description": "Penambahan laporan stok",
+            "ticket_type": "Change Request",
+            "status": "waiting_on_customer",
+            "customer_name": "PT. ABC Indonesia",
+            "pic": { "employee_id": 230, "employee_name": "Fauziah" },
+            "mandays_id": 812,
+            "version": 1,
+            "total_mandays": 5,
+            "step_order": 1,
+            "waiting_step": "Admin Approval",
+            "submitted_at": "2026-11-18T03:12:00.000000Z"
+        }
+    ],
+    "meta": { "current_page": 1, "per_page": 20, "total": 1, "last_page": 1 }
+}
+```
+
+---
+
+### 5.12 GET /tickets/{ticketId}/customer-mandays
+
+Detail proposal Customer Mandays **terbaru** untuk layar approval: grid
+Activity × Module, Approval Trail, dan apakah user boleh bertindak.
+
+**Method:** `GET`  
+**URL:** `/api/lite/tickets/{ticketId}/customer-mandays`  
+**Auth:** Diperlukan
+
+#### Contoh Response Sukses (200)
+
+```json
+{
+    "success": true,
+    "data": {
+        "mandays_id": 812,
+        "version": 1,
+        "status": "pending_approval",
+        "step_order": 1,
+        "waiting_step": "Admin Approval",
+        "total_mandays": 5,
+        "description": "Penambahan laporan stok",
+        "proposal_notes": null,
+        "proposed_by": "Fauziah Rahma",
+        "proposed_at": "2026-11-18T02:50:00.000000Z",
+        "customer_notes": null,
+        "modules": ["CO", "FI"],
+        "rows": [
+            { "activity": "Build", "mandays": { "FI": 3, "CO": 2 }, "total": 5 }
+        ],
+        "column_totals": { "CO": 2, "FI": 3 },
+        "details": [
+            { "activity": "Build", "module": "FI", "mandays": 3 },
+            { "activity": "Build", "module": "CO", "mandays": 2 }
+        ],
+        "approval_trail": [
+            {
+                "order_seq": 1,
+                "step_name": "Admin Approval",
+                "status": "waiting",
+                "approver_label": "Tio Pramudya",
+                "acted_by_name": null,
+                "acted_at": null,
+                "notes": null
+            },
+            {
+                "order_seq": 2,
+                "step_name": "Helpdesk Review",
+                "status": "waiting",
+                "approver_label": "Delivery Support Service Helpdesk",
+                "acted_by_name": null,
+                "acted_at": null,
+                "notes": null
+            }
+        ]
+    },
+    "can_act": true,
+    "can_act_reason": null
+}
+```
+
+- `rows` dan `column_totals` siap dipakai untuk menampilkan grid. `details`
+  berbentuk sama dengan body `details` saat approve, untuk mengisi grid yang bisa
+  diedit.
+- `data` bernilai `null` bila ticket belum punya proposal.
+- `can_act_reason` berisi alasan bila `can_act` `false`, misalnya
+  `You are not an approver for "Admin Approval".` atau
+  `This proposal is not waiting for internal approval.`
+
+#### Contoh Response Error
+
+| Kode  | Pesan                                                              |
+| ----- | ------------------------------------------------------------------ |
+| `403` | `You do not have access to the customer mandays of this ticket.`   |
+| `404` | `Ticket not found.`                                                |
+
+---
+
+### 5.13 POST /tickets/{ticketId}/customer-mandays/approve
+
+Penyetuju level yang sedang menunggu menyetujui proposal. Bila ini level
+terakhir, proposal menjadi `pending_helpdesk` (siap dikirim Helpdesk ke
+customer). Bila belum, proposal naik ke level berikutnya dan penyetujunya diberi
+notifikasi.
+
+**Method:** `POST`  
+**URL:** `/api/lite/tickets/{ticketId}/customer-mandays/approve`  
+**Auth:** Diperlukan
+
+#### Request Body
+
+| Field                | Type      | Wajib | Deskripsi                                                                                |
+| -------------------- | --------- | ----- | ---------------------------------------------------------------------------------------- |
+| `mandays_id`         | `integer` | Ya    | `data.mandays_id` dari 5.12                                                              |
+| `step_order`         | `integer` | Ya    | `data.step_order` dari 5.12                                                              |
+| `notes`              | `string`  | Tidak | Catatan approval, maks 1000 karakter. Tampil di Approval Trail                           |
+| `details`            | `array`   | Tidak | Kirim hanya bila angka MD diubah. Menggantikan **seluruh** rincian proposal              |
+| `details.*.activity` | `string`  | Tidak | Nama activity, maks 255 karakter                                                         |
+| `details.*.module`   | `string`  | Ya*   | Kode modul, maks 100 karakter (*wajib bila `details` dikirim)                            |
+| `details.*.mandays`  | `number`  | Ya*   | Mandays, minimal 0. Baris bernilai 0 dibuang. Total semua baris harus lebih dari 0       |
+
+#### Contoh Request
+
+```json
+{
+    "mandays_id": 812,
+    "step_order": 1,
+    "notes": "Sesuai estimasi",
+    "details": [
+        { "activity": "Build", "module": "FI", "mandays": 2.5 },
+        { "activity": "Build", "module": "CO", "mandays": 2 }
+    ]
+}
+```
+
+#### Contoh Response Sukses (200)
+
+```json
+{
+    "success": true,
+    "message": "Approved. The proposal moves to the next approval level.",
+    "completed": false,
+    "data": { "mandays_id": 812, "status": "pending_approval", "step_order": 2, "waiting_step": "Helpdesk Review", "...": "sama dengan 5.12" }
+}
+```
+
+Bila `completed: true`, `message` berisi
+`Approved. The proposal is ready for Helpdesk to send to the customer.` dan
+`data.status` bernilai `pending_helpdesk`.
+
+#### Contoh Response Error
+
+| Kode  | Kapan                                                    | Contoh `message`                                                                     |
+| ----- | -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `404` | Ticket tidak ada / disembunyikan                         | `Ticket not found.`                                                                  |
+| `409` | Versi atau level sudah berubah sejak dibuka              | `This proposal has changed since you opened it. Reload it and review it again.`      |
+| `422` | Validasi gagal (lihat `errors`)                          | `The mandays id field is required.`                                                  |
+| `422` | Bukan penyetuju level ini                                | `You are not an approver for "Admin Approval".`                                      |
+| `422` | Total `details` 0                                        | `Total mandays must be greater than 0.`                                              |
+
+Respons `409` menyertakan detail terbaru di `data` (bentuk sama dengan 5.12).
+
+---
+
+### 5.14 POST /tickets/{ticketId}/customer-mandays/reject
+
+Penyetuju level yang sedang menunggu menolak proposal. Versi ini ditutup sebagai
+`rejected`, level berikutnya menjadi `skipped`, dan PIC serta pengusul diberi
+notifikasi. PIC merevisi dengan membuat versi baru di web.
+
+**Method:** `POST`  
+**URL:** `/api/lite/tickets/{ticketId}/customer-mandays/reject`  
+**Auth:** Diperlukan
+
+#### Request Body
+
+| Field        | Type      | Wajib | Deskripsi                                       |
+| ------------ | --------- | ----- | ----------------------------------------------- |
+| `mandays_id` | `integer` | Ya    | `data.mandays_id` dari 5.12                     |
+| `step_order` | `integer` | Ya    | `data.step_order` dari 5.12                     |
+| `notes`      | `string`  | Ya    | Alasan penolakan, 5 sampai 1000 karakter        |
+
+#### Contoh Response Sukses (200)
+
+```json
+{
+    "success": true,
+    "message": "Proposal rejected and returned to the PIC.",
+    "data": { "mandays_id": 812, "status": "rejected", "step_order": null, "...": "sama dengan 5.12" }
+}
+```
+
+#### Contoh Response Error
+
+Sama dengan 5.13, ditambah:
+
+| Kode  | `message`                                       |
+| ----- | ----------------------------------------------- |
+| `422` | `Please explain why the proposal is rejected.`  |
+| `422` | `The reason must be at least 5 characters.`     |
+
+---
+
 ## 6. Endpoint Profil
 
 ### 6.1 GET /profile
@@ -1507,6 +1819,7 @@ Menghapus semua notifikasi yang **sudah dibaca** milik user yang login.
 | `401` | Unauthorized — Token tidak valid atau belum login     |
 | `403` | Forbidden — Tidak memiliki izin                       |
 | `404` | Not Found — Resource tidak ditemukan                  |
+| `409` | Conflict: data sudah berubah sejak dibuka, muat ulang |
 | `422` | Unprocessable Entity — Validasi input gagal           |
 | `429` | Too Many Requests — Rate limit tercapai               |
 | `500` | Internal Server Error — Terjadi kesalahan pada server |
@@ -1599,6 +1912,12 @@ Menghapus semua notifikasi yang **sudah dibaca** milik user yang login.
 11. Selalu periksa field `success` pada setiap respons (`true` / `false`) sebelum menggunakan data.
 12. Untuk error `422`, gunakan field `errors` untuk menampilkan pesan validasi per field kepada user.
 13. Untuk error `500`, tampilkan pesan umum kepada user dan log detail error untuk debugging.
+14. Untuk error `409` (approval Customer Mandays), tampilkan `message`, lalu ganti layar dengan detail terbaru dari `data` atau muat ulang 5.12.
+
+### Customer Mandays Approval
+
+15. Menu **Approval Customer Mandays** memakai [5.11](#511-get-customer-mandaysapprovals), bukan `GET /tickets`. Penyetuju dengan role Delivery Support User tidak melihat ticket ber-PIC di `GET /tickets`, tetapi tetap bisa membuka detailnya lewat `GET /tickets/{id}`.
+16. Penyetuju tidak ditentukan oleh izin menu, melainkan oleh konfigurasi `Management` › `Flow` di web. Mengubah konfigurasi tidak memengaruhi proposal yang sudah dikirim: proposal tetap memakai penyetuju saat ia dikirim.
 
 ---
 

@@ -144,6 +144,40 @@ class CustomerMandaysApprovalService
         return ['allowed' => true, 'reason' => '', 'approval' => $approval];
     }
 
+    /**
+     * Proposal (versi terbaru tiap ticket) yang levelnya sedang menunggu karyawan ini.
+     * Memakai aturan yang sama dengan canAct(), jadi daftar ini tidak pernah memuat
+     * proposal yang tidak boleh ia putuskan.
+     *
+     * @return Collection<int, CustomerMandays>
+     */
+    public function pendingFor(int $actorId): Collection
+    {
+        $employee = Employee::find($actorId);
+        if (!$employee) {
+            return collect();
+        }
+        $roleIds = $employee->getRoleIds();
+
+        return CustomerMandays::query()
+            ->where('status', CustomerMandays::STATUS_PENDING_APPROVAL)
+            ->whereNotNull('current_step_order')
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                  ->from('customer_mandays as newer')
+                  ->whereColumn('newer.ticket_id', 'customer_mandays.ticket_id')
+                  ->whereColumn('newer.version', '>', 'customer_mandays.version');
+            })
+            ->with('approvals')
+            ->orderBy('updated_at')
+            ->get()
+            ->filter(function (CustomerMandays $p) use ($actorId, $roleIds) {
+                $approval = $p->currentApproval();
+                return $approval && $approval->isWaiting() && $approval->allows($actorId, $roleIds);
+            })
+            ->values();
+    }
+
     // =========================================================================
     // APPROVE / REJECT
     // =========================================================================
@@ -362,12 +396,12 @@ class CustomerMandaysApprovalService
     {
         $ticketNum = $ticket->ticket_number ?? $ticket->ticket_id;
         $this->send(
+            $ticket,
             $this->recipientsFor($approval),
             'customer_mandays_pending_approval',
             $fromId,
             $fromName,
-            "Ticket #{$ticketNum}: Customer mandays proposal waiting for your approval ({$approval->step_name})",
-            "/ticket/{$ticket->ticket_id}"
+            "Ticket #{$ticketNum}: Customer mandays proposal waiting for your approval ({$approval->step_name})"
         );
     }
 
@@ -392,12 +426,12 @@ class CustomerMandaysApprovalService
 
         $ticketNum = $ticket->ticket_number ?? $ticket->ticket_id;
         $this->send(
+            $ticket,
             $ids,
             'customer_mandays_proposed',
             $fromId,
             $fromName,
-            "Ticket #{$ticketNum}: Customer mandays proposal approved internally, ready to send to the customer",
-            "/ticket/{$ticket->ticket_id}"
+            "Ticket #{$ticketNum}: Customer mandays proposal approved internally, ready to send to the customer"
         );
     }
 
@@ -410,27 +444,30 @@ class CustomerMandaysApprovalService
 
         $ticketNum = $ticket->ticket_number ?? $ticket->ticket_id;
         $this->send(
+            $ticket,
             $ids,
             'customer_mandays_rejected',
             $fromId,
             $fromName,
-            "Ticket #{$ticketNum}: Customer mandays proposal rejected at {$stepName}: " . mb_substr($notes, 0, 80),
-            "/ticket/{$ticket->ticket_id}"
+            "Ticket #{$ticketNum}: Customer mandays proposal rejected at {$stepName}: " . mb_substr($notes, 0, 80)
         );
     }
 
     /** Kegagalan notifikasi tidak boleh membatalkan approval (R9). */
-    private function send(array $employeeIds, string $type, int $fromId, string $fromName, string $preview, string $link): void
+    private function send(Ticket $ticket, array $employeeIds, string $type, int $fromId, string $fromName, string $preview): void
     {
         try {
             foreach (array_unique($employeeIds) as $empId) {
                 Notification::create([
                     'employee_id'      => $empId,
+                    // ticket_id disimpan agar notifikasi Lite/PWA bisa membuka ticket
+                    // langsung dan push menampilkan nomor ticket.
+                    'ticket_id'        => $ticket->ticket_id,
                     'type'             => $type,
                     'from_employee_id' => $fromId,
                     'from_name'        => $fromName,
                     'preview'          => $preview,
-                    'link'             => $link,
+                    'link'             => "/ticket/{$ticket->ticket_id}",
                     'is_read'          => false,
                 ]);
             }

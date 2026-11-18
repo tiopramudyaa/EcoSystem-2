@@ -5,7 +5,7 @@ order: 14
 title: Customer Mandays dan Resolution Days
 summary: Dua estimasi pada sebuah ticket, siapa yang menyetujui masing-masing, dan alurnya dari draft sampai disetujui.
 requires: [ticket.propose-mandays-customer, ticket.propose-mandays-resolution, ticket.review-mandays, ticket.head-mandays, ticket.approve-resolution-days]
-updated: 2026-11-13
+updated: 2026-11-18
 ---
 Ticket yang membutuhkan estimasi pekerjaan membawa dua proposal yang berbeda. Keduanya mudah tertukar, jadi bedakan dengan baik.
 
@@ -70,6 +70,7 @@ Setiap versi menampilkan `Approval Trail` berisi tiap level, siapa yang bertinda
 - Mengusulkan Customer Mandays memerlukan fungsi `Propose Mandays Customer` dan mengusulkan Resolution Days memerlukan fungsi `Propose Resolution Days` di `Menu Access`, selain menjadi ticket lead atau member. Menyimpan hasil review memerlukan `Save Draft` atau `Send to Customer`, karena mengirim menyimpan perubahan Anda lebih dulu. Menyetujui sebuah level tidak memerlukan fungsi di `Menu Access`: itu mengikuti penyetuju yang diatur di alur. Tanpa fungsi itu permintaan ditolak, meskipun dikirim langsung.
 - Saat proposal Customer Mandays dikirim, penyetuju Level 1 mendapat notifikasi bell. Saat Level 1 menyetujui, penyetuju Level 2 diberi tahu. Saat Level 2 menyetujui, semua orang yang rolenya punya izin review di `Role Access` diberi tahu bahwa proposal siap dikirim. Saat sebuah level menolak, PIC diberi tahu. Saat Resolution Days dikirim, semua orang yang rolenya punya izin head atau persetujuan Resolution Days mendapat notifikasi.
 - Aksi di layar review (edit, simpan draft, kirim ke customer, batalkan) masing-masing punya izin sendiri di `Role Access`. Role yang bisa membuka review tetapi tidak punya izin ini melihat proposal tanpa tombol aksi.
+- Penyetuju juga dapat memutuskan di aplikasi mobile EcoSystem Lite dengan aturan yang sama. Proposal yang berubah setelah dibuka harus dimuat ulang lebih dulu.
 
 ### Resolution Days
 
@@ -95,4 +96,4 @@ Hari yang disetujui dipakai untuk beban kerja di `My Tasks` dan `Consultant Work
 
 **Saya penyetuju tetapi tidak melihat tombol `Approve`.** Tombol itu hanya muncul selama proposal menunggu di level Anda. Bila proposal menunggu di level lain, atau dikirim sebelum Anda ditetapkan sebagai penyetuju, berarti bukan giliran Anda. Muat ulang ticket setelah proposal dikirim.
 
-<!-- sources: routes/web.php, routes/api.php, app/Http/Controllers/MandaysController.php, app/Services/CustomerMandaysApprovalService.php, resources/views/ticket/show.blade.php, resources/views/ticket/task.blade.php -->
+<!-- sources: routes/web.php, routes/api.php, routes/lite.php, app/Http/Controllers/MandaysController.php, app/Http/Controllers/Lite/LiteCustomerMandaysController.php, app/Services/CustomerMandaysApprovalService.php, app/Services/LiteCustomerMandaysPresenter.php, resources/views/ticket/show.blade.php, resources/views/ticket/task.blade.php -->
