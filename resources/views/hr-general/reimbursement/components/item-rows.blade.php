@@ -85,7 +85,7 @@
 
                     <td class="px-3 py-3">
                         <input type="text" name="items[{{ $key }}][description]" maxlength="200" required
-                               value="{{ $row['description'] ?? '' }}" placeholder="e.g. Claude AI Subscription"
+                               value="{{ $row['description'] ?? '' }}" placeholder="e.g. Taxi fare to client office"
                                class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-red-800">
                         @error("items.{$key}.description")<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
 
@@ -167,7 +167,7 @@
     <tr class="js-item-row align-top" data-key="__KEY__">
         <td class="px-3 py-3 text-gray-400 js-line-no"></td>
         <td class="px-3 py-3">
-            <input type="text" name="items[__KEY__][description]" maxlength="200" required placeholder="e.g. Claude AI Subscription"
+            <input type="text" name="items[__KEY__][description]" maxlength="200" required placeholder="e.g. Taxi fare to client office"
                    class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-red-800">
             <div class="flex items-center gap-1 mt-2">
                 <input type="text" name="items[__KEY__][receipt_date_from]" required data-date autocomplete="off"

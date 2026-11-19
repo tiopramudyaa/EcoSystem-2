@@ -93,3 +93,16 @@ Efek dana proyek: persetujuan Project Manager berarti dana proyek boleh dipakai 
 Temuan: Reimbursement sudah punya kolom `cost_center_type` dan `delivery_project_id` per baris, tetapi alurnya dikunci ke branch (`ReimbursementItem::SELECTABLE_COST_CENTER_TYPES`, `normaliseItems`). Cash Advance dan Purchase Request sudah punya pola project/branch yang bisa disalin. Tiket tidak punya kolom dana. Proyek punya anggaran biaya tanpa kategori baku, dan `actual_amount` ditimpa dari cost item. Master cabang tidak punya penanggung jawab. Tidak ada role Cashier.
 
 Visualisasi konsep dan tabel keputusan D1 sampai D7 ada di artefak "Alur Reimbursement per Object". Prinsipnya: dana dipesan (reserved) saat kirim, dikunci (committed) saat disetujui, dipotong (spent) saat dibayar, dan dikembalikan (released) bila ditolak. Reimbursement tidak menulis `actual_amount` langsung.
+
+## 10. Keputusan final tambahan (2026-11-19)
+
+- D1: tabel alokasi dana tiket, diisi Support Manager, tidak melebihi anggaran kontrak bila tiket terhubung.
+- D2: tabel alokasi reimbursement terpisah, data biaya project tidak disentuh.
+- D3: kebijakan dana melebihi sisa diatur di Settings (Peringatan, Blokir, per Object), bawaan Peringatan dengan alasan wajib.
+- D4: dana berkurang saat disetujui, sisa diperiksa ulang pada persetujuan terakhir.
+- D5: penanggung jawab Office di tabel pengaturan per cabang (role, lalu orang).
+- D6: Accounting dan Cashier dari role HO Accounting dan HO Finance, diatur di Settings.
+- D7: satu dokumen boleh memuat beberapa Object.
+- E1: periode dana Office per bulan. E2: Finance dapat void dokumen yang sudah disetujui, alasan wajib. E3: alokasi Project diusulkan PM dan disetujui Finance.
+
+Dokumen lengkap dengan diagram: "Rancangan Reimbursement per Object" (Claude Docs).

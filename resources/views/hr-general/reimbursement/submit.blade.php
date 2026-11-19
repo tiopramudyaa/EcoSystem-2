@@ -80,7 +80,7 @@
             <input type="text" name="title" maxlength="200" required
                    minlength="{{ $settings->require_title_min_chars }}"
                    value="{{ old('title') }}"
-                   placeholder="e.g. Operational expenses for this month"
+                   placeholder="e.g. Client visit expenses, November 2026"
                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800">
             <p class="text-xs text-gray-400 mt-1">One line summarising the whole document. It appears on the recap and the printed form.</p>
             @error('title')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
