@@ -34,6 +34,50 @@
         </p>
     </div>
 
+    {{-- ── Setup checklist and quick guide ──────────────────────────────── --}}
+    @php
+        $missingOffice = $officeRows->filter(fn ($o) => !$o['approver_role_id'] && !$o['approver_employee_id'])->pluck('label');
+        $fundedOffices = $officeRows->where('fund_active', true)->count();
+        $hasProjectFallback = $objectFlow->project_fallback_role_id || $objectFlow->project_fallback_employee_id;
+        $hasSupportFallback = $objectFlow->support_fallback_role_id || $objectFlow->support_fallback_employee_id;
+        $namedCategories = $fundPools->filter(fn ($r) => $r['pool']->category !== '')->count();
+        $steps = [
+            [(bool) $objectFlow->enabled, 'Switch on', $objectFlow->enabled ? 'Objects and funds are on for new reimbursements.' : 'Off: reimbursement behaves as before. Tick "Use Objects and funds" below and save when you are ready.'],
+            [$missingOffice->isEmpty() && $officeRows->isNotEmpty(), 'Every office has a responsible person', $missingOffice->isEmpty() ? 'All offices are set.' : 'Missing for: ' . $missingOffice->take(5)->implode(', ') . ($missingOffice->count() > 5 ? ' and ' . ($missingOffice->count() - 5) . ' more' : '') . '. Documents charged to these offices are refused until it is set.'],
+            [(bool) ($hasProjectFallback && $hasSupportFallback), 'Fallback approvers', ($hasProjectFallback && $hasSupportFallback) ? 'Set for projects and support.' : 'Recommended: set a fallback role or person for projects and for support, so a project without an Admin, or a ticket without a Lead, does not block submissions.'],
+            [$fundPools->isNotEmpty() || $fundedOffices > 0, 'Funds (optional)', 'Office funds active: ' . $fundedOffices . '. Project and ticket allocations: ' . $fundPools->count() . ($namedCategories ? ' (' . $namedCategories . ' with a category)' : '') . '. Anything without a fund is simply not checked.'],
+        ];
+    @endphp
+    <div class="rounded-xl border border-gray-200 bg-gray-50 p-5">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Setup checklist</h3>
+        <ul class="space-y-2">
+            @foreach($steps as [$done, $title, $detail])
+                <li class="flex items-start gap-3 text-sm">
+                    <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold {{ $done ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800' }}">{{ $done ? '✓' : '!' }}</span>
+                    <span><span class="font-semibold text-gray-800">{{ $title }}.</span> <span class="text-gray-600">{{ $detail }}</span></span>
+                </li>
+            @endforeach
+        </ul>
+
+        <details class="mt-4 group">
+            <summary class="cursor-pointer text-sm font-semibold text-red-800">How it works and how to use it</summary>
+            <div class="mt-3 space-y-3 text-sm text-gray-700">
+                <p><strong>What the requester does.</strong> On each item they choose an <em>Object</em>: an Office, a Project, or a Support ticket. They never choose approvers; the form shows who will review.</p>
+                <p><strong>Who approves.</strong> Project: Project Admin, then Project Manager. Support: Ticket Lead (and the Support Manager if on). Office: the responsible person you set for that office. Then the steps in Approval Workflow (for example Accounting and Cashier).</p>
+                <p><strong>What a fund is.</strong> A fund is the amount that may be reimbursed for one Object. It goes down only when a document is fully approved. If an amount is above the remaining fund, the policy decides: <em>Warn</em> asks the requester for a reason, <em>Block</em> refuses.</p>
+                <p><strong>What a category is.</strong> A category is only a label you choose for an allocation, such as Transport or Accommodation. Requesters see a <em>Fund category</em> choice only for a project or ticket that has at least one named allocation. If you do not need to split a fund, leave the category empty: one general allocation covers everything.</p>
+                <ol class="list-decimal pl-5 space-y-1">
+                    <li>Set a responsible person for every office, and fallback approvers.</li>
+                    <li>Optional: switch on an office fund, or add allocations for a project or ticket.</li>
+                    <li>Choose Warn or Block for each Object.</li>
+                    <li>Tick "Use Objects and funds for new reimbursements" and save.</li>
+                    <li>Test with one document per Object, approve it, and check the remaining fund in the allocation table.</li>
+                </ol>
+                <p class="text-xs text-gray-500">Switching this off later returns reimbursement to the previous behaviour. Documents already submitted keep their own flow, and no data is deleted.</p>
+            </div>
+        </details>
+    </div>
+
     {{-- ── Flow and policy ──────────────────────────────────────────────── --}}
     <form method="POST" action="{{ route('general.reimbursement.settings.objects.flow') }}" class="space-y-6" data-unsaved-label="Object flow">
         @csrf
@@ -248,7 +292,7 @@
                 <input type="text" name="ticket_number" maxlength="50" value="{{ old('ticket_number') }}" placeholder="Full ticket number" class="{{ $input }}">
             </div>
             <div>
-                <label class="{{ $label }}">Category</label>
+                <label class="{{ $label }}">Category (optional)</label>
                 <input type="text" name="category" maxlength="60" value="{{ old('category') }}" placeholder="e.g. Transport" class="{{ $input }}">
             </div>
             <div>

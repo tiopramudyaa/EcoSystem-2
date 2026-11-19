@@ -46,7 +46,12 @@
         <input type="hidden" name="items[{{ $key }}][ticket_id]" class="js-ticket-id" value="{{ $row['ticket_id'] ?? '' }}">
     </div>
 
-    <select name="items[{{ $key }}][fund_category]" class="js-category {{ $base }}" data-selected="{{ $row['fund_category'] ?? '' }}" aria-label="Fund category" hidden>
-        <option value="">- category -</option>
-    </select>
+    {{-- Muncul hanya bila project atau tiket ini punya kategori dana. Pembungkusnya yang disembunyikan:
+         skrip select-enhance membungkus <select> dengan tombol sendiri, jadi atribut hidden pada select tidak cukup. --}}
+    <div class="js-category-wrap" hidden>
+        <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Fund category <span class="font-normal normal-case text-gray-400">(optional)</span></label>
+        <select name="items[{{ $key }}][fund_category]" class="js-category {{ $base }}" data-selected="{{ $row['fund_category'] ?? '' }}" aria-label="Fund category">
+            <option value="">- none -</option>
+        </select>
+    </div>
 </div>

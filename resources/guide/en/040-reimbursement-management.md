@@ -91,6 +91,7 @@ Each reimbursement item is charged to an Object: an `Office`, a `Project`, or a 
 - Office funds are monthly and follow the date of the document. Project and ticket allocations have no end date. An allocation with no category covers every category that has no allocation of its own.
 - With `Warn`, an amount above the remaining fund can still be submitted if the requester writes a reason (at least 10 characters). The reviewers see the reason and the document is marked `Over fund allocation`. With `Block`, it is refused and the message names the remaining fund.
 - An allocation cannot be set lower than what approved documents already used.
+- A category is only a label for an allocation, such as Transport. The requester sees the `Fund category` choice only for a project or ticket that has at least one allocation with a category. Leave the category empty for one general allocation. The `Setup checklist` at the top of `Objects and Funds` shows what is still missing.
 - Only a user who can record payments can void, and only an approved document that is not paid. Voiding needs a reason and cannot be undone from this screen. A voided document cannot be paid.
 - Project allocations are separate from the project cost plan and never change it.
 ## What happens next

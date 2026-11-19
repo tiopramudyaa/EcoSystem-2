@@ -45,9 +45,10 @@
         });
 
         const category = cell.querySelector('.js-category');
+        const wrap = cell.querySelector('.js-category-wrap');
         const showCategory = type === 'project' || type === 'support';
         category.disabled = !showCategory;
-        if (!showCategory) category.hidden = true;
+        if (!showCategory) { wrap.hidden = true; category.value = ''; }
         if (showCategory) loadCategories(row);
     }
 
@@ -55,21 +56,22 @@
         const cell = row.querySelector('.js-object-cell');
         const type = cell.querySelector('.js-object-type').value;
         const category = cell.querySelector('.js-category');
+        const wrap = cell.querySelector('.js-category-wrap');
         const ref = type === 'project'
             ? (cell.querySelector('.js-project') || {}).value
             : (cell.querySelector('.js-ticket-id') || {}).value;
 
-        if (!lookupBase || !ref) { category.hidden = true; return; }
+        if (!lookupBase || !ref) { wrap.hidden = true; category.value = ''; return; }
 
         json(lookupBase + '/categories?type=' + encodeURIComponent(type) + '&ref=' + encodeURIComponent(ref)).then(function (res) {
             const names = (res && res.data) || [];
             const wanted = category.value || category.dataset.selected || '';
-            category.innerHTML = '<option value="">- category -</option>' + names.map(function (n) {
+            category.innerHTML = '<option value="">- none -</option>' + names.map(function (n) {
                 return '<option value="' + String(n).replace(/"/g, '&quot;') + '">' + String(n).replace(/</g, '&lt;') + '</option>';
             }).join('');
             category.value = names.indexOf(wanted) !== -1 ? wanted : '';
-            category.hidden = names.length === 0;
-        }).catch(function () { category.hidden = true; });
+            wrap.hidden = names.length === 0;
+        }).catch(function () { wrap.hidden = true; });
     }
 
     function searchTickets(input) {

@@ -91,6 +91,7 @@ Setiap item reimbursement dibebankan ke sebuah Object: `Office`, `Project`, atau
 - Dana office bersifat bulanan dan mengikuti tanggal dokumen. Alokasi project dan tiket tidak punya tanggal berakhir. Alokasi tanpa kategori mencakup semua kategori yang tidak punya alokasi sendiri.
 - Dengan `Warn`, nominal di atas sisa dana tetap bisa diajukan bila pemohon menulis alasan (minimal 10 karakter). Penyetuju melihat alasannya dan dokumen ditandai `Over fund allocation`. Dengan `Block`, pengajuan ditolak dan pesannya menyebut sisa dana.
 - Alokasi tidak bisa diturunkan di bawah yang sudah dipakai dokumen yang disetujui.
+- Kategori hanyalah label untuk sebuah alokasi, misalnya Transport. Pemohon melihat pilihan `Fund category` hanya untuk project atau tiket yang punya minimal satu alokasi berkategori. Kosongkan kategori untuk satu alokasi umum. `Setup checklist` di bagian atas `Objects and Funds` menunjukkan apa yang masih kurang.
 - Hanya pengguna yang boleh mencatat pembayaran yang dapat melakukan void, dan hanya untuk dokumen yang sudah disetujui dan belum dibayar. Void memerlukan alasan dan tidak dapat dibatalkan dari layar ini. Dokumen yang di-void tidak dapat dibayar.
 - Alokasi project terpisah dari rencana biaya project dan tidak pernah mengubahnya.
 ## Apa yang terjadi selanjutnya
