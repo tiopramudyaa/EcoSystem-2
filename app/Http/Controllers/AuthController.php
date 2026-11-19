@@ -1067,6 +1067,9 @@ class AuthController extends Controller
             // URL tujuan hasil deep link (mis. /ticket/123 dari kartu Teams).
             // Sudah disanitasi - selalu path relatif pada host sendiri.
             'redirect_url' => IntendedUrl::pull($request),
+            // Tema musiman efektif untuk user ini; dipakai halaman login untuk memilih
+            // adegan loading screen. Dihitung dari kolom preferences yang sudah dimuat.
+            'seasonal_theme' => self::effectiveSeasonalTheme($authUser),
             'data'    => [
                 'token' => $token,
                 'user'  => $userData
@@ -1078,6 +1081,24 @@ class AuthController extends Controller
         }
 
         return $response;
+    }
+
+    /**
+     * Key tema musiman yang berlaku untuk user ini ('none' bila tidak ada atau gagal).
+     * Tanpa query tambahan: memakai kolom preferences dari baris auth_users yang sudah dimuat.
+     */
+    private static function effectiveSeasonalTheme(object $authUser): string
+    {
+        try {
+            $prefs = is_string($authUser->preferences ?? null)
+                ? json_decode($authUser->preferences, true)
+                : ($authUser->preferences ?? null);
+            $choice = is_array($prefs) ? (string) ($prefs['seasonal_theme'] ?? 'default') : 'default';
+
+            return \App\Support\SeasonalThemeResolver::effectiveFor($choice);
+        } catch (\Throwable $e) {
+            return 'none';
+        }
     }
 
     /**

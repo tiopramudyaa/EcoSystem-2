@@ -110,13 +110,14 @@ class CheckAuthToken
             $column = ($user['type'] ?? 'employee') === 'customer' ? 'customer_id' : 'employee_id';
 
             $raw = DB::table('auth_users')->where($column, $user['id'])->value('preferences');
-            if (!$raw) {
-                return;
-            }
+            $prefs = !$raw ? [] : (is_array($raw) ? $raw : json_decode($raw, true));
 
-            $prefs = is_array($raw) ? $raw : json_decode($raw, true);
             if (is_array($prefs) && $prefs) {
                 session(['user_preferences' => $prefs]);
+            } elseif (!$raw) {
+                // User belum pernah menyimpan preferensi: tetap isi default (mis.
+                // seasonal_theme = 'default' supaya ikut tema admin), bukan biarkan kosong.
+                session(['user_preferences' => \App\Http\Controllers\SettingsController::DEFAULT_PREFERENCES]);
             }
         } catch (Throwable $e) {
             Log::warning('CheckAuthToken: hydrate preferences gagal', [

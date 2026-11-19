@@ -5,7 +5,7 @@ order: 20
 title: Navigating EcoSystem
 summary: Find your way around the Dashboard, sidebar, notifications, profile menu and personal Settings.
 requires: []
-updated: 2026-10-27
+updated: 2026-11-19
 ---
 This topic shows the main parts of the screen and how to personalise them, so you can reach any page quickly.
 
@@ -69,7 +69,7 @@ Select your name in the top-right corner to open `My Profile`, `Settings`, `User
 
 1. Open `Settings` from the sidebar or from the menu under your name.
 2. Choose a tab on the left:
-   - `Appearance`: `Theme` (Light, Dark or Auto), `Accent color`, `Sidebar style` (Gradient or Solid), `Font size`, `Compact mode` and `Show animations`.
+   - `Appearance`: `Theme` (Light, Dark or Auto), `Accent color`, `Sidebar style` (Gradient or Solid), `Font size`, `Compact mode`, `Show animations` and `Seasonal theme`. `Theme` here only means Light, Dark or Auto; the festive look is the separate `Seasonal theme` (`Default` follows the administrator, or choose `Off` or one theme for yourself).
    - `Preferences`: `Auto-save`, `Auto-refresh` and `Keyboard shortcuts`.
    - `Notifications`: switch notifications, email and push alerts on or off, and pick the notification sounds.
    - `Security`: change your password. Enter a new password of at least 8 characters, confirm it and select `Update password`.

@@ -41,8 +41,17 @@ class SettingsController extends Controller
         'language'       => ['en', 'id'],
         'timezone'       => ['Asia/Jakarta', 'Asia/Singapore', 'UTC'],
         'date_format'    => ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'],
-        'seasonal_theme' => ['default', 'none', 'natal'],
+        // 'seasonal_theme' sengaja TIDAK di sini: dibangun dari katalog tema
+        // (App\Support\SeasonalThemes) di allowedValues() supaya tidak ada literal ganda.
     ];
+
+    /** Whitelist lengkap per field, termasuk yang diturunkan dari katalog (seasonal_theme). */
+    public static function allowedValues(): array
+    {
+        return self::ALLOWED_VALUES + [
+            'seasonal_theme' => \App\Support\SeasonalThemes::userChoices(),
+        ];
+    }
 
     const PROFILE_SECTIONS = [
         'basic_data'     => 'Basic Data',
@@ -309,6 +318,7 @@ class SettingsController extends Controller
     private function sanitizePreferences(array $input): array
     {
         $clean = [];
+        $allowed = self::allowedValues();
 
         foreach (self::DEFAULT_PREFERENCES as $key => $default) {
             if (!array_key_exists($key, $input)) {
@@ -318,8 +328,8 @@ class SettingsController extends Controller
 
             if (is_bool($default)) {
                 $clean[$key] = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-            } elseif (isset(self::ALLOWED_VALUES[$key])) {
-                if (in_array($value, self::ALLOWED_VALUES[$key], true)) {
+            } elseif (isset($allowed[$key])) {
+                if (in_array($value, $allowed[$key], true)) {
                     $clean[$key] = $value;
                 }
             } elseif ($key === 'primary_color') {

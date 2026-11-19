@@ -5,7 +5,7 @@ order: 20
 title: Menjelajahi EcoSystem
 summary: Kenali Dashboard, sidebar, Notification, menu profil, dan Settings pribadi agar Anda cepat menemukan halaman yang dibutuhkan.
 requires: []
-updated: 2026-10-27
+updated: 2026-11-19
 ---
 Topik ini menunjukkan bagian-bagian utama layar dan cara menyesuaikannya, supaya Anda dapat menuju halaman mana pun dengan cepat.
 
@@ -69,7 +69,7 @@ Pilih nama Anda di pojok kanan atas untuk membuka `My Profile`, `Settings`, `Use
 
 1. Buka `Settings` dari sidebar atau dari menu di bawah nama Anda.
 2. Pilih tab di sebelah kiri:
-   - `Appearance`: `Theme` (Light, Dark, atau Auto), `Accent color`, `Sidebar style` (Gradient atau Solid), `Font size`, `Compact mode`, dan `Show animations`.
+   - `Appearance`: `Theme` (Light, Dark, atau Auto), `Accent color`, `Sidebar style` (Gradient atau Solid), `Font size`, `Compact mode`, `Show animations`, dan `Seasonal theme`. `Theme` di sini hanya berarti Light, Dark, atau Auto; tampilan perayaan adalah `Seasonal theme` yang terpisah (`Default` mengikuti administrator, atau pilih `Off` atau satu tema untuk diri sendiri).
    - `Preferences`: `Auto-save`, `Auto-refresh`, dan `Keyboard shortcuts`.
    - `Notifications`: menyalakan atau mematikan Notification, peringatan email dan push, serta memilih suara Notification.
    - `Security`: mengganti kata sandi. Masukkan kata sandi baru minimal 8 karakter, konfirmasikan, lalu pilih `Update password`.

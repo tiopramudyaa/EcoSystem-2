@@ -104,6 +104,9 @@ class AppServiceProvider extends ServiceProvider
             return \App\Models\Employee::find(session('user.id'))?->hasPermission('control-center.api-docs') ?? false;
         });
 
+        // Tema musiman efektif ($seasonalTheme) untuk dashboard dan semua halaman auth.
+        View::composer(['dashboard', 'auth.*'], \App\View\Composers\SeasonalThemeComposer::class);
+
         // Suntik opsi Home Base, Position, Department & 5 daftar organisasi ke form
         // employee (modal index + section basicdata yang dipakai detail & profile).
         // Sumber utama: tabel positions/departments dan enum organisasi (alnaf_hr).

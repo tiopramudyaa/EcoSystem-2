@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"@if(($seasonalTheme['key'] ?? 'none') !== 'none') data-season="{{ $seasonalTheme['key'] }}"@endif>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Reset Password - ECoSystem</title>
+    @include('partials.seasonal-theme-vars')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
@@ -220,7 +221,7 @@
             transition:background-color 9999s ease-in-out 0s;
         }
         .fl-inp:focus {
-            border-color:#A00000;
+            border-color:var(--st-login-to, #A00000);
             box-shadow:0 0 0 3px rgba(160,0,0,.1);
         }
         .fl-inp.is-error {
@@ -242,7 +243,7 @@
         .fl-inp:not(:placeholder-shown) ~ .fl-label {
             top:.625rem; transform:none;
             font-size:.6875rem; font-weight:600;
-            color:#A00000; letter-spacing:.02em;
+            color:var(--st-login-to, #A00000); letter-spacing:.02em;
         }
         .fl-inp.is-error ~ .fl-label { color:#DC2626; }
 
@@ -254,7 +255,7 @@
             display:flex; align-items:center;
             transition:color .2s ease;
         }
-        .fl-wrap:focus-within .fl-r-icon { color:#A00000; }
+        .fl-wrap:focus-within .fl-r-icon { color:var(--st-login-to, #A00000); }
 
         /* Error message */
         .l-err { font-size:.6875rem; color:#DC2626; display:none; margin-top:.3rem; padding-left:.25rem; }
@@ -262,7 +263,7 @@
         /* Submit button */
         .fp-btn {
             width:100%; padding:.9375rem 1rem;
-            background:#A00000;
+            background:var(--st-login-to, #A00000);
             color:#fff; font-family:'Plus Jakarta Sans',sans-serif;
             font-size:.9375rem; font-weight:600;
             border:none; border-radius:8px; cursor:pointer;
@@ -320,7 +321,7 @@
             body { flex-direction:column; overflow-y:auto; height:auto; min-height:100vh; }
             .mobile-strip {
                 display:flex; align-items:center; justify-content:center; gap:.75rem;
-                background:linear-gradient(135deg, #1A0000, #6B0000);
+                background:linear-gradient(135deg, var(--st-login-from, #1A0000), rgb(var(--st-primary-dark-rgb, 107 0 0)));
                 padding:1.25rem 1.5rem;
             }
             /* The panel carries inline height:100vh/overflow:hidden - beat it with
@@ -350,7 +351,7 @@
      style="position:relative; overflow:hidden; flex-direction:column;
             align-items:flex-start; justify-content:center; padding:0 4.75rem;
             height:100vh;
-            background:linear-gradient(155deg,#1A0000 0%,#3D0000 18%,#6B0000 40%,#8B0000 62%,#A00000 80%,#B91C1C 100%);">
+            background:linear-gradient(155deg, var(--st-login-from, #1A0000) 0%, rgb(var(--st-primary-dark-rgb, 107 0 0)) 55%, var(--st-login-to, #B91C1C) 100%);">
 
     {{-- Orbs --}}
     <div style="position:absolute;top:-80px;right:-60px;width:360px;height:360px;border-radius:50%;
@@ -623,9 +624,9 @@
                 <p style="text-align:center;font-size:.8125rem;color:#64748B;margin-top:.125rem;">
                     Remember your password?
                     <a href="{{ route('login') }}"
-                       style="color:#A00000;font-weight:600;text-decoration:none;transition:color .15s;"
-                       onmouseover="this.style.color='#6B0000'"
-                       onmouseout="this.style.color='#A00000'">Back to Sign In</a>
+                       style="color:var(--st-login-to, #A00000);font-weight:600;text-decoration:none;transition:color .15s;"
+                       onmouseover="this.style.color='var(--st-login-from, #6B0000)'"
+                       onmouseout="this.style.color='var(--st-login-to, #A00000)'">Back to Sign In</a>
                 </p>
             </form>
         </div>

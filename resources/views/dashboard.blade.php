@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"@if(($seasonalTheme['key'] ?? 'none') !== 'none') data-season="{{ $seasonalTheme['key'] }}"@endif>
 
 <head>
     <meta charset="UTF-8">
@@ -25,7 +25,9 @@
             'font_size' => 'medium',
             'compact_mode' => false,
             'show_animations' => true,
-            'seasonal_theme' => 'none',
+            // 'default' = ikut tema admin. Fallback 'none' di sini dulu membuat user yang
+            // belum pernah menyimpan preferensi tidak pernah melihat tema admin.
+            'seasonal_theme' => 'default',
         ]);
 
         // Musik latar musiman - MURNI wewenang admin (Control Center > Seasonal
@@ -33,8 +35,10 @@
         $globalBgMusicUrl = \App\Support\GlobalSeasonalTheme::soundUrl();
         $globalBgMusicVolume = \App\Support\GlobalSeasonalTheme::soundVolume();
 
-        // Tema musiman: resolve preferensi user ('default' = ikut admin) sekali di sini.
-        $effectiveSeasonalTheme = \App\Support\SeasonalThemeResolver::effectiveFor($preferences['seasonal_theme'] ?? 'default');
+        // Tema musiman: sudah di-resolve oleh SeasonalThemeComposer ($seasonalTheme:
+        // key, meta, soundUrl, soundVolume). Preferensi user 'default' = ikut admin.
+        $seasonalTheme = $seasonalTheme ?? ['key' => 'none', 'meta' => null, 'soundUrl' => null, 'soundVolume' => null];
+        $effectiveSeasonalTheme = $seasonalTheme['key'];
 
         // Convert hex to RGB for Tailwind
         $primaryColor = $preferences['primary_color'];
@@ -79,6 +83,9 @@
         $showLimitedMenus = false; // tidak dipakai lagi
         $canManageSla = $can('sla.config');
     @endphp
+
+    {{-- CSS variable tema musiman (--st-*) dan override --primary-*, hanya bila ada tema aktif. --}}
+    @include('partials.seasonal-theme-vars')
 
     <style>
         /* Cross-document View Transitions - pasangan dari deklarasi yang sama di
@@ -1626,9 +1633,17 @@
             return String(parseFloat(Number(value).toFixed(2)));
         };
     </script>
+    {{-- Remap warna tombol/aksen brand ke palet musiman. Selector-nya html[data-season], jadi inert tanpa tema;
+         selalu dimuat supaya pratinjau tema di Settings (data-season dipasang via JS) ikut berlaku. --}}
+    @include('partials.seasonal-ui-remap', ['dark' => ($preferences['theme'] ?? 'light') === 'dark'])
 </head>
 
 <body class="text-gray-900 min-h-screen" style="background-color: var(--bg-color);">
+    {{-- Sprite ikon dan ornamen vektor tema musiman, hanya bila ada tema aktif. Halaman yang menampilkan
+         kartu pilihan tema (Settings, Seasonal Theme) menyertakannya sendiri (@once). --}}
+    @if($effectiveSeasonalTheme !== 'none')
+        @include('partials.seasonal-icons')
+    @endif
     <div id="toast-container"></div>
     <div class="flex min-h-screen">
 

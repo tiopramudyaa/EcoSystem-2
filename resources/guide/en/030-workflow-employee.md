@@ -5,7 +5,7 @@ order: 30
 title: Employee checklist
 summary: A simple checklist of what an employee does in EcoSystem, day by day and when needed.
 requires: []
-updated: 2026-10-27
+updated: 2026-11-19
 ---
 Use this checklist to see what is expected of you in EcoSystem. The items you can use depend on the menus your role has, so some lines may not apply to you.
 
@@ -19,7 +19,7 @@ Every employee who signs in. Consultants working through the External section us
 
 - Complete your data in `My Profile`. See [[my-profile]]. If HR has verified and locked it, it shows `View Only` and only HR can reopen it.
 - Look at your `Dashboard` and the Notification bell. See [[navigating-ecosystem]].
-- Set your theme and language in `Settings`.
+- Set your Light, Dark or Auto theme, the seasonal theme and your language in `Settings`.
 
 ### Every working day
 

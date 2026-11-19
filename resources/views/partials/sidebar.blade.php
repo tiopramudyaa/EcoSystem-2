@@ -1,5 +1,13 @@
 <aside id="sidebar" data-rail="{{ $__env->hasSection('sidebar-nav') ? 'off' : 'on' }}"
     class="sidebar-transition fixed inset-y-0 left-0 h-screen flex flex-col overflow-hidden {{ $preferences['sidebar_style'] === 'gradient' ? 'primary-gradient' : 'primary-solid' }} text-white shadow-2xl z-50 w-64 -translate-x-full lg:translate-x-0">
+    {{-- Dekorasi tema musiman: absolute, pointer-events:none, di belakang menu (z-index -1). --}}
+    @if(($seasonalTheme['key'] ?? 'none') !== 'none')
+        @include('partials.seasonal-theme', [
+            'themeKey' => $seasonalTheme['key'],
+            'showAnimations' => $preferences['show_animations'] ?? true,
+            'placement' => 'sidebar',
+        ])
+    @endif
     @php
         $sbFavoritesEnabled = (session('user.type') ?? null) === 'employee';
         $sbFavorites = $sbFavoritesEnabled
@@ -1457,6 +1465,19 @@
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16) !important;
     }
     #sidebar { --sb-accent: #f2c14e; }
+    /* Tema musiman: hanya bila <html data-season> ada. Palet dari partials/seasonal-theme-vars.
+       Selector html[data-season] #sidebar lebih spesifik daripada .primary-gradient/.primary-solid
+       di dashboard.blade.php (yang memakai !important), jadi menang tanpa menyentuh kelas itu.
+       Tanpa data-season tidak ada yang berubah. Mode gelap tetap sama: sidebar memang tidak diubah olehnya. */
+    html[data-season] #sidebar.primary-gradient {
+        background: linear-gradient(135deg, rgb(var(--st-primary-dark-rgb)), rgb(var(--st-primary-rgb))) !important;
+    }
+    html[data-season] #sidebar.primary-solid {
+        background-color: rgb(var(--st-primary-rgb)) !important;
+    }
+    html[data-season] #sidebar { --sb-accent: var(--st-accent, #f2c14e); }
+    /* Mode rail hanya selebar 5rem: ornamen dekorasi disembunyikan agar tidak berdesakan. */
+    html[data-sb-layout="rail"] #sidebar .seasonal-decoration--sidebar .seasonal-accent { display: none; }
     #sidebar a.nav-link.active::before,
     #sidebar a.nav-link.bg-opacity-15::before {
         content: ''; position: absolute; left: 0; top: 18%; bottom: 18%; width: 3px;

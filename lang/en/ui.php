@@ -134,4 +134,110 @@ return [
             'built_by' => 'Built by',
         ],
     ],
+
+    'seasonal' => [
+        // Settings picker (user)
+        'title'         => 'Seasonal theme',
+        'subtitle'      => 'Festive colors and decoration on your dashboard',
+        'follows_admin' => 'Default follows the choice of your administrator, currently :theme.',
+        'opt_out'       => 'Pick Off to turn it off for yourself only.',
+        'manage'        => 'Manage global default (Admin)',
+        'default'       => 'Default',
+        'off'           => 'Off',
+
+        'themes' => [
+            'none'       => 'Off',
+            'natal'      => 'Christmas',
+            'tahun_baru' => 'New Year',
+            'ramadan'    => 'Ramadan',
+            'lebaran'    => 'Eid (Lebaran)',
+            'imlek'      => 'Lunar New Year',
+            'hut_ri'     => 'Independence Day',
+        ],
+
+        // Loading screen shown after sign in and briefly on the dashboard
+        'loading' => [
+            'natal' => [
+                'title'    => 'Preparing your EcoSystem workspace…',
+                'subtitle' => 'Happy holidays from Eclectic Consulting',
+            ],
+            'tahun_baru' => [
+                'title'    => 'Preparing your EcoSystem workspace…',
+                'subtitle' => 'Happy New Year from Eclectic Consulting',
+            ],
+            'ramadan' => [
+                'title'    => 'Preparing your EcoSystem workspace…',
+                'subtitle' => 'Wishing you a blessed Ramadan',
+            ],
+            'lebaran' => [
+                'title'    => 'Preparing your EcoSystem workspace…',
+                'subtitle' => 'Eid Mubarak from Eclectic Consulting',
+            ],
+            'imlek' => [
+                'title'    => 'Preparing your EcoSystem workspace…',
+                'subtitle' => 'Happy Lunar New Year from Eclectic Consulting',
+            ],
+            'hut_ri' => [
+                'title'    => 'Preparing your EcoSystem workspace…',
+                'subtitle' => 'Happy Independence Day, Indonesia',
+            ],
+        ],
+
+        // Control Center, Seasonal Theme
+        'admin' => [
+            'subtitle'      => 'Set the festive theme for every user and the login page',
+            'info'          => 'This sets the default theme for every user\'s sidebar, navbar, and the login page. Users who picked their own option in Settings (Off or a specific theme) keep it. Only users on "Default" follow this setting.',
+            'active_today'  => 'Active today',
+            'active_none'   => 'No theme (Off)',
+            'theme_title'   => 'Theme',
+            'theme_hint'    => 'Applied to the sidebar, navbar, and login page.',
+            'theme_manual'  => 'The theme used in Manual mode.',
+            'mode_title'    => 'Activation',
+            'mode_hint'     => 'Choose whether the theme is switched on by you or by the calendar.',
+            'music_title'   => 'Background music',
+            'music_hint'    => 'Plays on every page after sign in. Only administrators choose the track; users can only mute or unmute for themselves.',
+            'music_none'    => 'None (no background music)',
+            'preview'       => 'Preview',
+            'volume'        => 'Volume',
+            'volume_hint'   => 'Applies to every user. They cannot change it, only mute or unmute.',
+            'upload_title'  => 'Upload a new track',
+            'upload'        => 'Upload',
+            'upload_hint'   => 'WAV, MP3, OGG, or AAC, up to 3 MB. Files share one folder with the sounds in Control Center › Notif Sounds. After uploading, select the track above and save.',
+            'cancel'        => 'Cancel',
+            'save'          => 'Save settings',
+            'saved'         => 'Seasonal theme saved. Users on "Default" see it immediately; users who picked their own are not affected.',
+            'uploaded'      => 'Uploaded ":file". Select it above and save to make it active.',
+            'upload_type'   => 'Only WAV, MP3, OGG, and AAC files are allowed.',
+            'upload_size'   => 'File size must not exceed 3 MB.',
+        ],
+
+        'mode' => [
+            'manual'      => 'Manual',
+            'manual_hint' => 'The theme you pick above is always active.',
+            'auto'        => 'Automatic schedule',
+            'auto_hint'   => 'The theme follows the periods below. Outside every period the theme is Off.',
+        ],
+
+        'schedule' => [
+            'title'       => 'Schedule',
+            'hint'        => 'Used in Automatic schedule mode. If two periods overlap, the one listed first applies.',
+            'theme'       => 'Theme',
+            'pick_theme'  => 'Select a theme',
+            'start'       => 'Start date',
+            'end'         => 'End date',
+            'add'         => 'Add period',
+            'remove'      => 'Remove',
+            'empty'       => 'No periods yet. Add one to use the automatic schedule.',
+            'suggested'   => 'Suggested dates for :year are filled in. Adjust them if needed.',
+            'moves'       => 'The date of this occasion changes every year. Enter the exact dates.',
+        ],
+
+        'toasts' => [
+            'choose_file'         => 'Choose a file first.',
+            'upload_failed'       => 'Upload failed.',
+            'upload_network'      => 'Network error while uploading.',
+            'schedule_incomplete' => 'Each period needs a theme, a start date, and an end date.',
+            'schedule_order'      => 'The end date must not be before the start date.',
+        ],
+    ],
 ];

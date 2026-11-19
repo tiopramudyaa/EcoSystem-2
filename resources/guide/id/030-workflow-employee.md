@@ -5,7 +5,7 @@ order: 30
 title: Daftar periksa pegawai
 summary: Daftar periksa sederhana tentang yang dilakukan pegawai di EcoSystem, harian maupun saat diperlukan.
 requires: []
-updated: 2026-10-27
+updated: 2026-11-19
 ---
 Gunakan daftar periksa ini untuk mengetahui apa yang diharapkan dari Anda di EcoSystem. Item yang dapat Anda pakai bergantung pada menu yang dimiliki role Anda, jadi sebagian baris mungkin tidak berlaku bagi Anda.
 
@@ -19,7 +19,7 @@ Setiap pegawai yang masuk ke aplikasi. Consultant yang bekerja melalui bagian Ex
 
 - Lengkapi data Anda di `My Profile`. Lihat [[my-profile]]. Jika HR sudah memverifikasi dan mengunci data Anda, tampilannya `View Only` dan hanya HR yang dapat membukanya kembali.
 - Lihat `Dashboard` dan lonceng Notification. Lihat [[navigating-ecosystem]].
-- Atur tema dan bahasa di `Settings`.
+- Atur tema Light, Dark, atau Auto, tema musiman, dan bahasa di `Settings`.
 
 ### Setiap hari kerja
 

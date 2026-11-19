@@ -5,13 +5,17 @@ order: 70
 title: What's new
 summary: Changes from October 2026 that affect how you work, newest first.
 requires: []
-updated: 2026-11-05
+updated: 2026-11-19
 ---
 A short list of recent changes that you will notice in daily work. Each item links to the topic that explains it.
 
 ## Who uses this
 
 Everyone who signs in to EcoSystem. Some items apply only if you have the related menu.
+
+## 19 November 2026
+
+- **Seasonal themes.** Seven festive themes (`Christmas`, `New Year`, `Ramadan`, `Eid (Lebaran)`, `Lunar New Year`, `Independence Day` and `Off`) now change the decoration, the colors of the sidebar, header, buttons and links, and play an animated 3D loading scene after sign-in (for example Santa's sleigh for Christmas and the waving flag for Independence Day). An administrator sets the default in `Seasonal Theme`, by hand or by date schedule, and you choose your own in `Settings` › `Appearance` › `Seasonal theme`. If you never saved your preferences you now follow the administrator by default.
 
 ## 5 November 2026
 

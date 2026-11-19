@@ -5,13 +5,17 @@ order: 70
 title: Yang baru
 summary: Perubahan Oktober 2026 yang memengaruhi cara Anda bekerja, dari yang terbaru.
 requires: []
-updated: 2026-11-05
+updated: 2026-11-19
 ---
 Daftar singkat perubahan terkini yang akan Anda rasakan dalam pekerjaan sehari-hari. Setiap butir menaut ke topik yang menjelaskannya.
 
 ## Siapa yang menggunakan
 
 Semua orang yang masuk ke EcoSystem. Sebagian butir hanya berlaku bila Anda memiliki menu terkait.
+
+## 19 November 2026
+
+- **Tema musiman.** Tujuh pilihan tema perayaan (`Christmas`, `New Year`, `Ramadan`, `Eid (Lebaran)`, `Lunar New Year`, `Independence Day`, dan `Off`) kini mengubah dekorasi, warna sidebar, header, tombol, dan tautan, serta memutar adegan 3D beranimasi sebagai layar loading setelah masuk (misalnya kereta luncur Sinterklas untuk Natal dan bendera berkibar untuk HUT RI). Administrator mengatur tema bawaan di `Seasonal Theme`, secara manual atau dengan jadwal tanggal, dan Anda memilih tema sendiri di `Settings` › `Appearance` › `Seasonal theme`. Jika Anda belum pernah menyimpan preferensi, kini Anda mengikuti administrator secara bawaan.
 
 ## 5 November 2026
 

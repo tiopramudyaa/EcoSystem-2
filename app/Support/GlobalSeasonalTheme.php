@@ -14,10 +14,15 @@ use Throwable;
  * SeasonalThemeResolver, yang menggabungkan nilai ini dengan preferensi
  * per-user).
  *
- * Ditulis oleh Control Center → Seasonal Theme (SeasonalThemeSettingsController,
- * belum dibuat - kelas ini scaffolding yang aman dipakai lebih dulu: bila
- * belum ada admin yang pernah menyimpan apa pun, active() jatuh ke 'none'
- * sehingga tidak ada perubahan visual yang muncul tiba-tiba untuk siapa pun).
+ * Ditulis oleh Control Center → Seasonal Theme (SeasonalThemeSettingsController).
+ * Bila belum ada admin yang pernah menyimpan apa pun, active() jatuh ke 'none'
+ * sehingga tidak ada perubahan visual yang muncul tiba-tiba untuk siapa pun.
+ *
+ * Dua mode aktivasi:
+ *   - manual: tema yang dipilih admin ('theme') selalu aktif.
+ *   - auto:   tema aktif mengikuti jadwal ('schedule', rentang tanggal penuh
+ *             Y-m-d per tema); di luar semua rentang hasilnya 'none'. Bila dua
+ *             rentang tumpang tindih, entri yang tertulis lebih dulu menang.
  *
  * Pola sama seperti App\Support\AiModelSettings: baca lewat AppConfig::getJson,
  * selalu disanitasi ulang saat dibaca (bukan hanya saat ditulis) supaya baris
@@ -43,12 +48,34 @@ final class GlobalSeasonalTheme
         // 50 = default kalau admin belum pernah mengatur, supaya begitu admin
         // nyalakan musik untuk pertama kali tidak langsung full volume.
         'volume' => 50,
+        'mode' => self::MODE_MANUAL,
+        // Daftar {theme, start, end}; start/end berformat Y-m-d, inklusif.
+        'schedule' => [],
     ];
 
+    public const MODE_MANUAL = 'manual';
+    public const MODE_AUTO = 'auto';
+
+    private const MAX_SCHEDULE_ENTRIES = 20;
+
     /** Tema aktif yang dipilih admin, sudah divalidasi terhadap SeasonalThemes. */
-    public static function active(): string
+    public static function active(?\DateTimeInterface $now = null): string
     {
-        return self::all()['theme'];
+        $all = self::all();
+
+        if ($all['mode'] !== self::MODE_AUTO) {
+            return $all['theme'];
+        }
+
+        $today = ($now ?? now())->format('Y-m-d');
+
+        foreach ($all['schedule'] as $entry) {
+            if ($today >= $entry['start'] && $today <= $entry['end']) {
+                return $entry['theme'];
+            }
+        }
+
+        return SeasonalThemes::NONE;
     }
 
     /**
@@ -70,7 +97,7 @@ final class GlobalSeasonalTheme
         return self::all()['volume'] / 100;
     }
 
-    /** @return array{theme: string, sound: ?string, volume: int} */
+    /** @return array{theme: string, sound: ?string, volume: int, mode: string, schedule: array<int, array{theme: string, start: string, end: string}>} */
     public static function all(): array
     {
         $stored = [];
@@ -91,12 +118,12 @@ final class GlobalSeasonalTheme
     /**
      * @param array<string, mixed> $input
      *
-     * PENTING: $input harus selalu membawa KETIGA field ('theme', 'sound',
-     * 'volume') bersamaan, bukan cuma yang berubah - sanitize() menjatuhkan
-     * field yang hilang ke default (null untuk sound, 50 untuk volume), jadi
-     * save(['theme'=>'natal']) SAJA akan diam-diam MENGHAPUS musik latar/reset
-     * volume yang sudah diset sebelumnya. Form admin
-     * (admin/seasonal-theme-settings.blade.php) selalu submit ketiganya.
+     * PENTING: $input harus selalu membawa SEMUA field ('theme', 'sound',
+     * 'volume', 'mode', 'schedule') bersamaan, bukan cuma yang berubah -
+     * sanitize() menjatuhkan field yang hilang ke default, jadi
+     * save(['theme'=>'natal']) SAJA akan diam-diam MENGHAPUS musik latar,
+     * reset volume, dan mengosongkan jadwal yang sudah diset sebelumnya. Form
+     * admin (admin/seasonal-theme-settings.blade.php) selalu submit semuanya.
      */
     public static function save(array $input): void
     {
@@ -114,7 +141,59 @@ final class GlobalSeasonalTheme
             'theme' => SeasonalThemes::isValid($theme) ? $theme : self::DEFAULTS['theme'],
             'sound' => self::sanitizeSound($input['sound'] ?? null),
             'volume' => self::sanitizeVolume($input['volume'] ?? null),
+            'mode' => ($input['mode'] ?? null) === self::MODE_AUTO ? self::MODE_AUTO : self::MODE_MANUAL,
+            'schedule' => self::sanitizeSchedule($input['schedule'] ?? null),
         ];
+    }
+
+    /**
+     * Buang entri rusak: tema tak dikenal atau 'none', tanggal bukan Y-m-d
+     * valid, atau akhir sebelum awal. Urutan input dipertahankan karena
+     * menentukan pemenang saat rentang tumpang tindih.
+     *
+     * @return array<int, array{theme: string, start: string, end: string}>
+     */
+    private static function sanitizeSchedule(mixed $schedule): array
+    {
+        if (!is_array($schedule)) {
+            return [];
+        }
+
+        $clean = [];
+
+        foreach ($schedule as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            $theme = (string) ($entry['theme'] ?? '');
+            $start = self::validDate($entry['start'] ?? null);
+            $end = self::validDate($entry['end'] ?? null);
+
+            if ($theme === SeasonalThemes::NONE || !SeasonalThemes::isValid($theme)
+                || $start === null || $end === null || $end < $start) {
+                continue;
+            }
+
+            $clean[] = ['theme' => $theme, 'start' => $start, 'end' => $end];
+
+            if (count($clean) >= self::MAX_SCHEDULE_ENTRIES) {
+                break;
+            }
+        }
+
+        return $clean;
+    }
+
+    private static function validDate(mixed $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+
+        return $date !== false && $date->format('Y-m-d') === $value ? $value : null;
     }
 
     /** Dijepit ke 0-100, jatuh ke default (50) kalau bukan angka valid. */

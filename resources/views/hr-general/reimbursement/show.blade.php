@@ -134,7 +134,7 @@
                 <textarea name="notes" rows="3" required minlength="5" maxlength="255"
                           placeholder="Explain why this reimbursement is rejected..."
                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800"></textarea>
-                <button type="submit"
+                <button data-danger type="submit"
                         class="w-full px-4 py-2 bg-red-800 text-white text-sm font-semibold rounded-lg hover:bg-red-900 transition-all">
                     Confirm Rejection
                 </button>
@@ -297,7 +297,7 @@
             <textarea name="delete_reason" rows="2" required minlength="3" maxlength="255"
                       placeholder="Why is this document being deleted?"
                       class="w-full px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800"></textarea>
-            <button type="submit"
+            <button data-danger type="submit"
                     class="px-4 py-2 bg-red-800 text-white text-sm font-semibold rounded-lg hover:bg-red-900 transition-all">
                 Confirm Deletion
             </button>

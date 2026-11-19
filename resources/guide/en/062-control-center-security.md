@@ -3,9 +3,9 @@ key: control-center-security
 chapter: control-center
 order: 62
 title: Control Center - Security and platform pages
-summary: Watch for suspicious activity, check scheduled tasks, follow AI usage and manage two-step verification and the seasonal theme.
-requires: [control-center.security, control-center.schedule-monitor, control-center.ai-usage, control-center.two-factor-enforcement, control-center.seasonal-theme]
-updated: 2026-10-28
+summary: Watch for suspicious activity, check scheduled tasks, follow AI usage and manage two-step verification.
+requires: [control-center.security, control-center.schedule-monitor, control-center.ai-usage, control-center.two-factor-enforcement]
+updated: 2026-11-19
 ---
 These `Control Center` pages protect the system and keep it healthy. They complement the pages described in the monitoring and system tools topics, and they are meant for administrators only.
 
@@ -46,12 +46,6 @@ Administrators. Each page has its own access, so you see only the pages your rol
 2. Choose the roles that must use two-step verification.
 3. Save. People in those roles are guided to set it up at their next sign-in.
 
-### Seasonal Theme
-
-1. Open `Control Center` › `Seasonal Theme`.
-2. Choose the default seasonal theme for the dashboard and the sign-in page, and any sound for it.
-3. Save. Individual users can still change their own appearance in `Settings`.
-
 ## What happens next
 
 Changes apply to everyone. Unlocking an account lets the person sign in again at once.
@@ -66,4 +60,4 @@ Changes apply to everyone. Unlocking an account lets the person sign in again at
 
 - [[sign-in-and-security]]
 
-<!-- sources: routes/web.php, resources/views/admin/security-center.blade.php, resources/views/admin/schedule-monitor.blade.php, resources/views/admin/ai-usage.blade.php, resources/views/admin/two-factor-enforcement-settings.blade.php, resources/views/admin/seasonal-theme-settings.blade.php -->
+<!-- sources: routes/web.php, resources/views/admin/security-center.blade.php, resources/views/admin/schedule-monitor.blade.php, resources/views/admin/ai-usage.blade.php, resources/views/admin/two-factor-enforcement-settings.blade.php -->
