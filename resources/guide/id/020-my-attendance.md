@@ -5,7 +5,7 @@ order: 20
 title: My Attendance
 summary: Lakukan Check-in dan Check-out, periksa riwayat kehadiran, dan minta HR mengoreksi jam yang salah atau terlewat.
 requires: [general.my-attendance]
-updated: 2026-10-27
+updated: 2026-11-18
 ---
 `My Attendance` mencatat Check-in dan Check-out harian dari akun Anda sendiri dan menampilkan riwayat 30 hari terakhir.
 
@@ -53,6 +53,12 @@ Hanya satu koreksi berstatus pending yang diizinkan per tanggal. Jika muncul pes
 1. Gulir ke `My Correction Requests`.
 2. Baca `Status`: `Pending`, `Approved`, `Rejected`, atau `Cancelled`. HR dapat menambahkan catatan.
 3. Pilih `Cancel` pada permintaan `Pending` jika sudah tidak diperlukan.
+
+## Aturan yang perlu diketahui
+
+- Catatan di bawah `Check-in / Check-out` menyebutkan shift Anda, jam mulainya, dan toleransi keterlambatannya. Anda tepat waktu sampai jam mulai ditambah toleransi.
+- Menit keterlambatan dihitung dari akhir toleransi. Tanpa toleransi, Check-in setelah jam mulai tercatat `Late`.
+- Jika belum ada shift untuk Anda, keterlambatan tidak dihitung. Minta HR menugaskan shift.
 
 ## Apa yang terjadi selanjutnya
 

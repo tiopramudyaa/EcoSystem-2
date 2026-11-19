@@ -30,6 +30,10 @@ class ExternalConsultantController extends Controller
             'search' => trim((string) $request->query('search')),
             'scheme' => (string) $request->query('scheme'),
             'status' => (string) $request->query('status'),
+            'vendor' => trim((string) $request->query('vendor')),
+            'role'   => trim((string) $request->query('role')),
+            'period' => (string) $request->query('period'),
+            'sort'   => (string) $request->query('sort'),
         ];
         $perPage = $this->perPage($request);
         $canRate = $this->canView('external.section.engagement_rate.view');
@@ -41,6 +45,7 @@ class ExternalConsultantController extends Controller
             'perPageOptions' => self::PER_PAGE_OPTIONS,
             'canRate'        => $canRate,
             'filterForm'     => 'consultantFilters',
+            'filterOptions'  => $this->consultants->filterOptions(),
             'schemes'        => EngagementRules::SCHEMES + ['other_unset' => 'Other / not set', 'other' => 'Other scheme', 'unset' => 'No scheme set'],
             'periodLabels'   => ExternalRules::PERIOD_LABELS,
         ];

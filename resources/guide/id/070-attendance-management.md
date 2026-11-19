@@ -5,7 +5,7 @@ order: 70
 title: Pengelolaan Attendance
 summary: Tinjau Attendance harian dan bulanan, putuskan permintaan koreksi, serta atur shift dan aturan lokasi.
 requires: [general.attendance, general.attendance.correction, general.settings.attendance, general.settings.shifts]
-updated: 2026-10-27
+updated: 2026-11-18
 ---
 `Attendance` memberi HR rekap Check-in dan Check-out semua orang, tempat memutuskan permintaan koreksi, serta pengaturan yang mengatur shift dan pemeriksaan lokasi.
 
@@ -45,7 +45,7 @@ Buka `Human Capital` › `Attendance`. Hub ini memiliki hingga lima tab: `Daily 
 
 1. Buka `Shifts` lalu pilih `Add Shift`.
 2. Atur nama shift, jam kerja, toleransi keterlambatan, jam istirahat, dan hari kerja.
-3. Gunakan aksi assign pada sebuah shift untuk memilih Employee yang memakainya.
+3. Gunakan aksi assign pada sebuah shift untuk memilih Employee yang memakainya. Cari berdasarkan nama lengkap, nama panggilan, atau kode Employee, dan gunakan filter role untuk mempersempit daftar. Nama ditampilkan lengkap.
 
 Sebuah shift dapat menjadi shift bawaan, shift lintas hari (overnight), serta aktif atau nonaktif.
 
@@ -60,6 +60,14 @@ Di `Settings`, Anda dapat mengatur:
 
 > [!IMPORTANT]
 > Check-in dan Check-out dicatat sekali sehari. Koreksi adalah satu-satunya cara mengubah jam.
+
+## Aturan yang perlu diketahui
+
+- Jam bawaan di `Settings` dan shift bawaan adalah data yang sama. Menyimpan `Default Check-in`, `Default Check-out` atau `Default Late Tolerance (minutes)` memperbarui shift bawaan, dan mengubah shift bawaan memperbarui `Settings`.
+- Employee dengan shift tersendiri memakai toleransi keterlambatan shift itu. Employee tanpa shift memakai shift bawaan.
+- Tanpa shift bawaan, Employee yang tidak punya shift tidak punya jam kerja dan tidak pernah ditandai Late. Tandai satu shift sebagai default di `Shifts`.
+- Check-in dianggap tepat waktu sampai jam mulai shift ditambah toleransi. Setelah itu tercatat `Late`, dan menit keterlambatan dihitung dari akhir toleransi, bukan dari jam mulai.
+- Shift bawaan tidak dapat dihapus atau dinonaktifkan. Jadikan shift lain sebagai default terlebih dahulu.
 
 ## Apa yang terjadi selanjutnya
 

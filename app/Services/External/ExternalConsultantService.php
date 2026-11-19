@@ -42,13 +42,55 @@ class ExternalConsultantService
             ->tap(fn ($q) => $this->applySchemeFilter($q, (string) ($filters['scheme'] ?? '')))
             ->when(($filters['status'] ?? '') === 'active', fn ($q) => $q->where('e.is_active', 1))
             ->when(($filters['status'] ?? '') === 'inactive', fn ($q) => $q->where('e.is_active', 0))
-            ->orderBy('b.first_name')->orderBy('e.employee_id')
+            ->when(trim((string) ($filters['vendor'] ?? '')) !== '', fn ($q) => $q->where(fn ($s) => $s->where('g.vendor_partner', $filters['vendor'])->orWhere('g.client_company', $filters['vendor'])))
+            ->when(trim((string) ($filters['role'] ?? '')) !== '', fn ($q) => $q->where('g.assignment_role', $filters['role']))
+            ->tap(fn ($q) => $this->applyPeriodFilter($q, (string) ($filters['period'] ?? ''), $today))
+            ->tap(fn ($q) => $this->applySort($q, (string) ($filters['sort'] ?? '')))
             ->paginate($perPage)->withQueryString();
 
         $contacts = $this->contacts($page->getCollection()->pluck('employee_id')->all());
         $page->getCollection()->transform(fn ($row) => $this->decorate($row, $today, $contacts[$row->employee_id] ?? null));
 
         return $page;
+    }
+
+    /** Pilihan penyaring Vendor / client dan Assignment role: hanya nilai yang benar-benar dipakai konsultan. */
+    public function filterOptions(): array
+    {
+        $rows = $this->baseQuery(false)->get(['g.vendor_partner', 'g.client_company', 'g.assignment_role']);
+        $clean = fn ($values) => $values->map(fn ($v) => trim((string) $v))->filter()->unique()->sort(SORT_NATURAL | SORT_FLAG_CASE)->values()->all();
+
+        return [
+            'vendors' => $clean($rows->pluck('vendor_partner')->merge($rows->pluck('client_company'))),
+            'roles'   => $clean($rows->pluck('assignment_role')),
+        ];
+    }
+
+    /** Status masa engagement; sama dengan ExternalRules::periodState, ditambah "berakhir dalam 30 hari". */
+    private function applyPeriodFilter($q, string $period, string $today): void
+    {
+        match ($period) {
+            'in_period' => $q->where(fn ($s) => $s->whereNotNull('g.start_date')->orWhereNotNull('g.end_date'))
+                ->where(fn ($s) => $s->whereNull('g.start_date')->orWhere('g.start_date', '<=', $today))
+                ->where(fn ($s) => $s->whereNull('g.end_date')->orWhere('g.end_date', '>=', $today)),
+            'upcoming'  => $q->where('g.start_date', '>', $today),
+            'ended'     => $q->where('g.end_date', '<', $today)->where(fn ($s) => $s->whereNull('g.start_date')->orWhere('g.start_date', '<=', $today)),
+            'none'      => $q->whereNull('g.start_date')->whereNull('g.end_date'),
+            'ending_30' => $q->whereBetween('g.end_date', [$today, now()->addDays(30)->toDateString()]),
+            default     => null,
+        };
+    }
+
+    private function applySort($q, string $sort): void
+    {
+        match ($sort) {
+            'eci'        => $q->orderBy('e.eci'),
+            'end_asc'    => $q->orderByRaw('g.end_date IS NULL')->orderBy('g.end_date'),
+            'start_desc' => $q->orderByRaw('g.start_date IS NULL')->orderByDesc('g.start_date'),
+            'vendor'     => $q->orderByRaw("COALESCE(NULLIF(g.vendor_partner, ''), NULLIF(g.client_company, '')) IS NULL")->orderByRaw("COALESCE(NULLIF(g.vendor_partner, ''), g.client_company)"),
+            default      => null,
+        };
+        $q->orderBy('b.first_name')->orderBy('e.employee_id');
     }
 
     /** Hitungan kartu ringkasan di atas daftar. */

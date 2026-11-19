@@ -146,6 +146,22 @@
                 </div>
             </div>
 
+            @php $rule = $record?->shift ?? $shift; @endphp
+            <p class="mt-3 text-xs text-gray-500" id="lateRuleNote">
+                @if($rule)
+                    Your shift "{{ $rule->name }}" starts at {{ substr((string) $rule->check_in_time, 0, 5) }}
+                    with {{ $rule->late_tolerance_minutes }} minute(s) of tolerance
+                    @if($rule->late_tolerance_minutes > 0)
+                        (on time until {{ \Illuminate\Support\Carbon::parse($rule->check_in_time)->addMinutes($rule->late_tolerance_minutes)->format('H:i') }}).
+                    @else
+                        (no tolerance, any check-in after the start time is Late).
+                    @endif
+                    Late minutes are counted after the tolerance ends.
+                @else
+                    No shift is set for you, so lateness is not calculated. Ask HR to assign a shift.
+                @endif
+            </p>
+
             <div class="mt-4 grid grid-cols-2 gap-3">
                 <div class="rounded-lg border border-gray-200 bg-gray-50/60 p-4">
                     <p class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">

@@ -59,7 +59,7 @@
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-4 py-3 text-gray-400">{{ $index + 1 }}</td>
                             <td class="px-4 py-3">
-                                <div class="font-medium text-gray-900">{{ $row->employee?->basicData?->nick_name ?? '-' }}</div>
+                                <div class="font-medium text-gray-900">{{ $row->employee?->fullNameLabel() ?? '-' }}</div>
                                 <div class="text-xs text-gray-400">
                                     {{ $row->employee?->eci }}
                                     @if($row->employee?->basicData?->department)
@@ -70,7 +70,7 @@
                             <td class="px-4 py-3 text-gray-600 text-xs">{{ $row->start_date?->format('d M Y') }}</td>
                             <td class="px-4 py-3 text-center">
                                 <button type="button"
-                                        onclick="releaseAssignment({{ $row->id }}, @js($row->employee?->basicData?->nick_name ?? 'this employee'))"
+                                        onclick="releaseAssignment({{ $row->id }}, @js($row->employee?->fullNameLabel() ?? 'this employee'))"
                                         class="px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-all">
                                     Release
                                 </button>
@@ -105,8 +105,15 @@
             </p>
 
             <form method="GET" action="{{ route('general.attendance.shifts.assign', $shift) }}" class="flex gap-2 mb-4">
-                <input type="text" name="search" value="{{ $search }}" placeholder="Search by name or employee code..."
+                <input type="text" name="search" value="{{ $search }}" placeholder="Search by full name, nickname or employee code..."
                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800">
+                <select name="role_id" onchange="this.form.submit()" aria-label="Filter by role"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800">
+                    <option value="0">All roles</option>
+                    @foreach($roles as $role)
+                        <option value="{{ $role->id }}" @selected($roleId === $role->id)>{{ $role->name }}</option>
+                    @endforeach
+                </select>
                 <button type="submit" class="px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all">
                     <i class="fas fa-search"></i>
                 </button>
@@ -129,7 +136,7 @@
                                @disabled($atLimit)
                                class="assign-check w-4 h-4 rounded border-gray-300 text-red-800 focus:ring-red-800 disabled:cursor-not-allowed">
                         <span class="min-w-0 flex-1">
-                            <span class="block text-sm font-medium text-gray-900 truncate">{{ $employee->basicData?->nick_name ?? '-' }}</span>
+                            <span class="block text-sm font-medium text-gray-900 truncate">{{ $employee->fullNameLabel() }}</span>
                             <span class="block text-xs text-gray-400 truncate">
                                 {{ $employee->eci }}
                                 @if($employee->basicData?->department) · {{ $employee->basicData->department }} @endif

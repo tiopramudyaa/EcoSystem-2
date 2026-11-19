@@ -5,7 +5,7 @@ order: 10
 title: External Consultant
 summary: Tambah Consultant eksternal, cari mereka, dan kelola profil serta penugasannya.
 requires: [general.external.consultants]
-updated: 2026-10-27
+updated: 2026-11-18
 ---
 `External Consultants` mendaftar Consultant eksternal perusahaan, lengkap dengan penugasan, vendor, skema, dan periodenya. Dari sini Anda menambah Consultant dan membuka profilnya untuk melengkapi data.
 
@@ -25,6 +25,7 @@ HR dan administrator yang mengelola Consultant eksternal. Tombol dan tab yang An
 
 1. Klik kartu ringkasan untuk memfilter: `Total consultants`, `Active`, `Mandays`, `Monthly`, atau `Other / not set`.
 2. Ketik di kotak pencarian: nama, ID Consultant, vendor, klien, atau penugasan.
+   Persempit daftar dengan `Scheme`, `Status`, filter vendor / klien, filter assignment role, dan filter periode (`In period`, `Ending in 30 days`, `Upcoming`, `Ended`, `No period set`). Gunakan `Sort by` untuk mengurutkan berdasarkan nama, ID Consultant, engagement yang paling cepat berakhir, mulai terbaru, atau vendor. Pilihan vendor, klien, dan role hanya berisi nilai yang benar-benar dimiliki Consultant.
 3. Baca kolom `Consultant`, `Vendor / Assignment`, `Scheme`, `Period`, `Rate`, dan `Status`. Kolom `Rate` hanya tampil bila Anda punya izin melihat tarif.
 4. Pilih `Refresh` untuk memuat ulang daftar.
 

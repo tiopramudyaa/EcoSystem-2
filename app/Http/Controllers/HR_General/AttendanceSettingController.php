@@ -5,7 +5,9 @@ namespace App\Http\Controllers\HR_General;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance\AttendanceSetting;
 use App\Models\Attendance\AttendanceSource;
+use App\Models\Attendance\Shift;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
@@ -24,6 +26,7 @@ class AttendanceSettingController extends Controller
         return view('hr-general.attendance.settings', [
             'settings' => AttendanceSetting::current(),
             'sources'  => AttendanceSource::ordered()->get(),
+            'defaultShift' => Shift::where('is_default', true)->where('is_active', true)->first(),
         ]);
     }
 
@@ -36,7 +39,29 @@ class AttendanceSettingController extends Controller
 
         $data['updated_by'] = session('user.id');
 
-        $settings->update($data);
+        $defaultShift = Shift::where('is_default', true)->where('is_active', true)->first();
+
+        // Shift default yang tidak lintas tengah malam wajib pulang lebih lambat
+        // dari masuk; kalau tidak durasi kerjanya negatif.
+        if ($defaultShift && !$defaultShift->crosses_midnight && $data['default_check_out'] <= $data['default_check_in']) {
+            return back()->withInput()->withErrors([
+                'default_check_out' => 'Default check-out must be later than default check-in. '
+                    . 'To run a shift past midnight, edit the default shift and tick "Crosses midnight".',
+            ]);
+        }
+
+        DB::transaction(function () use ($settings, $data, $defaultShift) {
+            $settings->update($data);
+
+            // Settings menyalin jam default ke shift default (satu sumber
+            // kebenaran): tanpa ini, toleransi yang diisi di sini tidak pernah
+            // dipakai karena presensi memakai tabel shift.
+            $defaultShift?->update([
+                'check_in_time'          => $data['default_check_in'],
+                'check_out_time'         => $data['default_check_out'],
+                'late_tolerance_minutes' => $data['default_late_tolerance_minutes'],
+            ]);
+        });
         AttendanceSetting::forgetCache();
 
         // Kebijakan presensi menentukan apakah seluruh karyawan dapat bekerja

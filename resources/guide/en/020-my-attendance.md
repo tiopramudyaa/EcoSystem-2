@@ -5,7 +5,7 @@ order: 20
 title: My Attendance
 summary: Check in and out, review your attendance history, and ask HR to correct a wrong or missing time.
 requires: [general.my-attendance]
-updated: 2026-10-27
+updated: 2026-11-18
 ---
 `My Attendance` records your daily Check-in and Check-out from your own account and shows your history for the last 30 days.
 
@@ -53,6 +53,12 @@ Only one pending correction is allowed per date. If you see a message that corre
 1. Scroll to `My Correction Requests`.
 2. Read the `Status`: `Pending`, `Approved`, `Rejected` or `Cancelled`. HR may add a note.
 3. Select `Cancel` on a `Pending` request if you no longer need it.
+
+## Rules to know
+
+- The note under `Check-in / Check-out` states your shift, its start time and its late tolerance. You are on time until the start time plus the tolerance.
+- Late minutes are counted from the end of the tolerance. With no tolerance, any check-in after the start time is `Late`.
+- If no shift is set for you, lateness is not calculated. Ask HR to assign a shift.
 
 ## What happens next
 

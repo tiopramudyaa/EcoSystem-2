@@ -5,7 +5,7 @@ order: 80
 title: Pengelolaan Leave & Permit
 summary: Tinjau pengajuan cuti dan izin, kelola jenis cuti dan kuota, serta baca laporan.
 requires: [hr_general.leave_permit]
-updated: 2026-10-27
+updated: 2026-11-18
 ---
 `Leave & Permit` adalah halaman HR untuk meninjau pengajuan, mengelola jenis cuti dan kuota, serta membaca laporan. Employee mengajukan lewat My Leave & Permit.
 
@@ -52,6 +52,10 @@ Filter status menawarkan `All Statuses`, `Pending Only`, `Approved`, `Revision R
 - `Reports & Analytics` menampilkan total seperti hari cuti disetujui yang sudah diambil serta permintaan yang ditolak atau direvisi, dengan tabel per Employee dan per jenis cuti.
 
 Anda dapat memakai `Export` di halaman untuk mengunduh pengajuan.
+
+## Aturan yang perlu diketahui
+
+- Hanya pengajuan berstatus `pending` yang dapat disetujui, ditolak, atau dikembalikan untuk revisi. Pengajuan yang sudah disetujui, ditolak, atau dalam revisi tidak dapat diputuskan lagi, dan layar menjelaskan status saat ini.
 
 ## Apa yang terjadi selanjutnya
 

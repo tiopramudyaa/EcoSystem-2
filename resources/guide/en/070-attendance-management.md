@@ -5,7 +5,7 @@ order: 70
 title: Attendance Management
 summary: Review daily and monthly attendance, decide correction requests, and set shifts and location rules.
 requires: [general.attendance, general.attendance.correction, general.settings.attendance, general.settings.shifts]
-updated: 2026-10-27
+updated: 2026-11-18
 ---
 `Attendance` gives HR the recap of everyone's check-in and check-out, a place to decide correction requests, and the settings that control shifts and location checks.
 
@@ -45,7 +45,7 @@ Open `Human Capital` › `Attendance`. The hub has up to five tabs: `Daily Recap
 
 1. Open `Shifts` and select `Add Shift`.
 2. Set the shift name, working hours, late tolerance, break and working days.
-3. Use the assign action on a shift to choose the employees on it.
+3. Use the assign action on a shift to choose the employees on it. Search by full name, nickname or employee code, and use the role filter to narrow the list. Names are shown in full.
 
 A shift can be the default, overnight, and active or inactive.
 
@@ -60,6 +60,14 @@ In `Settings` you can adjust:
 
 > [!IMPORTANT]
 > Check-in and check-out are recorded once a day. Corrections are the only way to change a time.
+
+## Rules to know
+
+- The default hours in `Settings` and the default shift are the same data. Saving `Default Check-in`, `Default Check-out` or `Default Late Tolerance (minutes)` updates the default shift, and editing the default shift updates `Settings`.
+- An employee with an explicit shift uses that shift's own late tolerance. An employee without one uses the default shift.
+- Without any default shift, employees with no shift have no working hours and are never marked Late. Mark one shift as default on `Shifts`.
+- A check-in is on time up to the shift start plus the tolerance. After that it is `Late`, and the late minutes are counted from the end of the tolerance, not from the start time.
+- The default shift cannot be deleted or deactivated. Set another shift as default first.
 
 ## What happens next
 

@@ -116,6 +116,12 @@ class AttendanceService
 
         $record = $this->recordFor($employeeId, $date);
 
+        // Shift lintas tengah malam: check-in tercatat pada tanggal kemarin,
+        // sedangkan check-out terjadi sesudah pukul 00:00.
+        if (!$record || !$record->check_in_at) {
+            $record = $this->openOvernightRecord($employeeId, $now) ?? $record;
+        }
+
         if (!$record || !$record->check_in_at) {
             return $this->deny('You have not checked in today, so there is nothing to check out from.');
         }
@@ -168,7 +174,26 @@ class AttendanceService
 
     public function todayRecord(int $employeeId): ?AttendanceRecord
     {
-        return $this->recordFor($employeeId, now()->toDateString());
+        return $this->recordFor($employeeId, now()->toDateString())
+            ?? $this->openOvernightRecord($employeeId, now());
+    }
+
+    /**
+     * Presensi kemarin yang masih menunggu check-out pada shift lintas tengah
+     * malam. Tanpa ini karyawan shift malam tidak bisa check-out setelah
+     * pukul 00:00 dan diberi pesan "belum check-in" yang menyesatkan.
+     */
+    private function openOvernightRecord(int $employeeId, Carbon $now): ?AttendanceRecord
+    {
+        $record = $this->recordFor($employeeId, $now->copy()->subDay()->toDateString());
+
+        if (!$record || !$record->check_in_at || $record->check_out_at || !$record->shift_id) {
+            return null;
+        }
+
+        $shift = Shift::find($record->shift_id);
+
+        return $shift && $shift->crosses_midnight ? $record : null;
     }
 
     /** Riwayat N hari terakhir, terbaru lebih dulu. */

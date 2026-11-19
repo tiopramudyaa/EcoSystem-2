@@ -129,7 +129,16 @@
     <div class="bg-white rounded-xl p-6 shadow-sm">
         <h2 class="text-xl font-bold text-gray-900 mb-1">Source &amp; Default Hours</h2>
         <p class="text-sm text-gray-500 mb-5">
-            Default hours apply only to employees without any shift assignment and without a default shift.
+            @if($defaultShift)
+                Default hours are the hours of the default shift "{{ $defaultShift->name }}". Saving here updates that
+                shift, and editing that shift updates these fields, so the two never differ. They apply to every employee
+                without an explicit shift assignment.
+            @else
+                No default shift is set, so employees without a shift assignment have no working hours and are never marked
+                late. Mark a shift as default on the Shifts page for these values to take effect.
+            @endif
+            A check-in is on time up to the tolerance after the start time; after that it is marked Late.
+            Employees with an explicit shift use that shift's own tolerance instead.
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">

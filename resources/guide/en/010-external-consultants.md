@@ -5,7 +5,7 @@ order: 10
 title: External Consultants
 summary: Add external consultants, find them, and maintain their profile and engagement.
 requires: [general.external.consultants]
-updated: 2026-10-27
+updated: 2026-11-18
 ---
 `External Consultants` lists the external consultants of the company, with their engagement, vendor, scheme and period. From here you add a consultant and open the profile to complete the data.
 
@@ -25,6 +25,7 @@ HR and administrators who manage external consultants. Which buttons and tabs yo
 
 1. Click a summary card to filter: `Total consultants`, `Active`, `Mandays`, `Monthly` or `Other / not set`.
 2. Type in the search box: name, consultant ID, vendor, client or assignment.
+   Narrow the list further with `Scheme`, `Status`, the vendor / client filter, the assignment role filter and the period filter (`In period`, `Ending in 30 days`, `Upcoming`, `Ended`, `No period set`). Use `Sort by` to order by name, consultant ID, the engagement that ends soonest, the newest start or vendor. Vendor, client and role choices list only values that consultants actually have.
 3. Read the columns `Consultant`, `Vendor / Assignment`, `Scheme`, `Period`, `Rate` and `Status`. The `Rate` column appears only if you have permission to see rates.
 4. Select `Refresh` to reload the list.
 

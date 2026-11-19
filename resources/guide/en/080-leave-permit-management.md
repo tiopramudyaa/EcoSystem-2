@@ -5,7 +5,7 @@ order: 80
 title: Leave & Permit Management
 summary: Review leave and permit applications, manage leave types and quotas, and read reports.
 requires: [hr_general.leave_permit]
-updated: 2026-10-27
+updated: 2026-11-18
 ---
 `Leave & Permit` is the HR page where applications are reviewed, leave types and quotas are managed, and reports are read. Employees apply from My Leave & Permit.
 
@@ -52,6 +52,10 @@ The status filter offers `All Statuses`, `Pending Only`, `Approved`, `Revision R
 - `Reports & Analytics` shows totals such as approved days taken and rejected or revised requests, with tables per employee and per leave type.
 
 You can use `Export` on the page to download applications.
+
+## Rules to know
+
+- Only an application with status `pending` can be approved, rejected or sent back for revision. An application that is already approved, rejected or in revision cannot be decided again, and the screen explains its current status.
 
 ## What happens next
 

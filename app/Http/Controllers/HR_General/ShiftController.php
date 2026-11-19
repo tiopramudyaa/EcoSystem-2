@@ -71,7 +71,10 @@ class ShiftController extends Controller
         $shift = DB::transaction(function () use ($data) {
             $this->clearOtherDefaults($data);
 
-            return Shift::create($data);
+            $created = Shift::create($data);
+            $this->mirrorToSettings($created);
+
+            return $created;
         });
 
         return redirect()
@@ -87,6 +90,7 @@ class ShiftController extends Controller
             $this->clearOtherDefaults($data, $shift->id);
 
             $shift->update($data);
+            $this->mirrorToSettings($shift->refresh());
         });
 
         return redirect()
@@ -128,13 +132,14 @@ class ShiftController extends Controller
     public function assign(Request $request, Shift $shift)
     {
         $search = trim((string) $request->query('search', ''));
+        $roleId = (int) $request->query('role_id', 0);
 
         $assigned = EmployeeShift::query()
             ->where('shift_id', $shift->id)
             ->whereNull('end_date')
             ->with('employee.basicData')
             ->get()
-            ->sortBy(fn ($row) => $row->employee?->basicData?->nick_name ?? '')
+            ->sortBy(fn ($row) => mb_strtolower($row->employee ? $row->employee->fullNameLabel() : ''))
             ->values();
 
         $maxShifts = AttendanceSetting::current()->max_shifts_per_employee;
@@ -158,16 +163,20 @@ class ShiftController extends Controller
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('eci', 'like', "%{$search}%")
-                          ->orWhereHas('basicData', fn ($b) => $b->where('nick_name', 'like', "%{$search}%"));
+                          ->orWhereHas('basicData', fn ($b) => $b->where('nick_name', 'like', "%{$search}%")
+                              ->orWhere('first_name', 'like', "%{$search}%")
+                              ->orWhere('last_name', 'like', "%{$search}%")
+                              ->orWhereRaw("CONCAT(first_name, ' ', COALESCE(last_name, '')) LIKE ?", ["%{$search}%"]));
                 });
             })
+            ->when($roleId > 0, fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('employee_role.id', $roleId)))
             ->orderBy('eci')
             ->limit(200)
             ->get();
 
         return view('hr-general.attendance.shifts.assign', compact(
-            'shift', 'assigned', 'candidates', 'search', 'maxShifts', 'activeCounts'
-        ));
+            'shift', 'assigned', 'candidates', 'search', 'maxShifts', 'activeCounts', 'roleId'
+        ) + ['roles' => \App\Models\EmployeeRole::orderBy('name')->get(['id', 'name'])]);
     }
 
     /**
@@ -255,6 +264,26 @@ class ShiftController extends Controller
     }
 
     // ── internal ────────────────────────────────────────────────────────────
+
+    /**
+     * Jam kerja default hidup di DUA tempat (baris shift default dan kolom
+     * "Default Hours" di Attendance Settings). Supaya keduanya tidak pernah
+     * berbeda, shift default adalah sumber kebenaran dan Settings hanya
+     * cerminannya. Hanya berlaku bila shift yang disimpan adalah yang default.
+     */
+    private function mirrorToSettings(Shift $shift): void
+    {
+        if (!$shift->is_default) {
+            return;
+        }
+
+        AttendanceSetting::current()->update([
+            'default_check_in'               => substr((string) $shift->check_in_time, 0, 5),
+            'default_check_out'              => substr((string) $shift->check_out_time, 0, 5),
+            'default_late_tolerance_minutes' => $shift->late_tolerance_minutes,
+        ]);
+        AttendanceSetting::forgetCache();
+    }
 
     /**
      * Hanya boleh ada satu shift default. Ditegakkan di sini karena MariaDB

@@ -827,6 +827,13 @@ class LeavePermitController extends Controller
         $currentEmp = $user['id'] ?? null;
 
         $application = LeavePermitApplication::findOrFail($id);
+
+        if ($application->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This application is already ' . $application->status . ' and can no longer be decided. Only pending applications can be approved, rejected or sent back for revision.',
+            ], 422);
+        }
         $application->status = 'approved';
         $application->reviewed_by = $currentEmp;
         $application->reviewed_at = now();
@@ -863,6 +870,13 @@ class LeavePermitController extends Controller
         ]);
 
         $application = LeavePermitApplication::findOrFail($id);
+
+        if ($application->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This application is already ' . $application->status . ' and can no longer be decided. Only pending applications can be approved, rejected or sent back for revision.',
+            ], 422);
+        }
         $application->status = 'rejected';
         $application->reviewed_by = $currentEmp;
         $application->reviewed_at = now();
@@ -897,6 +911,13 @@ class LeavePermitController extends Controller
         ]);
 
         $application = LeavePermitApplication::findOrFail($id);
+
+        if ($application->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This application is already ' . $application->status . ' and can no longer be decided. Only pending applications can be approved, rejected or sent back for revision.',
+            ], 422);
+        }
         $application->status = 'revision';
         $application->reviewed_by = $currentEmp;
         $application->reviewed_at = now();

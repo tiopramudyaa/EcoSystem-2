@@ -54,27 +54,54 @@
         <form id="{{ $filterForm }}" method="GET" action="{{ route('general.external.consultants.index') }}" data-unsaved-ignore
               class="px-5 py-4 border-b border-gray-100 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
             <input type="hidden" name="per_page" value="{{ $perPage }}">
-            <div class="md:col-span-5 relative">
+            <div class="md:col-span-4 relative">
                 <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
                 <input type="search" name="search" id="extSearch" value="{{ $filters['search'] }}" autocomplete="off"
                        placeholder="Search name, consultant ID, vendor, client or assignment"
                        class="{{ $input }} pl-9 pr-9" aria-label="Search consultants">
                 <button type="button" id="extSearchClear" class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 {{ $filters['search'] === '' ? 'hidden' : '' }}" aria-label="Clear search"><i class="fas fa-xmark text-xs"></i></button>
             </div>
-            <div class="md:col-span-3">
+            <div class="md:col-span-2">
                 <select name="scheme" class="{{ $input }}" aria-label="Scheme">
                     <option value="">All schemes</option>
                     @foreach($schemes as $value => $label)<option value="{{ $value }}" @selected($filters['scheme'] === $value)>{{ $label }}</option>@endforeach
                 </select>
             </div>
-            <div class="md:col-span-3">
+            <div class="md:col-span-2">
                 <select name="status" class="{{ $input }}" aria-label="Status">
                     <option value="">All statuses</option>
                     <option value="active" @selected($filters['status'] === 'active')>Active</option>
                     <option value="inactive" @selected($filters['status'] === 'inactive')>Inactive</option>
                 </select>
             </div>
-            <div class="md:col-span-1 flex justify-end">
+            <div class="md:col-span-4">
+                <select name="vendor" class="{{ $input }}" aria-label="Vendor or client">
+                    <option value="">All vendors / clients</option>
+                    @foreach($filterOptions['vendors'] as $name)<option value="{{ $name }}" @selected($filters['vendor'] === $name)>{{ $name }}</option>@endforeach
+                </select>
+            </div>
+            <div class="md:col-span-4">
+                <select name="role" class="{{ $input }}" aria-label="Assignment role">
+                    <option value="">All assignment roles</option>
+                    @foreach($filterOptions['roles'] as $name)<option value="{{ $name }}" @selected($filters['role'] === $name)>{{ $name }}</option>@endforeach
+                </select>
+            </div>
+            <div class="md:col-span-2">
+                <select name="period" class="{{ $input }}" aria-label="Engagement period">
+                    <option value="">Any period</option>
+                    @foreach(['in_period' => 'In period', 'ending_30' => 'Ending in 30 days', 'upcoming' => 'Upcoming', 'ended' => 'Ended', 'none' => 'No period set'] as $value => $label)
+                        <option value="{{ $value }}" @selected($filters['period'] === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="md:col-span-2">
+                <select name="sort" class="{{ $input }}" aria-label="Sort by">
+                    @foreach(['' => 'Name A-Z', 'eci' => 'Consultant ID', 'end_asc' => 'Ending soonest', 'start_desc' => 'Newest start', 'vendor' => 'Vendor A-Z'] as $value => $label)
+                        <option value="{{ $value }}" @selected($filters['sort'] === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="md:col-span-12 flex justify-end">
                 <button type="button" id="extRefresh" class="w-full md:w-auto px-3 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 inline-flex items-center justify-center gap-1.5" title="Refresh the list">
                     <i class="fas fa-rotate" id="extRefreshIcon"></i><span class="md:hidden">Refresh</span>
                 </button>
