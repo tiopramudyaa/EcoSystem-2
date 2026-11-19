@@ -19,7 +19,7 @@ class ReimbursementRequestApproval extends Model
     protected $fillable = [
         'reimbursement_request_id', 'order_seq',
         'step_name', 'approver_type', 'approver_role_id', 'approver_employee_ids',
-        'signs_as', 'signature_path', 'signed_at',
+        'signs_as', 'origin', 'signature_path', 'signed_at',
         'status', 'acted_by', 'acted_at', 'notes',
     ];
 
@@ -32,6 +32,10 @@ class ReimbursementRequestApproval extends Model
     ];
 
     // ── Konstanta ───────────────────────────────────────────────────────────
+
+    /** Asal langkah: Approval Workflow, atau dibentuk otomatis dari Object. */
+    public const ORIGIN_WORKFLOW = 'workflow';
+    public const ORIGIN_OBJECT   = 'object';
 
     public const STATUS_WAITING  = 'waiting';
     public const STATUS_APPROVED = 'approved';

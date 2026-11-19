@@ -48,7 +48,7 @@ Setiap Employee yang memiliki menu `My Reimbursement`.
 - Saat Object diaktifkan, setiap item punya kolom `Object`. Pilih `Office` dan sebuah office, `Project` dan sebuah project, atau `Support` dan nomor tiket, serta kategori bila ditawarkan.
 - Anda tidak memilih penyetuju. `Reviewed by (assigned automatically)` menunjukkan siapa yang akan menyetujui dokumen, berdasarkan Object pada item Anda.
 - `Fund category` hanya muncul bila project atau tiket yang Anda pilih punya kategori. Pilihan ini opsional. Bila tidak muncul, tidak ada yang perlu dipilih.
-- Project harus masih berjalan. Ketik minimal 2 karakter nomor tiket lalu pilih tiket dari daftar.
+- Project harus masih berjalan. Untuk `Support`, klik kotak tiket untuk melihat tiket terbaru, atau ketik nomor tiket atau kata dari deskripsinya, lalu pilih tiket dari daftar. Daftar berasal dari menu Ticket. Teks yang diketik tanpa memilih tiket tidak diterima.
 - Bila nominal di atas dana yang ditetapkan untuk sebuah Object, kotak `Reason for exceeding the fund` muncul. Tulis minimal 10 karakter agar dapat diajukan, kalau tidak dokumen ditolak. Pada kebijakan `Block`, dokumen tidak dapat diajukan sampai nominal dikurangi.
 - Bila pengajuan ditolak karena project, tiket, atau office belum punya penyetuju, pesannya menyebut namanya. Minta Finance mengaturnya.
 - Dana tidak ditampilkan kepada Anda. Dana hanya berpengaruh bila nominal melebihinya.

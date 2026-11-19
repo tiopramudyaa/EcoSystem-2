@@ -94,6 +94,8 @@ Setiap item reimbursement dibebankan ke sebuah Object: `Office`, `Project`, atau
 - Kategori hanyalah label untuk sebuah alokasi, misalnya Transport. Pemohon melihat pilihan `Fund category` hanya untuk project atau tiket yang punya minimal satu alokasi berkategori. Kosongkan kategori untuk satu alokasi umum. `Setup checklist` di bagian atas `Objects and Funds` menunjukkan apa yang masih kurang.
 - Hanya pengguna yang boleh mencatat pembayaran yang dapat melakukan void, dan hanya untuk dokumen yang sudah disetujui dan belum dibayar. Void memerlukan alasan dan tidak dapat dibatalkan dari layar ini. Dokumen yang di-void tidak dapat dibayar.
 - Alokasi project terpisah dari rencana biaya project dan tidak pernah mengubahnya.
+- `Approval Workflow` berisi langkah yang berlaku untuk setiap reimbursement, seperti Accounting, Cashier, dan penyetuju akhir. Langkah ini berjalan setelah langkah yang ditetapkan dari Object. Jangan menambahkan penyetuju project, tiket, atau office di sana, karena itu ditetapkan otomatis dan orang yang ada di kedua tempat akan diminta dua kali.
+- Langkah yang ditambahkan ke `Approval Workflow` kemudian dapat diterapkan ke dokumen yang sedang berjalan. Langkah itu ditempatkan setelah langkah yang sudah dimiliki dokumen, dan dokumen yang sudah melewati titik itu tidak terpengaruh.
 ## Apa yang terjadi selanjutnya
 
 Dokumen yang disetujui menunggu pembayaran. Bila [[payroll]] menyertakan Reimbursement yang disetujui, nilainya dibayar bersama gaji.

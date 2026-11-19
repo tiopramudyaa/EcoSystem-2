@@ -148,6 +148,16 @@ OfficeSetting::where('branch_id', 1)->update(['approver_employee_id' => null, 'a
 $r = $svc->submit(1, $doc([$item(['cost_center_type' => 'branch', 'branch_id' => 1, 'amount' => 10000])]));
 $check('office without responsible person refused', !$r['allowed'] && str_contains($r['reason'], 'no responsible person'), $r['reason']);
 
+// 9b. A workflow step added later lands AFTER the object steps on an in-progress object document
+ObjectFlowSetting::query()->update(['enabled' => true, 'policy_office' => 'warn']); ObjectFlowSetting::forgetCache();
+$r = $svc->submit(1, $doc([$proj(100000)]));
+$open = $r['request'];
+$newStep = ReimbursementApprovalStep::create(['module' => 'reimbursement', 'order_seq' => 2, 'name' => 'Cashier Payment', 'approver_type' => 'employee', 'approver_employee_ids' => [8], 'signs_as' => 'cashier', 'is_active' => 1]);
+$applied = $svc->applyStepToOpenRequests($newStep, 6);
+$seqs = $open->fresh('approvals')->approvals->sortBy('order_seq')->map(fn ($a) => $a->order_seq . ':' . $a->step_name . ':' . $a->origin)->values()->all();
+$check('late workflow step is applied to the open object document', $applied['applied'] >= 1, $applied);
+$check('late step lands after Finance (seq 4), object steps keep origin', count($seqs) === 4 && str_starts_with($seqs[3], '4:Cashier Payment:workflow') && str_ends_with($seqs[0], ':object'), $seqs);
+$newStep->delete();
 // 10. concept disabled: old behaviour (branch only, no object steps)
 ObjectFlowSetting::query()->update(['enabled' => false]); ObjectFlowSetting::forgetCache();
 $r = $svc->submit(1, $doc([$item(['cost_center_type' => 'project', 'delivery_project_id' => 1, 'branch_id' => 1, 'amount' => 100000])], ['step_approver' => []]));

@@ -39,13 +39,15 @@
         </select>
     </div>
 
-    <div data-for="support" hidden>
-        <input type="text" class="js-ticket-input js-object-target {{ $base }}" list="tickets-{{ $key }}" autocomplete="off" maxlength="50"
-               placeholder="Type the ticket number" value="{{ $row['ticket_label'] ?? '' }}" aria-label="Support ticket number">
-        <datalist id="tickets-{{ $key }}"></datalist>
+    {{-- Tiket dari master tiket (menu Ticket). Kotak dibuka: tiket terbaru tampil; mengetik: dicari pada nomor dan deskripsi. --}}
+    <div data-for="support" hidden class="relative">
+        <input type="text" class="js-ticket-input js-object-target {{ $base }}" autocomplete="off" maxlength="50"
+               role="combobox" aria-expanded="false" aria-autocomplete="list"
+               placeholder="Search ticket number or description" value="{{ $row['ticket_label'] ?? '' }}" aria-label="Support ticket">
         <input type="hidden" name="items[{{ $key }}][ticket_id]" class="js-ticket-id" value="{{ $row['ticket_id'] ?? '' }}">
+        <div class="js-ticket-panel absolute z-50 left-0 right-0 mt-1 max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg text-sm" role="listbox" hidden></div>
+        <p class="text-[11px] text-gray-400 mt-1">Choose from the list. Tickets come from the Ticket menu.</p>
     </div>
-
     {{-- Muncul hanya bila project atau tiket ini punya kategori dana. Pembungkusnya yang disembunyikan:
          skrip select-enhance membungkus <select> dengan tombol sendiri, jadi atribut hidden pada select tidak cukup. --}}
     <div class="js-category-wrap" hidden>

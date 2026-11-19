@@ -94,6 +94,8 @@ Each reimbursement item is charged to an Object: an `Office`, a `Project`, or a 
 - A category is only a label for an allocation, such as Transport. The requester sees the `Fund category` choice only for a project or ticket that has at least one allocation with a category. Leave the category empty for one general allocation. The `Setup checklist` at the top of `Objects and Funds` shows what is still missing.
 - Only a user who can record payments can void, and only an approved document that is not paid. Voiding needs a reason and cannot be undone from this screen. A voided document cannot be paid.
 - Project allocations are separate from the project cost plan and never change it.
+- `Approval Workflow` holds the steps that apply to every reimbursement, such as Accounting, Cashier and the final approver. They run after the steps assigned from the Object. Do not add project, ticket or office approvers there, because those are assigned automatically and a person added in both places would be asked twice.
+- A step added to `Approval Workflow` later can be applied to documents already in progress. It is placed after the steps they already have, and documents that passed that point are not affected.
 ## What happens next
 
 Approved documents wait for payment. If [[payroll]] includes approved reimbursements, they are paid with salary.

@@ -22,22 +22,31 @@ use Illuminate\Support\Carbon;
  */
 class ReimbursementObjectLookupController extends Controller
 {
-    /** Cari tiket menurut nomor. Hasil dibatasi supaya ringan. */
+    /**
+     * Tiket dari master tiket (menu Ticket). Tanpa kata kunci: tiket terbaru,
+     * supaya daftar langsung tampil saat kolom dibuka. Dengan kata kunci:
+     * dicari pada nomor dan deskripsi. Hasil dibatasi supaya ringan.
+     */
     public function tickets(Request $request)
     {
         $q = trim((string) $request->query('q', ''));
 
-        if (mb_strlen($q) < 2) {
-            return response()->json(['success' => true, 'message' => '', 'data' => []]);
+        $query = Ticket::query();
+
+        if ($q !== '') {
+            $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $q) . '%';
+            $query->where(fn ($w) => $w->where('ticket_number', 'like', $like)->orWhere('description', 'like', $like));
         }
 
-        $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $q) . '%';
-
-        $rows = Ticket::where('ticket_number', 'like', $like)
-            ->orderBy('ticket_number')
-            ->limit(15)
-            ->get(['ticket_id', 'ticket_number'])
-            ->map(fn ($t) => ['id' => (int) $t->ticket_id, 'number' => $t->ticket_number]);
+        $rows = $query->orderByDesc('ticket_id')
+            ->limit(20)
+            ->get(['ticket_id', 'ticket_number', 'description', 'status'])
+            ->map(fn ($t) => [
+                'id'          => (int) $t->ticket_id,
+                'number'      => $t->ticket_number,
+                'description' => mb_substr(trim(preg_replace('/\s+/', ' ', strip_tags((string) $t->description))), 0, 70),
+                'status'      => $t->status,
+            ]);
 
         return response()->json(['success' => true, 'message' => '', 'data' => $rows]);
     }

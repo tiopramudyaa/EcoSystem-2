@@ -1422,10 +1422,34 @@ class ReimbursementService
      */
     public function countOpenRequestsBefore(int $orderSeq): int
     {
+        return $this->openRequestsBefore($orderSeq)->count();
+    }
+
+    /**
+     * Dokumen terbuka yang belum sampai pada langkah workflow bernomor `$orderSeq`.
+     *
+     * Pada dokumen dengan konsep Object, langkah workflow digeser sebanyak
+     * langkah yang dibentuk dari Object, jadi nomornya dibandingkan setelah
+     * digeser.
+     *
+     * @return \Illuminate\Support\Collection<int, ReimbursementRequest>
+     */
+    private function openRequestsBefore(int $orderSeq): Collection
+    {
         return ReimbursementRequest::query()
             ->whereIn('status', ReimbursementRequest::OPEN_STATUSES)
-            ->where('current_step_order', '<', $orderSeq)
-            ->count();
+            ->whereNotNull('current_step_order')
+            ->get()
+            ->filter(fn (ReimbursementRequest $r) => (int) $r->current_step_order < $this->objectShift($r) + $orderSeq)
+            ->values();
+    }
+
+    /** Banyaknya langkah Object pada dokumen; 0 untuk dokumen tanpa konsep Object. */
+    private function objectShift(ReimbursementRequest $request): int
+    {
+        return $request->hasFlag(ReimbursementRequest::FLAG_OBJECT_FLOW)
+            ? $request->approvals()->where('origin', ReimbursementRequestApproval::ORIGIN_OBJECT)->count()
+            : 0;
     }
 
     /**
@@ -1457,10 +1481,7 @@ class ReimbursementService
      */
     public function applyStepToOpenRequests(ReimbursementApprovalStep $step, ?int $actorId = null): array
     {
-        $targets = ReimbursementRequest::query()
-            ->whereIn('status', ReimbursementRequest::OPEN_STATUSES)
-            ->where('current_step_order', '<', $step->order_seq)
-            ->get();
+        $targets = $this->openRequestsBefore((int) $step->order_seq);
 
         if ($targets->isEmpty()) {
             return ['applied' => 0, 'request_nos' => []];
@@ -1472,8 +1493,10 @@ class ReimbursementService
             foreach ($targets as $request) {
                 // Jaring pengaman: jangan pernah menggandakan urutan yang sudah
                 // ada pada dokumen itu.
+                $seq = $this->objectShift($request) + (int) $step->order_seq;
+
                 $exists = $request->approvals()
-                    ->where('order_seq', $step->order_seq)
+                    ->where('order_seq', $seq)
                     ->exists();
 
                 if ($exists) {
@@ -1482,7 +1505,7 @@ class ReimbursementService
 
                 ReimbursementRequestApproval::create([
                     'reimbursement_request_id' => $request->id,
-                    'order_seq'                => $step->order_seq,
+                    'order_seq'                => $seq,
                     'step_name'                => $step->name,
                     'approver_type'            => $step->approver_type,
                     'approver_role_id'         => $step->approver_role_id,
@@ -1567,6 +1590,7 @@ class ReimbursementService
                 'approver_role_id'         => $step['approver_role_id'],
                 'approver_employee_ids'    => $step['approver_employee_ids'],
                 'signs_as'                 => $step['signs_as'],
+                'origin'                   => ReimbursementRequestApproval::ORIGIN_OBJECT,
                 'status'                   => ReimbursementRequestApproval::STATUS_WAITING,
             ]);
         }

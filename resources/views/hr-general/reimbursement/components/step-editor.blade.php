@@ -8,7 +8,9 @@
     'uid'        => 'reimbursement',
     'action'     => route('general.reimbursement.settings.steps.sync'),
     'title'      => 'Approval Workflow',
-    'blurb'      => 'Steps run top to bottom; one person per step is enough.',
+    'blurb'      => (isset($objectFlow) && $objectFlow->enabled)
+        ? 'These steps apply to EVERY reimbursement and run after the steps assigned automatically from the Object (project, support, office). Use them for Accounting, Cashier and the final approver. Do not add project, ticket or office approvers here: they are assigned from Objects and Funds. Steps run top to bottom; one person per step is enough.'
+        : 'Steps run top to bottom; one person per step is enough.',
     'select'     => [
         'field'   => 'signs_as',
         'label'   => 'Signs as',

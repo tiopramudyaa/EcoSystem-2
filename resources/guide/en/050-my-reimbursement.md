@@ -48,7 +48,7 @@ Every employee who has the `My Reimbursement` menu.
 - When Objects are turned on, each item has an `Object` column. Choose `Office` and an office, `Project` and a project, or `Support` and a ticket number, and a category if one is offered.
 - You do not choose reviewers. `Reviewed by (assigned automatically)` shows who will review the document, based on the Objects of your items.
 - `Fund category` appears only when the project or ticket you chose has categories. It is optional. If it does not appear, there is nothing to choose.
-- A project must still be running. Type at least 2 characters of a ticket number and pick the ticket from the list.
+- A project must still be running. For `Support`, click the ticket box to see the latest tickets, or type a ticket number or a word from its description, then pick the ticket from the list. The list comes from the Ticket menu. Text typed without picking a ticket is not accepted.
 - If the amount is above the fund set for an Object, a `Reason for exceeding the fund` box appears. Write at least 10 characters to submit, or the document is refused. Under the `Block` policy the document cannot be submitted until you reduce the amount.
 - If submitting is refused because a project, ticket, or office has no approver, the message names it. Ask Finance to set one.
 - Funds are not shown to you. A fund only matters when the amount is above it.

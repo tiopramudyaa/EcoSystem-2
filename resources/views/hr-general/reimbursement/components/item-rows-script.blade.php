@@ -74,29 +74,104 @@
         }).catch(function () { wrap.hidden = true; });
     }
 
-    function searchTickets(input) {
-        const row = input.closest('.js-item-row');
-        const hidden = row.querySelector('.js-ticket-id');
-        const list = row.querySelector('datalist');
-        const q = input.value.trim();
+    // ── Pilihan tiket: kotak pencarian yang terhubung ke master tiket ───────
+    let ticketTimer = null;
 
-        // Nomor yang cocok dengan salah satu hasil mengisi id tiket; selain itu id dikosongkan.
-        const match = Array.prototype.find.call(list.options, function (o) { return o.value === q; });
-        hidden.value = match ? match.dataset.id : '';
-        if (match) loadCategories(row);
-
-        if (q.length < 2 || !lookupBase) return;
-
-        json(lookupBase + '/tickets?q=' + encodeURIComponent(q)).then(function (res) {
-            list.innerHTML = ((res && res.data) || []).map(function (t) {
-                return '<option value="' + String(t.number).replace(/"/g, '&quot;') + '" data-id="' + t.id + '"></option>';
-            }).join('');
-            const again = Array.prototype.find.call(list.options, function (o) { return o.value === q; });
-            hidden.value = again ? again.dataset.id : '';
-            if (again) { loadCategories(row); queuePreview(); }
-        }).catch(function () {});
+    function panelNote(text) {
+        const p = document.createElement('p');
+        p.className = 'px-3 py-2 text-xs text-gray-500';
+        p.textContent = text;
+        return p;
     }
 
+    function renderTicketPanel(input, items, loading) {
+        const row = input.closest('.js-item-row');
+        const panel = row.querySelector('.js-ticket-panel');
+        panel.innerHTML = '';
+
+        if (loading) {
+            panel.appendChild(panelNote('Searching...'));
+        } else if (!items.length) {
+            panel.appendChild(panelNote('No ticket found. Try the ticket number or a word from its description.'));
+        } else {
+            items.forEach(function (t) {
+                const option = document.createElement('button');
+                option.type = 'button';
+                option.setAttribute('role', 'option');
+                option.className = 'js-ticket-option block w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0';
+                option.dataset.id = t.id;
+                option.dataset.number = t.number;
+
+                const number = document.createElement('span');
+                number.className = 'font-semibold text-gray-900';
+                number.textContent = t.number;
+
+                const detail = document.createElement('span');
+                detail.className = 'block text-xs text-gray-500 truncate';
+                detail.textContent = (t.description || 'No description') + (t.status ? ' · ' + t.status : '');
+
+                option.appendChild(number);
+                option.appendChild(detail);
+                panel.appendChild(option);
+            });
+        }
+
+        panel.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeTicketPanel(row) {
+        const panel = row.querySelector('.js-ticket-panel');
+        const input = row.querySelector('.js-ticket-input');
+        if (panel) panel.hidden = true;
+        if (input) input.setAttribute('aria-expanded', 'false');
+    }
+
+    function fetchTickets(input, delay) {
+        clearTimeout(ticketTimer);
+
+        ticketTimer = setTimeout(function () {
+            if (!lookupBase) return;
+            renderTicketPanel(input, [], true);
+
+            json(lookupBase + '/tickets?q=' + encodeURIComponent(input.value.trim())).then(function (res) {
+                renderTicketPanel(input, (res && res.data) || [], false);
+            }).catch(function () {
+                const panel = input.closest('.js-item-row').querySelector('.js-ticket-panel');
+                panel.innerHTML = '';
+                panel.appendChild(panelNote('The tickets could not be loaded. Close and open the box to try again.'));
+                panel.hidden = false;
+            });
+        }, delay);
+    }
+
+    function chooseTicket(row, option) {
+        row.querySelector('.js-ticket-input').value = option.dataset.number;
+        row.querySelector('.js-ticket-id').value = option.dataset.id;
+        closeTicketPanel(row);
+        loadCategories(row);
+        queuePreview();
+    }
+
+    tbody.addEventListener('focusin', function (event) {
+        if (event.target.classList.contains('js-ticket-input')) fetchTickets(event.target, 0);
+    });
+
+    tbody.addEventListener('click', function (event) {
+        const option = event.target.closest('.js-ticket-option');
+        if (option) chooseTicket(option.closest('.js-item-row'), option);
+    });
+
+    tbody.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && event.target.classList.contains('js-ticket-input')) {
+            closeTicketPanel(event.target.closest('.js-item-row'));
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        if (event.target.closest('[data-for="support"]')) return;
+        tbody.querySelectorAll('.js-item-row').forEach(closeTicketPanel);
+    });
     function collectItems() {
         return Array.prototype.map.call(tbody.querySelectorAll('.js-item-row'), function (row) {
             const get = function (suffix) {
@@ -182,7 +257,11 @@
     });
 
     tbody.addEventListener('input', function (event) {
-        if (event.target.classList.contains('js-ticket-input')) searchTickets(event.target);
+        if (event.target.classList.contains('js-ticket-input')) {
+            // Mengubah teks membatalkan tiket yang sudah dipilih: harus dipilih ulang dari daftar.
+            event.target.closest('.js-item-row').querySelector('.js-ticket-id').value = '';
+            fetchTickets(event.target, 250);
+        }
         if (event.target.classList.contains('js-amount')) queuePreview();
     });
 
