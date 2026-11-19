@@ -5,7 +5,7 @@ order: 50
 title: My Reimbursement
 summary: Claim expenses you already paid, attach a supporting link, and follow the claim until it is approved.
 requires: [general.my-reimbursement]
-updated: 2026-10-27
+updated: 2026-11-19
 ---
 Use `My Reimbursement` to claim expenses you already paid with your own money. The claim is verified by the approvers before it is paid.
 
@@ -43,6 +43,15 @@ Every employee who has the `My Reimbursement` menu.
 2. Select the document number to expand its items, with `Description`, `Category`, `Receipt No.`, `Receipt Date` and `Amount`.
 3. Open the details icon to see the approval trail, or the print icon to print the document.
 
+## Rules to know
+
+- When Objects are turned on, each item has an `Object` column. Choose `Office` and an office, `Project` and a project, or `Support` and a ticket number, and a category if one is offered.
+- You do not choose reviewers. `Reviewed by (assigned automatically)` shows who will review the document, based on the Objects of your items.
+- A project must still be running. Type at least 2 characters of a ticket number and pick the ticket from the list.
+- If the amount is above the fund set for an Object, a `Reason for exceeding the fund` box appears. Write at least 10 characters to submit, or the document is refused. Under the `Block` policy the document cannot be submitted until you reduce the amount.
+- If submitting is refused because a project, ticket, or office has no approver, the message names it. Ask Finance to set one.
+- Funds are not shown to you. A fund only matters when the amount is above it.
+- A voided document shows `Void` with the reason, and cannot be paid.
 ## What happens next
 
 The claim moves from `Submitted` to `In review`, and the status text names the step it is waiting for. A rejection ends the claim and the reason is in the approval trail. See [[statuses-and-approvals]].

@@ -106,3 +106,13 @@ Visualisasi konsep dan tabel keputusan D1 sampai D7 ada di artefak "Alur Reimbur
 - E1: periode dana Office per bulan. E2: Finance dapat void dokumen yang sudah disetujui, alasan wajib. E3: alokasi Project diusulkan PM dan disetujui Finance.
 
 Dokumen lengkap dengan diagram: "Rancangan Reimbursement per Object" (Claude Docs).
+
+## 11. Status implementasi (2026-11-19, branch feature/reimbursement-object-fund)
+
+Selesai untuk **Reimbursement**: migrasi tambahan, kantong dana, penyetuju otomatis per Object, Object per baris (Office, Project, Support), pratinjau penyetuju, alasan melebihi dana, pengaturan Objects and Funds, dan Void oleh Finance. Semua di balik saklar `object_flow_settings.enabled`.
+
+Penyederhanaan tahap 1 (disengaja):
+- Persetujuan per **dokumen**, bukan per baris. Dana berkurang saat dokumen disetujui sepenuhnya. Keputusan per baris (ditolak sebagian) ditunda.
+- Alokasi project dan tiket diisi **Finance** di Settings. Usulan oleh Project Manager dan persetujuan Finance (E3) ditunda.
+- Void dicatat lewat kolom `voided_at`, status tetap `approved`.
+- **Belum dikerjakan:** Cash Advance (A3: menyusul setelah Reimbursement) dan Purchase Order (menyusul sesudahnya, wajib diingatkan).

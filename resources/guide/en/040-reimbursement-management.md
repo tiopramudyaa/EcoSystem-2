@@ -5,7 +5,7 @@ order: 40
 title: Reimbursement Management
 summary: Review, approve and pay employee reimbursements, and set the rules and approval steps for them.
 requires: [general.reimbursement, general.settings.reimbursement, general.approval-workflow.reimbursement]
-updated: 2026-10-27
+updated: 2026-11-19
 ---
 Reimbursement Management is where HR, Finance and approvers handle the reimbursement requests that employees submit. It has three tabs: `Dashboard`, `Reimbursement Management` and `Settings`.
 
@@ -61,6 +61,38 @@ Open the document and click `Delete`, then give a reason. Deleted documents stay
 
 A rule set to flag only highlights the document. A rule set to block refuses it. A value of 0 means no limit.
 
+### Set up Objects and funds (Settings)
+
+Each reimbursement item is charged to an Object: an `Office`, a `Project`, or a `Support` ticket. The Object decides who approves the document and which fund is checked.
+
+1. Open the `Settings` tab and find `Objects and Funds`.
+2. Tick `Use Objects and funds for new reimbursements`. Leave it off to keep the previous behaviour.
+3. Under `Project approvals`, choose who approves (`Project Admin`, `Project Manager`), the order, and a fallback role and person for projects that have none.
+4. Under `Support approvals`, choose whether the `Ticket Lead` and the `Support Manager` approve, and the fallback.
+5. Under `When an amount exceeds the remaining fund`, choose `Warn` or `Block` for each Object. Click `Save flow and policy`.
+6. In `Office funds and responsible person`, give every office a responsible person (role, then person). Turn `Fund active` on and enter a monthly amount only for offices that have a fund. Click `Save offices`.
+7. In `Project and ticket fund allocations`, add an allocation for a project or ticket, with an optional category such as Transport, and click `Add allocation`. Use `Update` to change the amount or switch it off.
+
+### Void an approved document
+
+1. Open an approved document that is not paid. If it was paid, click `Reverse payment` first.
+2. Under `Void`, write the reason (at least 10 characters) and click `Void document`.
+3. The document shows `Void`, the fund it used goes back, and the requester is told.
+
+## Rules to know
+
+- The Object concept applies only to documents submitted while `Use Objects and funds for new reimbursements` is on. Documents already submitted keep their flow.
+- Approvers are assigned automatically when the document is submitted and do not change afterwards. Project items go to the `Project Admin` and `Project Manager`, support items to the `Ticket Lead` (and the `Support Manager` if turned on), and office items to the office's responsible person. These steps come first, followed by the steps in `Approval Workflow`.
+- The same person is asked only once, even if they appear on several items. A requester who is also an approver skips that step, and the skip is recorded.
+- Submitting is refused, with the reason, when a project is closed, a required approver is no longer active, a project or ticket has no approver and no fallback is set, or an office has no responsible person.
+- A fund decreases only when the document is fully approved, not when it is submitted. Documents still waiting do not reduce it.
+- Remaining fund = allocation minus approved documents. Just before the last approval the remaining fund is checked again, because another document may have been approved first.
+- An Object without a fund is not checked: an office with `Fund active` off, or a project or ticket without an allocation. It still goes through approval.
+- Office funds are monthly and follow the date of the document. Project and ticket allocations have no end date. An allocation with no category covers every category that has no allocation of its own.
+- With `Warn`, an amount above the remaining fund can still be submitted if the requester writes a reason (at least 10 characters). The reviewers see the reason and the document is marked `Over fund allocation`. With `Block`, it is refused and the message names the remaining fund.
+- An allocation cannot be set lower than what approved documents already used.
+- Only a user who can record payments can void, and only an approved document that is not paid. Voiding needs a reason and cannot be undone from this screen. A voided document cannot be paid.
+- Project allocations are separate from the project cost plan and never change it.
 ## What happens next
 
 Approved documents wait for payment. If [[payroll]] includes approved reimbursements, they are paid with salary.

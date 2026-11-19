@@ -5,7 +5,7 @@ order: 40
 title: Reimbursement Management
 summary: Periksa, setujui, dan bayar Reimbursement Employee, serta atur aturan dan langkah persetujuannya.
 requires: [general.reimbursement, general.settings.reimbursement, general.approval-workflow.reimbursement]
-updated: 2026-10-27
+updated: 2026-11-19
 ---
 Reimbursement Management adalah tempat HR, Finance, dan Approver menangani Request Reimbursement yang diajukan Employee. Halaman ini memiliki tiga tab: `Dashboard`, `Reimbursement Management`, dan `Settings`.
 
@@ -61,6 +61,38 @@ Buka dokumen, klik `Delete`, lalu isi alasan. Dokumen yang dihapus tetap terliha
 
 Aturan berjenis flag hanya menyorot dokumen. Aturan berjenis block menolaknya. Nilai 0 berarti tanpa batas.
 
+### Mengatur Object dan dana (Settings)
+
+Setiap item reimbursement dibebankan ke sebuah Object: `Office`, `Project`, atau tiket `Support`. Object menentukan siapa yang menyetujui dokumen dan dana mana yang diperiksa.
+
+1. Buka tab `Settings` dan cari `Objects and Funds`.
+2. Centang `Use Objects and funds for new reimbursements`. Biarkan mati untuk tetap memakai perilaku sebelumnya.
+3. Di `Project approvals`, pilih siapa yang menyetujui (`Project Admin`, `Project Manager`), urutannya, serta role dan orang pengganti untuk project yang belum punya.
+4. Di `Support approvals`, pilih apakah `Ticket Lead` dan `Support Manager` menyetujui, serta penggantinya.
+5. Di `When an amount exceeds the remaining fund`, pilih `Warn` atau `Block` untuk tiap Object. Klik `Save flow and policy`.
+6. Di `Office funds and responsible person`, beri setiap office seorang penanggung jawab (role, lalu orang). Aktifkan `Fund active` dan isi nominal bulanan hanya untuk office yang punya dana. Klik `Save offices`.
+7. Di `Project and ticket fund allocations`, tambahkan alokasi untuk project atau tiket, dengan kategori opsional seperti Transport, lalu klik `Add allocation`. Gunakan `Update` untuk mengubah nominal atau menonaktifkannya.
+
+### Membatalkan (void) dokumen yang sudah disetujui
+
+1. Buka dokumen yang sudah disetujui dan belum dibayar. Jika sudah dibayar, klik `Reverse payment` lebih dulu.
+2. Di bagian `Void`, tulis alasan (minimal 10 karakter) lalu klik `Void document`.
+3. Dokumen berstatus `Void`, dana yang dipakainya kembali, dan pemohon diberi tahu.
+
+## Aturan yang perlu diketahui
+
+- Konsep Object hanya berlaku untuk dokumen yang diajukan saat `Use Objects and funds for new reimbursements` aktif. Dokumen yang sudah diajukan tetap memakai alurnya.
+- Penyetuju ditetapkan otomatis saat dokumen diajukan dan tidak berubah sesudahnya. Item project ke `Project Admin` dan `Project Manager`, item support ke `Ticket Lead` (dan `Support Manager` bila diaktifkan), dan item office ke penanggung jawab office itu. Langkah ini lebih dulu, disusul langkah di `Approval Workflow`.
+- Orang yang sama hanya diminta sekali walau muncul di beberapa item. Pemohon yang juga penyetuju melewati langkah itu, dan pelewatan itu dicatat.
+- Pengajuan ditolak beserta alasannya bila project sudah ditutup, penyetuju yang dibutuhkan sudah tidak aktif, project atau tiket tidak punya penyetuju dan tidak ada pengganti, atau office belum punya penanggung jawab.
+- Dana berkurang hanya saat dokumen disetujui sepenuhnya, bukan saat diajukan. Dokumen yang masih menunggu tidak mengurangi dana.
+- Sisa dana = alokasi dikurangi dokumen yang sudah disetujui. Tepat sebelum persetujuan terakhir sisa diperiksa ulang, karena dokumen lain bisa disetujui lebih dulu.
+- Object tanpa dana tidak diperiksa: office dengan `Fund active` mati, atau project atau tiket tanpa alokasi. Tetap melewati persetujuan.
+- Dana office bersifat bulanan dan mengikuti tanggal dokumen. Alokasi project dan tiket tidak punya tanggal berakhir. Alokasi tanpa kategori mencakup semua kategori yang tidak punya alokasi sendiri.
+- Dengan `Warn`, nominal di atas sisa dana tetap bisa diajukan bila pemohon menulis alasan (minimal 10 karakter). Penyetuju melihat alasannya dan dokumen ditandai `Over fund allocation`. Dengan `Block`, pengajuan ditolak dan pesannya menyebut sisa dana.
+- Alokasi tidak bisa diturunkan di bawah yang sudah dipakai dokumen yang disetujui.
+- Hanya pengguna yang boleh mencatat pembayaran yang dapat melakukan void, dan hanya untuk dokumen yang sudah disetujui dan belum dibayar. Void memerlukan alasan dan tidak dapat dibatalkan dari layar ini. Dokumen yang di-void tidak dapat dibayar.
+- Alokasi project terpisah dari rencana biaya project dan tidak pernah mengubahnya.
 ## Apa yang terjadi selanjutnya
 
 Dokumen yang disetujui menunggu pembayaran. Bila [[payroll]] menyertakan Reimbursement yang disetujui, nilainya dibayar bersama gaji.

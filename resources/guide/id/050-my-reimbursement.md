@@ -5,7 +5,7 @@ order: 50
 title: My Reimbursement
 summary: Klaim biaya yang sudah Anda bayar, lampirkan tautan bukti, dan pantau klaim sampai disetujui.
 requires: [general.my-reimbursement]
-updated: 2026-10-27
+updated: 2026-11-19
 ---
 Gunakan `My Reimbursement` untuk mengklaim biaya yang sudah Anda bayar dengan uang pribadi. Klaim diverifikasi oleh Approver sebelum dibayarkan.
 
@@ -43,6 +43,15 @@ Setiap Employee yang memiliki menu `My Reimbursement`.
 2. Pilih nomor dokumen untuk memperluas itemnya, berisi `Description`, `Category`, `Receipt No.`, `Receipt Date`, dan `Amount`.
 3. Buka ikon detail untuk melihat jejak persetujuan, atau ikon cetak untuk mencetak dokumen.
 
+## Aturan yang perlu diketahui
+
+- Saat Object diaktifkan, setiap item punya kolom `Object`. Pilih `Office` dan sebuah office, `Project` dan sebuah project, atau `Support` dan nomor tiket, serta kategori bila ditawarkan.
+- Anda tidak memilih penyetuju. `Reviewed by (assigned automatically)` menunjukkan siapa yang akan menyetujui dokumen, berdasarkan Object pada item Anda.
+- Project harus masih berjalan. Ketik minimal 2 karakter nomor tiket lalu pilih tiket dari daftar.
+- Bila nominal di atas dana yang ditetapkan untuk sebuah Object, kotak `Reason for exceeding the fund` muncul. Tulis minimal 10 karakter agar dapat diajukan, kalau tidak dokumen ditolak. Pada kebijakan `Block`, dokumen tidak dapat diajukan sampai nominal dikurangi.
+- Bila pengajuan ditolak karena project, tiket, atau office belum punya penyetuju, pesannya menyebut namanya. Minta Finance mengaturnya.
+- Dana tidak ditampilkan kepada Anda. Dana hanya berpengaruh bila nominal melebihinya.
+- Dokumen yang di-void tampil `Void` beserta alasannya, dan tidak dapat dibayar.
 ## Apa yang terjadi selanjutnya
 
 Klaim berpindah dari `Submitted` ke `In review`, dan teks status menyebutkan langkah yang sedang ditunggu. Penolakan mengakhiri klaim dan alasannya ada di jejak persetujuan. Lihat [[statuses-and-approvals]].
