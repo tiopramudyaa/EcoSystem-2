@@ -438,6 +438,11 @@ Route::prefix('general')
                 Route::get('/create', [MyCashAdvanceController::class, 'create'])->name('create');
                 Route::post('/', [MyCashAdvanceController::class, 'store'])->name('store');
 
+                // Pembantu form konsep Object (hanya membaca). Statis: sebelum /{cashAdvance}.
+                Route::get('/objects/tickets', [ReimbursementObjectLookupController::class, 'tickets'])->name('objects.tickets');
+                Route::get('/objects/categories', [ReimbursementObjectLookupController::class, 'categories'])->name('objects.categories');
+                Route::post('/objects/preview', [ReimbursementObjectLookupController::class, 'preview'])->name('objects.preview');
+
                 // Didaftarkan SESUDAH /create agar tidak menangkapnya sebagai id
                 // dokumen - jebakan yang sudah terbukti di langkah P6.
                 Route::get('/{cashAdvance}', [MyCashAdvanceController::class, 'show'])->name('show');
@@ -471,6 +476,11 @@ Route::prefix('general')
             Route::middleware('menu:general.cash-advance.create')->group(function () {
                 Route::get('/create', [CashAdvanceController::class, 'create'])->name('create');
                 Route::post('/', [CashAdvanceController::class, 'store'])->name('store');
+
+                // Pembantu form konsep Object (hanya membaca).
+                Route::get('/objects/tickets', [ReimbursementObjectLookupController::class, 'tickets'])->name('objects.tickets');
+                Route::get('/objects/categories', [ReimbursementObjectLookupController::class, 'categories'])->name('objects.categories');
+                Route::post('/objects/preview', [ReimbursementObjectLookupController::class, 'preview'])->name('objects.preview');
             });
 
             Route::get('/export', [CashAdvanceController::class, 'export'])
@@ -523,6 +533,11 @@ Route::prefix('general')
             // keluarnya uang perusahaan.
             Route::post('/{cashAdvance}/delete', [CashAdvanceController::class, 'destroy'])
                 ->name('destroy')
+                ->middleware('menu.approver:cash-advance,general.cash-advance.manage');
+
+            // Void a cash advance that is already approved: same permission as deleting. The fund goes back to its pool.
+            Route::post('/{cashAdvance}/void', [CashAdvanceController::class, 'void'])
+                ->name('void')
                 ->middleware('menu.approver:cash-advance,general.cash-advance.manage');
         });
 

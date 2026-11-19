@@ -5,7 +5,7 @@ order: 70
 title: My Cash Advance
 summary: Request a cash advance and then account for it with a Cash Advance Report before the deadline.
 requires: [general.my-cash-advance, general.my-cash-advance-report]
-updated: 2026-10-27
+updated: 2026-11-19
 ---
 A Cash Advance (CA) is money the company gives you before you spend it. Once it is approved and used, you account for it with a Cash Advance Report (CAR). Both live on one page with two tabs: `My Cash Advance` and `My Cash Advance Report`.
 
@@ -50,6 +50,14 @@ Know the amount, the purpose and which branch or project bears the cost. For the
 
 On the `My Cash Advance Report` tab, the panel `Waiting to be reported` lists approved advances that still need a report. The report table shows `Advance`, `Reported` and `Settlement`.
 
+## Rules to know
+
+- When Objects are turned on, the form has an `Object` field instead of `Charged To`. Choose `Office` and an office, `Project` and a project, or `Support ticket`: click the ticket box to see the latest tickets, or type a number or a word from the description, then pick the ticket from the list. Typed text without picking a ticket is not accepted.
+- `Fund category` appears only when the project or ticket you chose has categories. It is optional.
+- You do not choose reviewers. `Reviewed by (assigned automatically)` shows who will review the cash advance.
+- If the amount is above the fund set for the Object, a `Reason for exceeding the fund` box appears. Write at least 10 characters to submit. Under the `Block` policy it cannot be submitted until you reduce the amount.
+- The report of the cash advance has the same Object and is reviewed by the same people, so you do not choose reviewers there either.
+- A voided cash advance shows `Void` with the reason and cannot be reported.
 ## What happens next
 
 Your CA follows the approval steps: `Submitted`, `In review`, then `Approved`. After approval its report label moves through `Not reported`, `Reporting` and `Settled`. The settlement of a report is one of:

@@ -42,11 +42,11 @@ class ReimbursementObjectSettingController extends Controller
             'policy_support.in' => 'Choose Warn or Block for support funds.',
         ]);
 
-        foreach (['enabled', 'project_admin_enabled', 'project_manager_enabled', 'support_lead_enabled', 'support_manager_enabled'] as $flag) {
+        foreach (['enabled', 'cash_advance_enabled', 'project_admin_enabled', 'project_manager_enabled', 'support_lead_enabled', 'support_manager_enabled'] as $flag) {
             $data[$flag] = $request->boolean($flag);
         }
 
-        if ($data['enabled'] && !$data['project_admin_enabled'] && !$data['project_manager_enabled']) {
+        if (($data['enabled'] || $data['cash_advance_enabled']) && !$data['project_admin_enabled'] && !$data['project_manager_enabled']) {
             return back()->withInput()->with('error', 'Turn on at least one project approval step (Project Admin or Project Manager), or projects would have no approver.');
         }
 

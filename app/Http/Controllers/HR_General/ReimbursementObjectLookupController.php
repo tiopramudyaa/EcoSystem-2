@@ -80,8 +80,10 @@ class ReimbursementObjectLookupController extends Controller
     public function preview(Request $request, ObjectApproverResolver $resolver, FundService $funds)
     {
         $settings = ObjectFlowSetting::current();
+        $module   = (string) $request->input('module', 'reimbursement');
+        $isCash   = $module === 'cash_advance';
 
-        if (!$settings->enabled) {
+        if (!($isCash ? $settings->cash_advance_enabled : $settings->enabled)) {
             return response()->json(['success' => true, 'message' => '', 'data' => ['enabled' => false]]);
         }
 
@@ -104,7 +106,11 @@ class ReimbursementObjectLookupController extends Controller
 
         $steps = collect($resolved['steps'])->pluck('name')->all();
 
-        foreach (ReimbursementApprovalStep::forReimbursement()->active()->orderBy('order_seq')->get() as $step) {
+        $configured = $isCash
+            ? \App\Models\CashAdvance\CashAdvanceApprovalStep::where('module', \App\Models\CashAdvance\CashAdvanceApprovalStep::MODULE_CA)->where('is_active', true)->orderBy('order_seq')->get()
+            : ReimbursementApprovalStep::forReimbursement()->active()->orderBy('order_seq')->get();
+
+        foreach ($configured as $step) {
             $steps[] = $step->name;
         }
 

@@ -838,7 +838,11 @@ class CashAdvanceService
         $settings = CashAdvanceSetting::current();
         $out      = ['branch' => [], 'project' => []];
 
-        if ($settings->allowsCostCenterType(CashAdvance::COST_CENTER_BRANCH)) {
+        // Konsep Object menawarkan Office dan Project tanpa memedulikan daftar
+        // tipe lama di Settings (Support memakai pencarian tiket sendiri).
+        $all = $this->objectMode();
+
+        if ($all || $settings->allowsCostCenterType(CashAdvance::COST_CENTER_BRANCH)) {
             $out['branch'] = Branch::where('is_active', 1)
                 ->orderBy('name')
                 ->get()
@@ -846,7 +850,7 @@ class CashAdvanceService
                 ->all();
         }
 
-        if ($settings->allowsCostCenterType(CashAdvance::COST_CENTER_PROJECT)) {
+        if ($all || $settings->allowsCostCenterType(CashAdvance::COST_CENTER_PROJECT)) {
             $out['project'] = DeliveryProject::where('is_closed', 0)
                 ->orderBy('name')
                 ->get()

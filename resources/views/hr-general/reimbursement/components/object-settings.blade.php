@@ -42,7 +42,7 @@
         $hasSupportFallback = $objectFlow->support_fallback_role_id || $objectFlow->support_fallback_employee_id;
         $namedCategories = $fundPools->filter(fn ($r) => $r['pool']->category !== '')->count();
         $steps = [
-            [(bool) $objectFlow->enabled, 'Switch on', $objectFlow->enabled ? 'Objects and funds are on for new reimbursements.' : 'Off: reimbursement behaves as before. Tick "Use Objects and funds" below and save when you are ready.'],
+            [(bool) ($objectFlow->enabled || $objectFlow->cash_advance_enabled), 'Switch on', 'Reimbursement: ' . ($objectFlow->enabled ? 'on' : 'off') . '. Cash advance and report: ' . ($objectFlow->cash_advance_enabled ? 'on' : 'off') . '. Off means the previous behaviour. Tick the switches below and save when you are ready.'],
             [$missingOffice->isEmpty() && $officeRows->isNotEmpty(), 'Every office has a responsible person', $missingOffice->isEmpty() ? 'All offices are set.' : 'Missing for: ' . $missingOffice->take(5)->implode(', ') . ($missingOffice->count() > 5 ? ' and ' . ($missingOffice->count() - 5) . ' more' : '') . '. Documents charged to these offices are refused until it is set.'],
             [(bool) ($hasProjectFallback && $hasSupportFallback), 'Fallback approvers', ($hasProjectFallback && $hasSupportFallback) ? 'Set for projects and support.' : 'Recommended: set a fallback role or person for projects and for support, so a project without an Admin, or a ticket without a Lead, does not block submissions.'],
             [$fundPools->isNotEmpty() || $fundedOffices > 0, 'Funds (optional)', 'Office funds active: ' . $fundedOffices . '. Project and ticket allocations: ' . $fundPools->count() . ($namedCategories ? ' (' . $namedCategories . ' with a category)' : '') . '. Anything without a fund is simply not checked.'],
@@ -87,6 +87,14 @@
             <span>
                 <span class="block text-sm font-semibold text-gray-800">Use Objects and funds for new reimbursements</span>
                 <span class="block text-xs text-gray-500">When on, requesters choose an Object per item and approvers are assigned automatically. Documents already submitted keep their current flow.</span>
+            </span>
+        </label>
+
+        <label class="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" name="cash_advance_enabled" value="1" @checked(old('cash_advance_enabled', $objectFlow->cash_advance_enabled)) class="{{ $check }}">
+            <span>
+                <span class="block text-sm font-semibold text-gray-800">Use Objects and funds for new cash advances (and their reports)</span>
+                <span class="block text-xs text-gray-500">A separate switch, so each module can be turned on when you are ready. A cash advance is charged to one Object. Its report follows the same Object and reviewers, and the fund settles to the amount actually spent.</span>
             </span>
         </label>
 

@@ -243,7 +243,16 @@
 
             {{-- ── Charged To - hanya bila ada tipe yang diaktifkan ────────── --}}
             @php $ccTypes = $settings->costCenterTypeOptions(); @endphp
-            @if($ccTypes !== [])
+            @if(($objectMode ?? false) && ! $isEdit)
+                @include('hr-general.cash-advance.components.object-picker')
+            @elseif(($objectMode ?? false) && $isEdit)
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Object</label>
+                    <input type="text" disabled value="{{ $document->charged_to_label ?? '-' }}{{ $document->fund_category ? ' / ' . $document->fund_category : '' }}"
+                           class="w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm text-gray-600">
+                    <p class="text-xs text-gray-400 mt-1">The Object and its reviewers were set when the document was created. Editing does not change them.</p>
+                </div>
+            @elseif($ccTypes !== [])
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Charged To
@@ -376,6 +385,9 @@
                  fieldnya TIDAK dikirim dan TIDAK divalidasi - tidak ada jalan
                  bagi form untuk mengirim sesuatu yang server tolak.
                  ══════════════════════════════════════════════════════════════ --}}
+            @if(($objectMode ?? false) && ! $isEdit)
+                @include('hr-general.reimbursement.components.object-preview')
+            @else
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                     Approver
@@ -435,6 +447,8 @@
                 @endif
             </div>
 
+            @endif
+
             {{-- ── Additional Notes - lebar penuh ─────────────────────────── --}}
             <div class="md:col-span-2 xl:col-span-3">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>
@@ -465,6 +479,9 @@
 @endsection
 
 @push('scripts')
+@if(($objectMode ?? false) && ! $isEdit)
+<script src="{{ asset('js/object-picker.js') }}"></script>
+@endif
 <script>
     // ── Charged To: hanya tampilkan daftar yang sesuai tipenya ──────────────
     // Pelajaran yang sama dengan kolom Reference di halaman Settings (D149):

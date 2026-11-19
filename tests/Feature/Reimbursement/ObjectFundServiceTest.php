@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Reimbursement;
 
+use App\Models\CashAdvance\CashAdvance;
 use App\Models\ObjectFund\FundEntry;
 use App\Models\ObjectFund\FundPool;
 use App\Models\ObjectFund\ObjectFlowSetting;
@@ -92,6 +93,30 @@ class ObjectFundServiceTest extends TestCase
             $t->string('fund_category', 60)->nullable();
             $t->decimal('amount', 20, 2)->default(0);
             $t->timestamps();
+        });
+
+        Schema::create('cash_advances', function (Blueprint $t) {
+            $t->id();
+            $t->string('request_no')->default('CA/TEST');
+            $t->unsignedBigInteger('employee_id')->default(1);
+            $t->date('request_date');
+            $t->string('description')->default('Test');
+            $t->string('currency', 3)->default('IDR');
+            $t->decimal('amount', 20, 2)->default(0);
+            $t->string('cost_center_type', 20)->nullable();
+            $t->unsignedBigInteger('charged_branch_id')->nullable();
+            $t->unsignedBigInteger('charged_project_id')->nullable();
+            $t->unsignedBigInteger('charged_ticket_id')->nullable();
+            $t->string('charged_to_label')->nullable();
+            $t->string('fund_category', 60)->nullable();
+            $t->string('status')->default('approved');
+            $t->string('settlement_status')->default('unreported');
+            $t->decimal('reported_amount', 20, 2)->nullable();
+            $t->unsignedSmallInteger('car_count')->default(0);
+            $t->json('flags')->nullable();
+            $t->timestamp('voided_at')->nullable();
+            $t->timestamps();
+            $t->softDeletes();
         });
 
         $this->funds = new FundService();
@@ -263,5 +288,86 @@ class ObjectFundServiceTest extends TestCase
         $result = $this->funds->evaluate([$this->item(800000, 'Meals')], Carbon::parse('2026-11-19'), $this->settings('block'));
 
         $this->assertNotNull($result['blocked']);
+    }
+    // ── Cash Advance ────────────────────────────────────────────────────────
+
+    private function advance(float $amount, string $status = 'approved'): CashAdvance
+    {
+        return CashAdvance::create([
+            'request_date' => '2026-11-19', 'amount' => $amount, 'status' => $status,
+            'cost_center_type' => 'project', 'charged_project_id' => 7, 'fund_category' => 'Transport',
+            'charged_to_label' => 'IO-001 - ERP Alpha',
+        ]);
+    }
+
+    public function test_a_cash_advance_reduces_the_fund_when_committed(): void
+    {
+        $pool = $this->projectPool(10000000);
+        $advance = $this->advance(2500000);
+
+        $this->assertSame(1, $this->funds->commitAdvance($advance, 9));
+        $this->assertSame(0, $this->funds->commitAdvance($advance, 9), 'commit is idempotent');
+        $this->assertEquals(7500000.0, $this->funds->balance($pool->fresh())['available']);
+    }
+
+    public function test_the_fund_settles_to_the_reported_amount_once_the_advance_is_settled(): void
+    {
+        $pool = $this->projectPool(10000000);
+        $advance = $this->advance(2500000);
+        $this->funds->commitAdvance($advance, 9);
+
+        // Belum settled: tetap nominal uang muka.
+        $advance->update(['reported_amount' => 2000000, 'settlement_status' => 'reporting']);
+        $this->funds->syncAdvanceEntry($advance->fresh());
+        $this->assertEquals(7500000.0, $this->funds->balance($pool->fresh())['available']);
+
+        // Settled: nominal yang sungguh dibelanjakan.
+        $advance->update(['settlement_status' => 'settled']);
+        $this->funds->syncAdvanceEntry($advance->fresh());
+        $this->assertEquals(8000000.0, $this->funds->balance($pool->fresh())['available']);
+
+        // Laporan dibatalkan sehingga tidak lagi settled: kembali ke uang muka.
+        $advance->update(['settlement_status' => 'unreported', 'reported_amount' => null]);
+        $this->funds->syncAdvanceEntry($advance->fresh());
+        $this->assertEquals(7500000.0, $this->funds->balance($pool->fresh())['available']);
+    }
+
+    public function test_a_claim_above_the_advance_can_push_the_fund_over_its_allocation(): void
+    {
+        $pool = $this->projectPool(3000000);
+        $advance = $this->advance(2500000);
+        $this->funds->commitAdvance($advance, 9);
+
+        $advance->update(['reported_amount' => 3400000, 'settlement_status' => 'settled']);
+        $this->funds->syncAdvanceEntry($advance->fresh());
+
+        $this->assertEquals(-400000.0, $this->funds->balance($pool->fresh())['available']);
+        $this->assertTrue(FundEntry::first()->over_allocation);
+    }
+
+    public function test_release_returns_a_cash_advance_fund_and_pending_advances_are_only_information(): void
+    {
+        $pool = $this->projectPool(10000000);
+        $waiting = $this->advance(1000000, 'submitted');
+
+        $this->assertEquals(10000000.0, $this->funds->balance($pool)['available']);
+        $this->assertEquals(1000000.0, $this->funds->balance($pool)['pending']);
+
+        $approved = $this->advance(2500000);
+        $this->funds->commitAdvance($approved, 9);
+        $this->assertSame(1, $this->funds->releaseDocument('cash_advance', $approved->id, 31, 'No longer needed'));
+        $this->assertEquals(10000000.0, $this->funds->balance($pool->fresh())['available']);
+    }
+
+    public function test_recheck_blocks_a_cash_advance_when_another_document_used_the_fund(): void
+    {
+        $pool = $this->projectPool(1000000);
+        $first  = $this->advance(800000);
+        $second = $this->advance(800000);
+
+        $this->funds->commitAdvance($first, 9);
+
+        $this->assertStringContainsString('remaining fund changed', (string) $this->funds->recheckAdvanceForApproval($second, $this->settings('block')));
+        $this->assertNull($this->funds->recheckAdvanceForApproval($second, $this->settings('warn')));
     }
 }

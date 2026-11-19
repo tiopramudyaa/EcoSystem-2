@@ -172,6 +172,12 @@
                     <p class="text-xs text-gray-400 mt-1">
                         Frozen when the report was created - editing does not restart the flow.
                     </p>
+                @elseif($advance->hasFlag('object_flow'))
+                    <input type="text" disabled value="Assigned automatically from the cash advance Object"
+                           class="w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm text-gray-600">
+                    <p class="text-xs text-gray-400 mt-1">
+                        The reviewers of the cash advance Object ({{ $advance->charged_to_label }}) also review this report, followed by the report approval steps. You do not need to choose them.
+                    </p>
                 @elseif($chooseApprover)
                     <select name="approver_ids[{{ $firstStep->order_seq }}]" required
                             @disabled(count($approverCandidates) === 1)

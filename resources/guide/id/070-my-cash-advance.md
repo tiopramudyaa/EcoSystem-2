@@ -5,7 +5,7 @@ order: 70
 title: My Cash Advance
 summary: Ajukan Cash Advance lalu pertanggungjawabkan dengan Cash Advance Report sebelum batas waktu.
 requires: [general.my-cash-advance, general.my-cash-advance-report]
-updated: 2026-10-27
+updated: 2026-11-19
 ---
 Cash Advance (CA) adalah uang yang diberikan perusahaan kepada Anda sebelum Anda membelanjakannya. Setelah disetujui dan dipakai, Anda mempertanggungjawabkannya dengan Cash Advance Report (CAR). Keduanya ada di satu halaman dengan dua tab: `My Cash Advance` dan `My Cash Advance Report`.
 
@@ -50,6 +50,14 @@ Ketahui nominal, tujuan, serta cabang atau Project yang menanggung biayanya. Unt
 
 Pada tab `My Cash Advance Report`, panel `Waiting to be reported` mencantumkan advance yang sudah disetujui dan masih perlu laporan. Tabel laporan menampilkan `Advance`, `Reported`, dan `Settlement`.
 
+## Aturan yang perlu diketahui
+
+- Saat Object diaktifkan, form memiliki kolom `Object` sebagai pengganti `Charged To`. Pilih `Office` dan sebuah office, `Project` dan sebuah project, atau `Support ticket`: klik kotak tiket untuk melihat tiket terbaru, atau ketik nomor atau kata dari deskripsinya, lalu pilih tiket dari daftar. Teks yang diketik tanpa memilih tiket tidak diterima.
+- `Fund category` hanya muncul bila project atau tiket yang Anda pilih punya kategori. Pilihan ini opsional.
+- Anda tidak memilih penyetuju. `Reviewed by (assigned automatically)` menunjukkan siapa yang akan menyetujui cash advance.
+- Bila nominal di atas dana yang ditetapkan untuk Object, kotak `Reason for exceeding the fund` muncul. Tulis minimal 10 karakter agar dapat diajukan. Pada kebijakan `Block`, cash advance tidak dapat diajukan sampai nominal dikurangi.
+- Laporan cash advance memiliki Object yang sama dan diperiksa oleh orang yang sama, jadi Anda juga tidak memilih penyetuju di sana.
+- Cash advance yang di-void tampil `Void` beserta alasannya dan tidak dapat dilaporkan.
 ## Apa yang terjadi selanjutnya
 
 CA Anda mengikuti langkah persetujuan: `Submitted`, `In review`, lalu `Approved`. Setelah disetujui, label laporannya bergerak melalui `Not reported`, `Reporting`, dan `Settled`. Penyelesaian sebuah laporan berupa salah satu dari:

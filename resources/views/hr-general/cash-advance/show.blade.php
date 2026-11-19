@@ -29,6 +29,7 @@
     $deleteRoute  = $deleteRoute  ?? null;
     $cancelRoute  = $cancelRoute  ?? null;
     $exportRoute  = $exportRoute  ?? null;
+    $voidRoute    = $voidRoute    ?? null;
     $canCreateReport = $canCreateReport ?? false;
     $reportRoute     = $reportRoute     ?? null;
 
@@ -81,6 +82,18 @@
          kenapa. Dokumen keuangan tidak hilang tanpa jejak; ini hanya
          menyembunyikannya dari daftar, dan alasannya ikut tercetak di ekspor.
          ──────────────────────────────────────────────────────────────────── --}}
+    @if($voidRoute)
+        <div class="bg-white rounded-xl shadow-sm">
+            <form method="POST" action="{{ $voidRoute }}" class="px-5 py-4 flex flex-col sm:flex-row gap-2"
+                  data-confirm="The cash advance becomes Void and any fund it used goes back to the Object." data-confirm-title="Void this cash advance?" data-confirm-ok="Void" data-confirm-variant="danger">
+                @csrf
+                <input type="text" name="reason" required minlength="10" maxlength="255" placeholder="Why is it voided? (at least 10 characters)"
+                       class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 primary-border">
+                <button type="submit" class="px-4 py-2 border border-red-300 text-red-700 text-sm font-medium rounded-lg hover:bg-red-50 whitespace-nowrap">Void cash advance</button>
+            </form>
+        </div>
+    @endif
+
     @if($deleteRoute)
         <div class="bg-white rounded-xl shadow-sm">
             <button type="button" id="caDeleteToggle"
@@ -152,10 +165,22 @@
                     </div>
                     @if($request->charged_to_label)
                     <div class="flex justify-between gap-4">
-                        <dt class="text-gray-500 uppercase text-xs tracking-wide">Charged To</dt>
+                        <dt class="text-gray-500 uppercase text-xs tracking-wide">{{ $request->hasFlag('object_flow') ? 'Object' : 'Charged To' }}</dt>
                         {{-- Label DIBEKUKAN saat submit: cabang bisa dinonaktifkan
                              dan proyek bisa ditutup, dokumen lama tetap terbaca. --}}
-                        <dd class="text-right">{{ $request->charged_to_label }}</dd>
+                        <dd class="text-right">{{ $request->charged_to_label }}@if($request->fund_category)<span class="block text-xs text-gray-400">{{ $request->fund_category }}</span>@endif</dd>
+                    </div>
+                    @endif
+                    @if($request->over_allocation_reason)
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-gray-500 uppercase text-xs tracking-wide">Over fund</dt>
+                        <dd class="text-right text-gray-700"><span class="block text-xs font-semibold text-amber-700 uppercase">Reason given by the requester</span>{{ $request->over_allocation_reason }}</dd>
+                    </div>
+                    @endif
+                    @if($request->isVoided())
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-gray-500 uppercase text-xs tracking-wide">Void</dt>
+                        <dd class="text-right"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Void since {{ $request->voided_at->format('d M Y') }}</span><span class="block text-xs text-gray-500 mt-1">{{ $request->void_reason }}</span></dd>
                     </div>
                     @endif
                     <div class="flex justify-between gap-4 pt-3 border-t border-gray-100">
@@ -168,7 +193,7 @@
                         <dt class="text-gray-500 uppercase text-xs tracking-wide">Status</dt>
                         <dd class="text-right">
                             @php
-                                $badge = match ($request->status) {
+                                $badge = $request->isVoided() ? 'bg-red-50 text-red-700' : match ($request->status) {
                                     CashAdvance::STATUS_APPROVED  => 'bg-green-50 text-green-700',
                                     CashAdvance::STATUS_REJECTED  => 'bg-red-50 text-red-700',
                                     CashAdvance::STATUS_CANCELLED => 'bg-gray-100 text-gray-600',

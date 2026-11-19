@@ -68,6 +68,8 @@ class MyCashAdvanceController extends Controller
         return view('hr-general.cash-advance.submit', array_merge([
             'settings'      => $settings,
             'costCenters'   => $ca->costCenterOptions(),
+            'objectMode'    => $ca->objectMode(),
+            'lookupBase'    => url('/general/my-cash-advance/objects'),
             'steps'         => $steps,
             'minDate'       => $settings->hasBackdateLimit()
                 ? $today->copy()->subDays($settings->max_backdate_days)->toDateString()

@@ -131,6 +131,9 @@ trait BuildsCashAdvanceForms
             'cost_center_type'   => ['nullable', 'string', 'max:20'],
             'charged_branch_id'  => ['nullable', 'integer'],
             'charged_project_id' => ['nullable', 'integer'],
+            'charged_ticket_id'  => ['nullable', 'integer'],
+            'fund_category'      => ['nullable', 'string', 'max:60'],
+            'over_allocation_reason' => ['nullable', 'string', 'max:500'],
 
             // Dikirim HANYA bila langkah pertama menawarkan pilihan.
             'approver_ids'   => ['nullable', 'array'],

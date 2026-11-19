@@ -218,6 +218,12 @@ class CashAdvanceController extends Controller
                 ? route('general.cash-advance.export.single', $cashAdvance)
                 : null,
 
+            // Void: Finance (hak kelola), hanya CA yang sudah disetujui, belum punya laporan, dan belum di-void.
+            'voidRoute'    => $this->canManage() && ! $cashAdvance->trashed() && ! $cashAdvance->isVoided()
+                && $cashAdvance->status === CashAdvance::STATUS_APPROVED && (int) $cashAdvance->car_count === 0
+                ? route('general.cash-advance.void', $cashAdvance)
+                : null,
+
             // 🔴 Dari SERVICE, bukan dari keadaan model (Keputusan D154). Sisi
             // HR tidak punya tombolnya - `reportRoute` memang null di sini -
             // tetapi keterangan keadaannya harus menjawab pertanyaan yang sama
@@ -239,6 +245,21 @@ class CashAdvanceController extends Controller
     public function print(CashAdvance $cashAdvance, CashAdvanceService $service)
     {
         return MyCashAdvanceController::renderPrint($cashAdvance, $service);
+    }
+
+    /** Void an approved cash advance (manage permission). The fund goes back to its pool; the reason is required. */
+    public function void(Request $request, CashAdvance $cashAdvance, CashAdvanceService $service)
+    {
+        $data = $request->validate(
+            ['reason' => ['required', 'string', 'min:10', 'max:255']],
+            ['reason.required' => 'Say why the cash advance is voided.', 'reason.min' => 'Say why the cash advance is voided (at least 10 characters).']
+        );
+
+        $result = $service->voidApproved($cashAdvance, (int) session('user.id'), $data['reason']);
+
+        return $result['allowed']
+            ? back()->with('success', 'Cash advance ' . $cashAdvance->request_no . ' voided. Any fund it used was returned.')
+            : back()->with('error', $result['reason']);
     }
 
     public function approve(Request $request, CashAdvance $cashAdvance, CashAdvanceService $service)
@@ -304,6 +325,8 @@ class CashAdvanceController extends Controller
             'employees'   => $this->employeeOptions(),
             'settings'    => $settings,
             'costCenters' => $service->costCenterOptions(),
+            'objectMode'  => $service->objectMode(),
+            'lookupBase'  => url('/general/cash-advance/objects'),
             'steps'       => $steps,
             'action'      => route('general.cash-advance.store'),
             'backRoute'   => route('general.cash-advance.index'),
@@ -361,6 +384,8 @@ class CashAdvanceController extends Controller
             'employees'   => null,   // pemohon tidak dapat dipindah, lihat form
             'settings'    => CashAdvanceSetting::current(),
             'costCenters' => $service->costCenterOptions(),
+            'objectMode'  => $cashAdvance->hasFlag(CashAdvance::FLAG_OBJECT_FLOW),
+            'lookupBase'  => url('/general/cash-advance/objects'),
             'steps'       => $service->activeSteps(),
             'action'      => route('general.cash-advance.update', $cashAdvance),
             'backRoute'   => route('general.cash-advance.show', $cashAdvance),
