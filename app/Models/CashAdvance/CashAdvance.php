@@ -49,6 +49,7 @@ class CashAdvance extends Model
         'description', 'currency', 'amount',
         'detail_url', 'notes',
         'cost_center_type', 'charged_branch_id', 'charged_project_id', 'charged_to_label',
+        'charged_ticket_id', 'fund_category', 'over_allocation_reason', 'voided_at', 'voided_by', 'void_reason',
         'status', 'current_step_order',
         'cancelled_at', 'cancelled_by', 'completed_at',
         'settlement_status', 'reported_amount', 'outstanding_amount', 'settled_at', 'car_count',
@@ -66,6 +67,7 @@ class CashAdvance extends Model
         'reported_amount'    => 'decimal:2',
         'outstanding_amount' => 'decimal:2',
         'settled_at'         => 'datetime',
+        'voided_at'          => 'datetime',
         'car_count'          => 'integer',
         'period_year'        => 'integer',
         'period_month'       => 'integer',
@@ -129,6 +131,18 @@ class CashAdvance extends Model
 
     public const COST_CENTER_BRANCH  = 'branch';
     public const COST_CENTER_PROJECT = 'project';
+
+    /** Hanya dipakai saat konsep Object aktif: dibebankan ke tiket support. */
+    public const COST_CENTER_SUPPORT = 'support';
+
+    /** Jenis Object yang dapat dipilih saat konsep Object aktif. Daftar lama (COST_CENTER_TYPES) tidak berubah. */
+    public const OBJECT_TYPES = [self::COST_CENTER_BRANCH, self::COST_CENTER_PROJECT, self::COST_CENTER_SUPPORT];
+
+    /** Dokumen dibuat dengan konsep Object (alur dan dana per Object). */
+    public const FLAG_OBJECT_FLOW = 'object_flow';
+
+    /** Nominal melewati sisa dana Object saat disetujui (kebijakan Peringatan). */
+    public const FLAG_OVER_ALLOCATION = 'over_allocation';
 
     public const COST_CENTER_TYPES = [
         self::COST_CENTER_BRANCH,
@@ -318,6 +332,10 @@ class CashAdvance extends Model
      */
     public function statusLabel(string $openWord = 'Waiting'): string
     {
+        if ($this->isVoided()) {
+            return 'Void';
+        }
+
         if (! $this->isOpen()) {
             return self::STATUS_LABELS[$this->status]
                 ?? ucfirst(str_replace('_', ' ', $this->status));
@@ -376,6 +394,12 @@ class CashAdvance extends Model
         $flags       = $this->flags ?? [];
         $flags[$key] = $value;
         $this->flags = $flags;
+    }
+
+    /** Dibatalkan (void) setelah disetujui; dananya sudah dikembalikan. */
+    public function isVoided(): bool
+    {
+        return $this->voided_at !== null;
     }
 
     public function hasFlag(string $key): bool

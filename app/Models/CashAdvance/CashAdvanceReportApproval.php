@@ -41,7 +41,7 @@ class CashAdvanceReportApproval extends Model
         'step_name', 'actor_role',
         'approver_type', 'approver_role_id', 'approver_employee_ids',
         'chosen_by_requester',
-        'status', 'acted_by', 'acted_at', 'notes', 'flags',
+        'status', 'acted_by', 'acted_at', 'notes', 'flags', 'origin',
     ];
 
     protected $casts = [
@@ -55,6 +55,9 @@ class CashAdvanceReportApproval extends Model
 
     // Nilai status dipinjam dari CashAdvanceApproval supaya CA dan CAR tidak
     // pernah berbeda pendapat tentang arti sebuah status (Keputusan D147).
+    public const ORIGIN_WORKFLOW = CashAdvanceApproval::ORIGIN_WORKFLOW;
+    public const ORIGIN_OBJECT   = CashAdvanceApproval::ORIGIN_OBJECT;
+
     public const STATUS_WAITING  = CashAdvanceApproval::STATUS_WAITING;
     public const STATUS_APPROVED = CashAdvanceApproval::STATUS_APPROVED;
     public const STATUS_REJECTED = CashAdvanceApproval::STATUS_REJECTED;

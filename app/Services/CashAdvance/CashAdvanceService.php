@@ -12,6 +12,9 @@ use App\Models\Employee;
 use App\Support\CashAdvance\SignatureColumn;
 use App\Models\EmployeeRole;
 use App\Models\Notification;
+use App\Models\ObjectFund\FundEntry;
+use App\Models\ObjectFund\ObjectFlowSetting;
+use App\Models\Ticket;
 use App\Models\ReportingPeriod;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -43,6 +46,22 @@ class CashAdvanceService
     public const FLAG_LOCKED_PERIOD  = 'locked_period';
     public const FLAG_CAR_OVERDUE    = 'car_overdue';
     public const FLAG_ADMIN_CREATED  = 'admin_created';
+
+    private function funds(): \App\Services\ObjectFund\FundService
+    {
+        return app(\App\Services\ObjectFund\FundService::class);
+    }
+
+    private function objectResolver(): \App\Services\ObjectFund\ObjectApproverResolver
+    {
+        return app(\App\Services\ObjectFund\ObjectApproverResolver::class);
+    }
+
+    /** Konsep Object aktif untuk Cash Advance? Saklarnya terpisah dari Reimbursement. */
+    public function objectMode(): bool
+    {
+        return (bool) ObjectFlowSetting::current()->cash_advance_enabled;
+    }
 
     public function __construct(private CashAdvanceAmountService $amounts)
     {
@@ -87,7 +106,14 @@ class CashAdvanceService
             return $outstandingGate + ['request' => null];
         }
 
-        $costCenter = $this->resolveCostCenter($payload, $settings);
+        // Konsep Object: Office / Project / Support menggantikan "Charged To".
+        $objectMode   = $this->objectMode();
+        $objectSteps  = [];
+        $overReason   = null;
+
+        $costCenter = $objectMode
+            ? $this->resolveObjectCenter($payload)
+            : $this->resolveCostCenter($payload, $settings);
         if (! $costCenter['allowed']) {
             return ['allowed' => false, 'reason' => $costCenter['reason'], 'request' => null];
         }
@@ -97,8 +123,51 @@ class CashAdvanceService
             return $urlGate + ['request' => null];
         }
 
+        if ($objectMode) {
+            $objectSettings = ObjectFlowSetting::current();
+            $item = [
+                'cost_center_type'    => $costCenter['type'],
+                'branch_id'           => $costCenter['branch_id'],
+                'delivery_project_id' => $costCenter['project_id'],
+                'ticket_id'           => $costCenter['ticket_id'] ?? null,
+                'fund_category'       => $costCenter['category'] ?? null,
+                'cost_center_label'   => $costCenter['label'],
+                'amount'              => $amount,
+            ];
+
+            $fund = $this->funds()->evaluate([$item], $date, $objectSettings);
+
+            if ($fund['blocked'] !== null) {
+                return ['allowed' => false, 'reason' => $fund['blocked'], 'request' => null];
+            }
+
+            if ($fund['needs_reason']) {
+                $overReason = trim((string) ($payload['over_allocation_reason'] ?? ''));
+
+                if (mb_strlen($overReason) < 10) {
+                    $first = $fund['warnings'][0];
+
+                    return [
+                        'allowed' => false,
+                        'reason'  => 'The amount exceeds the remaining fund for ' . $first['pool'] . ' by '
+                                   . number_format($first['over'], 0, ',', '.')
+                                   . '. Write the reason in at least 10 characters to submit anyway.',
+                        'request' => null,
+                    ];
+                }
+            }
+
+            $resolved = $this->objectResolver()->resolve([$item], $employeeId, $objectSettings);
+
+            if ($resolved['error'] !== null) {
+                return ['allowed' => false, 'reason' => $resolved['error'], 'request' => null];
+            }
+
+            $objectSteps = $resolved['steps'];
+        }
+
         $steps = $this->activeSteps();
-        if ($steps->isEmpty()) {
+        if ($steps->isEmpty() && $objectSteps === []) {
             return [
                 'allowed' => false,
                 'reason'  => 'No approval step is configured. Ask an administrator to set one up in Cash Advance Settings.',
@@ -106,17 +175,23 @@ class CashAdvanceService
             ];
         }
 
-        $chosen = $this->resolveChosenApprovers($steps, $payload);
+        // Pada konsep Object pemohon tidak memilih penyetuju sama sekali.
+        $chosen = $objectMode
+            ? ['allowed' => true, 'reason' => '', 'chosen' => []]
+            : $this->resolveChosenApprovers($steps, $payload);
         if (! $chosen['allowed']) {
             return ['allowed' => false, 'reason' => $chosen['reason'], 'request' => null];
         }
 
         $request = DB::transaction(function () use (
             $employeeId, $createdBy, $byAdmin, $payload, $date, $amount,
-            $settings, $limitGate, $costCenter, $steps, $chosen
+            $settings, $limitGate, $costCenter, $steps, $chosen, $objectMode, $objectSteps, $overReason
         ) {
             $flags = $limitGate['flags'];
 
+            if ($objectMode) {
+                $flags[CashAdvance::FLAG_OBJECT_FLOW] = true;
+            }
             if ($byAdmin) {
                 $flags[self::FLAG_ADMIN_CREATED] = $createdBy;
             }
@@ -145,8 +220,11 @@ class CashAdvanceService
                 'charged_branch_id'  => $costCenter['branch_id'],
                 'charged_project_id' => $costCenter['project_id'],
                 'charged_to_label'   => $costCenter['label'],
+                'charged_ticket_id'  => $costCenter['ticket_id'] ?? null,
+                'fund_category'      => $costCenter['category'] ?? null,
+                'over_allocation_reason' => $overReason,
                 'status'             => CashAdvance::STATUS_SUBMITTED,
-                'current_step_order' => $steps->first()->order_seq,
+                'current_step_order' => $objectMode && $objectSteps !== [] ? 1 : $steps->first()->order_seq,
                 'settlement_status'  => CashAdvance::SETTLE_UNREPORTED,
                 'car_count'          => 0,
                 'period_year'        => (int) $date->format('Y'),
@@ -154,7 +232,11 @@ class CashAdvanceService
                 'flags'              => $flags !== [] ? $flags : null,
             ]);
 
-            $this->snapshotSteps($request, $steps, $chosen['chosen']);
+            if ($objectMode) {
+                $this->snapshotObjectSteps($request, $objectSteps, $steps);
+            } else {
+                $this->snapshotSteps($request, $steps, $chosen['chosen']);
+            }
 
             return $request;
         });
@@ -205,16 +287,25 @@ class CashAdvanceService
             return ['allowed' => false, 'reason' => $limitGate['reason']];
         }
 
-        $costCenter = $this->resolveCostCenter($payload, $settings);
-        if (! $costCenter['allowed']) {
-            return ['allowed' => false, 'reason' => $costCenter['reason']];
+        // Dokumen dengan konsep Object mempertahankan Object-nya: penyetuju dan
+        // dana sudah ditetapkan darinya saat dikirim, dan alurnya dibekukan.
+        if ($request->hasFlag(CashAdvance::FLAG_OBJECT_FLOW)) {
+            $costCenter = [
+                'allowed' => true, 'reason' => '',
+                'type' => $request->cost_center_type, 'branch_id' => $request->charged_branch_id,
+                'project_id' => $request->charged_project_id, 'label' => $request->charged_to_label,
+            ];
+        } else {
+            $costCenter = $this->resolveCostCenter($payload, $settings);
+            if (! $costCenter['allowed']) {
+                return ['allowed' => false, 'reason' => $costCenter['reason']];
+            }
         }
 
         $urlGate = $this->checkDetailUrl($payload['detail_url'] ?? null, $settings);
         if (! $urlGate['allowed']) {
             return $urlGate;
         }
-
         DB::transaction(function () use ($request, $payload, $date, $amount, $costCenter, $limitGate, $actorId) {
             $previousAmount = (float) $request->amount;
 
@@ -451,7 +542,22 @@ class CashAdvanceService
         /** @var CashAdvanceApproval $approval */
         $approval = $gate['approval'];
 
-        $completed = DB::transaction(function () use ($request, $approval, $actorId, $payload) {
+        $isObjectFlow = $request->hasFlag(CashAdvance::FLAG_OBJECT_FLOW);
+        $isLastStep   = ! $request->approvals()
+            ->where('order_seq', '>', $approval->order_seq)
+            ->where('status', CashAdvanceApproval::STATUS_WAITING)
+            ->exists();
+
+        // Pemeriksaan ulang sisa dana tepat sebelum persetujuan terakhir.
+        if ($isObjectFlow && $isLastStep) {
+            $message = $this->funds()->recheckAdvanceForApproval($request, ObjectFlowSetting::current());
+
+            if ($message !== null) {
+                return ['allowed' => false, 'reason' => $message, 'completed' => false];
+            }
+        }
+
+        $completed = DB::transaction(function () use ($request, $approval, $actorId, $payload, $isObjectFlow) {
             if ($actorId === (int) $request->employee_id) {
                 $this->addFlag($request, self::FLAG_SELF_APPROVED, $actorId);
             }
@@ -491,6 +597,20 @@ class CashAdvanceService
                 'current_step_order' => null,
                 'completed_at'       => now(),
             ]);
+
+            // Dana berkurang saat CA disetujui sepenuhnya.
+            if ($isObjectFlow) {
+                $this->funds()->commitAdvance($request, $actorId);
+
+                $over = FundEntry::where('document_type', 'cash_advance')
+                    ->where('document_id', $request->id)
+                    ->where('over_allocation', true)
+                    ->exists();
+
+                if ($over) {
+                    $this->addFlag($request, CashAdvance::FLAG_OVER_ALLOCATION);
+                }
+            }
 
             return true;
         });
@@ -951,6 +1071,158 @@ class CashAdvanceService
         ];
     }
 
+    /**
+     * Object untuk Cash Advance: satu Office, Project, atau tiket Support.
+     * Wajib diisi saat konsep Object aktif. Pesan menyebut apa yang harus dipilih.
+     *
+     * @return array<string, mixed>
+     */
+    private function resolveObjectCenter(array $payload): array
+    {
+        $fail = fn (string $message) => [
+            'allowed' => false, 'reason' => $message,
+            'type' => null, 'branch_id' => null, 'project_id' => null, 'ticket_id' => null, 'label' => null, 'category' => null,
+        ];
+
+        $type = $payload['cost_center_type'] ?? null;
+
+        if (! in_array($type, CashAdvance::OBJECT_TYPES, true)) {
+            return $fail('Choose the Object this cash advance is charged to: an office, a project, or a support ticket.');
+        }
+
+        $category = trim((string) ($payload['fund_category'] ?? ''));
+        $category = $category !== '' ? mb_substr($category, 0, 60) : null;
+
+        if ($type === CashAdvance::COST_CENTER_BRANCH) {
+            $branch = Branch::where('is_active', 1)->find($payload['charged_branch_id'] ?? null);
+
+            return $branch
+                ? ['allowed' => true, 'reason' => '', 'type' => $type, 'branch_id' => (int) $branch->id, 'project_id' => null, 'ticket_id' => null, 'label' => $this->branchLabel($branch), 'category' => null]
+                : $fail('Choose a valid active office.');
+        }
+
+        if ($type === CashAdvance::COST_CENTER_PROJECT) {
+            $project = DeliveryProject::where('is_closed', 0)->find($payload['charged_project_id'] ?? null);
+
+            return $project
+                ? ['allowed' => true, 'reason' => '', 'type' => $type, 'branch_id' => null, 'project_id' => (int) $project->id, 'ticket_id' => null, 'label' => $this->projectLabel($project), 'category' => $category]
+                : $fail('Choose a project that is still running. Closed projects cannot be charged.');
+        }
+
+        $ticket = Ticket::find($payload['charged_ticket_id'] ?? null);
+
+        return $ticket
+            ? ['allowed' => true, 'reason' => '', 'type' => $type, 'branch_id' => null, 'project_id' => null, 'ticket_id' => (int) $ticket->ticket_id, 'label' => (string) $ticket->ticket_number, 'category' => $category]
+            : $fail('Choose the support ticket from the list. Typed text without picking a ticket is not accepted.');
+    }
+
+    /**
+     * Salin langkah ke dokumen dengan konsep Object: langkah Object lebih dulu
+     * (nomor 1..n, peran Verificator), disusul langkah Approval Workflow yang
+     * nomornya digeser n supaya urutannya tetap. Langkah workflow yang dapat
+     * dipilih pemohon memakai definisinya sendiri (pemohon tidak memilih lagi).
+     *
+     * @param  array<int, array<string, mixed>>  $objectSteps
+     */
+    private function snapshotObjectSteps(CashAdvance $request, array $objectSteps, Collection $configured): void
+    {
+        $seq = 0;
+
+        foreach ($objectSteps as $step) {
+            CashAdvanceApproval::create([
+                'cash_advance_id'       => $request->id,
+                'order_seq'             => ++$seq,
+                'step_name'             => mb_substr((string) $step['name'], 0, 100),
+                'actor_role'            => CashAdvanceApprovalStep::ACTOR_VERIFICATOR,
+                'approver_type'         => $step['approver_type'],
+                'approver_role_id'      => $step['approver_role_id'],
+                'approver_employee_ids' => $step['approver_employee_ids'],
+                'chosen_by_requester'   => false,
+                'origin'                => CashAdvanceApproval::ORIGIN_OBJECT,
+                'status'                => CashAdvanceApproval::STATUS_WAITING,
+            ]);
+        }
+
+        $shift = $seq;
+
+        foreach ($configured as $step) {
+            CashAdvanceApproval::create([
+                'cash_advance_id'       => $request->id,
+                'order_seq'             => $shift + (int) $step->order_seq,
+                'step_name'             => $step->name,
+                'actor_role'            => $step->actor_role,
+                'approver_type'         => $step->approver_type,
+                'approver_role_id'      => $step->approver_role_id,
+                'approver_employee_ids' => $step->approver_employee_ids,
+                'chosen_by_requester'   => false,
+                'origin'                => CashAdvanceApproval::ORIGIN_WORKFLOW,
+                'status'                => CashAdvanceApproval::STATUS_WAITING,
+            ]);
+        }
+    }
+
+    /** Banyaknya langkah Object pada sebuah dokumen; 0 untuk dokumen tanpa konsep Object. */
+    private function objectShift(CashAdvance $request): int
+    {
+        return $request->hasFlag(CashAdvance::FLAG_OBJECT_FLOW)
+            ? $request->approvals()->where('origin', CashAdvanceApproval::ORIGIN_OBJECT)->count()
+            : 0;
+    }
+
+    /** @return Collection<int, CashAdvance> dokumen terbuka yang belum sampai pada langkah workflow `$orderSeq` */
+    private function openRequestsBefore(int $orderSeq): Collection
+    {
+        return CashAdvance::query()
+            ->whereIn('status', CashAdvance::OPEN_STATUSES)
+            ->whereNotNull('current_step_order')
+            ->get()
+            ->filter(fn (CashAdvance $r) => (int) $r->current_step_order < $this->objectShift($r) + $orderSeq)
+            ->values();
+    }
+
+    /**
+     * Batalkan (void) CA yang sudah disetujui. Hanya Finance (hak kelola).
+     * Dana dikembalikan; CA yang sudah punya laporan tidak boleh di-void.
+     *
+     * @return array{allowed: bool, reason: string}
+     */
+    public function voidApproved(CashAdvance $request, int $actorId, string $reason): array
+    {
+        if ($request->trashed()) {
+            return ['allowed' => false, 'reason' => 'This document has been deleted.'];
+        }
+        if ($request->isVoided()) {
+            return ['allowed' => false, 'reason' => 'This cash advance was already voided on ' . $request->voided_at->format('d M Y') . '.'];
+        }
+        if ($request->status !== CashAdvance::STATUS_APPROVED) {
+            return ['allowed' => false, 'reason' => 'Only an approved cash advance can be voided. Use Reject while it is in review, or Cancel while it is only submitted.'];
+        }
+        if ((int) $request->car_count > 0) {
+            return ['allowed' => false, 'reason' => 'This cash advance already has a report. Cancel or delete the report first, then void the cash advance.'];
+        }
+
+        $reason = trim($reason);
+        if (mb_strlen($reason) < 10) {
+            return ['allowed' => false, 'reason' => 'Say why the cash advance is voided (at least 10 characters).'];
+        }
+
+        DB::transaction(function () use ($request, $actorId, $reason) {
+            $request->forceFill([
+                'voided_at'   => now(),
+                'voided_by'   => $actorId,
+                'void_reason' => mb_substr($reason, 0, 255),
+            ])->save();
+
+            $this->funds()->releaseDocument('cash_advance', (int) $request->id, $actorId, $reason);
+        });
+
+        Log::info('Cash advance voided.', ['request_no' => $request->request_no, 'actor_id' => $actorId, 'reason' => $reason]);
+
+        $this->notify($request, 'voided', $reason);
+
+        return ['allowed' => true, 'reason' => ''];
+    }
+
     private function branchLabel(Branch $branch): string
     {
         return trim(($branch->code ? $branch->code . ' - ' : '') . $branch->name);
@@ -1065,10 +1337,7 @@ class CashAdvanceService
      */
     public function countOpenRequestsBefore(int $orderSeq): int
     {
-        return CashAdvance::query()
-            ->whereIn('status', CashAdvance::OPEN_STATUSES)
-            ->where('current_step_order', '<', $orderSeq)
-            ->count();
+        return $this->openRequestsBefore($orderSeq)->count();
     }
 
     /**
@@ -1101,10 +1370,7 @@ class CashAdvanceService
      */
     public function applyStepToOpenRequests(CashAdvanceApprovalStep $step, ?int $actorId = null): array
     {
-        $targets = CashAdvance::query()
-            ->whereIn('status', CashAdvance::OPEN_STATUSES)
-            ->where('current_step_order', '<', $step->order_seq)
-            ->get();
+        $targets = $this->openRequestsBefore((int) $step->order_seq);
 
         if ($targets->isEmpty()) {
             return ['applied' => 0, 'request_nos' => []];
@@ -1114,13 +1380,15 @@ class CashAdvanceService
 
         DB::transaction(function () use ($targets, $step, &$applied) {
             foreach ($targets as $request) {
-                if ($request->approvals()->where('order_seq', $step->order_seq)->exists()) {
+                $seq = $this->objectShift($request) + (int) $step->order_seq;
+
+                if ($request->approvals()->where('order_seq', $seq)->exists()) {
                     continue;
                 }
 
                 CashAdvanceApproval::create([
                     'cash_advance_id'       => $request->id,
-                    'order_seq'             => $step->order_seq,
+                    'order_seq'             => $seq,
                     'step_name'             => $step->name,
                     'actor_role'            => $step->actor_role,
                     'approver_type'         => $step->approver_type,
@@ -1223,6 +1491,7 @@ class CashAdvanceService
                 'approved'   => "Your cash advance {$request->request_no} ({$request->currency} {$amount}) was approved.",
                 'rejected'   => "Your cash advance {$request->request_no} ({$request->currency} {$amount}) was rejected.",
                 'progressed' => "Your cash advance {$request->request_no} passed a review step.",
+                'voided'     => "Your cash advance {$request->request_no} ({$request->currency} {$amount}) was voided by Finance.",
                 default      => "Your cash advance {$request->request_no} was updated.",
             };
 

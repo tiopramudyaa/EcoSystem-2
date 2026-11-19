@@ -90,7 +90,27 @@ class CashAdvanceReportService
         }
 
         $steps = $this->activeSteps();
-        if ($steps->isEmpty()) {
+
+        // Laporan mengikuti Object cash advance-nya: penyetuju Object yang sama
+        // memeriksa pertanggungjawaban. Pemohon tidak memilih penyetuju lagi.
+        $objectFlow  = $advance->hasFlag(CashAdvance::FLAG_OBJECT_FLOW);
+        $objectSteps = [];
+
+        if ($objectFlow) {
+            $resolved = app(\App\Services\ObjectFund\ObjectApproverResolver::class)->resolve(
+                [app(\App\Services\ObjectFund\FundService::class)->itemOfCashAdvance($advance)],
+                $employeeId,
+                \App\Models\ObjectFund\ObjectFlowSetting::current()
+            );
+
+            if ($resolved['error'] !== null) {
+                return ['allowed' => false, 'reason' => $resolved['error'], 'report' => null];
+            }
+
+            $objectSteps = $resolved['steps'];
+        }
+
+        if ($steps->isEmpty() && $objectSteps === []) {
             return [
                 'allowed' => false,
                 'reason'  => 'No approval step is configured for cash advance reports. Ask an administrator to set one up in Cash Advance Settings.',
@@ -98,18 +118,24 @@ class CashAdvanceReportService
             ];
         }
 
-        $chosen = $this->resolveChosenApprovers($steps, $payload);
+        $chosen = $objectFlow
+            ? ['allowed' => true, 'reason' => '', 'chosen' => []]
+            : $this->resolveChosenApprovers($steps, $payload);
         if (! $chosen['allowed']) {
             return ['allowed' => false, 'reason' => $chosen['reason'], 'report' => null];
         }
 
         $report = DB::transaction(function () use (
             $advance, $employeeId, $createdBy, $byAdmin, $payload, $date,
-            $advanceAmount, $reported, $items, $steps, $chosen, $settings
+            $advanceAmount, $reported, $items, $steps, $chosen, $settings, $objectFlow, $objectSteps
         ) {
             $settlement = $this->amounts->settlement($advanceAmount, [$reported]);
 
             $flags = [];
+
+            if ($objectFlow) {
+                $flags[CashAdvance::FLAG_OBJECT_FLOW] = true;
+            }
 
             if ($byAdmin) {
                 $flags[self::FLAG_ADMIN_CREATED] = $createdBy;
@@ -168,15 +194,19 @@ class CashAdvanceReportService
                 'item_count'        => count($items['rows']),
                 'notes'             => ($payload['notes'] ?? null) ?: null,
                 'status'            => CashAdvanceReport::STATUS_SUBMITTED,
-                'current_step_order'=> $steps->first()->order_seq,
+                'current_step_order'=> $objectFlow && $objectSteps !== [] ? 1 : $steps->first()->order_seq,
                 'period_year'       => (int) $date->format('Y'),
                 'period_month'      => (int) $date->format('n'),
                 'flags'             => $flags !== [] ? $flags : null,
             ]);
 
             $this->writeItems($report, $items['rows']);
-            $this->snapshotSteps($report, $steps, $chosen['chosen']);
 
+            if ($objectFlow) {
+                $this->snapshotObjectSteps($report, $objectSteps, $steps);
+            } else {
+                $this->snapshotSteps($report, $steps, $chosen['chosen']);
+            }
             // CA-nya kini berstatus "sedang dilaporkan". Belum `settled` -
             // laporannya masih menunggu persetujuan, dan angkanya masih bisa
             // berubah.
@@ -581,6 +611,12 @@ class CashAdvanceReportService
             'settlement_status'  => $status,
             'settled_at'         => $status === CashAdvance::SETTLE_SETTLED ? now() : null,
         ]);
+
+        // Dana mengikuti pemakaian nyata: sesudah settled, entri dana CA menjadi
+        // nominal yang dilaporkan; selama belum, tetap nominal uang muka.
+        if ($advance->hasFlag(CashAdvance::FLAG_OBJECT_FLOW)) {
+            app(\App\Services\ObjectFund\FundService::class)->syncAdvanceEntry($advance->fresh());
+        }
     }
 
     /**
@@ -709,6 +745,12 @@ class CashAdvanceReportService
             ];
         }
 
+        if ($advance->isVoided()) {
+            return [
+                'allowed' => false,
+                'reason'  => 'This cash advance was voided by Finance, so it cannot be reported.',
+            ];
+        }
         if ($advance->isSettled()) {
             return [
                 'allowed' => false,
@@ -1037,6 +1079,67 @@ class CashAdvanceReportService
     }
 
     /** @param array<int, int> $chosen */
+    /**
+     * Langkah laporan dengan konsep Object: langkah Object (dari Object CA)
+     * lebih dulu, disusul langkah Approval Workflow laporan yang nomornya digeser.
+     *
+     * @param  array<int, array<string, mixed>>  $objectSteps
+     */
+    private function snapshotObjectSteps(CashAdvanceReport $report, array $objectSteps, Collection $configured): void
+    {
+        $seq = 0;
+
+        foreach ($objectSteps as $step) {
+            CashAdvanceReportApproval::create([
+                'cash_advance_report_id' => $report->id,
+                'order_seq'              => ++$seq,
+                'step_name'              => mb_substr((string) $step['name'], 0, 100),
+                'actor_role'             => CashAdvanceApprovalStep::ACTOR_VERIFICATOR,
+                'approver_type'          => $step['approver_type'],
+                'approver_role_id'       => $step['approver_role_id'],
+                'approver_employee_ids'  => $step['approver_employee_ids'],
+                'chosen_by_requester'    => false,
+                'origin'                 => CashAdvanceReportApproval::ORIGIN_OBJECT,
+                'status'                 => CashAdvanceReportApproval::STATUS_WAITING,
+            ]);
+        }
+
+        $shift = $seq;
+
+        foreach ($configured as $step) {
+            CashAdvanceReportApproval::create([
+                'cash_advance_report_id' => $report->id,
+                'order_seq'              => $shift + (int) $step->order_seq,
+                'step_name'              => $step->name,
+                'actor_role'             => $step->actor_role,
+                'approver_type'          => $step->approver_type,
+                'approver_role_id'       => $step->approver_role_id,
+                'approver_employee_ids'  => $step->approver_employee_ids,
+                'chosen_by_requester'    => false,
+                'origin'                 => CashAdvanceReportApproval::ORIGIN_WORKFLOW,
+                'status'                 => CashAdvanceReportApproval::STATUS_WAITING,
+            ]);
+        }
+    }
+
+    private function objectShift(CashAdvanceReport $report): int
+    {
+        return $report->hasFlag(CashAdvance::FLAG_OBJECT_FLOW)
+            ? $report->approvals()->where('origin', CashAdvanceReportApproval::ORIGIN_OBJECT)->count()
+            : 0;
+    }
+
+    /** @return Collection<int, CashAdvanceReport> */
+    private function openReportsBefore(int $orderSeq): Collection
+    {
+        return CashAdvanceReport::query()
+            ->whereIn('status', CashAdvanceReport::OPEN_STATUSES)
+            ->whereNotNull('current_step_order')
+            ->get()
+            ->filter(fn (CashAdvanceReport $r) => (int) $r->current_step_order < $this->objectShift($r) + $orderSeq)
+            ->values();
+    }
+
     private function snapshotSteps(CashAdvanceReport $report, Collection $steps, array $chosen = []): void
     {
         foreach ($steps as $step) {
@@ -1062,10 +1165,7 @@ class CashAdvanceReportService
      */
     public function countOpenReportsBefore(int $orderSeq): int
     {
-        return CashAdvanceReport::query()
-            ->whereIn('status', CashAdvanceReport::OPEN_STATUSES)
-            ->where('current_step_order', '<', $orderSeq)
-            ->count();
+        return $this->openReportsBefore($orderSeq)->count();
     }
 
     /**
@@ -1079,10 +1179,7 @@ class CashAdvanceReportService
      */
     public function applyStepToOpenReports(CashAdvanceApprovalStep $step, ?int $actorId = null): array
     {
-        $targets = CashAdvanceReport::query()
-            ->whereIn('status', CashAdvanceReport::OPEN_STATUSES)
-            ->where('current_step_order', '<', $step->order_seq)
-            ->get();
+        $targets = $this->openReportsBefore((int) $step->order_seq);
 
         if ($targets->isEmpty()) {
             return ['applied' => 0, 'request_nos' => []];
@@ -1092,13 +1189,15 @@ class CashAdvanceReportService
 
         DB::transaction(function () use ($targets, $step, &$applied) {
             foreach ($targets as $report) {
-                if ($report->approvals()->where('order_seq', $step->order_seq)->exists()) {
+                $seq = $this->objectShift($report) + (int) $step->order_seq;
+
+                if ($report->approvals()->where('order_seq', $seq)->exists()) {
                     continue;
                 }
 
                 CashAdvanceReportApproval::create([
                     'cash_advance_report_id' => $report->id,
-                    'order_seq'              => $step->order_seq,
+                    'order_seq'              => $seq,
                     'step_name'              => $step->name,
                     'actor_role'             => $step->actor_role,
                     'approver_type'          => $step->approver_type,

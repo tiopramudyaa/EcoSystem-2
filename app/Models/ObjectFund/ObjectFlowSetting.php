@@ -13,7 +13,7 @@ class ObjectFlowSetting extends Model
     protected $table = 'object_flow_settings';
 
     protected $fillable = [
-        'enabled',
+        'enabled', 'cash_advance_enabled',
         'project_admin_enabled', 'project_manager_enabled', 'project_order',
         'project_fallback_role_id', 'project_fallback_employee_id',
         'support_lead_enabled', 'support_manager_enabled',
@@ -23,6 +23,7 @@ class ObjectFlowSetting extends Model
 
     protected $casts = [
         'enabled'                 => 'boolean',
+        'cash_advance_enabled'    => 'boolean',
         'project_admin_enabled'   => 'boolean',
         'project_manager_enabled' => 'boolean',
         'support_lead_enabled'    => 'boolean',

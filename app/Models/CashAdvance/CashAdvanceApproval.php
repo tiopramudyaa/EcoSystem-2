@@ -36,7 +36,7 @@ class CashAdvanceApproval extends Model
         'step_name', 'actor_role',
         'approver_type', 'approver_role_id', 'approver_employee_ids',
         'chosen_by_requester',
-        'status', 'acted_by', 'acted_at', 'notes', 'flags',
+        'status', 'acted_by', 'acted_at', 'notes', 'flags', 'origin',
     ];
 
     protected $casts = [
@@ -55,6 +55,10 @@ class CashAdvanceApproval extends Model
     // (Keputusan D147). Label "Pending" pada layar acuan tetap boleh dipakai;
     // yang diselaraskan adalah nilai yang DISIMPAN, supaya kueri lintas modul
     // tidak diam-diam kehilangan baris CA.
+
+    /** Asal langkah: Approval Workflow, atau dibentuk otomatis dari Object. */
+    public const ORIGIN_WORKFLOW = 'workflow';
+    public const ORIGIN_OBJECT   = 'object';
 
     public const STATUS_WAITING  = 'waiting';
     public const STATUS_APPROVED = 'approved';
