@@ -5,6 +5,8 @@ namespace App\Services\Reimbursement;
 use App\Models\Attendance\Branch;
 use App\Models\Employee;
 use App\Models\Notification;
+use App\Models\ObjectFund\FundEntry;
+use App\Models\ObjectFund\ObjectFlowSetting;
 use App\Models\Reimbursement\ReimbursementApprovalStep;
 use App\Models\Reimbursement\ReimbursementItem;
 use App\Models\Reimbursement\ReimbursementRequest;
@@ -47,6 +49,15 @@ class ReimbursementService
     {
     }
 
+    private function funds(): \App\Services\ObjectFund\FundService
+    {
+        return app(\App\Services\ObjectFund\FundService::class);
+    }
+
+    private function objectResolver(): \App\Services\ObjectFund\ObjectApproverResolver
+    {
+        return app(\App\Services\ObjectFund\ObjectApproverResolver::class);
+    }
     // =======================================================================
     // PENGAJUAN
     // =======================================================================
@@ -70,7 +81,12 @@ class ReimbursementService
 
         $currency = $this->resolveCurrency($payload['currency'] ?? null);
 
-        $items = $this->normaliseItems($payload['items'] ?? [], $currency);
+        // Konsep Object (Project / Office / Support, dana, penyetuju otomatis)
+        // hanya berlaku bila diaktifkan di pengaturan. Mati = perilaku lama.
+        $objectSettings = ObjectFlowSetting::current();
+        $objectMode     = (bool) $objectSettings->enabled;
+
+        $items = $this->normaliseItems($payload['items'] ?? [], $currency, $objectMode);
 
         $gate = $this->checkItemRules($items, $settings);
         if (!$gate['allowed']) {
@@ -96,11 +112,58 @@ class ReimbursementService
             ];
         }
 
+        // ── Konsep Object: target, dana, dan penyetuju otomatis ─────────────
+        $objectSteps       = [];
+        $overAllocReason   = null;
+        $objectNotes       = [];
+
+        if ($objectMode) {
+            $gate = $this->checkObjectItems($items);
+            if (!$gate['allowed']) {
+                return $gate + ['request' => null];
+            }
+
+            $obj = $this->totals->chargedToObjects($items);
+            $evaluated['charged_branch_id'] = $obj['branch_id'];
+            $evaluated['charged_to_label']  = $obj['label'];
+
+            $fund = $this->funds()->evaluate($items, $date, $objectSettings);
+
+            if ($fund['blocked'] !== null) {
+                return ['allowed' => false, 'reason' => $fund['blocked'], 'request' => null];
+            }
+
+            if ($fund['needs_reason']) {
+                $overAllocReason = trim((string) ($payload['over_allocation_reason'] ?? ''));
+
+                if (mb_strlen($overAllocReason) < 10) {
+                    $first = $fund['warnings'][0];
+
+                    return [
+                        'allowed' => false,
+                        'reason'  => 'The amount exceeds the remaining fund for ' . $first['pool'] . ' by '
+                                   . ReimbursementRequest::formatRupiah($first['over'])
+                                   . '. Write the reason in at least 10 characters to submit anyway.',
+                        'request' => null,
+                    ];
+                }
+            }
+
+            $resolved = $this->objectResolver()->resolve($items, $employeeId, $objectSettings);
+
+            if ($resolved['error'] !== null) {
+                return ['allowed' => false, 'reason' => $resolved['error'], 'request' => null];
+            }
+
+            $objectSteps = $resolved['steps'];
+            $objectNotes = $resolved['skipped'];
+        }
+
         // Langkah persetujuan harus ada SEBELUM dokumen dibuat. Tanpa satu pun
         // langkah aktif, dokumen akan lahir tanpa jalan keluar - tidak dapat
         // disetujui maupun ditolak siapa pun.
         $steps = $this->activeSteps();
-        if ($steps->isEmpty()) {
+        if ($steps->isEmpty() && $objectSteps === []) {
             return [
                 'allowed' => false,
                 'reason'  => 'No approval step is configured yet. Ask HR to set one up in Reimbursement Settings.',
@@ -109,7 +172,9 @@ class ReimbursementService
         }
 
         // Langkah yang dipilih pemohon WAJIB terisi, dengan kandidat langkahnya.
-        $choices = $this->resolveChoices($steps, $payload['step_approver'] ?? []);
+        // Pada konsep Object pemohon tidak memilih penyetuju sama sekali: langkah
+        // konfigurasi memakai definisinya sendiri (role atau orang di Settings).
+        $choices = $objectMode ? [] : $this->resolveChoices($steps, $payload['step_approver'] ?? []);
         if ($choices === null) {
             return [
                 'allowed' => false,
@@ -125,12 +190,16 @@ class ReimbursementService
         $approverId = $approverStep ? $choices[$approverStep->order_seq] : null;
 
         $flags = $evaluated['flags'];
+        if ($objectMode) {
+            $flags[] = ReimbursementRequest::FLAG_OBJECT_FLOW;
+        }
         if ($createdBy !== null && $createdBy !== $employeeId) {
             $flags[] = ReimbursementRequest::FLAG_CREATED_ON_BEHALF;
         }
 
         $request = DB::transaction(function () use (
-            $employeeId, $createdBy, $date, $payload, $items, $evaluated, $flags, $steps, $currency, $approverId, $choices
+            $employeeId, $createdBy, $date, $payload, $items, $evaluated, $flags, $steps, $currency, $approverId, $choices,
+            $objectMode, $objectSteps, $overAllocReason
         ) {
             $request = ReimbursementRequest::create([
                 'request_no'        => $this->nextRequestNo($date),
@@ -146,14 +215,20 @@ class ReimbursementService
                 'total_amount'      => $evaluated['total'],
                 'item_count'        => $evaluated['item_count'],
                 'status'            => ReimbursementRequest::STATUS_SUBMITTED,
-                'current_step_order' => $steps->first()->order_seq,
+                'current_step_order' => $objectMode && $objectSteps !== [] ? 1 : $steps->first()->order_seq,
                 'flags'             => array_values(array_unique($flags)),
+                'over_allocation_reason' => $overAllocReason,
                 'period_year'       => (int) $date->format('Y'),
                 'period_month'      => (int) $date->format('n'),
             ]);
 
             $this->writeItems($request, $items);
-            $this->snapshotSteps($request, $steps, $choices);
+
+            if ($objectMode) {
+                $this->snapshotObjectSteps($request, $objectSteps, $steps);
+            } else {
+                $this->snapshotSteps($request, $steps, $choices);
+            }
 
             return $request;
         });
@@ -400,6 +475,9 @@ class ReimbursementService
         if ($request->trashed()) {
             return ['allowed' => false, 'reason' => 'This document has been deleted.'];
         }
+        if ($request->isVoided()) {
+            return ['allowed' => false, 'reason' => 'This reimbursement was voided on ' . $request->voided_at->format('d M Y') . ' and cannot be paid.'];
+        }
         if ($request->status !== ReimbursementRequest::STATUS_APPROVED) {
             return ['allowed' => false, 'reason' => 'Only an approved reimbursement can be paid.'];
         }
@@ -442,6 +520,56 @@ class ReimbursementService
         return ['allowed' => true, 'reason' => ''];
     }
 
+    /**
+     * Batalkan (void) dokumen yang sudah disetujui. Hanya Finance (izin bayar).
+     *
+     * Dana dikembalikan ke kantong dan pembatalan dicatat dengan alasan, pelaku,
+     * dan waktu. Dokumen yang sudah dibayar harus dibatalkan pembayarannya lebih
+     * dulu supaya catatan uang keluar tidak tertinggal.
+     *
+     * @return array{allowed: bool, reason: string}
+     */
+    public function voidApproved(ReimbursementRequest $request, int $actorId, string $reason): array
+    {
+        if ($request->trashed()) {
+            return ['allowed' => false, 'reason' => 'This document has been deleted.'];
+        }
+        if ($request->isVoided()) {
+            return ['allowed' => false, 'reason' => 'This reimbursement was already voided on ' . $request->voided_at->format('d M Y') . '.'];
+        }
+        if ($request->status !== ReimbursementRequest::STATUS_APPROVED) {
+            return ['allowed' => false, 'reason' => 'Only an approved reimbursement can be voided. Use Reject for a document that is still in review.'];
+        }
+        if ($request->isPaid()) {
+            return ['allowed' => false, 'reason' => 'This reimbursement has been paid. Reverse the payment first, then void it.'];
+        }
+
+        $reason = trim($reason);
+        if (mb_strlen($reason) < 10) {
+            return ['allowed' => false, 'reason' => 'Say why the document is voided (at least 10 characters).'];
+        }
+
+        DB::transaction(function () use ($request, $actorId, $reason) {
+            $request->forceFill([
+                'voided_at'   => now(),
+                'voided_by'   => $actorId,
+                'void_reason' => $this->clip($reason, 255),
+            ])->save();
+
+            $this->funds()->release($request, $actorId, $reason);
+        });
+
+        Log::info('Reimbursement voided.', [
+            'request_no' => $request->request_no,
+            'actor_id'   => $actorId,
+            'reason'     => $reason,
+        ]);
+
+        $this->notify($request, 'voided', $reason);
+
+        return ['allowed' => true, 'reason' => ''];
+    }
+
     private function clip(?string $value, int $max): ?string
     {
         $value = trim((string) $value);
@@ -460,6 +588,23 @@ class ReimbursementService
         /** @var ReimbursementRequestApproval $approval */
         $approval = $gate['approval'];
 
+        $isObjectFlow = $request->hasFlag(ReimbursementRequest::FLAG_OBJECT_FLOW);
+        $isLastStep   = !$request->approvals()
+            ->where('order_seq', '>', $approval->order_seq)
+            ->where('status', ReimbursementRequestApproval::STATUS_WAITING)
+            ->exists();
+
+        // Pemeriksaan ulang sisa dana tepat sebelum persetujuan terakhir: dokumen
+        // lain bisa saja sudah menyetujui dan memakai sisa yang sama (keputusan D4).
+        if ($isObjectFlow && $isLastStep) {
+            $request->loadMissing('items');
+            $message = $this->funds()->recheckForApproval($request, ObjectFlowSetting::current());
+
+            if ($message !== null) {
+                return ['allowed' => false, 'reason' => $message, 'completed' => false];
+            }
+        }
+
         // Menyetujui = menandatangani: tanda tangan aktor dari master data
         // disalin ke langkah ini. Tanpa tanda tangan, tindakannya ditolak -
         // dokumen yang dicetak tidak boleh memuat persetujuan tanpa tanda tangan.
@@ -474,7 +619,7 @@ class ReimbursementService
             ];
         }
 
-        $completed = DB::transaction(function () use ($request, $approval, $actorId, $payload, $signature) {
+        $completed = DB::transaction(function () use ($request, $approval, $actorId, $payload, $signature, $isObjectFlow) {
             if ($actorId === (int) $request->employee_id) {
                 $this->addFlag($request, ReimbursementRequest::FLAG_SELF_APPROVED);
             }
@@ -512,6 +657,21 @@ class ReimbursementService
                 'current_step_order' => null,
                 'completed_at'       => now(),
             ]);
+
+            // Dana berkurang saat disetujui sepenuhnya (keputusan D4).
+            if ($isObjectFlow) {
+                $request->loadMissing('items');
+                $this->funds()->commit($request, $actorId);
+
+                $over = FundEntry::where('document_type', 'reimbursement')
+                    ->where('document_id', $request->id)
+                    ->where('over_allocation', true)
+                    ->exists();
+
+                if ($over) {
+                    $this->addFlag($request, ReimbursementRequest::FLAG_OVER_ALLOCATION);
+                }
+            }
 
             return true;
         });
@@ -1108,12 +1268,24 @@ class ReimbursementService
      *
      * Label cabang DIBEKUKAN di sini juga (Keputusan D105), sekali, saat menulis.
      */
-    private function normaliseItems(array $rawItems, string $currency = ReimbursementRequest::DEFAULT_CURRENCY): array
+    private function normaliseItems(array $rawItems, string $currency = ReimbursementRequest::DEFAULT_CURRENCY, bool $objectMode = false): array
     {
         $branches = Branch::withTrashed()
             ->get(['id', 'code', 'name'])
             ->keyBy('id');
 
+        // Hanya dimuat bila konsep Object aktif: nama project dan nomor tiket
+        // dibekukan ke label item saat disimpan.
+        $projects = collect();
+        $tickets  = collect();
+
+        if ($objectMode) {
+            $projectIds = collect($rawItems)->pluck('delivery_project_id')->filter()->map(fn ($v) => (int) $v)->unique()->all();
+            $ticketIds  = collect($rawItems)->pluck('ticket_id')->filter()->map(fn ($v) => (int) $v)->unique()->all();
+
+            $projects = $projectIds === [] ? collect() : \App\Models\DeliveryProject::whereIn('id', $projectIds)->get(['id', 'io_number', 'name'])->keyBy('id');
+            $tickets  = $ticketIds === [] ? collect() : \App\Models\Ticket::whereIn('ticket_id', $ticketIds)->get(['ticket_id', 'ticket_number'])->keyBy('ticket_id');
+        }
         $items  = [];
         $lineNo = 1;
 
@@ -1131,22 +1303,45 @@ class ReimbursementService
                 continue;
             }
 
-            $branchId = isset($raw['branch_id']) && $raw['branch_id'] !== ''
+            $type = $objectMode && in_array($raw['cost_center_type'] ?? '', ReimbursementItem::COST_CENTER_TYPES, true)
+                ? $raw['cost_center_type']
+                : ReimbursementItem::COST_CENTER_BRANCH;
+
+            $branchId = $type === ReimbursementItem::COST_CENTER_BRANCH && isset($raw['branch_id']) && $raw['branch_id'] !== ''
                 ? (int) $raw['branch_id']
                 : null;
 
             $branch = $branchId !== null ? $branches->get($branchId) : null;
 
+            $projectId = $type === ReimbursementItem::COST_CENTER_PROJECT && !empty($raw['delivery_project_id'])
+                ? (int) $raw['delivery_project_id']
+                : null;
+            $ticketId = $type === ReimbursementItem::COST_CENTER_SUPPORT && !empty($raw['ticket_id'])
+                ? (int) $raw['ticket_id']
+                : null;
+
+            $project = $projectId !== null ? $projects->get($projectId) : null;
+            $ticket  = $ticketId !== null ? $tickets->get($ticketId) : null;
+
+            $label = match (true) {
+                $type === ReimbursementItem::COST_CENTER_PROJECT => $project ? trim(($project->io_number ? $project->io_number . ' - ' : '') . $project->name) : null,
+                $type === ReimbursementItem::COST_CENTER_SUPPORT => $ticket?->ticket_number,
+                default                                           => $branch ? $branch->code . ' - ' . $branch->name : null,
+            };
+
+            $category = trim((string) ($raw['fund_category'] ?? ''));
             $from = trim((string) ($raw['receipt_date_from'] ?? ''));
             $to   = trim((string) ($raw['receipt_date_to'] ?? ''));
 
             $items[] = [
                 'line_no'             => $lineNo++,
                 'description'         => $description,
-                'cost_center_type'    => ReimbursementItem::COST_CENTER_BRANCH,
+                'cost_center_type'    => $type,
                 'branch_id'           => $branchId,
-                'delivery_project_id' => null,
-                'cost_center_label'   => $branch ? $branch->code . ' - ' . $branch->name : null,
+                'delivery_project_id' => $projectId,
+                'ticket_id'           => $ticketId,
+                'cost_center_label'   => $label,
+                'fund_category'       => $type !== ReimbursementItem::COST_CENTER_BRANCH && $category !== '' ? mb_substr($category, 0, 60) : null,
                 'receipt_no'          => trim((string) ($raw['receipt_no'] ?? '')) ?: null,
                 'receipt_date_from'   => $from,
                 // Nota satu hari mengisi keduanya dengan tanggal yang sama,
@@ -1271,6 +1466,80 @@ class ReimbursementService
     }
 
     /**
+     * Setiap baris harus menunjuk Object yang valid. Pesan menyebut nomor baris
+     * dan apa yang harus dipilih supaya pemohon tahu langkah berikutnya.
+     *
+     * @return array{allowed: bool, reason: string}
+     */
+    private function checkObjectItems(array $items): array
+    {
+        foreach ($items as $item) {
+            $line = (int) $item['line_no'];
+
+            switch ($item['cost_center_type']) {
+                case ReimbursementItem::COST_CENTER_PROJECT:
+                    if (empty($item['delivery_project_id']) || $item['cost_center_label'] === null) {
+                        return ['allowed' => false, 'reason' => "Line {$line}: choose the project this expense is charged to."];
+                    }
+                    break;
+
+                case ReimbursementItem::COST_CENTER_SUPPORT:
+                    if (empty($item['ticket_id']) || $item['cost_center_label'] === null) {
+                        return ['allowed' => false, 'reason' => "Line {$line}: choose the support ticket this expense is charged to."];
+                    }
+                    break;
+
+                default:
+                    if (empty($item['branch_id']) || $item['cost_center_label'] === null) {
+                        return ['allowed' => false, 'reason' => "Line {$line}: choose the office (branch) this expense is charged to."];
+                    }
+            }
+        }
+
+        return ['allowed' => true, 'reason' => ''];
+    }
+
+    /**
+     * Salin langkah ke dokumen dengan konsep Object: langkah dari Object lebih
+     * dulu (nomor 1..n), disusul langkah konfigurasi (Accounting, Cashier,
+     * penyetuju akhir) yang nomornya digeser sebanyak n supaya urutannya tetap.
+     *
+     * @param  array<int, array<string, mixed>>  $objectSteps
+     */
+    private function snapshotObjectSteps(ReimbursementRequest $request, array $objectSteps, Collection $configured): void
+    {
+        $seq = 0;
+
+        foreach ($objectSteps as $step) {
+            ReimbursementRequestApproval::create([
+                'reimbursement_request_id' => $request->id,
+                'order_seq'                => ++$seq,
+                'step_name'                => mb_substr((string) $step['name'], 0, 100),
+                'approver_type'            => $step['approver_type'],
+                'approver_role_id'         => $step['approver_role_id'],
+                'approver_employee_ids'    => $step['approver_employee_ids'],
+                'signs_as'                 => $step['signs_as'],
+                'status'                   => ReimbursementRequestApproval::STATUS_WAITING,
+            ]);
+        }
+
+        $shift = $seq;
+
+        foreach ($configured as $step) {
+            ReimbursementRequestApproval::create([
+                'reimbursement_request_id' => $request->id,
+                'order_seq'                => $shift + (int) $step->order_seq,
+                'step_name'                => $step->name,
+                'approver_type'            => $step->approver_type,
+                'approver_role_id'         => $step->approver_role_id,
+                'approver_employee_ids'    => $step->approver_employee_ids,
+                'signs_as'                 => $step->signs_as,
+                'status'                   => ReimbursementRequestApproval::STATUS_WAITING,
+            ]);
+        }
+    }
+
+    /**
      * @param  array<int,int>  $choices  order_seq langkah => employee_id pilihan pemohon
      */
     private function snapshotSteps(ReimbursementRequest $request, Collection $steps, array $choices = []): void
@@ -1354,6 +1623,7 @@ class ReimbursementService
                 'progressed' => "Your reimbursement {$request->request_no} passed a review step.",
                 'paid'       => "Your reimbursement {$request->request_no} ({$amount}) has been paid" . ($request->paid_at ? ' on ' . $request->paid_at->format('d M Y') : '') . '.',
                 'payment_reversed' => "The payment of your reimbursement {$request->request_no} was reversed by Finance.",
+                'voided'     => "Your reimbursement {$request->request_no} ({$amount}) was voided by Finance.",
                 default      => "Your reimbursement {$request->request_no} was updated.",
             };
 

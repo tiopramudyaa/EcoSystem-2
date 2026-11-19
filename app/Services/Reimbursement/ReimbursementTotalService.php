@@ -123,6 +123,43 @@ class ReimbursementTotalService
     }
 
     /**
+     * Pembebanan untuk dokumen dengan konsep Object: satu Object disebut
+     * namanya ("Project: ERP Alpha"), lebih dari satu menjadi "Multiple objects".
+     * `branch_id` hanya terisi bila seluruh dokumen membebani satu cabang.
+     *
+     * @return array{branch_id: ?int, label: string}
+     */
+    public function chargedToObjects(array $items): array
+    {
+        $labels = [];
+        $branch = [];
+
+        foreach ($items as $item) {
+            $type  = (string) ($item['cost_center_type'] ?? 'branch');
+            $label = trim((string) ($item['cost_center_label'] ?? ''));
+            $title = match ($type) {
+                'project' => 'Project',
+                'support' => 'Support',
+                default   => 'Office',
+            };
+            $labels[$title . ': ' . ($label !== '' ? $label : '-')] = true;
+
+            if ($type === 'branch' && !empty($item['branch_id'])) {
+                $branch[(int) $item['branch_id']] = true;
+            }
+        }
+
+        if (count($labels) === 1) {
+            return [
+                'branch_id' => count($branch) === 1 ? array_key_first($branch) : null,
+                'label'     => array_key_first($labels),
+            ];
+        }
+
+        return ['branch_id' => null, 'label' => $labels === [] ? '-' : 'Multiple objects'];
+    }
+
+    /**
      * Apakah total melewati batas? Nilai 0 berarti tanpa batas.
      *
      * Dibuat method tersendiri karena dipakai dua kali dengan akibat berbeda:

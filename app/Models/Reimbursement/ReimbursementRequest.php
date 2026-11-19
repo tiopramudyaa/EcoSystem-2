@@ -33,6 +33,7 @@ class ReimbursementRequest extends Model
         'completed_at',
         'paid_at', 'paid_by', 'payment_reference', 'payment_note',
         'deleted_by', 'delete_reason',
+        'voided_at', 'voided_by', 'void_reason', 'over_allocation_reason',
     ];
 
     protected $casts = [
@@ -46,6 +47,7 @@ class ReimbursementRequest extends Model
         'period_month'       => 'integer',
         'completed_at'       => 'datetime',
         'paid_at'            => 'datetime',
+        'voided_at'    => 'datetime',
     ];
 
     // ── Status ──────────────────────────────────────────────────────────────
@@ -130,6 +132,12 @@ class ReimbursementRequest extends Model
      */
     public const FLAG_WORKFLOW_EXTENDED = 'workflow_extended';
 
+    /** Dokumen dibuat dengan konsep Object (alur dan dana per Object). Tetap berlaku walau pengaturannya kelak dimatikan. */
+    public const FLAG_OBJECT_FLOW = 'object_flow';
+
+    /** Nominal melewati sisa dana sebuah Object saat disetujui (kebijakan Peringatan). */
+    public const FLAG_OVER_ALLOCATION = 'over_allocation';
+
     /** Tanggal nota lebih tua dari batas jarak ke tanggal pengajuan. */
     public const FLAG_STALE_RECEIPT = 'stale_receipt';
 
@@ -145,6 +153,8 @@ class ReimbursementRequest extends Model
         self::FLAG_LOCKED_PERIOD          => 'Locked period',
         self::FLAG_AMOUNT_ADJUSTED        => 'Amount adjusted',
         self::FLAG_WORKFLOW_EXTENDED      => 'Approval step added later',
+        self::FLAG_OBJECT_FLOW            => 'Object flow',
+        self::FLAG_OVER_ALLOCATION        => 'Over fund allocation',
     ];
 
     /**
@@ -163,6 +173,7 @@ class ReimbursementRequest extends Model
         self::FLAG_MISSING_RECEIPT_NO,
         self::FLAG_BELOW_MIN_ITEM,
         self::FLAG_SELF_APPROVED,
+        self::FLAG_OVER_ALLOCATION,
         self::FLAG_LOCKED_PERIOD,
         self::FLAG_AMOUNT_ADJUSTED,
     ];
@@ -331,8 +342,18 @@ class ReimbursementRequest extends Model
         return $this->belongsTo(\App\Models\Employee::class, 'paid_by', 'employee_id');
     }
 
+    /** Dibatalkan oleh Finance setelah disetujui; dananya sudah dikembalikan. */
+    public function isVoided(): bool
+    {
+        return $this->voided_at !== null;
+    }
+
     public function statusLabel(string $openWord = 'Waiting'): string
     {
+        if ($this->isVoided()) {
+            return 'Void';
+        }
+
         if (!$this->isOpen()) {
             return ucfirst(str_replace('_', ' ', $this->status));
         }

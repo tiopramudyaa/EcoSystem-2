@@ -19,7 +19,7 @@ class ReimbursementItem extends Model
 
     protected $fillable = [
         'reimbursement_request_id', 'line_no', 'description',
-        'cost_center_type', 'branch_id', 'delivery_project_id', 'cost_center_label',
+        'cost_center_type', 'branch_id', 'delivery_project_id', 'ticket_id', 'cost_center_label', 'fund_category',
         'receipt_no', 'receipt_date_from', 'receipt_date_to',
         'currency', 'amount',
     ];
@@ -27,6 +27,7 @@ class ReimbursementItem extends Model
     protected $casts = [
         'line_no'           => 'integer',
         'branch_id'         => 'integer',
+        'ticket_id'         => 'integer',
         'receipt_date_from' => 'date',
         'receipt_date_to'   => 'date',
         'amount'            => 'decimal:2',
@@ -38,23 +39,30 @@ class ReimbursementItem extends Model
     public const COST_CENTER_BRANCH = 'branch';
 
     /**
-     * Dibebankan ke proyek pelanggan.
-     *
-     * 🔴 BELUM DAPAT DIPILIH. Nilainya didaftarkan sejak awal supaya
-     * pengaktifannya nanti tidak memerlukan migrasi - pilihannya dinonaktifkan
-     * di UI (Keputusan D103, jawaban R1). Pola yang sama dengan
-     * ReimbursementApprovalStep::TYPE_DIRECT_MANAGER.
+     * Dibebankan ke proyek pelanggan. Hanya dapat dipilih bila konsep Object
+     * diaktifkan di pengaturan (lihat ObjectFlowSetting).
      */
     public const COST_CENTER_PROJECT = 'project';
+
+    /** Dibebankan ke tiket support. Hanya dapat dipilih bila konsep Object diaktifkan. */
+    public const COST_CENTER_SUPPORT = 'support';
 
     public const COST_CENTER_TYPES = [
         self::COST_CENTER_BRANCH,
         self::COST_CENTER_PROJECT,
+        self::COST_CENTER_SUPPORT,
     ];
 
-    /** Jenis yang benar-benar dapat dipilih hari ini. */
+    /** Jenis yang dapat dipilih saat konsep Object NONAKTIF (perilaku lama). */
     public const SELECTABLE_COST_CENTER_TYPES = [
         self::COST_CENTER_BRANCH,
+    ];
+
+    /** Nama Object di layar untuk tiap jenis: Branch tampil sebagai Office. */
+    public const OBJECT_LABELS = [
+        self::COST_CENTER_BRANCH  => 'Office',
+        self::COST_CENTER_PROJECT => 'Project',
+        self::COST_CENTER_SUPPORT => 'Support',
     ];
 
     // ── Relationships ───────────────────────────────────────────────────────
@@ -67,6 +75,16 @@ class ReimbursementItem extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class, 'branch_id', 'id');
+    }
+
+    public function ticket()
+    {
+        return $this->belongsTo(\App\Models\Ticket::class, 'ticket_id', 'ticket_id');
+    }
+
+    public function objectLabel(): string
+    {
+        return self::OBJECT_LABELS[$this->cost_center_type] ?? ucfirst((string) $this->cost_center_type);
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

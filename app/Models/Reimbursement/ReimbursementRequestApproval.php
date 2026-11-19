@@ -130,7 +130,14 @@ class ReimbursementRequestApproval extends Model
             if ($approver && (int) $approver->employee_id === $ids[0]) {
                 return $approver->fullNameLabel();
             }
-        }
+
+            // Langkah yang dibentuk dari Object tidak memakai kolom approver
+            // dokumen, jadi namanya dicari langsung.
+            $employee = Employee::with('basicData')->find($ids[0]);
+
+            if ($employee) {
+                return $employee->fullNameLabel();
+            }        }
 
         return count($ids) . ' selected employee(s)';
     }
