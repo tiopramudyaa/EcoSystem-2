@@ -7,6 +7,8 @@
       $branches       Collection [{id, label}]
       $settings       ReimbursementSetting
       $existingItems  Collection|array|null - baris yang sudah ada (form Edit)
+      $objectMode    bool - konsep Object aktif: kolom Branch menjadi Object (Office / Project / Support)
+      $projects       Collection [{id, label}] - hanya dipakai saat $objectMode
 
     🔴 NAMA FIELD MEMAKAI KUNCI ACAK: items[<key>][amount], BUKAN indeks
     berurutan. Dengan indeks berurutan, menghapus baris di tengah membuat
@@ -27,6 +29,9 @@
     mata uang.
 --}}
 @php
+    $objectMode = $objectMode ?? false;
+    $projects   = $projects ?? collect();
+
     // Sumber baris, berurutan: isian yang gagal validasi -> data yang sudah ada
     // -> satu baris kosong. Tanpa cabang pertama, isian pengguna hilang setiap
     // kali ada satu field yang salah.
@@ -37,6 +42,11 @@
             'row' . $i => [
                 'description'       => $item->description ?? '',
                 'branch_id'         => $item->branch_id ?? '',
+                'cost_center_type'  => $item->cost_center_type ?? 'branch',
+                'delivery_project_id' => $item->delivery_project_id ?? '',
+                'ticket_id'         => $item->ticket_id ?? '',
+                'ticket_label'      => ($item->cost_center_type ?? '') === 'support' ? ($item->cost_center_label ?? '') : '',
+                'fund_category'     => $item->fund_category ?? '',
                 'receipt_no'        => $item->receipt_no ?? '',
                 'receipt_date_from' => optional($item->receipt_date_from)->toDateString() ?? '',
                 'receipt_date_to'   => optional($item->receipt_date_to)->toDateString() ?? '',
@@ -72,7 +82,7 @@
                 <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     <th class="px-3 py-3">No</th>
                     <th class="px-3 py-3">Description &amp; Receipt Date</th>
-                    <th class="px-3 py-3">Branch</th>
+                    <th class="px-3 py-3">{{ $objectMode ? 'Object' : 'Branch' }}</th>
                     <th class="px-3 py-3">Receipt No.</th>
                     <th class="px-3 py-3 text-right">Amount (<span class="js-currency-code">IDR</span>)</th>
                     <th class="px-3 py-3"></th>
@@ -106,6 +116,12 @@
                     </td>
 
                     <td class="px-3 py-3">
+                        @if($objectMode)
+                            @include('hr-general.reimbursement.components.item-object-cell', ['key' => $key, 'row' => $row])
+                            @error("items.{$key}.cost_center_type")<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                            @error("items.{$key}.delivery_project_id")<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                            @error("items.{$key}.ticket_id")<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                        @else
                         <select name="items[{{ $key }}][branch_id]" required
                                 data-searchable="true" data-search-placeholder="Search branch…"
                                 class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-red-800">
@@ -116,6 +132,7 @@
                                 </option>
                             @endforeach
                         </select>
+                        @endif
                         @error("items.{$key}.branch_id")<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                     </td>
 
@@ -181,6 +198,9 @@
             <p class="text-xs text-gray-400 mt-1">Receipt date - leave the second date empty for a single-day receipt.</p>
         </td>
         <td class="px-3 py-3">
+            @if($objectMode)
+                @include('hr-general.reimbursement.components.item-object-cell', ['key' => '__KEY__', 'row' => []])
+            @else
             <select name="items[__KEY__][branch_id]" required
                     data-searchable="true" data-search-placeholder="Search branch…"
                     class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-red-800">
@@ -189,6 +209,7 @@
                     <option value="{{ $branch['id'] }}">{{ $branch['label'] }}</option>
                 @endforeach
             </select>
+            @endif
         </td>
         <td class="px-3 py-3">
             <input type="text" name="items[__KEY__][receipt_no]" maxlength="50" placeholder="No."

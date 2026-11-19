@@ -68,7 +68,7 @@
 
             <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Charged To</label>
-                <input type="text" value="Follows the branch chosen on the items" disabled
+                <input type="text" value="{{ ($objectMode ?? false) ? 'Follows the Object chosen on the items' : 'Follows the branch chosen on the items' }}" disabled
                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-400">
             </div>
         </div>
@@ -116,7 +116,11 @@
                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500">
             </div>
 
-            @include('hr-general.reimbursement.components.step-choices', ['choiceSteps' => $choiceSteps, 'fixedSteps' => $fixedSteps])
+            @if($objectMode ?? false)
+                @include('hr-general.reimbursement.components.object-preview')
+            @else
+                @include('hr-general.reimbursement.components.step-choices', ['choiceSteps' => $choiceSteps, 'fixedSteps' => $fixedSteps])
+            @endif
         </div>
 
         {{-- Aturan yang sedang berlaku. Ditampilkan apa adanya supaya pengguna

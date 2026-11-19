@@ -167,7 +167,11 @@
                         @error('employee_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                     </div>
 
-                    @include('hr-general.reimbursement.components.step-choices', ['choiceSteps' => $choiceSteps, 'fixedSteps' => $fixedSteps])
+                    @if($objectMode ?? false)
+                        @include('hr-general.reimbursement.components.object-preview')
+                    @else
+                        @include('hr-general.reimbursement.components.step-choices', ['choiceSteps' => $choiceSteps, 'fixedSteps' => $fixedSteps])
+                    @endif
                 @endif
             </div>
         </div>

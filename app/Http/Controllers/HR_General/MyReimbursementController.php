@@ -47,6 +47,9 @@ class MyReimbursementController extends Controller
         return view('hr-general.reimbursement.submit', [
             'settings' => $settings,
             'branches' => $reimbursement->branchOptions(),
+            'objectMode' => $reimbursement->objectMode(),
+            'projects'   => $reimbursement->objectMode() ? $reimbursement->projectOptions() : collect(),
+            'lookupBase' => url('/general/my-reimbursement/objects'),
             'steps'    => $reimbursement->activeSteps(),
             'choiceSteps' => $reimbursement->choiceSteps(),
             'fixedSteps'  => $reimbursement->fixedSteps(),
@@ -140,10 +143,13 @@ class MyReimbursementController extends Controller
             'currency'     => ['required', 'string', Rule::in(ReimbursementRequest::CURRENCIES)],
         ];
 
-        foreach ($reimbursement->activeSteps()->where('requester_selectable', true) as $step) {
-            $rules['step_approver.' . $step->id] = [
-                'required', 'integer', Rule::in($step->candidateEmployeeIds()),
-            ];
+        // Pada konsep Object pemohon tidak memilih penyetuju sama sekali.
+        if (!$reimbursement->objectMode()) {
+            foreach ($reimbursement->activeSteps()->where('requester_selectable', true) as $step) {
+                $rules['step_approver.' . $step->id] = [
+                    'required', 'integer', Rule::in($step->candidateEmployeeIds()),
+                ];
+            }
         }
 
         $rules['supporting_url'] = array_filter([
@@ -158,6 +164,9 @@ class MyReimbursementController extends Controller
             'step_approver.*.in'               => 'The chosen person is not one of the candidates of that step.',
             'items.required'                   => 'Add at least one reimbursement item.',
             'items.*.description.required'     => 'Every item needs a description.',
+            'items.*.branch_id.required_if' => 'Choose the office (branch) for every item charged to an office.',
+            'items.*.delivery_project_id.required_if' => 'Choose the project for every item charged to a project.',
+            'items.*.ticket_id.required_if' => 'Choose the support ticket for every item charged to support.',
             'items.*.branch_id.required'       => 'Every item needs a branch.',
             'items.*.receipt_no.required'      => 'Every item needs a receipt number.',
             'items.*.receipt_date_from.required' => 'Every item needs a receipt date.',

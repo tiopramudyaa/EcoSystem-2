@@ -30,6 +30,11 @@
         @include('hr-general.reimbursement.components.step-editor')
     @endif
 
+    {{-- Objects and funds (Project / Office / Support) - same slug as the rules. --}}
+    @if($can('general.settings.reimbursement'))
+        @include('hr-general.reimbursement.components.object-settings')
+    @endif
+
     {{-- Rules - shown only to holders of `general.settings.reimbursement`; saved by the same slug. --}}
     @if($can('general.settings.reimbursement'))
     <form method="POST" action="{{ route('general.reimbursement.settings.update') }}" class="bg-white rounded-xl p-6 shadow-sm space-y-7" data-unsaved-label="Reimbursement Rules">

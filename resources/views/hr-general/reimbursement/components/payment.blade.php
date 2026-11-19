@@ -5,6 +5,28 @@
     Uses: $request (ReimbursementRequest), optional $canPay, $canReversePayment, $payRoute, $reversePaymentRoute.
 --}}
 @php $payment = $request->paymentStatus(); @endphp
+
+{{-- Voided by Finance: the fund it used went back to its pool. --}}
+@if($request->isVoided())
+<div class="flex gap-3">
+    <dt class="w-32 shrink-0 text-gray-500">Void</dt>
+    <dd class="min-w-0">
+        <span class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700"><i class="fas fa-ban mr-1"></i>Void since {{ $request->voided_at->format('d M Y') }}</span>
+        <p class="text-xs text-gray-500 mt-1">{{ $request->void_reason }}</p>
+    </dd>
+</div>
+@endif
+
+@if(!empty($canVoid))
+<form method="POST" action="{{ $voidRoute }}" class="mt-1 flex flex-col sm:flex-row gap-2"
+      data-confirm="The document becomes Void and any fund it used goes back to the Object. This cannot be undone here." data-confirm-title="Void this reimbursement?" data-confirm-ok="Void" data-confirm-variant="danger">
+    @csrf
+    <input type="text" name="reason" required minlength="10" maxlength="255" placeholder="Why is it voided? (at least 10 characters)"
+           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800">
+    <button type="submit" class="px-4 py-2 border border-red-300 text-red-700 text-sm font-semibold rounded-lg hover:bg-red-50 whitespace-nowrap">Void document</button>
+</form>
+@endif
+
 @if($payment)
 <div class="flex gap-3">
     <dt class="w-32 shrink-0 text-gray-500">Payment</dt>

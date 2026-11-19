@@ -15,6 +15,178 @@
 
     if (!tbody || !template) return;
 
+    // ── Konsep Object: jenis, target, kategori, dan pratinjau penyetuju ─────
+    // Aktif hanya bila form merender sel Object. Satu kumpulan perilaku untuk
+    // form pengajuan, "New RB", dan Edit.
+    const lookupBase = @json($lookupBase ?? null);
+    const csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+    const preview = document.getElementById('objectPreview');
+    let previewTimer = null;
+
+    function json(url, options) {
+        return fetch(url, Object.assign({ headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }, options || {}))
+            .then(function (res) { return res.json(); });
+    }
+
+    function syncObjectRow(row) {
+        const cell = row.querySelector('.js-object-cell');
+        if (!cell) return;
+
+        const type = cell.querySelector('.js-object-type').value;
+
+        cell.querySelectorAll('[data-for]').forEach(function (box) {
+            const active = box.dataset.for === type;
+            box.hidden = !active;
+            // Hanya kontrol yang aktif dikirim dan divalidasi browser.
+            box.querySelectorAll('select, input').forEach(function (el) {
+                el.disabled = !active;
+                if (el.classList.contains('js-object-target')) el.required = active;
+            });
+        });
+
+        const category = cell.querySelector('.js-category');
+        const showCategory = type === 'project' || type === 'support';
+        category.disabled = !showCategory;
+        if (!showCategory) category.hidden = true;
+        if (showCategory) loadCategories(row);
+    }
+
+    function loadCategories(row) {
+        const cell = row.querySelector('.js-object-cell');
+        const type = cell.querySelector('.js-object-type').value;
+        const category = cell.querySelector('.js-category');
+        const ref = type === 'project'
+            ? (cell.querySelector('.js-project') || {}).value
+            : (cell.querySelector('.js-ticket-id') || {}).value;
+
+        if (!lookupBase || !ref) { category.hidden = true; return; }
+
+        json(lookupBase + '/categories?type=' + encodeURIComponent(type) + '&ref=' + encodeURIComponent(ref)).then(function (res) {
+            const names = (res && res.data) || [];
+            const wanted = category.value || category.dataset.selected || '';
+            category.innerHTML = '<option value="">- category -</option>' + names.map(function (n) {
+                return '<option value="' + String(n).replace(/"/g, '&quot;') + '">' + String(n).replace(/</g, '&lt;') + '</option>';
+            }).join('');
+            category.value = names.indexOf(wanted) !== -1 ? wanted : '';
+            category.hidden = names.length === 0;
+        }).catch(function () { category.hidden = true; });
+    }
+
+    function searchTickets(input) {
+        const row = input.closest('.js-item-row');
+        const hidden = row.querySelector('.js-ticket-id');
+        const list = row.querySelector('datalist');
+        const q = input.value.trim();
+
+        // Nomor yang cocok dengan salah satu hasil mengisi id tiket; selain itu id dikosongkan.
+        const match = Array.prototype.find.call(list.options, function (o) { return o.value === q; });
+        hidden.value = match ? match.dataset.id : '';
+        if (match) loadCategories(row);
+
+        if (q.length < 2 || !lookupBase) return;
+
+        json(lookupBase + '/tickets?q=' + encodeURIComponent(q)).then(function (res) {
+            list.innerHTML = ((res && res.data) || []).map(function (t) {
+                return '<option value="' + String(t.number).replace(/"/g, '&quot;') + '" data-id="' + t.id + '"></option>';
+            }).join('');
+            const again = Array.prototype.find.call(list.options, function (o) { return o.value === q; });
+            hidden.value = again ? again.dataset.id : '';
+            if (again) { loadCategories(row); queuePreview(); }
+        }).catch(function () {});
+    }
+
+    function collectItems() {
+        return Array.prototype.map.call(tbody.querySelectorAll('.js-item-row'), function (row) {
+            const get = function (suffix) {
+                const el = row.querySelector('[name$="[' + suffix + ']"]:not(:disabled)');
+                return el ? el.value : '';
+            };
+            return {
+                cost_center_type: get('cost_center_type'),
+                branch_id: get('branch_id'),
+                delivery_project_id: get('delivery_project_id'),
+                ticket_id: get('ticket_id'),
+                fund_category: get('fund_category'),
+                amount: get('amount'),
+            };
+        });
+    }
+
+    function queuePreview() {
+        if (!preview || !lookupBase) return;
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(runPreview, 450);
+    }
+
+    function runPreview() {
+        const items = collectItems().filter(function (r) {
+            return r.branch_id || r.delivery_project_id || r.ticket_id;
+        });
+        const stepsBox = preview.querySelector('[data-preview-steps]');
+        const noteBox = preview.querySelector('[data-preview-note]');
+        const reasonBox = document.getElementById('overAllocationBox');
+
+        if (items.length === 0) {
+            stepsBox.innerHTML = '<span class="text-gray-400">Choose an Object on each item to see who will review this document.</span>';
+            noteBox.textContent = '';
+            return;
+        }
+
+        const dateEl = document.querySelector('[name="request_date"]');
+        const empEl = document.querySelector('[name="employee_id"]');
+
+        json(lookupBase + '/preview', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ items: items, request_date: dateEl ? dateEl.value : '', employee_id: empEl ? empEl.value : '' }),
+        }).then(function (res) {
+            const d = (res && res.data) || {};
+            if (!d.enabled) return;
+
+            if (d.error) {
+                stepsBox.innerHTML = '<span class="text-red-700"></span>';
+                stepsBox.firstChild.textContent = d.error;
+            } else {
+                stepsBox.innerHTML = (d.steps || []).map(function (name, i) {
+                    const el = document.createElement('span');
+                    el.className = 'inline-flex items-center gap-1 px-2 py-1 rounded bg-white border border-gray-200 text-xs text-gray-700';
+                    el.textContent = (i + 1) + '. ' + name;
+                    return el.outerHTML;
+                }).join(' ');
+            }
+
+            const notes = (d.skipped || []).slice();
+            if (d.blocked) notes.push(d.blocked);
+            noteBox.textContent = notes.join(' ');
+            noteBox.className = 'text-xs mt-2 ' + (d.blocked ? 'text-red-700' : 'text-gray-500');
+
+            if (reasonBox) {
+                const keep = d.needs_reason || reasonBox.querySelector('textarea').value.trim() !== '';
+                reasonBox.hidden = !keep;
+                reasonBox.querySelector('textarea').required = !!d.needs_reason;
+            }
+        }).catch(function () {
+            stepsBox.innerHTML = '<span class="text-gray-400">The reviewer preview could not be loaded. You can still submit; reviewers are assigned when you submit.</span>';
+        });
+    }
+
+    tbody.addEventListener('change', function (event) {
+        const row = event.target.closest('.js-item-row');
+        if (!row || !row.querySelector('.js-object-cell')) return;
+
+        if (event.target.classList.contains('js-object-type')) syncObjectRow(row);
+        if (event.target.classList.contains('js-project')) loadCategories(row);
+        queuePreview();
+    });
+
+    tbody.addEventListener('input', function (event) {
+        if (event.target.classList.contains('js-ticket-input')) searchTickets(event.target);
+        if (event.target.classList.contains('js-amount')) queuePreview();
+    });
+
+    const dateField = document.querySelector('[name="request_date"]');
+    if (dateField) dateField.addEventListener('change', queuePreview);
+
     // Kunci acak, BUKAN indeks berurutan. Dengan indeks berurutan, menghapus
     // baris di tengah membuat nomornya bolong dan baris berikutnya tertimpa.
     function newKey() {
@@ -92,8 +264,10 @@
         row.dataset.key = key;
         tbody.appendChild(row);
 
+        syncObjectRow(row);
         renumber();
         recalcTotal();
+        queuePreview();
 
         const first = row.querySelector('input[type="text"]');
         if (first) first.focus();
@@ -112,6 +286,7 @@
         button.closest('.js-item-row').remove();
         renumber();
         recalcTotal();
+        queuePreview();
     });
 
     if (addButton) addButton.addEventListener('click', addRow);
@@ -124,7 +299,9 @@
     }
 
     syncCurrencyLabels();
+    tbody.querySelectorAll('.js-item-row').forEach(syncObjectRow);
     renumber();
     recalcTotal();
+    queuePreview();
 })();
 </script>

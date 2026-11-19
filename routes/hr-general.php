@@ -46,6 +46,8 @@ use App\Http\Controllers\HR_General\RecruitmentOfferController;
 use App\Http\Controllers\HR_General\RecruitmentSettingController;
 use App\Http\Controllers\HR_General\ReimbursementController;
 use App\Http\Controllers\HR_General\ReimbursementImportController;
+use App\Http\Controllers\HR_General\ReimbursementObjectLookupController;
+use App\Http\Controllers\HR_General\ReimbursementObjectSettingController;
 use App\Http\Controllers\HR_General\ReimbursementSettingController;
 use App\Http\Controllers\HR_General\ShiftController;
 use App\Http\Middleware\CheckAuthToken;
@@ -381,6 +383,11 @@ Route::prefix('general')
                 Route::get('/create', [MyReimbursementController::class, 'create'])->name('create');
                 Route::post('/', [MyReimbursementController::class, 'store'])->name('store');
 
+                // Pembantu form konsep Object (hanya membaca). Statis: sebelum /{reimbursementRequest}.
+                Route::get('/objects/tickets', [ReimbursementObjectLookupController::class, 'tickets'])->name('objects.tickets');
+                Route::get('/objects/categories', [ReimbursementObjectLookupController::class, 'categories'])->name('objects.categories');
+                Route::post('/objects/preview', [ReimbursementObjectLookupController::class, 'preview'])->name('objects.preview');
+
                 // Didaftarkan SESUDAH /create agar tidak menangkapnya sebagai id.
                 Route::get('/{reimbursementRequest}', [MyReimbursementController::class, 'show'])->name('show');
                 Route::get('/{reimbursementRequest}/print', [MyReimbursementController::class, 'print'])->name('print');
@@ -645,6 +652,14 @@ Route::prefix('general')
                 Route::post('/update', [ReimbursementSettingController::class, 'update'])
                     ->name('update')
                     ->middleware('menu:general.settings.reimbursement');
+
+                // Konsep Object: alur, dana per cabang, alokasi. Slug yang sama dengan aturan.
+                Route::middleware('menu:general.settings.reimbursement')->group(function () {
+                    Route::post('/objects/flow', [ReimbursementObjectSettingController::class, 'updateFlow'])->name('objects.flow');
+                    Route::post('/objects/offices', [ReimbursementObjectSettingController::class, 'syncOffices'])->name('objects.offices');
+                    Route::post('/objects/pools', [ReimbursementObjectSettingController::class, 'storePool'])->name('objects.pools.store');
+                    Route::post('/objects/pools/{pool}', [ReimbursementObjectSettingController::class, 'updatePool'])->name('objects.pools.update');
+                });
             });
 
         // 🔴 D180 - sama seperti Overtime di atas: rute langkah dipisah, dijaga
@@ -727,6 +742,11 @@ Route::prefix('general')
             Route::middleware('menu:general.reimbursement.create')->group(function () {
                 Route::get('/create', [ReimbursementController::class, 'create'])->name('create');
                 Route::post('/', [ReimbursementController::class, 'store'])->name('store');
+
+                // Pembantu form konsep Object (hanya membaca).
+                Route::get('/objects/tickets', [ReimbursementObjectLookupController::class, 'tickets'])->name('objects.tickets');
+                Route::get('/objects/categories', [ReimbursementObjectLookupController::class, 'categories'])->name('objects.categories');
+                Route::post('/objects/preview', [ReimbursementObjectLookupController::class, 'preview'])->name('objects.preview');
             });
 
             Route::get('/export', [ReimbursementController::class, 'export'])
@@ -774,6 +794,8 @@ Route::prefix('general')
             Route::middleware('menu:general.reimbursement.pay')->group(function () {
                 Route::post('/{reimbursementRequest}/pay', [ReimbursementController::class, 'pay'])->name('pay');
                 Route::post('/{reimbursementRequest}/pay/reverse', [ReimbursementController::class, 'reversePayment'])->name('pay.reverse');
+                // Void an approved document: Finance only (same slug as paying). The fund goes back to its pool.
+                Route::post('/{reimbursementRequest}/void', [ReimbursementController::class, 'void'])->name('void');
             });
 
             // Mengubah dokumen: gerbang rute hanya setingkat HALAMAN, karena ada

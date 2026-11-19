@@ -300,10 +300,9 @@ class ReimbursementRequest extends Model
     /** 'awaiting' | 'paid' | null (not approved → payment does not apply). */
     public function paymentStatus(): ?string
     {
-        if ($this->status !== self::STATUS_APPROVED) {
+        if ($this->status !== self::STATUS_APPROVED || $this->isVoided()) {
             return null;
         }
-
         return $this->paid_at !== null ? self::PAYMENT_PAID : self::PAYMENT_AWAITING;
     }
 

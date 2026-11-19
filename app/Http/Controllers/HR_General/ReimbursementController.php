@@ -302,6 +302,10 @@ class ReimbursementController extends Controller
             // Payment: Finance records it after approval (slug `general.reimbursement.pay`); the same box reverses a mistake.
             'canPay'      => $this->can('general.reimbursement.pay') && $reimbursementRequest->isPayable(),
             'canReversePayment' => $this->can('general.reimbursement.pay') && $reimbursementRequest->isPaid() && !$reimbursementRequest->trashed(),
+            // Void: only an approved, unpaid, not-yet-voided document, by the same permission as paying.
+            'canVoid'     => $this->can('general.reimbursement.pay') && $reimbursementRequest->status === ReimbursementRequest::STATUS_APPROVED
+                && !$reimbursementRequest->isVoided() && !$reimbursementRequest->isPaid() && !$reimbursementRequest->trashed(),
+            'voidRoute'   => route('general.reimbursement.void', $reimbursementRequest),
             // The payroll engine can add an approved reimbursement to a payslip (Payroll Settings → include reimbursement). Paying it
             // here as well would pay it twice, so the payment form says so.
             'inPayroll'   => \Illuminate\Support\Facades\DB::table('payroll_slip_items as i')
@@ -338,6 +342,21 @@ class ReimbursementController extends Controller
 
         return $result['allowed']
             ? back()->with('success', 'Payment reversed - the document is awaiting payment again.')
+            : back()->with('error', $result['reason']);
+    }
+
+    /** Void an approved reimbursement (Finance, pay permission). The fund goes back to its pool; the reason is required. */
+    public function void(Request $request, ReimbursementRequest $reimbursementRequest, ReimbursementService $reimbursement)
+    {
+        $data = $request->validate(
+            ['reason' => ['required', 'string', 'min:10', 'max:255']],
+            ['reason.required' => 'Say why the document is voided.', 'reason.min' => 'Say why the document is voided (at least 10 characters).']
+        );
+
+        $result = $reimbursement->voidApproved($reimbursementRequest, (int) session('user.id'), $data['reason']);
+
+        return $result['allowed']
+            ? back()->with('success', 'Reimbursement ' . $reimbursementRequest->request_no . ' voided. Any fund it used was returned.')
             : back()->with('error', $result['reason']);
     }
 
@@ -404,6 +423,9 @@ class ReimbursementController extends Controller
             'request'   => null,
             'settings'  => $settings,
             'branches'  => $reimbursement->branchOptions(),
+            'objectMode' => $reimbursement->objectMode(),
+            'projects'   => $reimbursement->objectMode() ? $reimbursement->projectOptions() : collect(),
+            'lookupBase' => url('/general/reimbursement/objects'),
             'steps'     => $reimbursement->activeSteps(),
 
             // Semua karyawan aktif dapat menjadi pemohon. Orang pada langkah
@@ -460,6 +482,9 @@ class ReimbursementController extends Controller
             'request'   => $reimbursementRequest,
             'settings'  => ReimbursementSetting::current(),
             'branches'  => $reimbursement->branchOptions(),
+            'objectMode' => $reimbursementRequest->hasFlag(ReimbursementRequest::FLAG_OBJECT_FLOW),
+            'projects'   => $reimbursementRequest->hasFlag(ReimbursementRequest::FLAG_OBJECT_FLOW) ? $reimbursement->projectOptions() : collect(),
+            'lookupBase' => url('/general/reimbursement/objects'),
             'steps'     => $reimbursement->activeSteps(),
             'signatories' => $reimbursement->signatories($reimbursementRequest),
             'currencies' => ReimbursementRequest::CURRENCIES,
@@ -482,7 +507,7 @@ class ReimbursementController extends Controller
                 ->with('error', $this->editRefusalReason($reimbursementRequest));
         }
 
-        $data = $this->validateDocument($request, $reimbursement, false);
+        $data = $this->validateDocument($request, $reimbursement, false, $reimbursementRequest->hasFlag(ReimbursementRequest::FLAG_OBJECT_FLOW));
 
         $result = $reimbursement->update($reimbursementRequest, $data, (int) session('user.id'));
 
@@ -590,12 +615,12 @@ class ReimbursementController extends Controller
      * pengajuan mandiri, New RB, dan Edit - menilai isi dokumen dengan aturan
      * yang persis sama.
      */
-    private function validateDocument(Request $request, ReimbursementService $reimbursement, bool $needsEmployee): array
+    private function validateDocument(Request $request, ReimbursementService $reimbursement, bool $needsEmployee, ?bool $objectMode = null): array
     {
         $settings = ReimbursementSetting::current();
         $minTitle = $settings->require_title_min_chars;
 
-        $rules = $reimbursement->itemRules($settings, $request->all()) + [
+        $rules = $reimbursement->itemRules($settings, $request->all(), $objectMode) + [
             'request_date' => ['required', 'date'],
             'title'        => ['required', 'string', 'min:' . $minTitle, 'max:200'],
             'supporting_url' => array_filter([
@@ -609,10 +634,12 @@ class ReimbursementController extends Controller
             $rules['employee_id'] = ['required', 'integer', 'exists:employee,employee_id'];
             $rules['currency']    = ['required', 'string', Rule::in(ReimbursementRequest::CURRENCIES)];
 
-            foreach ($reimbursement->activeSteps()->where('requester_selectable', true) as $step) {
-                $rules['step_approver.' . $step->id] = [
-                    'required', 'integer', Rule::in($step->candidateEmployeeIds()),
-                ];
+            if (!$reimbursement->objectMode()) {
+                foreach ($reimbursement->activeSteps()->where('requester_selectable', true) as $step) {
+                    $rules['step_approver.' . $step->id] = [
+                        'required', 'integer', Rule::in($step->candidateEmployeeIds()),
+                    ];
+                }
             }
         }
 
@@ -622,6 +649,9 @@ class ReimbursementController extends Controller
             'step_approver.*.in'           => 'The chosen person is not one of the candidates of that step.',
             'items.required'               => 'Add at least one reimbursement item.',
             'items.*.description.required' => 'Every item needs a description.',
+            'items.*.branch_id.required_if' => 'Choose the office (branch) for every item charged to an office.',
+            'items.*.delivery_project_id.required_if' => 'Choose the project for every item charged to a project.',
+            'items.*.ticket_id.required_if' => 'Choose the support ticket for every item charged to support.',
             'items.*.branch_id.required'   => 'Every item needs a branch.',
             'items.*.amount.min'           => 'Item amounts must be greater than zero.',
             'items.*.amount.max' => 'An item amount cannot be more than Rp 99.999.999.999.999.',

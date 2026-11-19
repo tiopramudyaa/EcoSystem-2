@@ -76,6 +76,30 @@ class ReimbursementSettingController extends Controller
                 ->map(fn ($rows) => $rows->pluck('employee_id')->map(fn ($id) => (int) $id)->unique()->values()->all())
                 ->all(),
 
+            // Konsep Object: alur, dana per cabang, dan alokasi project atau tiket.
+            'objectFlow'    => \App\Models\ObjectFund\ObjectFlowSetting::current(),
+            'officeRows'    => \App\Models\Attendance\Branch::active()->orderBy('name')->get(['id', 'code', 'name'])
+                ->map(function ($branch) {
+                    $row = \App\Models\ObjectFund\OfficeSetting::where('branch_id', $branch->id)->first();
+
+                    return [
+                        'branch_id'            => (int) $branch->id,
+                        'label'                => $branch->code . ' - ' . $branch->name,
+                        'fund_active'          => (bool) ($row?->fund_active),
+                        'monthly_amount'       => (float) ($row?->monthly_amount ?? 0),
+                        'approver_role_id'     => $row?->approver_role_id,
+                        'approver_employee_id' => $row?->approver_employee_id,
+                    ];
+                }),
+            'fundPools'     => \App\Models\ObjectFund\FundPool::whereIn('object_type', ['project', 'support'])
+                ->orderBy('object_type')->orderBy('ref_label')->orderBy('category')->get()
+                ->map(function ($pool) {
+                    $balance = app(\App\Services\ObjectFund\FundService::class)->balance($pool);
+
+                    return ['pool' => $pool, 'balance' => $balance];
+                }),
+            'projectOptions' => $reimbursement->projectOptions(),
+
             // Hanya karyawan aktif, dan hanya kolom yang benar-benar dipakai -
             // 209 baris berisi seluruh kolom membuat halaman berat tanpa manfaat.
             // Nama LENGKAP (first_name + last_name), bukan nama panggilan.

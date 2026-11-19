@@ -60,7 +60,7 @@
                     <dt class="w-32 shrink-0 text-gray-500">Status</dt>
                     <dd>
                         @php
-                            $badge = match($request->status) {
+                            $badge = $request->isVoided() ? 'bg-red-100 text-red-700' : match($request->status) {
                                 'approved'  => 'bg-green-100 text-green-700',
                                 'rejected'  => 'bg-red-100 text-red-700',
                                 'in_review' => 'bg-blue-100 text-blue-700',
@@ -72,6 +72,13 @@
                         </span>
                     </dd>
                 </div>
+
+                @if($request->over_allocation_reason)
+                <div class="flex gap-3">
+                    <dt class="w-32 shrink-0 text-gray-500">Over fund</dt>
+                    <dd class="min-w-0 text-gray-700"><span class="block text-xs font-semibold text-amber-700 uppercase">Reason given by the requester</span>{{ $request->over_allocation_reason }}</dd>
+                </div>
+                @endif
 
                 @include('hr-general.reimbursement.components.payment')
 
@@ -212,7 +219,10 @@
                     <tr class="align-top">
                         <td class="px-4 py-3 text-gray-400">{{ $item->line_no }}</td>
                         <td class="px-4 py-3">
-                            <div class="text-gray-900">{{ $item->cost_center_label ?? '-' }}</div>
+                            <div class="text-gray-900">
+                                @if($request->hasFlag('object_flow'))<span class="text-xs font-semibold text-gray-500 uppercase">{{ $item->objectLabel() }}</span> @endif{{ $item->cost_center_label ?? '-' }}
+                                @if($item->fund_category)<span class="block text-xs text-gray-400">{{ $item->fund_category }}</span>@endif
+                            </div>
                             <div class="text-xs text-gray-400">Receipt No.: {{ $item->receipt_no ?? '-' }}</div>
                         </td>
                         <td class="px-4 py-3 text-gray-700">{{ $item->description }}</td>

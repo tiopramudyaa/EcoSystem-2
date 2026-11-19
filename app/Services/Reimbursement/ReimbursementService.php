@@ -272,15 +272,28 @@ class ReimbursementService
 
         $settings = ReimbursementSetting::current();
         $currency = $this->resolveCurrency($request->currency);
-        $items    = $this->normaliseItems($payload['items'] ?? [], $currency);
+        $objectDoc = $request->hasFlag(ReimbursementRequest::FLAG_OBJECT_FLOW);
+        $items    = $this->normaliseItems($payload['items'] ?? [], $currency, $objectDoc);
 
         $gate = $this->checkItemRules($items, $settings);
         if (!$gate['allowed']) {
             return $gate;
         }
 
+        if ($objectDoc) {
+            $gate = $this->checkObjectItems($items);
+            if (!$gate['allowed']) {
+                return $gate;
+            }
+        }
+
         $evaluated = $this->totals->evaluate($items, $this->rulesFrom($settings, $payload, $currency));
 
+        if ($objectDoc) {
+            $obj = $this->totals->chargedToObjects($items);
+            $evaluated['charged_branch_id'] = $obj['branch_id'];
+            $evaluated['charged_to_label']  = $obj['label'];
+        }
         $previousTotal = (float) $request->total_amount;
 
         DB::transaction(function () use ($request, $payload, $items, $evaluated, $previousTotal, $actorId) {
@@ -292,6 +305,7 @@ class ReimbursementService
                 ReimbursementRequest::FLAG_CREATED_ON_BEHALF,
                 ReimbursementRequest::FLAG_SELF_APPROVED,
                 ReimbursementRequest::FLAG_LOCKED_PERIOD,
+                ReimbursementRequest::FLAG_OBJECT_FLOW,
             ] as $sticky) {
                 if ($request->hasFlag($sticky)) {
                     $flags[] = $sticky;
@@ -837,12 +851,28 @@ class ReimbursementService
      * @param  array  $input  Seluruh masukan, dipakai closure mencari field sebelah.
      * @return array<string, array>
      */
-    public function itemRules(ReimbursementSetting $settings, array $input): array
+    public function itemRules(ReimbursementSetting $settings, array $input, ?bool $objectMode = null): array
     {
-        return [
+        // Konsep Object: tiap baris memilih Office / Project / Support. Hanya
+        // target sesuai jenisnya yang wajib; yang lain tidak dikirim.
+        // Dokumen lama (tanpa flag object_flow) tetap diedit dengan aturan lama.
+        $objectMode ??= (bool) ObjectFlowSetting::current()->enabled;
+        $target = $objectMode
+            ? [
+                'items.*.cost_center_type'    => ['required', 'string', \Illuminate\Validation\Rule::in(ReimbursementItem::COST_CENTER_TYPES)],
+                'items.*.branch_id'           => ['required_if:items.*.cost_center_type,branch', 'nullable', 'integer', 'exists:branches,id'],
+                'items.*.delivery_project_id' => ['required_if:items.*.cost_center_type,project', 'nullable', 'integer', 'exists:delivery_projects,id'],
+                'items.*.ticket_id'           => ['required_if:items.*.cost_center_type,support', 'nullable', 'integer', 'exists:ticket,ticket_id'],
+                'items.*.fund_category'       => ['nullable', 'string', 'max:60'],
+                'over_allocation_reason'      => ['nullable', 'string', 'max:500'],
+            ]
+            : [
+                'items.*.branch_id'           => ['required', 'integer', 'exists:branches,id'],
+            ];
+
+        return $target + [
             'items'                     => ['required', 'array', 'min:1'],
             'items.*.description'       => ['required', 'string', 'max:200'],
-            'items.*.branch_id'         => ['required', 'integer', 'exists:branches,id'],
             'items.*.receipt_no'        => $settings->require_receipt_no
                                             ? ['required', 'string', 'max:50']
                                             : ['nullable', 'string', 'max:50'],
@@ -1113,6 +1143,24 @@ class ReimbursementService
      *
      * @return Collection<int, array{id: int, label: string}>
      */
+    /** Konsep Object aktif? Dipakai form untuk memilih tampilan. */
+    public function objectMode(): bool
+    {
+        return (bool) ObjectFlowSetting::current()->enabled;
+    }
+
+    /** Project yang masih berjalan, untuk pilihan Object bertipe Project. */
+    public function projectOptions(): Collection
+    {
+        return \App\Models\DeliveryProject::where('is_closed', 0)
+            ->orderBy('name')
+            ->get(['id', 'io_number', 'name'])
+            ->map(fn ($p) => [
+                'id'    => (int) $p->id,
+                'label' => trim(($p->io_number ? $p->io_number . ' - ' : '') . $p->name),
+            ]);
+    }
+
     public function branchOptions(): Collection
     {
         return Branch::active()
