@@ -211,3 +211,28 @@ diagrams.tracker = () => {
   b += text(24, 352, 'Titik merah: melebihi alokasi (kebijakan Warn) lalu dikembalikan lewat void. Nilai akhir yang diharapkan: 6,6 juta.', { size: 11.5, fill: MUTED });
   return svg(760, 372, b);
 };
+
+// 8. Budget check panel (approver side)
+diagrams.budget = () => {
+  const edges = [300, 380, 452, 566, 714];
+  const heads = ['ALLOCATION', 'APPROVED', 'WAITING', 'THIS DOCUMENT', 'AFTER THIS DOCUMENT'];
+  let b = text(24, 28, 'Panel Budget check yang dilihat penyetuju', { size: 16, weight: 700 });
+  b += box(24, 44, 712, 300, { stroke: LINE });
+  b += text(44, 74, 'Budget check', { size: 16, weight: 700 });
+  b += text(44, 94, 'What is left of the fund if you approve this reimbursement.', { size: 11.5, fill: MUTED });
+  b += box(596, 58, 120, 26, { rx: 13, fill: C.okBg, stroke: C.ok }) + text(656, 76, 'Within the fund', { size: 11.5, weight: 700, fill: C.ok, anchor: 'middle' });
+  b += '<rect x="40" y="110" width="680" height="30" rx="6" fill="#f1f3f6"/>';
+  b += text(52, 130, 'FUND', { size: 10, weight: 700, fill: MUTED });
+  heads.forEach((t, i) => { b += text(edges[i], 130, t, { size: 10, weight: 700, fill: MUTED, anchor: 'end' }); });
+  b += text(52, 162, 'Demo ERP Alpha, Transport', { size: 12.5, weight: 700 }) + text(52, 178, 'Project', { size: 11, fill: MUTED });
+  ['10.000.000', '0', '0', '2.500.000', '7.500.000'].forEach((t, i) => { b += text(edges[i], 168, t, { size: 12.5, anchor: 'end', weight: i >= 3 ? 700 : 400 }); });
+  b += '<line x1="40" x2="720" y1="190" y2="190" stroke="#e3e7ed"/>';
+  b += text(52, 218, 'DEMO-T-0001, Transport', { size: 12.5, weight: 700 }) + text(52, 234, 'Support', { size: 11, fill: MUTED });
+  ['1.500.000', '600.000', '0', '1.900.000', '-1.000.000'].forEach((t, i) => { b += text(edges[i], 224, t, { size: 12.5, anchor: 'end', weight: i >= 3 ? 700 : 400, fill: i === 4 ? C.bad : INK }); });
+  b += text(714, 241, 'Over the fund. The requester gave a reason.', { size: 10.5, anchor: 'end', fill: C.bad });
+  b += '<line x1="40" x2="720" y1="250" y2="250" stroke="#e3e7ed"/>';
+  b += text(52, 274, 'DEMO-BDG - Demo Bandung (Office) has no fund set, so its budget is not checked.', { size: 11.5, fill: MUTED });
+  b += text(52, 304, 'Approved = dokumen lain yang sudah disetujui.  Waiting = dokumen lain yang masih menunggu (informasi, belum mengurangi).', { size: 10.5, fill: MUTED });
+  b += text(52, 322, 'Pada kebijakan Block, baris merah berarti persetujuan terakhir akan ditolak.', { size: 10.5, fill: MUTED });
+  return svg(760, 366, b);
+};

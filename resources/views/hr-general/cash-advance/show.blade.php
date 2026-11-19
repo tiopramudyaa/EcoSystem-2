@@ -271,6 +271,8 @@
             </div>
             @endif
 
+            @include('hr-general.partials.fund-panel', ['fundRows' => $fundRows ?? [], 'docWord' => 'cash advance'])
+
             {{-- ── Approval Timeline ───────────────────────────────────── --}}
             <div class="bg-white rounded-xl p-6 shadow-sm">
                 <h2 class="text-sm font-bold text-gray-900 mb-4">Approval Timeline</h2>

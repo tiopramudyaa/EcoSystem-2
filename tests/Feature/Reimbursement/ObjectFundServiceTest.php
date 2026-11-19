@@ -119,6 +119,17 @@ class ObjectFundServiceTest extends TestCase
             $t->softDeletes();
         });
 
+        Schema::create('object_flow_settings', function (Blueprint $t) {
+            $t->id();
+            $t->boolean('enabled')->default(false);
+            $t->boolean('cash_advance_enabled')->default(false);
+            $t->string('policy_project', 5)->default('warn');
+            $t->string('policy_office', 5)->default('warn');
+            $t->string('policy_support', 5)->default('warn');
+            $t->timestamps();
+        });
+        \App\Models\ObjectFund\ObjectFlowSetting::forgetCache();
+
         $this->funds = new FundService();
     }
 
@@ -369,5 +380,76 @@ class ObjectFundServiceTest extends TestCase
 
         $this->assertStringContainsString('remaining fund changed', (string) $this->funds->recheckAdvanceForApproval($second, $this->settings('block')));
         $this->assertNull($this->funds->recheckAdvanceForApproval($second, $this->settings('warn')));
+    }
+    // ── Ringkasan dana untuk penyetuju ──────────────────────────────────────
+
+    public function test_the_summary_shows_what_is_left_if_a_waiting_document_is_approved(): void
+    {
+        $this->projectPool(1000000);
+        $other = $this->document([$this->item(300000)]);
+        $other->update(['status' => 'submitted']);
+        $mine = $this->document([$this->item(800000)]);
+        $mine->update(['status' => 'submitted']);
+
+        $rows = $this->funds->summaryForReimbursement($mine->fresh('items'));
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('fund', $rows[0]['kind']);
+        $this->assertEquals(1000000.0, $rows[0]['allocation']);
+        $this->assertEquals(0.0, $rows[0]['used']);
+        $this->assertEquals(300000.0, $rows[0]['pending_others']);
+        $this->assertEquals(800000.0, $rows[0]['this_document']);
+        $this->assertEquals(200000.0, $rows[0]['remaining_after']);
+        $this->assertFalse($rows[0]['over']);
+        $this->assertSame('waiting', $rows[0]['state']);
+    }
+
+    public function test_the_summary_flags_a_document_that_goes_over_the_fund(): void
+    {
+        $this->projectPool(500000);
+        $doc = $this->document([$this->item(800000)]);
+        $doc->update(['status' => 'submitted']);
+
+        $rows = $this->funds->summaryForReimbursement($doc->fresh('items'));
+
+        $this->assertEquals(-300000.0, $rows[0]['remaining_after']);
+        $this->assertTrue($rows[0]['over']);
+    }
+
+    public function test_the_summary_of_an_approved_document_shows_the_fund_as_it_is(): void
+    {
+        $this->projectPool(1000000);
+        $doc = $this->document([$this->item(800000)]);
+        $this->funds->commit($doc, 9);
+
+        $rows = $this->funds->summaryForReimbursement($doc->fresh('items'));
+
+        $this->assertSame('approved', $rows[0]['state']);
+        $this->assertEquals(0.0, $rows[0]['used'], 'this document is not counted as used by others');
+        $this->assertEquals(800000.0, $rows[0]['this_document']);
+        $this->assertEquals(200000.0, $rows[0]['remaining_now']);
+        $this->assertEquals(200000.0, $rows[0]['remaining_after']);
+    }
+
+    public function test_the_summary_names_objects_without_a_fund(): void
+    {
+        $doc = $this->document([['cost_center_type' => 'project', 'delivery_project_id' => 99, 'cost_center_label' => 'DEMO-002 - Mobile Beta', 'amount' => 100000]]);
+        $doc->update(['status' => 'submitted']);
+
+        $rows = $this->funds->summaryForReimbursement($doc->fresh('items'));
+
+        $this->assertSame('nofund', $rows[0]['kind']);
+        $this->assertSame('DEMO-002 - Mobile Beta', $rows[0]['label']);
+    }
+
+    public function test_the_summary_of_a_cash_advance_uses_its_amount(): void
+    {
+        $this->projectPool(1000000);
+        $advance = $this->advance(400000, 'submitted');
+
+        $rows = $this->funds->summaryForCashAdvance($advance);
+
+        $this->assertEquals(600000.0, $rows[0]['remaining_after']);
+        $this->assertEquals(400000.0, $rows[0]['this_document']);
     }
 }

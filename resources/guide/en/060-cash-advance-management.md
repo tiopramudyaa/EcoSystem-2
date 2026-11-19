@@ -71,6 +71,7 @@ Each approved CA has a reporting deadline. A report filed after the due day is f
 - Approvers are assigned automatically when the cash advance is submitted and do not change afterwards. They come first, as `Verificator` steps, followed by the steps in `Approval Workflow`. The same person is asked only once, and a requester who is also an approver skips that step.
 - Submitting is refused, with the reason, when the project is closed, a required approver is no longer active, a project or ticket has no approver and no fallback is set, or an office has no responsible person.
 - The fund decreases by the advance amount only when the cash advance is fully approved. Just before the last approval the remaining fund is checked again.
+- The cash advance page shows a `Budget check` panel for the reviewer: the fund, what is already approved, what is waiting, this cash advance and what is left after it. The requester does not see it.
 - With `Warn`, an amount above the remaining fund can still be submitted with a reason of at least 10 characters, and the cash advance is marked `Over fund allocation`. With `Block` it is refused.
 - The report of a cash advance is reviewed by the same Object approvers, followed by the report approval steps. The requester does not choose them.
 - When the report is approved and the cash advance is settled, the fund changes to the amount actually spent. If less was spent, the difference goes back to the fund. If more was spent, the fund goes down by the extra and can end below zero, which is marked `Over fund allocation`.

@@ -148,6 +148,8 @@
         </div>
         @endif
 
+        @include('hr-general.partials.fund-panel', ['fundRows' => $fundRows ?? [], 'docWord' => 'reimbursement'])
+
         <div class="bg-white rounded-xl p-6 shadow-sm">
             <h2 class="text-lg font-bold text-gray-900 mb-4 pb-3 border-b border-gray-100">Approval Trail</h2>
 

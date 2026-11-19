@@ -71,6 +71,7 @@ Setiap CA yang disetujui memiliki batas waktu pelaporan. Laporan yang dikirim se
 - Penyetuju ditetapkan otomatis saat cash advance diajukan dan tidak berubah sesudahnya. Mereka berjalan lebih dulu sebagai langkah `Verificator`, disusul langkah di `Approval Workflow`. Orang yang sama hanya diminta sekali, dan pemohon yang juga penyetuju melewati langkah itu.
 - Pengajuan ditolak beserta alasannya bila project sudah ditutup, penyetuju yang dibutuhkan sudah tidak aktif, project atau tiket tidak punya penyetuju dan tidak ada pengganti, atau office belum punya penanggung jawab.
 - Dana berkurang sebesar nominal uang muka hanya saat cash advance disetujui sepenuhnya. Tepat sebelum persetujuan terakhir sisa dana diperiksa ulang.
+- Halaman cash advance menampilkan panel `Budget check` untuk penyetuju: dana, yang sudah disetujui, yang menunggu, cash advance ini, dan sisa setelahnya. Pemohon tidak melihatnya.
 - Dengan `Warn`, nominal di atas sisa dana tetap bisa diajukan dengan alasan minimal 10 karakter, dan cash advance ditandai `Over fund allocation`. Dengan `Block` pengajuan ditolak.
 - Laporan sebuah cash advance diperiksa oleh penyetuju Object yang sama, disusul langkah persetujuan laporan. Pemohon tidak memilihnya.
 - Saat laporan disetujui dan cash advance berstatus settled, dana berubah menjadi nominal yang sungguh dibelanjakan. Bila lebih sedikit, selisihnya kembali ke dana. Bila lebih banyak, dana berkurang sebesar kelebihannya dan dapat berakhir di bawah nol, yang ditandai `Over fund allocation`.

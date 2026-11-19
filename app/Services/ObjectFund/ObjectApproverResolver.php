@@ -188,7 +188,9 @@ class ObjectApproverResolver
     private function officeSteps(int $branchId): array
     {
         $setting = OfficeSetting::with('branch')->where('branch_id', $branchId)->first();
-        $name    = $setting?->branch?->name ?? ('#' . $branchId);
+        $name    = $setting?->branch?->name
+            ?? \App\Models\Attendance\Branch::withTrashed()->find($branchId)?->name
+            ?? ('#' . $branchId);
 
         if (!$setting || (!$setting->approver_employee_id && !$setting->approver_role_id)) {
             throw new \DomainException('Branch "' . $name . '" has no responsible person yet. Ask Finance to set one in Reimbursement Settings, then submit again.');

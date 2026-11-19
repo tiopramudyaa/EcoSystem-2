@@ -289,6 +289,10 @@ class ReimbursementController extends Controller
 
             // Tombol berikut hanya dirender bila pemegang slugnya. Dokumen yang
             // sudah terhapus tidak menawarkan ubah maupun hapus lagi.
+            // Keadaan dana untuk penyetuju: hanya dokumen dengan konsep Object.
+            'fundRows'    => $reimbursementRequest->hasFlag(ReimbursementRequest::FLAG_OBJECT_FLOW)
+                ? app(\App\Services\ObjectFund\FundService::class)->summaryForReimbursement($reimbursementRequest)
+                : [],
             'editRoute'   => $this->canEditDocument($reimbursementRequest, $reimbursement)
                 ? route('general.reimbursement.edit', $reimbursementRequest)
                 : null,

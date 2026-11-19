@@ -84,8 +84,9 @@ Each reimbursement item is charged to an Object: an `Office`, a `Project`, or a 
 - The Object concept applies only to documents submitted while `Use Objects and funds for new reimbursements` is on. Documents already submitted keep their flow.
 - Approvers are assigned automatically when the document is submitted and do not change afterwards. Project items go to the `Project Admin` and `Project Manager`, support items to the `Ticket Lead` (and the `Support Manager` if turned on), and office items to the office's responsible person. These steps come first, followed by the steps in `Approval Workflow`.
 - The same person is asked only once, even if they appear on several items. A requester who is also an approver skips that step, and the skip is recorded.
-- Submitting is refused, with the reason, when a project is closed, a required approver is no longer active, a project or ticket has no approver and no fallback is set, or an office has no responsible person.
+- Submitting is refused, with the reason, when a project is closed, an approver is no longer active, a project or ticket has no approver and no fallback, or an office has no responsible person.
 - A fund decreases only when the document is fully approved, not when it is submitted. Documents still waiting do not reduce it.
+- A document that uses Objects shows a `Budget check` panel with `Allocation`, `Approved`, `Waiting`, `This document` and `After this document`, so you see what is left if you approve. Red means below zero (`Over the fund`), and under `Block` the last approval is refused. The requester does not see it.
 - Remaining fund = allocation minus approved documents. Just before the last approval the remaining fund is checked again, because another document may have been approved first.
 - An Object without a fund is not checked: an office with `Fund active` off, or a project or ticket without an allocation. It still goes through approval.
 - Office funds are monthly and follow the date of the document. Project and ticket allocations have no end date. An allocation with no category covers every category that has no allocation of its own.
@@ -94,8 +95,8 @@ Each reimbursement item is charged to an Object: an `Office`, a `Project`, or a 
 - A category is only a label for an allocation, such as Transport. The requester sees the `Fund category` choice only for a project or ticket that has at least one allocation with a category. Leave the category empty for one general allocation. The `Setup checklist` at the top of `Objects and Funds` shows what is still missing.
 - Only a user who can record payments can void, and only an approved document that is not paid. Voiding needs a reason and cannot be undone from this screen. A voided document cannot be paid.
 - Project allocations are separate from the project cost plan and never change it.
-- `Approval Workflow` holds the steps that apply to every reimbursement, such as Accounting, Cashier and the final approver. They run after the steps assigned from the Object. Do not add project, ticket or office approvers there, because those are assigned automatically and a person added in both places would be asked twice.
-- A step added to `Approval Workflow` later can be applied to documents already in progress. It is placed after the steps they already have, and documents that passed that point are not affected.
+- `Approval Workflow` holds only the steps for every reimbursement, such as Accounting, Cashier and the final approver. Do not add project, ticket or office approvers there, or the same person is asked twice.
+- A step added later and applied to documents in progress is placed after the steps they already have.
 ## What happens next
 
 Approved documents wait for payment. If [[payroll]] includes approved reimbursements, they are paid with salary.

@@ -218,6 +218,11 @@ class CashAdvanceController extends Controller
                 ? route('general.cash-advance.export.single', $cashAdvance)
                 : null,
 
+            // Keadaan dana untuk penyetuju: hanya dokumen dengan konsep Object.
+            'fundRows'     => $cashAdvance->hasFlag(CashAdvance::FLAG_OBJECT_FLOW)
+                ? app(\App\Services\ObjectFund\FundService::class)->summaryForCashAdvance($cashAdvance)
+                : [],
+
             // Void: Finance (hak kelola), hanya CA yang sudah disetujui, belum punya laporan, dan belum di-void.
             'voidRoute'    => $this->canManage() && ! $cashAdvance->trashed() && ! $cashAdvance->isVoided()
                 && $cashAdvance->status === CashAdvance::STATUS_APPROVED && (int) $cashAdvance->car_count === 0

@@ -345,6 +345,104 @@ class FundService
             ]);
     }
 
+    // ── Ringkasan dana untuk penyetuju ──────────────────────────────────────
+
+    /**
+     * Keadaan dana yang relevan dengan sebuah Reimbursement, untuk ditampilkan
+     * kepada penyetuju saat memutuskan. Hanya MEMBACA.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function summaryForReimbursement(ReimbursementRequest $request): array
+    {
+        $request->loadMissing('items');
+
+        $state = $request->isVoided() ? 'voided' : ($request->isOpen() ? 'waiting' : ($request->status === ReimbursementRequest::STATUS_APPROVED ? 'approved' : 'closed'));
+
+        return $this->summaryFor(
+            $request->items->map(fn ($i) => $i->toArray())->all(),
+            Carbon::parse($request->request_date),
+            'reimbursement',
+            (int) $request->id,
+            $state
+        );
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function summaryForCashAdvance(CashAdvance $advance): array
+    {
+        $state = $advance->isVoided() ? 'voided' : ($advance->isOpen() ? 'waiting' : ($advance->status === CashAdvance::STATUS_APPROVED ? 'approved' : 'closed'));
+
+        return $this->summaryFor([$this->itemOfCashAdvance($advance)], Carbon::parse($advance->request_date), 'cash_advance', (int) $advance->id, $state);
+    }
+
+    /**
+     * Satu baris per kantong dana yang disentuh dokumen, ditambah baris untuk
+     * Object yang tidak punya dana (tidak diperiksa).
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function summaryFor(array $items, Carbon $date, string $documentType, int $documentId, string $state): array
+    {
+        $settings = ObjectFlowSetting::current();
+        $groups   = [];
+        $nofund   = [];
+
+        foreach ($items as $item) {
+            $pool = $this->poolFor($item, $date);
+            $type = $this->objectTypeOf($item);
+
+            if (!$pool) {
+                if ($type !== null) {
+                    $label = trim((string) ($item['cost_center_label'] ?? ''));
+                    $nofund[$type . '|' . $label] = ['type' => $type, 'label' => $label !== '' ? $label : ucfirst($type)];
+                }
+                continue;
+            }
+
+            $groups[$pool->id] ??= ['pool' => $pool, 'amount' => 0.0];
+            $groups[$pool->id]['amount'] += (float) ($item['amount'] ?? 0);
+        }
+
+        $rows = [];
+
+        foreach ($groups as $g) {
+            /** @var FundPool $pool */
+            $pool    = $g['pool'];
+            $balance = $this->balance($pool);
+
+            $mine = (float) FundEntry::where('pool_id', $pool->id)
+                ->where('document_type', $documentType)->where('document_id', $documentId)
+                ->where('status', FundEntry::STATUS_COMMITTED)->sum('amount');
+
+            $thisAmount = (float) $g['amount'];
+            $waiting    = $state === 'waiting';
+            $after      = $mine > 0 ? $balance['available'] : ($waiting ? round($balance['available'] - $thisAmount, 2) : null);
+
+            $rows[] = [
+                'kind'           => 'fund',
+                'label'          => $pool->label(),
+                'object'         => $pool->object_type,
+                'allocation'     => $balance['allocation'],
+                'used'           => round($balance['committed'] - $mine, 2),
+                'pending_others' => max(0.0, round($balance['pending'] - ($waiting ? $thisAmount : 0), 2)),
+                'this_document'  => $mine > 0 ? $mine : $thisAmount,
+                'remaining_now'  => $balance['available'],
+                'remaining_after' => $after,
+                'over'           => $after !== null && $after < 0,
+                'policy'         => $settings->policyFor($pool->object_type),
+                'state'          => $state,
+            ];
+        }
+
+        foreach ($nofund as $n) {
+            $rows[] = ['kind' => 'nofund', 'label' => $n['label'], 'object' => $n['type'], 'state' => $state];
+        }
+
+        return $rows;
+    }
+
     // ── Cash Advance ────────────────────────────────────────────────────────
     //
     // Satu Cash Advance = satu Object = satu entri dana. Dana dikurangi saat CA

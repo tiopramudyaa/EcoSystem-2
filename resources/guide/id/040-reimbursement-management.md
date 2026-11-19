@@ -86,6 +86,7 @@ Setiap item reimbursement dibebankan ke sebuah Object: `Office`, `Project`, atau
 - Orang yang sama hanya diminta sekali walau muncul di beberapa item. Pemohon yang juga penyetuju melewati langkah itu, dan pelewatan itu dicatat.
 - Pengajuan ditolak beserta alasannya bila project sudah ditutup, penyetuju yang dibutuhkan sudah tidak aktif, project atau tiket tidak punya penyetuju dan tidak ada pengganti, atau office belum punya penanggung jawab.
 - Dana berkurang hanya saat dokumen disetujui sepenuhnya, bukan saat diajukan. Dokumen yang masih menunggu tidak mengurangi dana.
+- Saat Anda membuka dokumen yang memakai Object, halaman menampilkan panel `Budget check`. Panel ini mendaftar setiap dana yang disentuh dokumen beserta `Allocation`, `Approved`, `Waiting`, `This document`, dan `After this document`, sehingga Anda tahu sisa dana bila dokumen disetujui. Merah berarti di bawah nol, dengan lencana `Over the fund`. Pada `Block`, persetujuan terakhir ditolak. Pemohon tidak melihat panel ini.
 - Sisa dana = alokasi dikurangi dokumen yang sudah disetujui. Tepat sebelum persetujuan terakhir sisa diperiksa ulang, karena dokumen lain bisa disetujui lebih dulu.
 - Object tanpa dana tidak diperiksa: office dengan `Fund active` mati, atau project atau tiket tanpa alokasi. Tetap melewati persetujuan.
 - Dana office bersifat bulanan dan mengikuti tanggal dokumen. Alokasi project dan tiket tidak punya tanggal berakhir. Alokasi tanpa kategori mencakup semua kategori yang tidak punya alokasi sendiri.

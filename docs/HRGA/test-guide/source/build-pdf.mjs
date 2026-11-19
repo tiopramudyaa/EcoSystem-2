@@ -95,7 +95,7 @@ table.case td li { margin: 2px 0; }
 <div class="cover"><div class="bar"></div><h1>${esc(meta.title)}</h1><div class="sub">${esc(meta.subtitle)}</div>
 <div class="meta">${esc(meta.version)}<br>${esc(meta.audience)}<br>${esc(meta.branch)}</div></div>
 <div class="toc"><h1>Daftar isi</h1><ol>${toc}</ol>
-<p>Panduan ini memuat ${caseCount} skenario uji, 7 diagram, dan lembar hasil pengujian pada bab terakhir.</p></div>
+<p>Panduan ini memuat ${caseCount} skenario uji, ${blocks.filter((b) => b.t === 'img').length} diagram, dan lembar hasil pengujian pada bab terakhir.</p></div>
 ${body}
 </body></html>`;
 

@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Storage;
  *
  *   php artisan demo:object-funds seed                 buat karyawan + login, office, project, tiket
  *   php artisan demo:object-funds seed --configure     ... dan isi pengaturan Objects and Funds
+ *   php artisan demo:object-funds seed --with-samples  ... dan buat contoh pengajuan oleh delivery support dan anggota project
  *   php artisan demo:object-funds remove               hapus data dummy (menolak bila sudah ada dokumen)
  *   php artisan demo:object-funds remove --with-documents --reset-settings
  *
@@ -27,7 +28,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class DemoObjectFundsCommand extends Command
 {
-    protected $signature = 'demo:object-funds {action : seed atau remove} {--configure : isi pengaturan Objects and Funds dengan nilai contoh} {--with-documents : saat remove, ikut hapus dokumen milik karyawan dummy} {--reset-settings : saat remove, matikan saklar Objects and Funds}';
+    protected $signature = 'demo:object-funds {action : seed atau remove} {--configure : isi pengaturan Objects and Funds dengan nilai contoh} {--with-samples : buat contoh pengajuan (Reimbursement, Cash Advance, Report); otomatis ikut --configure} {--with-documents : saat remove, ikut hapus dokumen milik karyawan dummy} {--reset-settings : saat remove, matikan saklar Objects and Funds}';
 
     protected $description = 'Buat atau hapus data dummy untuk menguji Objects and Funds (Reimbursement, Cash Advance, Cash Advance Report)';
 
@@ -43,6 +44,8 @@ class DemoObjectFundsCommand extends Command
         'demo.ticketlead'     => ['DEMO004', 'Gita', 'Ticket Lead',    'Gita Demo',   'Support Lead',           [], false],
         'demo.officehead'     => ['DEMO005', 'Dewi', 'Kepala Office',  'Dewi Demo',   'Office Head',            [], false],
         'demo.finance'        => ['DEMO006', 'Fajar', 'Finance',       'Fajar Demo',  'Finance Officer',        ['EC Administrator'], true],
+        'demo.supportstaff'   => ['DEMO007', 'Rina', 'Delivery Support', 'Rina Demo', 'Delivery Support Consultant', [], false],
+        'demo.projectmember'  => ['DEMO008', 'Bayu', 'Anggota Project', 'Bayu Demo',  'Project Consultant',      [], false],
     ];
 
     public function handle(): int
@@ -127,8 +130,12 @@ class DemoObjectFundsCommand extends Command
         $this->table(['Username', 'Name', 'Role in the test'], collect(self::PERSONAS)->map(fn ($p, $u) => [$u, "{$p[1]} {$p[2]}", $p[4]])->values()->all());
         $this->line('Password for every demo user: ' . self::PASSWORD);
 
-        if ($this->option('configure')) {
+        if ($this->option('configure') || $this->option('with-samples')) {
             $this->applyExampleSettings();
+
+            if ($this->option('with-samples')) {
+                $this->seedSamples();
+            }
         } else {
             $this->line('Objects and Funds settings were NOT changed. Fill them in Reimbursement > Settings > Objects and Funds, or run again with --configure after "remove".');
         }
@@ -157,6 +164,10 @@ class DemoObjectFundsCommand extends Command
             ['ticket_number' => 'DEMO-T-0001', 'description' => 'Demo: server migration support', 'ticket_lead_id' => $emp('DEMO004'), 'status' => 'open', 'created_at' => now(), 'updated_at' => now()],
             ['ticket_number' => 'DEMO-T-0002', 'description' => 'Demo: ticket without a lead', 'ticket_lead_id' => null, 'status' => 'open', 'created_at' => now(), 'updated_at' => now()],
         ]);
+
+        // Rina bekerja di tiket DEMO-T-0001 (delivery support); Bayu adalah anggota project Demo ERP Alpha.
+        DB::table('ticket_member')->insert(['ticket_id' => (int) DB::table('ticket')->where('ticket_number', 'DEMO-T-0001')->value('ticket_id'), 'employee_id' => $emp('DEMO007'), 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('delivery_project_employee')->insert(['delivery_projects_id' => (int) DB::table('delivery_projects')->where('io_number', 'DEMO-001')->value('id'), 'employee_id' => $emp('DEMO008'), 'created_at' => now(), 'updated_at' => now()]);
     }
 
     /** Nilai contoh untuk Objects and Funds. Hanya dengan --configure. */
@@ -190,6 +201,101 @@ class DemoObjectFundsCommand extends Command
         }
 
         $this->info('Objects and Funds settings filled with the example values.');
+    }
+
+    /**
+     * Contoh pengajuan lewat service yang sama dengan layar, supaya alur, penyetuju,
+     * dan dana persis seperti pemakaian nyata. Kejadian yang gagal dilaporkan, tidak disembunyikan.
+     */
+    private function seedSamples(): void
+    {
+        $emp = fn (string $eci) => (int) DB::table('employee')->where('eci', $eci)->value('employee_id');
+        $project = (int) DB::table('delivery_projects')->where('io_number', 'DEMO-001')->value('id');
+        $ticket = (int) DB::table('ticket')->where('ticket_number', 'DEMO-T-0001')->value('ticket_id');
+        $today = now()->toDateString();
+
+        $rb = app(\App\Services\Reimbursement\ReimbursementService::class);
+        $ca = app(\App\Services\CashAdvance\CashAdvanceService::class);
+        $car = app(\App\Services\CashAdvance\CashAdvanceReportService::class);
+
+        $item = fn (array $o) => $o + ['receipt_no' => 'DEMO-' . random_int(100, 999), 'receipt_date_from' => $today, 'receipt_date_to' => $today];
+        $rbDoc = fn (string $title, array $items) => ['request_date' => $today, 'title' => $title, 'supporting_url' => 'https://drive.google.com/demo-sample', 'items' => $items];
+
+        $approve = function (string $label, $service, $document, array $actors, string $keyName = 'request') use ($emp) {
+            foreach ($actors as $eci) {
+                $result = $service->approve($document->fresh(), $emp($eci));
+                if (!$result['allowed']) {
+                    $this->warn("  {$label}: {$eci} could not approve. " . $result['reason']);
+
+                    return false;
+                }
+            }
+
+            return true;
+        };
+
+        // Setiap langkah umum (GA Verification, Verification, Position Approval) dipegang Finance.
+        $finish = function (string $label, $service, $document) use ($emp) {
+            for ($i = 0; $i < 4; $i++) {
+                $fresh = $document->fresh();
+                if (!$fresh->isOpen()) {
+                    return true;
+                }
+                $result = $service->approve($fresh, $emp('DEMO006'));
+                if (!$result['allowed']) {
+                    $this->warn("  {$label}: Finance could not approve. " . $result['reason']);
+
+                    return false;
+                }
+            }
+
+            return true;
+        };
+
+        $made = [];
+        $submit = function (string $code, string $what, array $result, string $key) use (&$made) {
+            if (!$result['allowed']) {
+                $this->warn("  {$code} not created: " . $result['reason']);
+
+                return null;
+            }
+            $made[] = [$code, $what, $result[$key]->request_no ?? $result[$key]->report_no ?? ''];
+
+            return $result[$key];
+        };
+
+        // S1: anggota project, Transport, disetujui penuh
+        $doc = $submit('S1', 'Bayu (project member): Reimbursement, Project Transport, approved', $rb->submit($emp('DEMO008'), $rbDoc('Demo client visit week 1', [$item(['description' => 'Taxi fare to client site', 'cost_center_type' => 'project', 'delivery_project_id' => $project, 'fund_category' => 'Transport', 'amount' => 750000])])), 'request');
+        if ($doc) { $approve('S1', $rb, $doc, ['DEMO002', 'DEMO003']); $finish('S1', $rb, $doc); }
+
+        // S2: anggota project, Accommodation, menunggu Project Admin
+        $submit('S2', 'Bayu (project member): Reimbursement, Project Accommodation, waiting for Project Admin', $rb->submit($emp('DEMO008'), $rbDoc('Demo workshop hotel', [$item(['description' => 'Hotel for two nights', 'cost_center_type' => 'project', 'delivery_project_id' => $project, 'fund_category' => 'Accommodation', 'amount' => 1500000])])), 'request');
+
+        // S3: delivery support, tiket, disetujui penuh
+        $doc = $submit('S3', 'Rina (delivery support): Reimbursement, Ticket Accommodation, approved', $rb->submit($emp('DEMO007'), $rbDoc('Demo on-site support', [$item(['description' => 'Hotel near client site', 'cost_center_type' => 'support', 'ticket_id' => $ticket, 'fund_category' => 'Accommodation', 'amount' => 900000])])), 'request');
+        if ($doc) { $approve('S3', $rb, $doc, ['DEMO004']); $finish('S3', $rb, $doc); }
+
+        // S4: delivery support, tiket, sudah disetujui Ticket Lead, menunggu Finance
+        $doc = $submit('S4', 'Rina (delivery support): Reimbursement, Ticket Transport, waiting for Finance', $rb->submit($emp('DEMO007'), $rbDoc('Demo support travel', [$item(['description' => 'Taxi to client office', 'cost_center_type' => 'support', 'ticket_id' => $ticket, 'fund_category' => 'Transport', 'amount' => 400000])])), 'request');
+        if ($doc) { $approve('S4', $rb, $doc, ['DEMO004']); }
+
+        // S5: delivery support, Cash Advance tiket disetujui, belum dilaporkan
+        $doc = $submit('S5', 'Rina (delivery support): Cash Advance, Ticket Transport, approved, not reported yet', $ca->submit($emp('DEMO007'), ['request_date' => $today, 'description' => 'Advance for on-site support travel', 'amount' => '600.000', 'cost_center_type' => 'support', 'charged_ticket_id' => $ticket, 'fund_category' => 'Transport']), 'request');
+        if ($doc) { $approve('S5', $ca, $doc, ['DEMO004']); $finish('S5', $ca, $doc); }
+
+        // S6: anggota project, Cash Advance disetujui, report menunggu penyetuju
+        $doc = $submit('S6', 'Bayu (project member): Cash Advance, Project Transport, approved, report waiting', $ca->submit($emp('DEMO008'), ['request_date' => $today, 'description' => 'Advance for client workshop travel', 'amount' => '2.000.000', 'cost_center_type' => 'project', 'charged_project_id' => $project, 'fund_category' => 'Transport']), 'request');
+        if ($doc) {
+            $approve('S6', $ca, $doc, ['DEMO002', 'DEMO003']);
+            $finish('S6', $ca, $doc);
+            $submit('S6b', 'Bayu (project member): Cash Advance Report 1.700.000, waiting for Project Admin', $car->submit($doc->fresh(), $emp('DEMO008'), ['report_date' => $today, 'description' => 'Workshop expense report', 'items' => [['expense_date' => $today, 'description' => 'Taxi and parking', 'amount' => '1.700.000']]]), 'report');
+        }
+
+        $this->newLine();
+        $this->info('Sample documents:');
+        $this->table(['Code', 'What', 'Document'], $made);
+        $this->line('Funds after the samples: Project Transport 10.000.000 - 750.000 - 2.000.000 = 7.250.000; Ticket Accommodation 3.000.000 - 900.000 = 2.100.000; Ticket Transport 1.500.000 - 600.000 = 900.000. Waiting documents do not reduce a fund yet.');
+        $this->line('The scenarios in the test guide assume a fresh fund. Use --with-samples to explore, or seed without it to follow the guide.');
     }
 
     // ── remove ──────────────────────────────────────────────────────────────
@@ -232,6 +338,11 @@ class DemoObjectFundsCommand extends Command
             if (Schema::hasTable('employee_hr_profile')) {
                 DB::table('employee_hr_profile')->whereIn('employee_id', $ids)->delete();
             }
+
+            if (Schema::hasTable('ticket_member')) {
+                DB::table('ticket_member')->whereIn('employee_id', $ids)->delete();
+            }
+            DB::table('delivery_project_employee')->whereIn('employee_id', $ids)->delete();
 
             DB::table('auth_users')->whereIn('employee_id', $ids)->delete();
             DB::table('employee_role_assignment')->whereIn('employee_id', $ids)->delete();

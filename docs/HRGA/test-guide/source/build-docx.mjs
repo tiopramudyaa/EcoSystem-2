@@ -122,7 +122,7 @@ const chapterTitles = blocks.filter((b) => b.t === 'h1').map((b) => b.x);
 children.push(new Paragraph({ heading: 'Heading1', children: [new TextRun({ text: 'Daftar isi', font: FONT })] }));
 chapterTitles.forEach((t) => children.push(new Paragraph({ spacing: { before: 60, after: 100 }, children: runs(t, { size: 23 }) })));
 const caseCount = blocks.filter((b) => b.t === 'case').length;
-children.push(para(`Panduan ini memuat ${caseCount} skenario uji, 7 diagram, dan lembar hasil pengujian pada bab terakhir.`, { before: 200 }));
+children.push(para(`Panduan ini memuat ${caseCount} skenario uji, ${blocks.filter((b) => b.t === 'img').length} diagram, dan lembar hasil pengujian pada bab terakhir.`, { before: 200 }));
 children.push(new Paragraph({ children: [new PageBreak()] }));
 
 for (const b of blocks) {
