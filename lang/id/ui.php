@@ -145,6 +145,17 @@ return [
         'default'       => 'Default',
         'off'           => 'Off',
 
+        // Pratinjau opt-in layar loading (Settings dan Control Center)
+        'preview' => [
+            'play'         => 'Play preview',
+            'close'        => 'Close preview',
+            'hint'         => 'Memutar pratinjau singkat layar loading untuk tema yang dipilih. Tidak ada unduhan tambahan sampai Anda menekan tombolnya.',
+            'unavailable'  => 'Pilih tema yang memiliki layar loading untuk melihat pratinjaunya.',
+            'dialog_label' => 'Pratinjau layar loading: :theme',
+            'poster_alt'   => 'Gambar diam layar loading :theme',
+            'still_note'   => 'Menampilkan gambar diam karena animasi tidak dapat berjalan di perangkat ini atau dengan pengaturan Anda saat ini.',
+        ],
+
         'themes' => [
             'none'       => 'Off',
             'natal'      => 'Natal',
@@ -189,6 +200,16 @@ return [
             'info'          => 'Pengaturan ini menjadi tema default untuk sidebar, navbar semua pengguna, dan halaman login. Pengguna yang sudah memilih sendiri di Settings (Off atau tema tertentu) tidak berubah. Hanya pengguna dengan pilihan "Default" yang mengikuti pengaturan ini.',
             'active_today'  => 'Aktif hari ini',
             'active_none'   => 'Tanpa tema (Off)',
+            'login_title'        => 'Login and auth pages',
+            'login_hint'         => 'Tema untuk halaman login, lupa password, verifikasi dua langkah, dan ganti password, serta untuk loading screen yang tampil tepat setelah login. Hanya administrator yang dapat mengubahnya. Dashboard, sidebar, dan navbar tidak terpengaruh.',
+            'login_theme'        => 'Tema',
+            'login_inherit'      => 'Ikuti tema global',
+            'login_off'          => 'Off',
+            'login_scope'        => 'Berlaku untuk',
+            'login_scope_both'   => 'Halaman login dan loading screen',
+            'login_scope_page'   => 'Halaman login saja',
+            'login_scope_loading' => 'Loading screen setelah login saja',
+            'login_scope_note'   => 'Bila dipilih tema selain "Ikuti tema global", tema ini menggantikan pilihan loading screen tiap pengguna untuk bagian yang dipilih di sini.',
             'theme_title'   => 'Tema',
             'theme_hint'    => 'Berlaku di sidebar, navbar, dan halaman login.',
             'theme_manual'  => 'Tema yang dipakai pada mode Manual.',

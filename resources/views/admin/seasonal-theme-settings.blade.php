@@ -52,7 +52,7 @@
     .st-card.is-selected { border-color:var(--st-card-accent); box-shadow:0 0 0 1px var(--st-card-accent); }
     /* Warna label mengikuti tema terang/gelap halaman (var(--text-color)), bukan hex tetap. */
     .st-card .st-card-label { color:var(--text-color, #111827); opacity:.68; }
-    .st-card.is-selected .st-card-label { color:var(--text-color, #111827); opacity:1; font-weight:600; }
+    .st-card.is-selected .st-card-label { color:var(--text-color, #111827); opacity:1; }
     .st-mode { border-color:#e5e7eb; }
     .st-mode:has(input:checked) { border-color:#374151; box-shadow:0 0 0 1px #374151; }
 </style>
@@ -97,12 +97,13 @@
                 <div class="flex flex-wrap items-center gap-3" id="adminThemePicker">
                     @include('partials.seasonal-icons')
                     @foreach($stCatalog as $sk => $meta)
-                        <button type="button" onclick="selectGlobalSeasonalTheme('{{ $sk }}', this)"
+                        <button type="button" data-season-choice="{{ $sk }}" onclick="selectGlobalSeasonalTheme('{{ $sk }}', this)"
                             style="--st-card-accent:{{ $meta['accent'] }}"
                             class="st-card flex flex-col items-center gap-2 w-28 p-3 border-2 rounded-xl transition-all {{ $stSelected === $sk ? 'is-selected' : '' }}">
                             @if($meta['palette'])
-                                <div class="st-tile w-full h-12" style="background:linear-gradient(135deg, {{ $meta['palette']['login_from'] }} 55%, {{ $meta['palette']['login_to'] }} 170%)">
+                                <div class="st-tile relative w-full h-12" style="background:linear-gradient(135deg, {{ $meta['palette']['login_from'] }} 55%, {{ $meta['palette']['login_to'] }} 170%)">
                                     @include('partials.seasonal-icon', ['name' => 'icon-' . $sk, 'theme' => $sk, 'size' => 38])
+                                    @include('partials.seasonal-poster', ['theme' => $sk])
                                 </div>
                             @else
                                 <div class="st-tile w-full h-12 bg-gray-100"><i class="fas {{ $meta['icon'] }} text-gray-400"></i></div>
@@ -111,6 +112,7 @@
                         </button>
                     @endforeach
                 </div>
+                @include('partials.seasonal-preview', ['picker' => '#adminThemePicker', 'globalKey' => 'none'])
                 <input type="hidden" name="theme" id="globalSeasonalThemeInput" value="{{ $stSelected }}">
             </div>
         </section>
@@ -214,6 +216,48 @@
                         <a href="{{ route('admin.sounds') }}" class="text-gray-700 underline hover:text-gray-900">Notif Sounds</a>
                     </p>
                 </div>
+            </div>
+        </section>
+
+        @php
+            $stLogin = $current['login'] ?? ['theme' => 'inherit', 'scope' => 'both'];
+            $stLoginTheme = old('login.theme', $stLogin['theme']);
+            $stLoginScope = old('login.scope', $stLogin['scope']);
+        @endphp
+        <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm" id="loginThemeCard">
+            <header class="flex flex-wrap items-center gap-3 border-b border-gray-100 px-6 py-4">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                    <i class="fas fa-right-to-bracket text-sm"></i>
+                </div>
+                <div class="min-w-0 flex-1 basis-44">
+                    <h2 class="text-sm font-semibold text-gray-900">{{ __('ui.seasonal.admin.login_title') }}</h2>
+                    <p class="text-xs text-gray-500">{{ __('ui.seasonal.admin.login_hint') }}</p>
+                </div>
+            </header>
+            <div class="space-y-5 p-6">
+                <div>
+                    <label for="loginThemeSelect" class="mb-1 block text-xs font-medium text-gray-600">{{ __('ui.seasonal.admin.login_theme') }}</label>
+                    <select name="login[theme]" id="loginThemeSelect"
+                            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 sm:w-72">
+                        <option value="inherit" @selected($stLoginTheme === 'inherit')>{{ __('ui.seasonal.admin.login_inherit') }}</option>
+                        <option value="none" @selected($stLoginTheme === 'none')>{{ __('ui.seasonal.admin.login_off') }}</option>
+                        @foreach($stThemeKeys as $stLk)
+                            <option value="{{ $stLk }}" @selected($stLoginTheme === $stLk)>{{ __($stCatalog[$stLk]['label_key']) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <fieldset>
+                    <legend class="mb-2 text-xs font-medium text-gray-600">{{ __('ui.seasonal.admin.login_scope') }}</legend>
+                    <div class="space-y-2">
+                        @foreach(['both', 'page', 'loading'] as $stScope)
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="radio" name="login[scope]" value="{{ $stScope }}" @checked($stLoginScope === $stScope) class="accent-gray-700">
+                                <span>{{ __('ui.seasonal.admin.login_scope_' . $stScope) }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="mt-2 text-xs text-gray-400">{{ __('ui.seasonal.admin.login_scope_note') }}</p>
+                </fieldset>
             </div>
         </section>
 

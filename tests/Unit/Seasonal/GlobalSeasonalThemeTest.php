@@ -58,7 +58,7 @@ class GlobalSeasonalThemeTest extends TestCase
     public function test_default_saat_belum_ada_data(): void
     {
         $this->assertSame(
-            ['theme' => 'none', 'sound' => null, 'volume' => 50, 'mode' => 'manual', 'schedule' => []],
+            ['theme' => 'none', 'sound' => null, 'volume' => 50, 'mode' => 'manual', 'schedule' => [], 'login' => ['theme' => 'inherit', 'scope' => 'both']],
             GlobalSeasonalTheme::all()
         );
         $this->assertSame('none', GlobalSeasonalTheme::active());

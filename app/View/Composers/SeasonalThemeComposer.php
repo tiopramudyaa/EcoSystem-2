@@ -34,7 +34,7 @@ class SeasonalThemeComposer
 
             $key = (is_array($user) ? !empty($user['id']) : !empty($user))
                 ? SeasonalThemeResolver::effectiveFor((string) session('user_preferences.seasonal_theme', 'default'))
-                : GlobalSeasonalTheme::active();
+                : SeasonalThemeResolver::forAuthPage();
 
             if (!SeasonalThemes::isValid($key) || $key === SeasonalThemes::NONE) {
                 return array_merge($fallback, ['soundVolume' => GlobalSeasonalTheme::soundVolume()]);

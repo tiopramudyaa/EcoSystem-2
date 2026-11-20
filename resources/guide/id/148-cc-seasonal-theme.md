@@ -5,13 +5,13 @@ order: 27
 title: Seasonal Theme
 summary: Pilih tampilan perayaan untuk EcoSystem, aktifkan secara manual atau dengan jadwal tanggal, atur musik latar, dan lihat bagaimana setiap orang dapat menimpanya.
 requires: [control-center.seasonal-theme]
-updated: 2026-11-19
+updated: 2026-11-20
 ---
 Tema musiman memberi EcoSystem tampilan perayaan untuk hari besar: dekorasi di halaman, aksen warna di sidebar dan header, serta layar loading bertema setelah masuk. Administrator memilih tema bawaan untuk semua orang dan untuk halaman masuk. Setiap orang tetap dapat mengikutinya, mematikannya, atau memilih tema lain untuk dirinya sendiri di `Settings`.
 
 ## Siapa yang menggunakan
 
-Administrator. Menu `Control Center` › `Seasonal Theme` hanya untuk role administrator. Pengguna lain memilih tema untuk dirinya sendiri di `Settings` › `Appearance` (lihat bagian terakhir topik ini).
+Administrator. Menu `Control Center` › `Seasonal Theme` hanya untuk role administrator. Pengguna lain memilih tema untuk dirinya sendiri di `Settings` › `Appearance` (lihat [[my-seasonal-theme]]).
 
 ## Sebelum Anda mulai
 
@@ -28,10 +28,24 @@ Administrator. Menu `Control Center` › `Seasonal Theme` hanya untuk role admin
 2. Di bawah `Activation`, pilih mode:
    - `Manual`: tema yang Anda pilih selalu aktif.
    - `Automatic schedule`: tema mengikuti rentang tanggal yang Anda daftarkan.
-3. Pada mode manual, pilih kartu tema yang diinginkan di bawah `Theme`. Pilih `Off` bila tidak ingin ada tema. Baris `Active today` menunjukkan tema yang aktif saat ini.
+3. Pada mode manual, pilih kartu tema yang diinginkan di bawah `Tema`. Pilih `Off` bila tidak ingin ada tema. Baris `Active today` menunjukkan tema yang aktif saat ini.
 4. Pada mode otomatis, pakai `Schedule` dan `Add period` untuk tiap periode: pilih tema, `Start date`, dan `End date`. Pakai `Remove` untuk menghapus sebuah periode. Anda dapat menambah hingga 20 periode.
 5. Di bawah `Background music`, pilih lagu (atau `None (no background music)`), pakai `Preview` untuk mendengarkan, dan atur `Volume`.
 6. Pilih `Save settings`.
+
+### Mengatur tema terpisah untuk halaman login dan layar loading
+
+1. Di halaman yang sama, cari kartu `Login and auth pages`.
+2. Di bawah `Tema`, pilih `Ikuti tema global` (bawaan), `Off`, atau satu tema.
+3. Di bawah `Berlaku untuk`, pilih `Halaman login dan loading screen`, `Halaman login saja`, atau `Loading screen setelah login saja`.
+4. Pilih `Save settings`.
+
+### Melihat pratinjau layar loading sebuah tema
+
+1. Buka `Control Center` › `Seasonal Theme` (atau `Settings` › `Appearance` untuk tema Anda sendiri). Setiap kartu tema menampilkan gambar diam kecil dari layar loading-nya.
+2. Pilih kartu tema yang ingin dilihat.
+3. Pilih `Play preview`. Pratinjau layar penuh terbuka dan memutar adegan loading selama beberapa detik.
+4. Untuk keluar lebih awal, pilih `Close preview`, tekan `Esc`, atau klik di mana saja pada pratinjau. Pratinjau juga menutup sendiri setelah sekitar enam detik.
 
 ### Menambahkan musik sendiri
 
@@ -46,15 +60,12 @@ Administrator. Menu `Control Center` › `Seasonal Theme` hanya untuk role admin
 - **Mode jadwal otomatis.** Setiap periode berisi tema, tanggal mulai, dan tanggal selesai. Kedua tanggal ikut dihitung. Pada hari di luar semua periode, tidak ada tema yang tampil.
 - **Periode yang tumpang tindih.** Jika dua periode mencakup hari yang sama, yang tertulis lebih dulu menang.
 - **Batas dan validasi.** Jadwal berisi paling banyak 20 periode. Setiap periode wajib punya tema, tanggal mulai, dan tanggal selesai, dan tanggal selesai tidak boleh sebelum tanggal mulai, jika tidak halaman menampilkan galat dan tidak ada yang disimpan. Periode tidak dapat memakai `Off`.
-- **Halaman masuk.** Belum ada pengguna yang masuk, jadi halaman masuk itu sendiri selalu menampilkan tema administrator (manual atau sesuai jadwal).
-- **Yang diubah oleh tema.** Dekorasi di halaman, warna sidebar, header, tombol, dan tautan, serta layar loading setelah masuk. Tombol yang menghapus, menolak, atau memperingatkan tetap merah agar maknanya tidak berubah.
-- **Layar loading.** Setelah berhasil masuk, adegan 3D beranimasi diputar sekitar tiga detik sebelum dashboard terbuka. Adegan mengikuti tema orang yang masuk, jadi orang yang memilih tema sendiri melihat adegan tema itu, dan orang yang memilih `Off` tidak melihat adegan. Setiap tema punya adegannya sendiri: Natal menampilkan kereta luncur Sinterklas terbang di atas desa bersalju pada malam hari, Tahun Baru menampilkan kembang api di atas kota dan sungainya, Ramadan menampilkan bulan sabit di atas masjid berkubah dengan lentera gantung, Lebaran menampilkan keluarga yang saling bersalaman di halaman saat senja di bawah ketupat gantung, Imlek menampilkan naga emas di antara lampion, dan HUT RI menampilkan bendera Merah Putih naik sementara orang-orang memberi hormat.
-- **Perangkat tanpa 3D.** Jika perangkat atau browser tidak dapat menggambar 3D, atau pengaturan reduced motion aktif, yang tampil adalah versi diam yang tenang dan proses masuk tidak pernah tertunda. Perangkat berdaya rendah, atau yang mulai lambat, menggambar adegan dengan kualitas lebih rendah agar tetap lancar.
-- **Hiasan navbar.** Ornamen kecil ada di dua pojok luar bilah atas dan beberapa bandul mungil menjuntai dari tepi bawahnya, berbeda untuk tiap tema: ranting pinus dengan beri, lonceng, dan holly untuk Natal; pita melingkar dan letusan kembang api untuk Tahun Baru; bulan sabit, lentera, dan siluet masjid untuk Ramadan; janur dan ketupat untuk Lebaran; lampion merah dan ranting bunga plum untuk Imlek; serta bendera bersilang dengan umbul-umbul pendek untuk HUT RI. Hiasan tidak pernah menutupi judul halaman, tombol, atau teks, tidak dapat diklik, tidak mengubah ukuran bilah atas, dan disembunyikan saat mencetak. Bila `Show animations` aktif dan perangkat tidak memakai reduced motion, tiap bagian bergerak dengan caranya sendiri (berayun, berkedip, meletus, berkibar, berpendar); selain itu diam.
-- **Animasi.** Dekorasi yang bergerak mengikuti pengaturan `Show animations` masing-masing orang dan pengaturan reduced motion pada perangkatnya. Jika salah satunya mati, dekorasi diam.
+- **Halaman masuk.** Belum ada pengguna yang masuk, jadi halaman masuk itu sendiri menampilkan tema global administrator (manual atau sesuai jadwal), kecuali kartu `Login and auth pages` menetapkan tema terpisah untuknya.
+- **Tema login terpisah.** Kartu `Login and auth pages` berisi tema (`Ikuti tema global`, `Off`, atau satu tema) dan cakupan. Dengan `Ikuti tema global` tidak ada yang berubah: halaman mengikuti tema global dan layar loading mengikuti tema pilihan tiap orang. Dengan pilihan lain, `Halaman login dan loading screen` menerapkannya ke keduanya, `Halaman login saja` menerapkannya ke halaman masuk, lupa password, verifikasi dua langkah, dan ganti password serta membiarkan layar loading seperti semula, dan `Loading screen setelah login saja` menerapkannya ke layar loading serta membiarkan halaman di tema global. Memilih `Off` di sini mematikan tema pada bagian yang dipilih.
+- **Siapa yang dapat mengubah tema login.** Hanya pengguna dengan menu `Seasonal Theme`. Pengguna tidak dapat mengubahnya di `Settings`. Bila tema login ditetapkan untuk layar loading, tema itu menggantikan pilihan pribadi tiap orang hanya untuk layar tersebut. Dashboard, sidebar, navbar, dan musik tidak terpengaruh dan tetap mengikuti pilihan orang itu atau tema global. Layar loading hanya muncul setelah masuk dengan password. Langkah verifikasi dua langkah dan masuk dengan Microsoft langsung ke dashboard tanpa layar tersebut.
+- **Layar loading.** Setelah masuk dengan password, adegan 3D beranimasi diputar sekitar tiga detik sebelum dashboard terbuka. Kecuali tema login terpisah ditetapkan untuk layar loading, adegan mengikuti tema orang yang masuk, dan orang yang memilih `Off` tidak melihat adegan. Tombol yang menghapus, menolak, atau memperingatkan tetap merah pada tema apa pun. Isi adegan tiap tema dijelaskan di [[my-seasonal-theme]].
+- **Pratinjau layar loading.** `Play preview` bersifat opsional dan hanya berjalan saat Anda menekannya. Sebelum itu halaman hanya mengunduh gambar diam kecil pada kartu tema, tidak pernah berkas 3D-nya. Pratinjau menampilkan adegan dari kartu tema yang dipilih (`Default` menampilkan tema global saat ini, dan tema tanpa layar loading seperti `Off` tidak dapat dipratinjau), berjalan paling lama sekitar enam detik, ditutup dengan `Close preview`, `Esc`, atau klik, dan hanya satu pratinjau yang dapat terbuka pada satu waktu. Pratinjau tidak memasukkan Anda ke akun, tidak mengubah pilihan yang tersimpan, dan tidak memakai data tambahan dari server. Pada perangkat yang tidak dapat menggambar 3D, dengan Save-Data aktif, koneksi lambat (2G atau 3G), atau reduced motion, yang tampil adalah gambar diam. Rincian untuk pengguna dari `Settings` ada di [[my-seasonal-theme]].
 - **Musik latar.** Hanya administrator yang memilih lagu dan volumenya, dan berlaku untuk semua orang. Pengguna tidak dapat memilih lagu. Pengguna hanya dapat membisukannya di layarnya sendiri, dan pilihan itu tidak tersimpan untuk pengguna lain.
-- **Preferensi yang belum ada.** Orang yang belum pernah menyimpan preferensinya mengikuti `Default`, sehingga melihat tema administrator.
-- **Warna aksen.** Selama tema musiman aktif bagi seseorang, warna sidebar, tombol, dan tautan mengikuti tema. `Accent color` yang dipilih di `Settings` tampil di pratinjau tetapi kembali ke warna tema setelah halaman dimuat ulang. Untuk mempertahankan warna aksen sendiri, orang itu mengatur `Seasonal theme` ke `Off`.
 - **Audit.** Penyimpanan tema tercatat di audit log.
 
 ## Apa yang terjadi selanjutnya
@@ -69,15 +80,5 @@ Setelah Anda menyimpan, orang yang memakai `Default` melihat tema baru saat hala
 
 **Dua periode tumpang tindih, mana yang tampil?** Baris yang tertulis lebih dulu.
 
-**Mengapa gerakan tidak muncul?** `Show animations` mungkin mati di `Settings` › `Appearance`, atau perangkat memakai pengaturan reduced motion.
 
-**Bisakah satu orang mematikan musik untuk semua?** Tidak. Pengguna hanya dapat membisukannya di layarnya sendiri.
-
-### Cara setiap orang memilih temanya sendiri
-
-1. Buka `Settings` › `Appearance`.
-2. Cari `Seasonal theme`. Sebuah keterangan menunjukkan tema administrator yang aktif saat ini.
-3. Pilih `Default` untuk mengikuti administrator, `Off` untuk tanpa tema, atau satu tema untuk diri sendiri.
-4. Pilih `Save changes`.
-
-<!-- sources: routes/web.php, app/Support/SeasonalThemes.php, app/Support/GlobalSeasonalTheme.php, app/Support/SeasonalThemeResolver.php, app/Http/Controllers/SeasonalThemeSettingsController.php, app/Http/Controllers/SettingsController.php, resources/views/admin/seasonal-theme-settings.blade.php, resources/views/partials/seasonal-navbar.blade.php, resources/views/settings/index.blade.php, lang/id/ui.php -->
+<!-- sources: routes/web.php, app/Support/SeasonalThemes.php, app/Support/GlobalSeasonalTheme.php, app/Support/SeasonalThemeResolver.php, app/Http/Controllers/SeasonalThemeSettingsController.php, app/Http/Controllers/SettingsController.php, resources/views/admin/seasonal-theme-settings.blade.php, resources/views/partials/seasonal-navbar.blade.php, resources/views/settings/index.blade.php, resources/views/partials/seasonal-preview.blade.php, lang/id/ui.php -->

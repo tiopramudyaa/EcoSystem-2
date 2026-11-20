@@ -82,7 +82,7 @@ final class SeasonalThemes
             'icon' => 'fa-champagne-glasses',
             'accent' => '#a16207',
             'palette' => [
-                'primary_rgb' => '133 100 22',
+                'primary_rgb' => '126 94 18',
                 'primary_dark_rgb' => '84 62 10',
                 'accent' => '#f3dc8e',
                 'login_from' => '#07070b',

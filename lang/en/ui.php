@@ -145,6 +145,17 @@ return [
         'default'       => 'Default',
         'off'           => 'Off',
 
+        // Opt-in preview of the loading screen (Settings and Control Center)
+        'preview' => [
+            'play'         => 'Play preview',
+            'close'        => 'Close preview',
+            'hint'         => 'Plays a short preview of the loading screen for the selected theme. Nothing extra is downloaded until you press the button.',
+            'unavailable'  => 'Select a theme that has a loading screen to preview it.',
+            'dialog_label' => 'Loading screen preview: :theme',
+            'poster_alt'   => 'Still image from the :theme loading screen',
+            'still_note'   => 'Showing a still image because the animation cannot run on this device or with your current settings.',
+        ],
+
         'themes' => [
             'none'       => 'Off',
             'natal'      => 'Christmas',
@@ -189,6 +200,16 @@ return [
             'info'          => 'This sets the default theme for every user\'s sidebar, navbar, and the login page. Users who picked their own option in Settings (Off or a specific theme) keep it. Only users on "Default" follow this setting.',
             'active_today'  => 'Active today',
             'active_none'   => 'No theme (Off)',
+            'login_title'        => 'Login and auth pages',
+            'login_hint'         => 'Theme for the sign in, forgot password, two-factor and change password pages, and for the loading screen shown right after sign in. Only administrators can change this. The dashboard, sidebar and navbar are not affected.',
+            'login_theme'        => 'Theme',
+            'login_inherit'      => 'Follow global theme',
+            'login_off'          => 'Off',
+            'login_scope'        => 'Applies to',
+            'login_scope_both'   => 'Login pages and loading screen',
+            'login_scope_page'   => 'Login pages only',
+            'login_scope_loading' => 'Loading screen after sign in only',
+            'login_scope_note'   => 'When a theme other than "Follow global theme" is chosen, it replaces each user\'s own loading screen choice for the parts selected here.',
             'theme_title'   => 'Theme',
             'theme_hint'    => 'Applied to the sidebar, navbar, and login page.',
             'theme_manual'  => 'The theme used in Manual mode.',

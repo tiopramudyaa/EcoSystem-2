@@ -18,7 +18,8 @@
 @php
     $slId = $loadingId ?? 'seasonalLoadingOverlay';
     $slGlobal = $seasonalTheme ?? ['key' => 'none', 'soundUrl' => null, 'soundVolume' => null];
-    $slGlobalKey = $slGlobal['key'] ?? 'none';
+    // Kunci pemanasan aset: tema yang kemungkinan dipakai loading screen ($warmKey dari halaman login), bukan selalu tema halaman.
+    $slGlobalKey = $warmKey ?? ($slGlobal['key'] ?? 'none');
 
     $slThemes = [];
     foreach (\App\Support\SeasonalThemes::catalog() as $slKey => $slMeta) {

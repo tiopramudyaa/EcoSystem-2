@@ -54,7 +54,16 @@ final class GlobalSeasonalTheme
         'mode' => self::MODE_MANUAL,
         // Daftar {theme, start, end}; start/end berformat Y-m-d, inklusif.
         'schedule' => [],
+        // Tema khusus halaman login/auth dan loading screen setelah login.
+        // Hanya admin yang bisa mengubah. Data lama tanpa 'login' = perilaku lama.
+        'login' => ['theme' => self::LOGIN_INHERIT, 'scope' => self::SCOPE_BOTH],
     ];
+
+    /** Tema login 'inherit' = ikut tema global aktif (default). */
+    public const LOGIN_INHERIT = 'inherit';
+    public const SCOPE_BOTH = 'both';
+    public const SCOPE_PAGE = 'page';
+    public const SCOPE_LOADING = 'loading';
 
     public const MODE_MANUAL = 'manual';
     public const MODE_AUTO = 'auto';
@@ -100,7 +109,13 @@ final class GlobalSeasonalTheme
         return self::all()['volume'] / 100;
     }
 
-    /** @return array{theme: string, sound: ?string, volume: int, mode: string, schedule: array<int, array{theme: string, start: string, end: string}>} */
+    /** @return array{theme: string, scope: string} */
+    public static function login(): array
+    {
+        return self::all()['login'];
+    }
+
+    /** @return array{theme: string, sound: ?string, volume: int, mode: string, schedule: array<int, array{theme: string, start: string, end: string}>, login: array{theme: string, scope: string}} */
     public static function all(): array
     {
         // Memo per request: satu halaman dashboard memanggil ini 4 sampai 5 kali
@@ -144,7 +159,7 @@ final class GlobalSeasonalTheme
      * @param array<string, mixed> $input
      *
      * PENTING: $input harus selalu membawa SEMUA field ('theme', 'sound',
-     * 'volume', 'mode', 'schedule') bersamaan, bukan cuma yang berubah -
+     * 'volume', 'mode', 'schedule', 'login') bersamaan, bukan cuma yang berubah -
      * sanitize() menjatuhkan field yang hilang ke default, jadi
      * save(['theme'=>'natal']) SAJA akan diam-diam MENGHAPUS musik latar,
      * reset volume, dan mengosongkan jadwal yang sudah diset sebelumnya. Form
@@ -174,6 +189,22 @@ final class GlobalSeasonalTheme
             'volume' => self::sanitizeVolume($input['volume'] ?? null),
             'mode' => ($input['mode'] ?? null) === self::MODE_AUTO ? self::MODE_AUTO : self::MODE_MANUAL,
             'schedule' => self::sanitizeSchedule($input['schedule'] ?? null),
+            'login' => self::sanitizeLogin($input['login'] ?? null),
+        ];
+    }
+
+    /** @return array{theme: string, scope: string} */
+    private static function sanitizeLogin(mixed $login): array
+    {
+        $login = is_array($login) ? $login : [];
+        $theme = $login['theme'] ?? null;
+        $scope = $login['scope'] ?? null;
+
+        return [
+            'theme' => is_string($theme) && ($theme === self::LOGIN_INHERIT || SeasonalThemes::isValid($theme))
+                ? $theme
+                : self::LOGIN_INHERIT,
+            'scope' => in_array($scope, [self::SCOPE_PAGE, self::SCOPE_LOADING], true) ? $scope : self::SCOPE_BOTH,
         ];
     }
 

@@ -407,9 +407,8 @@
 <body>
 
 <div id="toast-container"></div>
-
-{{-- Tema musiman: $seasonalTheme dibagikan oleh SeasonalThemeComposer (tema global
-     admin, halaman ini pre-auth sehingga tidak ada preferensi per-user). --}}
+{{-- Tema musiman: $seasonalTheme dibagikan oleh SeasonalThemeComposer. Halaman ini pre-auth sehingga tidak ada
+     preferensi per-user: tema halaman login (admin) berlaku bila cakupannya mencakup halaman, selain itu tema global. --}}
 @php
     $seasonalTheme = $seasonalTheme ?? ['key' => 'none', 'meta' => null, 'soundUrl' => null, 'soundVolume' => null];
     $loginSeasonalTheme = $seasonalTheme['key'];
@@ -417,8 +416,8 @@
 
 {{-- Loading screen: tersembunyi sampai JS memunculkannya di cabang login sukses final. --}}
 {{-- Dirender untuk semua tema: tema efektif pengguna baru diketahui dari respons login. --}}
-@include('partials.seasonal-loading', ['loadingId' => 'seasonalLoginOverlay'])
-<script>window.__seasonalGlobalKey = @json($loginSeasonalTheme);</script>
+@include('partials.seasonal-loading', ['loadingId' => 'seasonalLoginOverlay', 'warmKey' => \App\Support\SeasonalThemeResolver::forLoading('default')])
+<script>window.__seasonalGlobalKey = {{ \Illuminate\Support\Js::from($loginSeasonalTheme) }};</script>
 
 {{-- Mobile header strip --}}
 <div class="mobile-strip">

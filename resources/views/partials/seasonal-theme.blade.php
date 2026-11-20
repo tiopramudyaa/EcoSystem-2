@@ -108,6 +108,12 @@
                     $accentSide = 'right:' . (18 + $j * 9) . '%;';
                     $accentSize = rand(16, 20);
                     $accentOpacity = rand(14, 24) / 100;
+                } elseif ($seasonalPlacement === 'sidebar') {
+                    // Hanya di ujung kanan footer (sebelah kanan label Collapse), maksimal 3, tidak pernah di atas menu atau ikon.
+                    $accentTop = null;
+                    $accentSide = $j < 3 ? 'right:' . (10 + $j * 22) . 'px;' : 'display:none;';
+                    $accentSize = rand(15, 18);
+                    $accentOpacity = rand(30, 42) / 100;
                 } else {
                     $accentTop = 8 + ($j * (84 / max(1, $accentCount - 1)));
                     $accentSide = $j % 2 === 0 ? 'left:6%;' : 'right:6%;';
@@ -120,7 +126,7 @@
                     $accentMotion = 'seasonal-accent--sway';
                 }
             @endphp
-            <svg class="seasonal-accent {{ $accentMotion }}" aria-hidden="true" focusable="false" style="top:{{ $accentTop }}%; {{ $accentSide }} width:{{ $accentSize }}px; height:{{ $accentSize }}px; opacity:{{ $accentOpacity }};"><use href="#st-orn-{{ $ornName }}"/></svg>
+            <svg class="seasonal-accent {{ $accentMotion }}" aria-hidden="true" focusable="false" style="{{ $accentTop === null ? 'bottom:17px;' : 'top:' . $accentTop . '%;' }} {{ $accentSide }} width:{{ $accentSize }}px; height:{{ $accentSize }}px; opacity:{{ $accentOpacity }};"><use href="#st-orn-{{ $ornName }}"/></svg>
         @endforeach
     @endif
 </div>

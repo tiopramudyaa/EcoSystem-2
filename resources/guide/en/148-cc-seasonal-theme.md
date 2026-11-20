@@ -5,13 +5,13 @@ order: 27
 title: Seasonal Theme
 summary: Choose a festive look for EcoSystem, switch it on by hand or by a date schedule, set the background music, and see how each person can override it.
 requires: [control-center.seasonal-theme]
-updated: 2026-11-19
+updated: 2026-11-20
 ---
 A seasonal theme gives EcoSystem a festive look for a holiday: decoration on the page, color accents in the sidebar and the header, and a themed loading screen after sign-in. An administrator chooses the default theme for everyone and for the sign-in page. Each person can still follow it, turn it off or pick another theme for themselves in `Settings`.
 
 ## Who uses this
 
-Administrators. The `Control Center` › `Seasonal Theme` menu is meant for the administrator role only. Every other user chooses their own theme in `Settings` › `Appearance` (see the last section of this topic).
+Administrators. The `Control Center` › `Seasonal Theme` menu is meant for the administrator role only. Every other user chooses their own theme in `Settings` › `Appearance` (see [[my-seasonal-theme]]).
 
 ## Before you start
 
@@ -33,6 +33,20 @@ Administrators. The `Control Center` › `Seasonal Theme` menu is meant for the 
 5. Under `Background music`, choose a track (or `None (no background music)`), use `Preview` to listen, and set the `Volume`.
 6. Select `Save settings`.
 
+### Set a separate theme for the login pages and loading screen
+
+1. On the same page, find the card `Login and auth pages`.
+2. Under `Theme`, choose `Follow global theme` (the default), `Off`, or one theme.
+3. Under `Applies to`, choose `Login pages and loading screen`, `Login pages only` or `Loading screen after sign in only`.
+4. Select `Save settings`.
+
+### Preview the loading screen of a theme
+
+1. Open `Control Center` › `Seasonal Theme` (or `Settings` › `Appearance` for your own theme). Each theme card shows a small still image of its loading screen.
+2. Select the theme card you want to look at.
+3. Select `Play preview`. A full screen preview opens and plays the loading scene for a few seconds.
+4. To leave early, select `Close preview`, press `Esc` or click anywhere on the preview. It also closes by itself after about six seconds.
+
 ### Add your own music
 
 1. On the same page, under `Upload a new track`, choose an audio file and select `Upload`.
@@ -46,15 +60,12 @@ Administrators. The `Control Center` › `Seasonal Theme` menu is meant for the 
 - **Automatic schedule mode.** Each period has a theme, a start date and an end date. Both dates are included. On days outside every period, no theme is shown.
 - **Overlapping periods.** If two periods cover the same day, the one listed first wins.
 - **Limits and validation.** A schedule can have at most 20 periods. Each period needs a theme, a start date and an end date, and the end date must not be before the start date, otherwise the page shows an error and nothing is saved. A period cannot use `Off`.
-- **Sign-in page.** There is no signed-in user yet, so the sign-in page itself always shows the administrator's theme (manual or by schedule).
-- **What a theme changes.** The decoration on the page, the colors of the sidebar, the header, buttons and links, and the loading screen after sign-in. Buttons that delete, reject or warn stay red so their meaning does not change.
-- **Loading screen.** After a successful sign-in, an animated 3D scene plays for about three seconds before the dashboard opens. It follows the theme of the person who signed in, so someone who chose their own theme sees that theme's scene, and someone who chose `Off` sees none. Each theme has its own scene: Christmas shows Santa's sleigh flying over a snowy village at night, New Year shows fireworks over a city and its river, Ramadan shows a crescent moon over a domed mosque with hanging lanterns, Eid (Lebaran) shows a family greeting each other in a courtyard at dusk under hanging ketupat, Lunar New Year shows a golden dragon among lanterns, and Independence Day shows the Merah Putih flag rising while people salute.
-- **Devices without 3D.** If the device or browser cannot draw 3D, or has the reduced motion setting on, a calm still version of the loading screen is shown instead and sign-in is never delayed. Low-power devices, or devices that start slowly, draw the scene at a lower quality so it stays smooth.
-- **Navbar decoration.** Small ornaments sit in the two outer corners of the top bar and a few tiny pendants hang from its bottom edge, a different set for each theme: a pine branch with berries, bells and holly for Christmas; curling ribbons and firework bursts for New Year; a crescent moon, lanterns and a mosque silhouette for Ramadan; young coconut leaves and ketupat for Eid (Lebaran); a red lantern and plum blossom branch for Lunar New Year; and crossed flags with short pennants for Independence Day. They never cover the page title, buttons or text, cannot be clicked, do not change the size of the top bar and are hidden when printing. When `Show animations` is on and the device does not use reduced motion, each piece moves in its own way (swinging, twinkling, bursting, waving, glowing) and otherwise stays still.
-- **Animations.** Moving decoration follows each person's `Show animations` setting and the reduced motion setting of their device. When either is off, the decoration stays still.
+- **Sign-in page.** There is no signed-in user yet, so the sign-in page itself shows the administrator's global theme (manual or by schedule), unless the `Login and auth pages` card sets a separate theme for it.
+- **Separate login theme.** The `Login and auth pages` card has a theme (`Follow global theme`, `Off` or one theme) and a scope. With `Follow global theme` nothing changes: the pages follow the global theme and the loading screen follows each person's own theme. With another choice, `Login pages and loading screen` applies it to both, `Login pages only` applies it to the sign-in, forgot password, two-factor and change password pages and leaves the loading screen as before, and `Loading screen after sign in only` applies it to the loading screen and leaves the pages on the global theme. Choosing `Off` here turns the theme off for the selected parts.
+- **Who can change the login theme.** Only users with the `Seasonal Theme` menu. People cannot change it in `Settings`. When a login theme is set for the loading screen, it replaces each person's own choice for that screen only. The dashboard, sidebar, navbar and music are not affected and keep following the person's choice or the global theme. The loading screen appears only after a password sign in. The two-factor step and signing in with Microsoft go straight to the dashboard without it.
+- **Loading screen.** After a password sign in, an animated 3D scene plays for about three seconds before the dashboard opens. Unless a separate login theme is set for the loading screen, it follows the theme of the person who signed in, and someone who chose `Off` sees none. Buttons that delete, reject or warn stay red under any theme. What each theme shows is described in [[my-seasonal-theme]].
+- **Loading screen preview.** `Play preview` is optional and works only when you press it. Until then the page downloads only the small still images on the theme cards, never the 3D files. It shows the scene of the theme card you selected (`Default` shows the current global theme, and a theme with no loading screen, such as `Off`, cannot be previewed), runs for at most about six seconds, closes with `Close preview`, `Esc` or a click, and only one preview can be open at a time. It does not sign you in, does not change your saved choice and uses no extra data from the server. On a device that cannot draw 3D, with Save-Data on, on a slow connection (2G or 3G) or with reduced motion, it shows the still image instead. Details for people using it from `Settings` are in [[my-seasonal-theme]].
 - **Background music.** Only the administrator chooses the track and the volume, and it applies to everyone. Users cannot pick a track. A user can only mute it on their own screen, and that choice is not saved for other users.
-- **Missing preferences.** People who have never saved their preferences follow `Default`, so they see the administrator's theme.
-- **Accent color.** While a seasonal theme is active for a person, the colors of the sidebar, buttons and links follow the theme. The `Accent color` chosen in `Settings` shows in the preview but comes back after the page reloads. To keep their own accent color, a person sets `Seasonal theme` to `Off`.
 - **Audit.** Saving the theme is recorded in the audit log.
 
 ## What happens next
@@ -69,15 +80,5 @@ After you save, people on `Default` see the new theme the next time a page loads
 
 **Two periods overlap, which one shows?** The one listed first.
 
-**Why does motion not appear?** `Show animations` may be off in `Settings` › `Appearance`, or the device uses the reduced motion setting.
 
-**Can one person turn the music off for everyone?** No. A user can only mute it on their own screen.
-
-### How each person chooses their own theme
-
-1. Open `Settings` › `Appearance`.
-2. Find `Seasonal theme`. A line tells you which theme the administrator has active now.
-3. Choose `Default` to follow the administrator, `Off` for no theme, or one theme for yourself.
-4. Select `Save changes`.
-
-<!-- sources: routes/web.php, app/Support/SeasonalThemes.php, app/Support/GlobalSeasonalTheme.php, app/Support/SeasonalThemeResolver.php, app/Http/Controllers/SeasonalThemeSettingsController.php, app/Http/Controllers/SettingsController.php, resources/views/admin/seasonal-theme-settings.blade.php, resources/views/partials/seasonal-navbar.blade.php, resources/views/settings/index.blade.php, lang/en/ui.php -->
+<!-- sources: routes/web.php, app/Support/SeasonalThemes.php, app/Support/GlobalSeasonalTheme.php, app/Support/SeasonalThemeResolver.php, app/Http/Controllers/SeasonalThemeSettingsController.php, app/Http/Controllers/SettingsController.php, resources/views/admin/seasonal-theme-settings.blade.php, resources/views/partials/seasonal-navbar.blade.php, resources/views/settings/index.blade.php, resources/views/partials/seasonal-preview.blade.php, lang/en/ui.php -->

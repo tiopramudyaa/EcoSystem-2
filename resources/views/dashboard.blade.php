@@ -1639,6 +1639,10 @@
     @if(($seasonalTheme['key'] ?? 'none') !== 'none' || request()->routeIs('settings.*'))
         @include('partials.seasonal-ui-remap', ['dark' => ($preferences['theme'] ?? 'light') === 'dark'])
     @endif
+    {{-- Aksen dekoratif sidebar, header, dan kartu ringkasan. Hanya CSS tema yang aktif; tanpa tema tidak dimuat. --}}
+    @if(($seasonalTheme['key'] ?? 'none') !== 'none')
+        @include('partials.seasonal-accents', ['themeKey' => $seasonalTheme['key'], 'dark' => ($preferences['theme'] ?? 'light') === 'dark', 'showAnimations' => $preferences['show_animations'] ?? true])
+    @endif
 </head>
 
 <body class="text-gray-900 min-h-screen" style="background-color: var(--bg-color);">

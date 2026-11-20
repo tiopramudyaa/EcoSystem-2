@@ -77,4 +77,22 @@ class SeasonalThemeSettingsUpdateTest extends TestCase
         $rows = array_fill(0, 21, ['theme' => 'natal', 'start' => '2026-12-01', 'end' => '2026-12-02']);
         $this->assertRejected($this->valid(['schedule' => $rows]), 'schedule');
     }
+
+    public function test_tema_login_tak_dikenal_ditolak(): void
+    {
+        $this->assertRejected($this->valid(['login' => ['theme' => 'paskah', 'scope' => 'both']]), 'login.theme');
+    }
+
+    public function test_cakupan_login_tak_valid_ditolak(): void
+    {
+        $this->assertRejected($this->valid(['login' => ['theme' => 'inherit', 'scope' => 'dashboard']]), 'login.scope');
+    }
+
+    public function test_route_pengaturan_hanya_lewat_middleware_menu_admin(): void
+    {
+        foreach (['admin.seasonal-theme', 'admin.seasonal-theme.update'] as $name) {
+            $middleware = \Illuminate\Support\Facades\Route::getRoutes()->getByName($name)->gatherMiddleware();
+            $this->assertContains('menu:control-center.seasonal-theme', $middleware);
+        }
+    }
 }

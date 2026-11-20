@@ -18,8 +18,20 @@ class SeasonalNavbarArt
 {
     public const EDGE = 28;
 
-    /** @return array{l:string,r:string}|null */
+    /**
+     * l, r: hiasan utama dan bandul. fl, fr: lapisan ketiga yang jarang (viewBox 70x40) di dekat tiap pojok luar.
+     *
+     * @return array{l:string,r:string,fl:string,fr:string}|null
+     */
     public static function pieces(string $key): ?array
+    {
+        $p = self::mainPieces($key);
+
+        return $p === null ? null : $p + ['fl' => self::fx($key, false), 'fr' => self::fx($key, true)];
+    }
+
+    /** @return array{l:string,r:string}|null */
+    private static function mainPieces(string $key): ?array
     {
         return match ($key) {
             'natal' => ['l' => self::natalLeft(), 'r' => self::natalRight()],
@@ -397,5 +409,138 @@ class SeasonalNavbarArt
         $o .= self::twinkle(60, 33, 2.4, '#f2c14e', 3.4, .8);
 
         return self::svg($o);
+    }
+
+    // ---------------------------------------------------------------- Lapisan ketiga (fx) dan tepi
+
+    /** Gerak untuk satu elemen fx: kelas gerak, titik pusat, durasi, dan jeda negatif masing-masing. */
+    private static function mv(string $cls, float $x, float $y, float $dur, float $delay, string $inner): string
+    {
+        return '<g class="' . $cls . '" style="transform-origin:' . self::n($x) . 'px ' . self::n($y) . 'px;--d:' . self::n($dur) . 's;--o:-' . self::n($delay) . 's">' . $inner . '</g>';
+    }
+
+    private static function flake(float $x, float $y, float $r, string $c): string
+    {
+        $d = '';
+        for ($k = 0; $k < 3; $k++) {
+            $a = $k * M_PI / 3;
+            $d .= 'M' . self::n($x - cos($a) * $r) . ' ' . self::n($y - sin($a) * $r) . 'L' . self::n($x + cos($a) * $r) . ' ' . self::n($y + sin($a) * $r);
+        }
+
+        return '<path d="' . $d . '" stroke="' . $c . '" stroke-width=".7" stroke-linecap="round" fill="none"/><circle cx="' . self::n($x) . '" cy="' . self::n($y) . '" r=".7" fill="#fff"/>';
+    }
+
+    private static function crystal(float $x, float $y, float $h, string $fill, string $stroke): string
+    {
+        return '<path d="M' . self::n($x) . ' ' . self::n($y - $h) . 'L' . self::n($x + $h * .38) . ' ' . self::n($y) . 'L' . self::n($x) . ' ' . self::n($y + $h) . 'L' . self::n($x - $h * .38) . ' ' . self::n($y) . 'Z" fill="' . $fill . '" stroke="' . $stroke . '" stroke-width=".4"/>';
+    }
+
+    private static function star5(float $cx, float $cy, float $r, string $fill, string $stroke = 'none'): string
+    {
+        $d = '';
+        for ($i = 0; $i < 10; $i++) {
+            $a = $i * M_PI / 5 - M_PI / 2;
+            $rr = $i % 2 ? $r * .42 : $r;
+            $d .= ($i ? 'L' : 'M') . self::n($cx + cos($a) * $rr) . ' ' . self::n($cy + sin($a) * $rr);
+        }
+
+        return '<path d="' . $d . 'Z" fill="' . $fill . '" stroke="' . $stroke . '" stroke-width=".4"/>';
+    }
+
+    private static function petal(float $x, float $y, float $rot, string $fill): string
+    {
+        return '<path transform="translate(' . self::n($x) . ' ' . self::n($y) . ') rotate(' . self::n($rot) . ')" d="M0-2.6C2 -2.6 2.6 .2 0 2.6C-2.6 .2 -2 -2.6 0-2.6Z" fill="' . $fill . '" stroke="#d96a86" stroke-width=".3"/>';
+    }
+
+    /** Lapisan ketiga: elemen kecil dan jarang di pojok luar, gerak sendiri-sendiri. Tanpa id. */
+    private static function fx(string $key, bool $right): string
+    {
+        $o = '';
+        switch ($key) {
+            case 'natal':
+                $f = $right
+                    ? [[60, 9, 3, 5.2, 0], [42, 22, 2.2, 6.6, 2.4]]
+                    : [[10, 7, 3.4, 5.8, 0], [31, 19, 2.4, 6.4, 2.1]];
+                foreach ($f as [$x, $y, $r, $d, $dl]) {
+                    $o .= self::mv('sn-drift', $x, $y, $d, $dl, self::flake($x, $y, $r, '#8fb9d6'));
+                }
+                $c = $right ? [[58, 33, 4.2, 3.4, .5], [28, 12, 3.4, 4.1, 1.6]] : [[48, 10, 4.6, 3.1, .7], [20, 33, 4, 3.8, 1.5]];
+                foreach ($c as [$x, $y, $h, $d, $dl]) {
+                    $o .= self::mv('sn-twinkle', $x, $y, $d, $dl, self::crystal($x, $y, $h, '#e7f3fb', '#9cc4dc'));
+                }
+                break;
+            case 'tahun_baru':
+                // jejak kilau menurun diagonal dari pojok luar
+                for ($i = 0; $i < 5; $i++) {
+                    $x = $right ? 64 - $i * 10.5 : 6 + $i * 11;
+                    $y = 4 + $i * 4.8;
+                    $o .= self::mv('sn-twinkle', $x, $y, 2.6 + $i * .35, .3 * $i + ($right ? .5 : 0), self::star4($x, $y, 3 - $i * .45, $i % 2 ? '#fff' : '#f6d36a'));
+                }
+                break;
+            case 'ramadan':
+                $s = $right ? [[62, 6, 2.6], [46, 12, 1.7], [56, 23, 2.1], [34, 5, 1.4]] : [[8, 10, 2.6], [27, 5, 1.8], [44, 17, 2.2], [14, 25, 1.5]];
+                foreach ($s as $i => [$x, $y, $r]) {
+                    $o .= self::mv('sn-twinkle', $x, $y, 2.7 + $i * .45, $i * 1.1, self::star4($x, $y, $r, $i % 2 ? '#fff4c2' : '#f5c542'));
+                }
+                break;
+            case 'lebaran':
+                $s = $right ? [[60, 8, 2.8, '#d4e157'], [42, 4, 1.7, '#fff'], [52, 21, 2.2, '#9ccc3c']] : [[10, 9, 2.8, '#d4e157'], [32, 5, 1.7, '#fff'], [50, 20, 2.2, '#9ccc3c']];
+                foreach ($s as $i => [$x, $y, $r, $c]) {
+                    $o .= self::mv('sn-twinkle', $x, $y, 3 + $i * .5, $i * 1.3, self::star4($x, $y, $r, $c));
+                }
+                $dx = $right ? 28 : 40;
+                $o .= self::mv('sn-twinkle', $dx, 12, 2.4, .9, '<circle cx="' . $dx . '" cy="12" r="1" fill="#d4e157"/>');
+                break;
+            case 'imlek':
+                $p = $right ? [[56, 5, 20], [38, 14, -35], [18, 8, 60]] : [[14, 4, -20], [34, 12, 40], [52, 6, -60]];
+                foreach ($p as $i => [$x, $y, $rot]) {
+                    $o .= self::mv('sn-fall', $x, $y, 5.2 + $i * 1.1, $i * 1.9, self::petal($x, $y, $rot, $i % 2 ? '#f9d3dc' : '#f4a6b8'));
+                }
+                break;
+            case 'hut_ri':
+                $s = $right ? [[62, 7, 3, '#d6202c'], [46, 13, 2.2, '#fff'], [56, 23, 2.4, '#f2c14e']] : [[9, 9, 3, '#d6202c'], [28, 5, 2.2, '#fff'], [47, 18, 2.4, '#f2c14e']];
+                foreach ($s as $i => [$x, $y, $r, $c]) {
+                    $o .= self::mv('sn-twinkle', $x, $y, 3 + $i * .5, $i * 1.2, self::star5($x, $y, $r, $c, $c === '#fff' ? '#d6202c' : 'none'));
+                }
+                break;
+            default:
+                return '';
+        }
+
+        return $o;
+    }
+
+    /**
+     * Ubin SVG (data URI) rumbai es halus untuk natal: kristal tidak beraturan setinggi maksimal 6 unit,
+     * dipakai CSS sebagai background berulang di bawah tepi header. Deterministik, tanpa acak sungguhan.
+     */
+    public static function frostTile(): string
+    {
+        $w = 480;
+        $d = '';
+        $x = 3.0;
+        $i = 0;
+        while ($x < $w - 2) {
+            $h = 1.6 + fmod(abs(sin($i * 12.9898 + 1.7)) * 43758.5453, 1) * 4.2;
+            $half = .5 + fmod(abs(sin($i * 78.233 + .3)) * 9631.7, 1) * .9;
+            $d .= 'M' . self::n($x - $half) . ' 0L' . self::n($x) . ' ' . self::n($h) . 'L' . self::n($x + $half) . ' 0Z';
+            if ($h > 4) {
+                $d .= 'M' . self::n($x) . ' ' . self::n($h * .5) . 'l1.3 -.7M' . self::n($x) . ' ' . self::n($h * .5) . 'l-1.3 -.7';
+            }
+            $x += 5 + fmod(abs(sin($i * 39.346 + 2.1)) * 24634.6, 1) * 15;
+            $i++;
+        }
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' . $w . ' 6" width="' . $w . '" height="6"><path d="M0 .3H' . $w . '" stroke="#cfe6f5" stroke-width=".6"/><path d="' . $d . '" fill="#cfe6f5" stroke="#a9cfe6" stroke-width=".3"/></svg>';
+
+        return 'data:image/svg+xml,' . rawurlencode($svg);
+    }
+
+    /** Ubin bintang kecil di sepanjang garis tepi ramadan (data URI). */
+    public static function edgeStarsTile(): string
+    {
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 6" width="96" height="6">'
+            . self::star4(10, 3, 2.6, '#fff4c2') . self::star4(44, 3, 1.8, '#f5c542') . self::star4(76, 3, 2.3, '#fff4c2') . '</svg>';
+
+        return 'data:image/svg+xml,' . rawurlencode($svg);
     }
 }

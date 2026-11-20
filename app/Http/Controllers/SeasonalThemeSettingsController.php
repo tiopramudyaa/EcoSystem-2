@@ -68,6 +68,9 @@ class SeasonalThemeSettingsController extends Controller
             'schedule.*.theme' => ['required', 'string', Rule::in($scheduleThemes)],
             'schedule.*.start' => 'required|date_format:Y-m-d',
             'schedule.*.end' => 'required|date_format:Y-m-d|after_or_equal:schedule.*.start',
+            'login' => 'nullable|array',
+            'login.theme' => ['nullable', 'string', Rule::in(array_merge([GlobalSeasonalTheme::LOGIN_INHERIT], SeasonalThemes::keys()))],
+            'login.scope' => ['nullable', Rule::in([GlobalSeasonalTheme::SCOPE_BOTH, GlobalSeasonalTheme::SCOPE_PAGE, GlobalSeasonalTheme::SCOPE_LOADING])],
         ]);
 
         $before = GlobalSeasonalTheme::all();
@@ -83,6 +86,10 @@ class SeasonalThemeSettingsController extends Controller
             'volume' => $request->input('volume'),
             'mode' => $request->input('mode'),
             'schedule' => array_values($request->input('schedule', [])),
+            'login' => [
+                'theme' => $request->input('login.theme', GlobalSeasonalTheme::LOGIN_INHERIT),
+                'scope' => $request->input('login.scope', GlobalSeasonalTheme::SCOPE_BOTH),
+            ],
         ]);
 
         $applied = GlobalSeasonalTheme::all();

@@ -1095,7 +1095,7 @@ class AuthController extends Controller
                 : ($authUser->preferences ?? null);
             $choice = is_array($prefs) ? (string) ($prefs['seasonal_theme'] ?? 'default') : 'default';
 
-            return \App\Support\SeasonalThemeResolver::effectiveFor($choice);
+            return \App\Support\SeasonalThemeResolver::forLoading($choice);
         } catch (\Throwable $e) {
             return 'none';
         }
