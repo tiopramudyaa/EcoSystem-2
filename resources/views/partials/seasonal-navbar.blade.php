@@ -1,97 +1,65 @@
 {{--
-    Hiasan navbar tema musiman: satu lapisan dekoratif selebar header, digambar
-    dari ubin SVG statis (public/images/seasonal/navbar/<key>.svg) yang diulang
-    horizontal, jadi satu berkas kecil menutupi lebar layar berapa pun.
+    Hiasan navbar tema musiman: dua potongan vektor kecil di pojok kiri dan kanan header
+    (bukan rumbai selebar layar). Gambar dihasilkan App\Support\SeasonalNavbarArt dan
+    dicetak inline sehingga tiap bagian bisa bergerak sendiri (ayun, kedip, letup, kibar).
+    Tidak ada berkas gambar tambahan dan tidak ada JavaScript.
 
-    Dipasang DI DALAM <header> dashboard (sticky z-40, sudah membentuk stacking
-    context sendiri). Aturan lapisan:
-      - absolute, kiri dan kanan 0, menempel di tepi bawah header; tidak ikut
-        alur layout, jadi tinggi header tidak berubah (tanpa CLS).
-      - z-index -1: di atas latar header, di bawah semua kontrol (tombol, search,
-        bel, avatar, dropdown) karena itu semua konten normal di dalam header.
-      - pointer-events:none dan user-select:none: tidak pernah menangkap klik.
-      - menjuntai maksimal 10px di bawah tepi header, di atas padding konten
-        (konten minimal p-4 = 16px), tidak menutupi teks atau target klik.
-      - disembunyikan saat print dan saat prefers-contrast: more.
-      - kedip lampu hanya lewat animasi opacity CSS, dan hanya bila toggle
-        Show animations aktif dan prefers-reduced-motion: no-preference.
-        Tanpa itu, hiasan statis. Tidak ada JavaScript.
-      - tile hanya diminta browser ketika tema aktif (background-image ada di
-        <style> yang hanya dicetak untuk tema aktif).
+    Dipasang DI DALAM <header> dashboard (sticky z-40, sudah membentuk stacking context).
+      - absolute di tepi bawah header, tidak ikut alur layout, tinggi header tidak berubah.
+      - z-index -1: di bawah semua kontrol; pointer-events none; tidak menangkap klik.
+      - bagian di dalam header hanya di pojok luar (di balik tombol menu dan avatar);
+        sepanjang tepi hanya bandul kecil yang menjuntai maksimal 12px di bawah header,
+        jadi judul dan subjudul halaman tidak tertutup.
+      - gerak hanya lewat transform/opacity CSS dan hanya bila toggle Show animations
+        aktif dan prefers-reduced-motion: no-preference. Selain itu statis.
+      - disembunyikan saat print dan prefers-contrast: more.
 
-    Params:
-      $themeKey        string  key tema efektif (bukan 'none').
-      $showAnimations  bool    preferensi Show animations pengguna.
-      $dark            bool    header sedang mode gelap (latar --card-bg gelap).
+    Params: $themeKey (key tema efektif), $showAnimations (bool), $dark (bool, header gelap).
 --}}
 @php
+    $navArt = \App\Support\SeasonalNavbarArt::pieces($themeKey ?? 'none');
     $navTrimKey = $themeKey ?? 'none';
-    // Tema -> berkas ubin. Lampu (opsional) adalah ubin kedua yang berkedip.
-    $navTrimTiles = [
-        'natal' => ['natal', true],
-        'tahun_baru' => ['tahun_baru', true],
-        'ramadan' => ['ramadan', true],
-        'lebaran' => ['lebaran', false],
-        'imlek' => ['imlek', false],
-        'hut_ri' => ['hut_ri', false],
-    ];
-    $navTrim = $navTrimTiles[$navTrimKey] ?? null;
     $navTrimAnimate = (bool) ($showAnimations ?? true);
     $navTrimDark = (bool) ($dark ?? false);
 @endphp
-@if($navTrim)
-<div class="seasonal-navbar{{ $navTrimDark ? ' seasonal-navbar--dark' : '' }}" aria-hidden="true" data-season-trim="{{ $navTrimKey }}"></div>
+@if($navArt)
+<div class="seasonal-navbar{{ $navTrimDark ? ' seasonal-navbar--dark' : '' }}" aria-hidden="true" data-season-trim="{{ $navTrimKey }}">
+    <svg class="sn-piece sn-l" viewBox="0 0 190 40" width="190" height="40" focusable="false">{!! $navArt['l'] !!}</svg>
+    <svg class="sn-piece sn-r" viewBox="0 0 190 40" width="190" height="40" focusable="false">{!! $navArt['r'] !!}</svg>
+</div>
 @once
 <style>
     .seasonal-navbar {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: -10px;
-        height: 32px;
-        z-index: -1;
-        pointer-events: none;
-        user-select: none;
-        -webkit-user-select: none;
+        position: absolute; left: 0; right: 0; bottom: -14px; height: 48px;
+        z-index: -1; pointer-events: none; user-select: none; -webkit-user-select: none;
         contain: layout paint size;
     }
-    .seasonal-navbar::before,
-    .seasonal-navbar::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background-repeat: repeat-x;
-        background-position: left top;
-        background-size: auto 100%;
-    }
-    .seasonal-navbar[data-season-trim="{{ $navTrimKey }}"]::before {
-        background-image: url('{{ asset('images/seasonal/navbar/' . $navTrim[0] . '.svg') }}?v={{ @filemtime(public_path('images/seasonal/navbar/' . $navTrim[0] . '.svg')) ?: 0 }}');
-    }
-    @if($navTrim[1])
-    .seasonal-navbar[data-season-trim="{{ $navTrimKey }}"]::after {
-        background-image: url('{{ asset('images/seasonal/navbar/' . $navTrim[0] . '-lights.svg') }}?v={{ @filemtime(public_path('images/seasonal/navbar/' . $navTrim[0] . '-lights.svg')) ?: 0 }}');
-    }
-    @endif
-    /* Header gelap (#1f2937): sedikit lebih terang supaya hijau tua dan biru tua tetap terbaca. */
+    .seasonal-navbar .sn-piece { position: absolute; bottom: 0; height: 48px; width: 228px; overflow: visible; }
+    .seasonal-navbar .sn-l { left: 0; }
+    .seasonal-navbar .sn-r { right: 0; }
     .seasonal-navbar--dark { filter: brightness(1.22) saturate(1.05); }
-    /* Hijau janur terlalu neon bila dicerahkan: untuk Lebaran cukup sedikit. */
     .seasonal-navbar--dark[data-season-trim="lebaran"] { filter: brightness(1.05) saturate(.85); }
-    /* Layar kecil: ubin diperkecil proporsional, padding bawah header hanya 10px. */
     @media (max-width: 639.98px) {
-        .seasonal-navbar { height: 22px; bottom: -7px; }
+        .seasonal-navbar { height: 36px; bottom: -11px; }
+        .seasonal-navbar .sn-piece { height: 36px; width: 171px; }
+        .seasonal-navbar .sn-r { display: none; }
     }
     @media (max-width: 399.98px) {
-        .seasonal-navbar { height: 18px; bottom: -6px; }
+        .seasonal-navbar { height: 30px; bottom: -9px; }
+        .seasonal-navbar .sn-piece { height: 30px; width: 142px; }
     }
-    @if($navTrimAnimate && $navTrim[1])
+    @if($navTrimAnimate)
     @media (prefers-reduced-motion: no-preference) {
-        .seasonal-navbar::after {
-            animation: seasonal-navbar-twinkle 3.2s ease-in-out infinite alternate;
-        }
-        @keyframes seasonal-navbar-twinkle {
-            0%   { opacity: .45; }
-            100% { opacity: 1; }
-        }
+        .seasonal-navbar .sn-sway { animation: sn-sway var(--d, 4s) ease-in-out var(--o, 0s) infinite alternate; }
+        .seasonal-navbar .sn-twinkle { animation: sn-twinkle var(--d, 3s) ease-in-out var(--o, 0s) infinite alternate; }
+        .seasonal-navbar .sn-pop { animation: sn-pop var(--d, 4s) ease-out var(--o, 0s) infinite; }
+        .seasonal-navbar .sn-wave { animation: sn-wave var(--d, 3s) ease-in-out var(--o, 0s) infinite alternate; }
+        .seasonal-navbar .sn-breathe { animation: sn-breathe var(--d, 5s) ease-in-out infinite alternate; }
+        @keyframes sn-sway { from { transform: rotate(calc(var(--a, 3.5deg) * -1)); } to { transform: rotate(var(--a, 3.5deg)); } }
+        @keyframes sn-twinkle { from { opacity: .35; transform: scale(.82); } to { opacity: 1; transform: scale(1.08); } }
+        @keyframes sn-pop { 0% { opacity: 0; transform: scale(.25); } 18% { opacity: 1; } 55% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.18); } }
+        @keyframes sn-wave { from { transform: skewY(-5deg) scaleX(.97); } to { transform: skewY(5deg) scaleX(1.03); } }
+        @keyframes sn-breathe { from { opacity: .5; transform: scale(.94); } to { opacity: 1; transform: scale(1.08); } }
     }
     @endif
     @media print { .seasonal-navbar { display: none; } }

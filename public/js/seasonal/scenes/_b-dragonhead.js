@@ -37,13 +37,13 @@ export function sculptHead(THREE) {
     // sirip pipi emas menyapu ke belakang
     for (let k = 0; k < 4; k++) cone(hm, 0.15 - k * 0.025, 1.2 - k * 0.18, gold, -0.4 - k * 0.28, -0.1 - k * 0.2, s * (0.8 + k * 0.04), 0, s * 0.4, Math.PI / 2 + 0.3);
     // tanduk rusa: menyapu ke belakang dan atas, bercabang anggun (z kecil agar siluet bersih)
-    const a = [[-0.15, 0.95, 0.32], [-0.85, 1.6, 0.4], [-1.75, 2.1, 0.46], [-2.8, 2.3, 0.5], [-3.9, 2.0, 0.5], [-4.7, 1.3, 0.5]].map((p) => [p[0], p[1], p[2] * s]);
+    const a = [[-0.15, 0.95, 0.32], [-0.85, 1.6, 0.4], [-1.75, 2.1, 0.46], [-2.8, 2.3, 0.5], [-3.9, 2.0, 0.5], [-4.7, 1.3, 0.5]].map((p) => [p[0] * 0.8, p[1] * 0.8, p[2] * s]);
     const rr = [0.34, 0.3, 0.24, 0.17, 0.1, 0.03];
     for (let k = 0; k < 5; k++) hm.limb(a[k], a[k + 1], rr[k], rr[k + 1], bone, 8);
-    [[1, [-0.45, 2.45]], [2, [-1.3, 3.1]], [2, [-0.9, 2.6]], [3, [-2.4, 3.2]], [3, [-1.9, 2.8]], [4, [-3.7, 2.9]]].forEach(([i, p]) => hm.limb(a[i], [p[0], p[1], a[i][2]], 0.17, 0.03, bone, 6));
+    [[1, [-0.45, 2.45]], [2, [-1.3, 3.1]], [2, [-0.9, 2.6]], [3, [-2.4, 3.2]], [3, [-1.9, 2.8]], [4, [-3.7, 2.9]]].forEach(([i, p]) => hm.limb(a[i], [p[0] * 0.8, p[1] * 0.8, a[i][2]], 0.17, 0.03, bone, 6));
   });
   // surai api dari tengkuk
-  for (let k = 0; k < 10; k++) cone(hm, 0.26 - k * 0.015, 1.8 - k * 0.07, k % 2 ? gold : flame, -0.5 - k * 0.3, 0.75 - k * 0.1, 0, 0, 0, Math.PI / 2 + 0.7);
+  for (let k = 0; k < 10; k++) cone(hm, 0.2 - k * 0.012, 1.3 - k * 0.06, k % 2 ? gold : flame, -0.5 - k * 0.3, 0.75 - k * 0.1, 0, 0, 0, Math.PI / 2 + 0.7);
 
   // rahang bawah (dipasang pada engsel animasi)
   jm.limb([0.1, -0.05, 0], [2.5, 0.05, 0], 0.48, 0.28, K('#e8ae3c'), 10);

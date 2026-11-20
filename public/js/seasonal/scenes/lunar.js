@@ -4,7 +4,7 @@ import { pal, rng, skyDome, stars, glowTexture, glowSprite, canvasTex, particleP
 import { ribbon } from './_b-geom.js';
 import { sculptHead, EYE, JAW_PIVOT } from './_b-dragonhead.js';
 
-const NR = 120, RAD = 10, G = 2.3, HG = 2.7; // cincin tubuh, sisi, skala tubuh, skala kepala
+const NR = 120, RAD = 10, G = 2.3, HG = 1.9; // cincin tubuh, sisi, skala tubuh, skala kepala
 
 export function create(THREE, ctx) {
   const { scene, camera, palette, duration } = ctx;
