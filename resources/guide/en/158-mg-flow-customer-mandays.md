@@ -5,7 +5,7 @@ order: 18
 title: Customer Mandays Approval
 summary: Choose who approves Level 1 and Level 2 of a Customer Mandays proposal before Helpdesk sends it to the customer.
 requires: [management.flow.customer-mandays]
-updated: 2026-11-13
+updated: 2026-11-18
 ---
 `Management` › `Flow` › `Customer Mandays Approval` sets the two internal approval levels every Customer Mandays proposal goes through after the PIC submits it. Only after both levels approve can Helpdesk send the proposal to the customer.
 
@@ -34,7 +34,9 @@ Administrators, and any role given `Management` › `Flow` › `Customer Mandays
 - Every level needs a step name (at most 100 characters) and either a position or at least one name. A position that nobody holds is refused when no names are chosen.
 - When names are chosen, only those people can approve that level, even if others hold the position.
 - One person per level is enough. Whoever acts first decides that level.
-- Your changes apply only to proposals submitted after you save. A proposal already waiting keeps the approvers it was submitted with. The page tells you how many proposals are waiting right now.
+- Your changes also apply to proposals already waiting for approval. Each level they have not decided yet takes the new step name and approvers of the same level number. Levels already approved keep their approver, date and note. Rejected proposals, proposals ready to send, sent or approved, and older versions are not changed. The page tells you how many proposals are waiting right now, and the message after saving tells you how many now follow the new approvers.
+- If the level a proposal waits at gets new approvers, only the people added get a bell notification. People removed are not told, and their earlier notification stays.
+- Swapping the two levels also applies to waiting proposals by level number. A person who already approved Level 1 can be asked to approve Level 2 as well if the swap makes them its approver.
 - The levels run in order: Level 2 cannot act until Level 1 has approved.
 - An approver may change the mandays numbers before approving. The new numbers are saved with the approval.
 - Rejecting needs a reason of at least 5 characters. The proposal is then closed as `Rejected`, any level after it is marked as skipped, and the PIC revises it as a new version.
@@ -44,11 +46,11 @@ Administrators, and any role given `Management` › `Flow` › `Customer Mandays
 
 ## What happens next
 
-New proposals follow the saved levels. When it is their turn, approvers open `Review Mandays Proposal` on the ticket and find the `Approve` and `Reject` buttons there, even if their role has no review access. The full proposal flow on the ticket is described in the topic Customer Mandays and Resolution Days.
+New proposals, and the undecided levels of proposals already waiting, follow the saved levels. When it is their turn, approvers open `Review Mandays Proposal` on the ticket and find the `Approve` and `Reject` buttons there, even if their role has no review access. The full proposal flow on the ticket is described in the topic Customer Mandays and Resolution Days.
 
 ## Common questions
 
-**I changed the approver but a proposal still waits for the old one.** That proposal was submitted before your change and keeps its own approvers. Ask the old approver to act, or ask Helpdesk to cancel it so the PIC can submit a new version.
+**I changed the approver. What happens to a proposal that was already approved at Level 1?** Level 1 keeps the person who approved it. Only Level 2, which is still waiting, moves to the new approver.
 
 **Why can I not add a third level?** The flow is fixed at two levels on purpose.
 

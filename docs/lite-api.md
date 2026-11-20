@@ -546,6 +546,23 @@ mempertahankan/mengubahnya — lihat [5.6](#56-post-ticketsticketidmessages).
 **URL:** `/api/lite/tickets/{id}`  
 **Auth:** Diperlukan
 
+#### Aturan Akses
+
+| User | Hasil |
+| ---- | ----- |
+| Semua user Lite yang login, termasuk yang **bukan** PIC atau member tiket (misalnya penyetuju Customer Mandays) | `200` |
+| Tiket tersembunyi (`is_hidden`) untuk user selain EC Administrator | `404` |
+| Tiket tidak ada | `404` |
+
+Tidak ada pemeriksaan PIC atau member di endpoint ini. Jadi penyetuju Customer
+Mandays yang membuka tiket dari [5.11](#511-get-customer-mandaysapprovals) atau dari
+detail proposal [5.12](#512-get-ticketsticketidcustomer-mandays) selalu dapat
+memuat detail tiketnya. Yang dibatasi hanya isi blok `customer_mandays`, yang
+bernilai `null` bila user tidak berhak melihat Customer Mandays (aturan sama
+dengan 5.12). Aksi lain tetap punya aturannya sendiri: ubah status
+([5.4](#54-patch-ticketsidstatus)), kirim pesan ([5.6](#56-post-ticketsticketidmessages)),
+dan internal note ([5.7](#57-post-ticketsticketidmessagesmessageidinternal-note) dan 5.8).
+
 #### Path Parameters
 
 | Parameter | Type      | Deskripsi |
@@ -711,6 +728,19 @@ Mengambil semua pesan (percakapan) untuk satu tiket.
 **Method:** `GET`  
 **URL:** `/api/lite/tickets/{ticketId}/messages`  
 **Auth:** Diperlukan
+
+#### Aturan Akses
+
+Sama dengan [5.3](#53-get-ticketsid):
+
+| User | Hasil |
+| ---- | ----- |
+| Semua user Lite yang login, termasuk yang **bukan** PIC atau member tiket (misalnya penyetuju Customer Mandays yang membuka room chat dari detail proposal) | `200` |
+| Tiket tersembunyi (`is_hidden`) untuk user selain EC Administrator | `404` |
+| Tiket tidak ada | `404` |
+
+Endpoint ini hanya membaca. Mengirim pesan atau internal note tetap mengikuti
+aturan [5.6](#56-post-ticketsticketidmessages) sampai 5.8.
 
 #### Path Parameters
 

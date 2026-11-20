@@ -27,6 +27,10 @@ class CustomerMandaysApprovalTest extends TestCase
     private const HELPDESK = 20; // Helpdesk          → Level 2
     private const PIC      = 30; // pengusul
     private const OUTSIDER = 40;
+    private const NEW_L1   = 50; // penyetuju pengganti Level 1
+    private const NEW_L2   = 60; // penyetuju pengganti Level 2, pemegang REVIEWER_ROLE
+
+    private const REVIEWER_ROLE = 7;
 
     private CustomerMandaysApprovalService $service;
 
@@ -166,18 +170,161 @@ class CustomerMandaysApprovalTest extends TestCase
         $this->assertFalse($this->service->canAct($p, self::HELPDESK)['allowed']);
     }
 
-    public function test_changing_the_flow_does_not_touch_a_running_proposal(): void
+    // ── sinkron Flow ke proposal berjalan ─────────────────────────────────
+
+    public function test_flow_change_moves_undecided_levels_to_new_approvers(): void
+    {
+        [, $p] = $this->submitted();
+
+        $this->syncFlow($this->flowRows(['employee_ids' => [self::NEW_L1]], ['employee_ids' => [self::NEW_L2]]));
+
+        $this->assertStringContainsString('1 proposal(s)', (string) session('success'));
+        $this->assertSame([$p->id], $this->service->pendingFor(self::NEW_L1)->pluck('id')->all());
+        $this->assertTrue($this->service->pendingFor(self::ADMIN)->isEmpty());
+        $this->assertFalse($this->service->canAct($p->fresh(), self::ADMIN)['allowed']);
+        $this->assertTrue($this->service->canAct($p->fresh(), self::NEW_L1)['allowed']);
+
+        $l2 = $p->approvals()->where('order_seq', 2)->first();
+        $this->assertSame('employee', $l2->approver_type);
+        $this->assertSame([self::NEW_L2], $l2->approver_employee_ids);
+        // Status, level aktif, dan angka proposal tidak berubah.
+        $fresh = $p->fresh();
+        $this->assertSame('pending_approval', $fresh->status);
+        $this->assertSame(1, (int) $fresh->current_step_order);
+        $this->assertSame(5.0, (float) $fresh->total_mandays);
+    }
+
+    public function test_flow_change_keeps_decided_level_history(): void
     {
         [$ticket, $p] = $this->submitted();
+        $this->assertTrue($this->service->approve($p, $ticket, self::ADMIN, 'Admin')['allowed']);
 
-        CustomerMandaysApprovalStep::where('order_seq', 1)->update([
-            'approver_type'         => 'employee',
-            'approver_role_id'      => null,
-            'approver_employee_ids' => json_encode([self::OUTSIDER]),
-        ]);
+        $this->syncFlow($this->flowRows(
+            ['name' => 'New First', 'employee_ids' => [self::NEW_L1]],
+            ['name' => 'New Second', 'employee_ids' => [self::NEW_L2]]
+        ));
 
-        $this->assertTrue($this->service->canAct($p->fresh(), self::ADMIN)['allowed']);
-        $this->assertFalse($this->service->canAct($p->fresh(), self::OUTSIDER)['allowed']);
+        $l1 = $p->approvals()->where('order_seq', 1)->first();
+        $this->assertSame('approved', $l1->status);
+        $this->assertSame(self::ADMIN, (int) $l1->acted_by);
+        $this->assertSame('Admin Approval', $l1->step_name);
+        $this->assertSame('role', $l1->approver_type);
+        $this->assertSame(self::ADMIN_ROLE, $l1->approver_role_id);
+
+        $l2 = $p->approvals()->where('order_seq', 2)->first();
+        $this->assertSame('New Second', $l2->step_name);
+        $this->assertSame([self::NEW_L2], $l2->approver_employee_ids);
+        $this->assertTrue($this->service->canAct($p->fresh(), self::NEW_L2)['allowed']);
+        $this->assertFalse($this->service->canAct($p->fresh(), self::HELPDESK)['allowed']);
+    }
+
+    public function test_flow_change_notifies_only_new_approvers_of_the_active_level(): void
+    {
+        $this->submitted();
+        $this->assertTrue($this->notified(self::ADMIN, 'customer_mandays_pending_approval'));
+        $oldNotificationId = DB::table('notifications')->where('employee_id', self::ADMIN)->value('id');
+
+        // Level 1 (aktif): ADMIN tetap, NEW_L1 ditambahkan. Level 2 (belum aktif): diganti NEW_L2.
+        $rows = $this->flowRows(['employee_ids' => [self::ADMIN, self::NEW_L1]], ['employee_ids' => [self::NEW_L2]]);
+        $this->syncFlow($rows);
+
+        $pending = DB::table('notifications')->where('type', 'customer_mandays_pending_approval');
+        $this->assertSame([self::NEW_L1], (clone $pending)->where('id', '!=', $oldNotificationId)->pluck('employee_id')->map(fn ($v) => (int) $v)->all());
+        $this->assertSame(1, (clone $pending)->where('employee_id', self::ADMIN)->count());
+        $this->assertFalse($this->notified(self::NEW_L2, 'customer_mandays_pending_approval'));
+        $this->assertFalse($this->notified(self::HELPDESK, 'customer_mandays_pending_approval'));
+
+        // Penyetuju lama yang diganti tidak dinotifikasi, dan notifikasi lamanya dibiarkan.
+        $this->syncFlow($this->flowRows(['employee_ids' => [self::NEW_L1]], ['employee_ids' => [self::NEW_L2]]));
+        $this->assertSame(1, (clone $pending)->where('employee_id', self::ADMIN)->count());
+        $this->assertFalse((bool) DB::table('notifications')->where('id', $oldNotificationId)->value('is_read'));
+        $this->assertSame(1, (clone $pending)->where('employee_id', self::NEW_L1)->count());
+
+        // Simpan lagi tanpa perubahan: tidak ada notifikasi baru.
+        $count = DB::table('notifications')->count();
+        $this->syncFlow($this->flowRows(['employee_ids' => [self::NEW_L1]], ['employee_ids' => [self::NEW_L2]]));
+        $this->assertSame($count, DB::table('notifications')->count());
+        $this->assertSame('Workflow saved.', session('success'));
+    }
+
+    public function test_flow_change_leaves_closed_and_old_versions_alone(): void
+    {
+        // Ditolak.
+        [$t1, $rejected] = $this->submitted();
+        $this->service->reject($rejected, $t1, self::ADMIN, 'Admin', 'Too many days');
+
+        // Siap dikirim (kedua level approve).
+        [$t2, $ready] = $this->submitted();
+        $this->service->approve($ready, $t2, self::ADMIN, 'Admin');
+        $this->service->approve($ready->fresh(), $t2, self::HELPDESK, 'Helpdesk');
+
+        // Versi lama yang masih pending_approval karena sudah ada versi baru.
+        [$t3, $old] = $this->submitted();
+        CustomerMandays::create(['ticket_id' => $t3->ticket_id, 'version' => 2, 'status' => 'draft', 'total_mandays' => 1]);
+
+        $snapshot = fn () => DB::table('customer_mandays_approvals')->orderBy('id')->get()->map(fn ($r) => (array) $r)->all();
+        $before = $snapshot();
+
+        $this->syncFlow($this->flowRows(['employee_ids' => [self::NEW_L1]], ['employee_ids' => [self::NEW_L2]]));
+
+        $this->assertSame($before, $snapshot());
+        $this->assertSame('Workflow saved.', session('success'));
+        $this->assertSame('pending_helpdesk', $ready->fresh()->status);
+    }
+
+    public function test_flow_change_follows_a_new_role(): void
+    {
+        [, $p] = $this->submitted();
+
+        $this->syncFlow($this->flowRows(['role_id' => self::REVIEWER_ROLE], []));
+
+        $l1 = $p->approvals()->where('order_seq', 1)->first();
+        $this->assertSame('role', $l1->approver_type);
+        $this->assertSame(self::REVIEWER_ROLE, $l1->approver_role_id);
+        $this->assertTrue($this->service->canAct($p->fresh(), self::NEW_L2)['allowed']);
+        $this->assertFalse($this->service->canAct($p->fresh(), self::ADMIN)['allowed']);
+        $this->assertTrue($this->notified(self::NEW_L2, 'customer_mandays_pending_approval'));
+    }
+
+    public function test_flow_change_does_not_overwrite_a_level_decided_meanwhile(): void
+    {
+        [, $p] = $this->submitted();
+        $l1Id = $p->approvals()->where('order_seq', 1)->value('id');
+
+        // Simulasikan approve yang selesai tepat setelah baris dibaca, sebelum di-update.
+        $raced = false;
+        DB::listen(function ($query) use (&$raced, $l1Id) {
+            if (!$raced && str_contains($query->sql, 'customer_mandays_approvals') && str_starts_with(strtolower(ltrim($query->sql)), 'select')) {
+                $raced = true;
+                DB::table('customer_mandays_approvals')->where('id', $l1Id)
+                    ->update(['status' => 'approved', 'acted_by' => self::ADMIN, 'acted_at' => now()]);
+            }
+        });
+
+        $steps  = CustomerMandaysApprovalStep::ordered()->get();
+        $steps[0]->forceFill(['approver_type' => 'employee', 'approver_role_id' => null, 'approver_employee_ids' => [self::NEW_L1]]);
+        $result = DB::transaction(fn () => $this->service->syncOpenProposals($steps, self::ADMIN, 'Admin'));
+
+        $this->assertTrue($raced);
+        $l1 = CustomerMandaysApproval::find($l1Id);
+        $this->assertSame('approved', $l1->status);
+        $this->assertSame('role', $l1->approver_type);
+        $this->assertSame(self::ADMIN_ROLE, $l1->approver_role_id);
+        $this->assertSame(0, $result['levels']);
+        $this->assertFalse($this->notified(self::NEW_L1, 'customer_mandays_pending_approval'));
+    }
+
+    public function test_invalid_flow_change_touches_no_running_proposal(): void
+    {
+        [, $p] = $this->submitted();
+        $before = $p->approvals()->get()->map->only(['approver_type', 'approver_role_id', 'approver_employee_ids'])->all();
+
+        // Level 1 tanpa penyetuju → seluruh simpanan ditolak, termasuk Level 2 yang valid.
+        $this->syncFlow($this->flowRows(['role_id' => ''], ['employee_ids' => [self::NEW_L2]]));
+
+        $this->assertStringContainsString('Level 1', (string) session('error'));
+        $this->assertSame($before, $p->approvals()->get()->map->only(['approver_type', 'approver_role_id', 'approver_employee_ids'])->all());
+        $this->assertFalse($this->notified(self::NEW_L2, 'customer_mandays_pending_approval'));
     }
 
     public function test_level_assigned_to_named_people_only_allows_them(): void
@@ -251,8 +398,23 @@ class CustomerMandaysApprovalTest extends TestCase
 
     // ── helper ─────────────────────────────────────────────────────────────
 
+    /**
+     * Baris form Flow: Level 1 dan Level 2 dengan nama bawaan, dan penyetuju bawaan
+     * (role Admin / Helpdesk) bila tidak diganti lewat $l1 / $l2.
+     */
+    private function flowRows(array $l1, array $l2): array
+    {
+        $steps = CustomerMandaysApprovalStep::ordered()->get();
+
+        return [
+            array_merge(['id' => $steps[0]->id, 'name' => 'Admin Approval', 'role_id' => '', 'employee_ids' => []], $l1 ?: ['role_id' => self::ADMIN_ROLE]),
+            array_merge(['id' => $steps[1]->id, 'name' => 'Helpdesk Review', 'role_id' => '', 'employee_ids' => []], $l2 ?: ['role_id' => self::HELPDESK_ROLE]),
+        ];
+    }
+
     private function syncFlow(array $rows)
     {
+        session()->forget(['success', 'error']);
         $request = Request::create('/management/flow/customer-mandays', 'POST', ['steps' => $rows]);
         $request->setLaravelSession($this->app['session.store']);
         $this->app->instance('request', $request);
@@ -363,6 +525,7 @@ class CustomerMandaysApprovalTest extends TestCase
             $t->string('mandays_proposal_status')->default('none');
             $t->decimal('man_days', 8, 2)->nullable();
             $t->timestamp('last_message_at')->nullable();
+            $t->softDeletes();
             $t->timestamps();
         });
         Schema::create('customer_mandays', function ($t) {
@@ -412,8 +575,9 @@ class CustomerMandaysApprovalTest extends TestCase
             ['id' => self::ADMIN_ROLE,    'name' => 'EC Administrator',                  'created_at' => $now, 'updated_at' => $now],
             ['id' => self::USER_ROLE,     'name' => 'EC User',                           'created_at' => $now, 'updated_at' => $now],
             ['id' => self::HELPDESK_ROLE, 'name' => 'Delivery Support Service Helpdesk', 'created_at' => $now, 'updated_at' => $now],
+            ['id' => self::REVIEWER_ROLE, 'name' => 'Reviewer',                          'created_at' => $now, 'updated_at' => $now],
         ]);
-        foreach ([self::ADMIN, self::HELPDESK, self::PIC, self::OUTSIDER] as $id) {
+        foreach ([self::ADMIN, self::HELPDESK, self::PIC, self::OUTSIDER, self::NEW_L1, self::NEW_L2] as $id) {
             DB::table('employee')->insert(['employee_id' => $id, 'is_active' => true]);
         }
         DB::table('employee_role_assignment')->insert([
@@ -421,6 +585,8 @@ class CustomerMandaysApprovalTest extends TestCase
             ['employee_id' => self::HELPDESK, 'role_id' => self::HELPDESK_ROLE],
             ['employee_id' => self::PIC,      'role_id' => self::USER_ROLE],
             ['employee_id' => self::OUTSIDER, 'role_id' => self::USER_ROLE],
+            ['employee_id' => self::NEW_L1,   'role_id' => self::USER_ROLE],
+            ['employee_id' => self::NEW_L2,   'role_id' => self::REVIEWER_ROLE],
         ]);
         // Izin review (penerima notifikasi "siap dikirim") hanya untuk Helpdesk.
         DB::table('menu')->insert(['id' => 1, 'name' => 'Review Mandays Proposal', 'slug' => 'ticket.review-mandays', 'is_active' => true]);

@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CustomerMandays;
 use App\Models\CustomerMandaysApprovalStep;
 use App\Models\Employee;
 use App\Models\EmployeeRole;
+use App\Services\CustomerMandaysApprovalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,11 +14,16 @@ use Illuminate\Support\Facades\Log;
  * Management > Flow > Customer Mandays Approval.
  *
  * Mengatur SIAPA penyetuju Level 1 dan Level 2 (jumlah level tetap 2). Disimpan
- * sekaligus lewat satu tombol "Save Workflow". Perubahan hanya berlaku untuk
- * proposal yang disubmit setelahnya; proposal berjalan memegang snapshot sendiri.
+ * sekaligus lewat satu tombol "Save Workflow". Perubahan berlaku untuk proposal
+ * berikutnya DAN untuk level yang belum diputuskan pada proposal yang sedang
+ * menunggu approval (versi terbaru). Level yang sudah diputuskan tetap.
  */
 class CustomerMandaysFlowController extends Controller
 {
+    public function __construct(private CustomerMandaysApprovalService $approvals)
+    {
+    }
+
     public function page()
     {
         $steps = CustomerMandaysApprovalStep::ordered()->get();
@@ -43,7 +48,7 @@ class CustomerMandaysFlowController extends Controller
             ->groupBy('role_id')
             ->pluck('total', 'role_id');
 
-        $openCount = CustomerMandays::where('status', CustomerMandays::STATUS_PENDING_APPROVAL)->count();
+        $openCount = $this->approvals->openProposalCount();
 
         return view('management.flow.customer-mandays', [
             'steps'            => $steps,
@@ -114,7 +119,11 @@ class CustomerMandaysFlowController extends Controller
 
         $before = $existing->map(fn ($s) => $s->only(['order_seq', 'name', 'approver_type', 'approver_role_id', 'approver_employee_ids']))->all();
 
-        DB::transaction(function () use ($clean) {
+        $actorId   = (int) (session('user')['id'] ?? 0);
+        $actorName = (string) (session('user')['name'] ?? 'System');
+
+        // Satu transaksi: bila sinkron proposal berjalan gagal, konfigurasi juga batal disimpan.
+        $synced = DB::transaction(function () use ($clean, $actorId, $actorName) {
             // Pindahkan dulu ke rentang sementara agar unique(order_seq) tidak bentrok saat ditukar.
             foreach ($clean as $row) {
                 CustomerMandaysApprovalStep::whereKey($row['id'])->update(['order_seq' => 100 + $row['order_seq']]);
@@ -122,16 +131,27 @@ class CustomerMandaysFlowController extends Controller
             foreach ($clean as $row) {
                 CustomerMandaysApprovalStep::find($row['id'])->update(collect($row)->except('id')->all());
             }
+
+            return $this->approvals->syncOpenProposals(
+                CustomerMandaysApprovalStep::ordered()->get(),
+                $actorId,
+                $actorName
+            );
         });
 
         Log::info('Customer mandays approval flow updated', [
-            'actor_id' => session('user')['id'] ?? null,
+            'actor_id' => $actorId ?: null,
             'before'   => $before,
             'after'    => $clean,
+            'synced'   => $synced,
         ]);
+
+        $message = $synced['proposals'] > 0
+            ? "Workflow saved. {$synced['proposals']} proposal(s) waiting for approval now follow the new approvers."
+            : 'Workflow saved.';
 
         return redirect()
             ->route('management.flow.customer-mandays.index')
-            ->with('success', 'Workflow saved. It applies to proposals submitted from now on.');
+            ->with('success', $message);
     }
 }

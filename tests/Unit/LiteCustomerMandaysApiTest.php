@@ -272,6 +272,56 @@ class LiteCustomerMandaysApiTest extends TestCase
 
     // ── helper ─────────────────────────────────────────────────────────────
 
+    // ── detail ticket & chat untuk approver non-member ────────────────────
+
+    public function test_approver_who_is_not_a_member_can_open_ticket_and_messages(): void
+    {
+        [$ticket] = $this->submitted();
+        $this->addMessage($ticket->ticket_id);
+        $this->assertFalse(DB::table('ticket_member')->where('employee_id', self::ADMIN)->exists());
+
+        $this->as(self::ADMIN)->getJson("/api/lite/tickets/{$ticket->ticket_id}")
+            ->assertOk()
+            ->assertJsonPath('data.ticket_number', 'T-0001')
+            ->assertJsonPath('data.customer_mandays.can_act', true);
+
+        $this->as(self::ADMIN)->getJson("/api/lite/tickets/{$ticket->ticket_id}/messages")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.message_body', 'Hello');
+    }
+
+    public function test_ticket_and_messages_stay_open_to_other_users_without_customer_mandays(): void
+    {
+        // Akses ticket tidak dipersempit: user lain tetap bisa membuka, hanya tanpa blok Customer Mandays.
+        [$ticket] = $this->submitted();
+
+        $this->as(self::OUTSIDER)->getJson("/api/lite/tickets/{$ticket->ticket_id}")
+            ->assertOk()
+            ->assertJsonPath('data.customer_mandays', null);
+        $this->as(self::OUTSIDER)->getJson("/api/lite/tickets/{$ticket->ticket_id}/messages")->assertOk();
+        $this->as(self::OUTSIDER)->getJson("/api/lite/tickets/{$ticket->ticket_id}/customer-mandays")->assertForbidden();
+    }
+
+    public function test_hidden_ticket_and_its_messages_are_only_for_ec_administrator(): void
+    {
+        [$ticket] = $this->submitted();
+        $ticket->forceFill(['is_hidden' => true])->save();
+        $this->addMessage($ticket->ticket_id);
+
+        $this->as(self::HELPDESK)->getJson("/api/lite/tickets/{$ticket->ticket_id}")->assertNotFound();
+        $this->as(self::HELPDESK)->getJson("/api/lite/tickets/{$ticket->ticket_id}/messages")->assertNotFound();
+        $this->as(self::ADMIN)->getJson("/api/lite/tickets/{$ticket->ticket_id}/messages")->assertOk()->assertJsonCount(1, 'data');
+    }
+
+    private function addMessage(int $ticketId): void
+    {
+        DB::table('ticket_message')->insert([
+            'ticket_id' => $ticketId, 'sender_type' => 'agent', 'sender_id' => self::PIC, 'sender_name' => 'PIC',
+            'message' => 'Hello', 'message_type' => 'reply', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
     private function as(int $employeeId): static
     {
         $roleId = (int) DB::table('employee_role_assignment')->where('employee_id', $employeeId)->value('role_id');
@@ -433,6 +483,61 @@ class LiteCustomerMandaysApiTest extends TestCase
             $t->string('link')->nullable();
             $t->boolean('is_read')->default(false);
             $t->softDeletes();
+            $t->timestamps();
+        });
+
+        // Tabel yang dibaca GET /tickets/{id} dan /messages.
+        foreach (['ticket_attachment', 'ticket_message', 'delivery_support', 'delivery_support_activities',
+                  'sla_policies', 'ticket_sla', 'ticket_member'] as $t) {
+            Schema::dropIfExists($t);
+        }
+        Schema::create('ticket_member', function ($t) {
+            $t->unsignedBigInteger('ticket_id');
+            $t->unsignedBigInteger('employee_id');
+            $t->boolean('is_active')->default(true);
+            $t->timestamps();
+        });
+        Schema::create('ticket_sla', function ($t) {
+            $t->id();
+            $t->unsignedBigInteger('ticket_id');
+            $t->unsignedBigInteger('sla_policy_id')->nullable();
+            $t->timestamps();
+        });
+        Schema::create('sla_policies', function ($t) {
+            $t->id();
+            $t->timestamps();
+        });
+        Schema::create('delivery_support_activities', function ($t) {
+            $t->id();
+            $t->unsignedBigInteger('ticket_id')->nullable();
+            $t->unsignedBigInteger('delivery_support_id')->nullable();
+            $t->timestamps();
+        });
+        Schema::create('delivery_support', function ($t) {
+            $t->id();
+            $t->string('name')->nullable();
+            $t->unsignedBigInteger('client_id')->nullable();
+            $t->timestamps();
+        });
+        Schema::create('ticket_message', function ($t) {
+            $t->id();
+            $t->unsignedBigInteger('ticket_id');
+            $t->string('sender_type')->nullable();
+            $t->unsignedBigInteger('sender_id')->nullable();
+            $t->string('sender_name')->nullable();
+            $t->text('message')->nullable();
+            $t->text('message_html')->nullable();
+            $t->string('message_type')->nullable();
+            $t->boolean('is_internal_note')->default(false);
+            $t->boolean('is_deleted')->default(false);
+            $t->unsignedBigInteger('reply_to_id')->nullable();
+            $t->text('mentioned_employee_ids')->nullable();
+            $t->text('mentioned_role_ids')->nullable();
+            $t->timestamps();
+        });
+        Schema::create('ticket_attachment', function ($t) {
+            $t->id();
+            $t->unsignedBigInteger('message_id')->nullable();
             $t->timestamps();
         });
 

@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * KONFIGURASI satu level approval Customer Mandays (Management > Flow).
  *
- * Hanya berlaku untuk proposal yang disubmit SETELAH disimpan; proposal yang
- * sedang berjalan memegang salinannya sendiri di CustomerMandaysApproval.
+ * Disalin ke CustomerMandaysApproval saat proposal disubmit. Saat disimpan, level
+ * yang masih waiting pada proposal berjalan (versi terbaru) ikut diperbarui;
+ * level yang sudah diputuskan tetap memakai definisi lamanya.
  */
 class CustomerMandaysApprovalStep extends Model
 {

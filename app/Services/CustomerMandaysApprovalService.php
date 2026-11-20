@@ -159,15 +159,7 @@ class CustomerMandaysApprovalService
         }
         $roleIds = $employee->getRoleIds();
 
-        return CustomerMandays::query()
-            ->where('status', CustomerMandays::STATUS_PENDING_APPROVAL)
-            ->whereNotNull('current_step_order')
-            ->whereNotExists(function ($q) {
-                $q->select(DB::raw(1))
-                  ->from('customer_mandays as newer')
-                  ->whereColumn('newer.ticket_id', 'customer_mandays.ticket_id')
-                  ->whereColumn('newer.version', '>', 'customer_mandays.version');
-            })
+        return $this->openLatestQuery()
             ->with('approvals')
             ->orderBy('updated_at')
             ->get()
@@ -176,6 +168,121 @@ class CustomerMandaysApprovalService
                 return $approval && $approval->isWaiting() && $approval->allows($actorId, $roleIds);
             })
             ->values();
+    }
+
+    /** Jumlah proposal yang ikut tersinkron bila Flow disimpan sekarang (untuk info di halaman Flow). */
+    public function openProposalCount(): int
+    {
+        return $this->openLatestQuery()->count();
+    }
+
+    // =========================================================================
+    // SINKRON KONFIGURASI KE PROPOSAL BERJALAN
+    // =========================================================================
+
+    /**
+     * Terapkan konfigurasi Flow terbaru ke level yang BELUM diputuskan pada proposal
+     * yang sedang menunggu approval (versi terbaru tiap ticket). Level approved,
+     * rejected, dan skipped tidak disentuh, begitu pula status, level aktif, angka
+     * mandays, dan versi proposal.
+     *
+     * Dipanggil di DALAM transaksi penyimpanan Flow. Notifikasi untuk penerima baru
+     * di level aktif dikirim setelah commit; kegagalannya tidak membatalkan apa pun (R9).
+     *
+     * @param  Collection<int, CustomerMandaysApprovalStep>  $steps
+     * @return array{proposals: int, levels: int, changes: array<int, array<string, mixed>>}
+     */
+    public function syncOpenProposals(Collection $steps, int $actorId, string $actorName): array
+    {
+        $stepsByOrder = $steps->keyBy(fn ($s) => (int) $s->order_seq);
+
+        $proposals = $this->openLatestQuery()->with('ticket')->get()->keyBy('id');
+        if ($proposals->isEmpty()) {
+            return ['proposals' => 0, 'levels' => 0, 'changes' => []];
+        }
+
+        // Kunci baris yang akan dinilai agar approve/reject yang berjalan bersamaan menunggu.
+        $rows = CustomerMandaysApproval::query()
+            ->whereIn('customer_mandays_id', $proposals->keys())
+            ->where('status', CustomerMandaysApproval::STATUS_WAITING)
+            ->orderBy('customer_mandays_id')
+            ->orderBy('order_seq')
+            ->lockForUpdate()
+            ->get();
+
+        $changes = [];
+        $pending = [];
+
+        foreach ($rows as $row) {
+            $step = $stepsByOrder->get((int) $row->order_seq);
+            if (!$step) {
+                continue;
+            }
+
+            $before = $this->definitionOf($row->step_name, $row->approver_type, $row->approver_role_id, $row->approver_employee_ids);
+            $after  = $this->definitionOf($step->name, $step->approver_type, $step->approver_role_id, $step->approver_employee_ids);
+            if ($before === $after) {
+                continue;
+            }
+
+            $proposal = $proposals->get($row->customer_mandays_id);
+            $isActive = (int) $row->order_seq === (int) $proposal->current_step_order;
+            $recipientsBefore = $isActive ? $this->recipientsFor($row) : [];
+
+            // Disalin sama persis dengan submit().
+            $values = [
+                'step_name'             => $step->name,
+                'approver_type'         => $step->approver_type,
+                'approver_role_id'      => $step->approver_role_id,
+                'approver_employee_ids' => $step->approver_employee_ids,
+            ];
+
+            // Update bersyarat: level yang baru saja diputuskan orang lain tidak tertimpa.
+            $affected = CustomerMandaysApproval::whereKey($row->id)
+                ->where('status', CustomerMandaysApproval::STATUS_WAITING)
+                ->update(array_merge($values, [
+                    'approver_employee_ids' => $values['approver_employee_ids'] !== null
+                        ? json_encode($values['approver_employee_ids'])
+                        : null,
+                ]));
+            if ($affected === 0) {
+                continue;
+            }
+
+            $row->forceFill($values);
+
+            $newRecipients = [];
+            if ($isActive) {
+                $newRecipients = array_values(array_diff($this->recipientsFor($row), $recipientsBefore));
+                if ($newRecipients && $proposal->ticket) {
+                    $pending[] = [$proposal->ticket, clone $row, $newRecipients];
+                }
+            }
+
+            $changes[] = [
+                'customer_mandays_id' => (int) $proposal->id,
+                'ticket_id'           => (int) $proposal->ticket_id,
+                'order_seq'           => (int) $row->order_seq,
+                'active_level'        => $isActive,
+                'before'              => $before,
+                'after'               => $after,
+                'notified'            => $newRecipients,
+            ];
+        }
+
+        if ($pending) {
+            DB::afterCommit(function () use ($pending, $actorId, $actorName) {
+                foreach ($pending as [$ticket, $approval, $ids]) {
+                    $this->notifyApprovers($ticket, $approval, $actorId, $actorName, $ids);
+                }
+            });
+        }
+
+        return [
+            'proposals' => count(array_unique(array_column($changes, 'customer_mandays_id'))),
+            'levels'    => count($changes),
+            'changes'   => $changes,
+        ];
     }
 
     // =========================================================================
@@ -348,6 +455,34 @@ class CustomerMandaysApprovalService
     // INTERNAL
     // =========================================================================
 
+    /** Proposal yang sedang di approval internal dan merupakan versi terbaru ticket-nya. */
+    private function openLatestQuery()
+    {
+        return CustomerMandays::query()
+            ->where('status', CustomerMandays::STATUS_PENDING_APPROVAL)
+            ->whereNotNull('current_step_order')
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                  ->from('customer_mandays as newer')
+                  ->whereColumn('newer.ticket_id', 'customer_mandays.ticket_id')
+                  ->whereColumn('newer.version', '>', 'customer_mandays.version');
+            });
+    }
+
+    /** Definisi satu level dalam bentuk normal agar bisa dibandingkan (id karyawan int, unik, terurut). */
+    private function definitionOf(?string $name, ?string $type, $roleId, $employeeIds): array
+    {
+        $ids = array_values(array_unique(array_map('intval', is_array($employeeIds) ? $employeeIds : [])));
+        sort($ids);
+
+        return [
+            'step_name'             => (string) $name,
+            'approver_type'         => (string) $type,
+            'approver_role_id'      => $roleId !== null ? (int) $roleId : null,
+            'approver_employee_ids' => $ids,
+        ];
+    }
+
     private function replaceDetails(CustomerMandays $proposal, array $details): void
     {
         $proposal->details()->delete();
@@ -392,12 +527,13 @@ class CustomerMandaysApprovalService
             ->all();
     }
 
-    private function notifyApprovers(Ticket $ticket, CustomerMandaysApproval $approval, int $fromId, string $fromName): void
+    /** @param  int[]|null  $onlyIds  batasi penerima (dipakai sinkron Flow: hanya penyetuju baru) */
+    private function notifyApprovers(Ticket $ticket, CustomerMandaysApproval $approval, int $fromId, string $fromName, ?array $onlyIds = null): void
     {
         $ticketNum = $ticket->ticket_number ?? $ticket->ticket_id;
         $this->send(
             $ticket,
-            $this->recipientsFor($approval),
+            $onlyIds ?? $this->recipientsFor($approval),
             'customer_mandays_pending_approval',
             $fromId,
             $fromName,

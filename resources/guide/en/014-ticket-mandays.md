@@ -59,7 +59,7 @@ Each version shows an `Approval Trail` with every level, who acted, when, and th
 - An approver may change the mandays before approving. The total must stay above 0.
 - Rejecting needs a reason of at least 5 characters. The version is closed as `Rejected` and the next level is skipped. The PIC creates a new version to revise it.
 - The PIC may approve their own proposal when they are an approver of the waiting level.
-- A proposal keeps the approvers it was submitted with, even if the flow is changed afterwards.
+- If the flow is changed while a proposal waits, its undecided levels follow the new approvers. Levels already approved stay as they were.
 - Submitting is refused when a level has no approver set. Ask an administrator to set up the flow.
 - You cannot edit a proposal while it is waiting for approval, waiting for Helpdesk to send it, or after it was sent to the customer. Wait for the answer, or ask Helpdesk to cancel it.
 - Helpdesk cannot approve a proposal directly. A proposal becomes `Approved` only when the customer approves it.
@@ -94,6 +94,6 @@ Approved days are used for the workload shown in `My Tasks` and in `Consultant W
 
 **I cannot see the review buttons.** Reviewing is only for Helpdesk and heads. Ask your administrator if you think you should have them.
 
-**I am an approver but see no `Approve` button.** The button only appears while the proposal waits at your level. If it waits at another level, or was submitted before you were set as approver, it is not your turn. Reload the ticket after the proposal is submitted.
+**I am an approver but see no `Approve` button.** The button only appears while the proposal waits at your level. If it waits at another level, it is not your turn. Reload the ticket after the proposal is submitted.
 
 <!-- sources: routes/web.php, routes/api.php, routes/lite.php, app/Http/Controllers/MandaysController.php, app/Http/Controllers/Lite/LiteCustomerMandaysController.php, app/Services/CustomerMandaysApprovalService.php, app/Services/LiteCustomerMandaysPresenter.php, resources/views/ticket/show.blade.php, resources/views/ticket/task.blade.php -->

@@ -5,7 +5,7 @@ order: 18
 title: Customer Mandays Approval
 summary: Tentukan siapa yang menyetujui Level 1 dan Level 2 proposal Customer Mandays sebelum Helpdesk mengirimnya ke customer.
 requires: [management.flow.customer-mandays]
-updated: 2026-11-13
+updated: 2026-11-18
 ---
 `Management` › `Flow` › `Customer Mandays Approval` mengatur dua level persetujuan internal yang dilalui setiap proposal Customer Mandays setelah PIC mengirimnya. Helpdesk baru dapat mengirim proposal ke customer setelah kedua level menyetujuinya.
 
@@ -34,7 +34,9 @@ Administrator, dan role mana pun yang diberi `Management` › `Flow` › `Custom
 - Setiap level wajib punya nama langkah (paling banyak 100 karakter) dan sebuah posisi atau minimal satu nama. Posisi yang tidak dipegang siapa pun ditolak bila tidak ada nama yang dipilih.
 - Bila nama dipilih, hanya orang-orang itu yang dapat menyetujui level tersebut, walaupun ada orang lain yang memegang posisinya.
 - Satu orang per level sudah cukup. Siapa pun yang bertindak lebih dulu memutuskan level itu.
-- Perubahan hanya berlaku untuk proposal yang dikirim setelah Anda menyimpan. Proposal yang sudah menunggu tetap memakai penyetuju saat ia dikirim. Halaman ini memberi tahu berapa proposal yang sedang menunggu.
+- Perubahan juga berlaku untuk proposal yang sudah menunggu persetujuan. Setiap level yang belum diputuskan memakai nama langkah dan penyetuju baru dari level bernomor sama. Level yang sudah disetujui tetap memakai penyetuju, tanggal, dan catatannya. Proposal yang ditolak, siap dikirim, sudah dikirim, atau disetujui, serta versi lama, tidak diubah. Halaman ini memberi tahu berapa proposal yang sedang menunggu, dan pesan setelah menyimpan memberi tahu berapa proposal yang kini mengikuti penyetuju baru.
+- Bila level tempat proposal menunggu mendapat penyetuju baru, hanya orang yang ditambahkan yang mendapat notifikasi bell. Orang yang dikeluarkan tidak diberi tahu, dan notifikasi sebelumnya tetap ada.
+- Menukar urutan kedua level juga berlaku untuk proposal yang menunggu, berdasarkan nomor level. Orang yang sudah menyetujui Level 1 dapat diminta menyetujui Level 2 juga bila pertukaran itu menjadikannya penyetuju level tersebut.
 - Level berjalan berurutan: Level 2 tidak dapat bertindak sebelum Level 1 menyetujui.
 - Penyetuju boleh mengubah angka mandays sebelum menyetujui. Angka baru disimpan bersama persetujuannya.
 - Menolak wajib disertai alasan minimal 5 karakter. Proposal lalu ditutup sebagai `Rejected`, level sesudahnya ditandai dilewati, dan PIC merevisinya sebagai versi baru.
@@ -44,11 +46,11 @@ Administrator, dan role mana pun yang diberi `Management` › `Flow` › `Custom
 
 ## Apa yang terjadi selanjutnya
 
-Proposal baru mengikuti level yang disimpan. Saat gilirannya tiba, penyetuju membuka `Review Mandays Proposal` di ticket dan menemukan tombol `Approve` dan `Reject` di sana, walaupun rolenya tidak punya akses review. Alur proposal selengkapnya di ticket dijelaskan pada topik Customer Mandays dan Resolution Days.
+Proposal baru, dan level yang belum diputuskan pada proposal yang sudah menunggu, mengikuti level yang disimpan. Saat gilirannya tiba, penyetuju membuka `Review Mandays Proposal` di ticket dan menemukan tombol `Approve` dan `Reject` di sana, walaupun rolenya tidak punya akses review. Alur proposal selengkapnya di ticket dijelaskan pada topik Customer Mandays dan Resolution Days.
 
 ## Pertanyaan umum
 
-**Saya sudah mengganti penyetuju, tetapi ada proposal yang masih menunggu penyetuju lama.** Proposal itu dikirim sebelum perubahan Anda dan tetap memakai penyetujunya sendiri. Minta penyetuju lama bertindak, atau minta Helpdesk membatalkannya agar PIC dapat mengirim versi baru.
+**Saya mengganti penyetuju. Bagaimana dengan proposal yang sudah disetujui di Level 1?** Level 1 tetap mencatat orang yang menyetujuinya. Hanya Level 2, yang masih menunggu, yang berpindah ke penyetuju baru.
 
 **Mengapa saya tidak dapat menambah level ketiga?** Alur ini memang sengaja ditetapkan dua level.
 

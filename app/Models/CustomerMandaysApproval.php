@@ -7,7 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * SNAPSHOT + RIWAYAT satu level approval untuk satu versi Customer Mandays.
  *
- * Disalin dari CustomerMandaysApprovalStep saat PIC submit. Model ini hanya
+ * Disalin dari CustomerMandaysApprovalStep saat PIC submit. Selama level ini masih
+ * waiting, definisinya ikut diperbarui saat Flow disimpan
+ * (CustomerMandaysApprovalService::syncOpenProposals()); setelah diputuskan
+ * (approved/rejected/skipped) isinya tidak pernah berubah lagi. Model ini hanya
  * memeriksa DEFINISI langkah (allows()); keadaan proposal (level aktif, status)
  * diperiksa di CustomerMandaysApprovalService::canAct().
  */

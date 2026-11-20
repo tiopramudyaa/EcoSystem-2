@@ -59,7 +59,7 @@ Setiap versi menampilkan `Approval Trail` berisi tiap level, siapa yang bertinda
 - Penyetuju boleh mengubah mandays sebelum menyetujui. Totalnya harus tetap di atas 0.
 - Menolak wajib disertai alasan minimal 5 karakter. Versi itu ditutup sebagai `Rejected` dan level berikutnya dilewati. PIC membuat versi baru untuk merevisinya.
 - PIC boleh menyetujui proposalnya sendiri bila ia termasuk penyetuju level yang sedang menunggu.
-- Proposal tetap memakai penyetuju saat ia dikirim, walaupun alurnya diubah sesudahnya.
+- Bila alurnya diubah saat proposal menunggu, level yang belum diputuskan mengikuti penyetuju baru. Level yang sudah disetujui tetap seperti semula.
 - Pengiriman ditolak bila ada level yang belum punya penyetuju. Minta administrator mengatur alurnya.
 - Proposal tidak dapat diubah saat menunggu persetujuan, menunggu Helpdesk mengirimnya, atau setelah dikirim ke customer. Tunggu jawabannya, atau minta Helpdesk membatalkannya.
 - Helpdesk tidak dapat menyetujui proposal secara langsung. Proposal baru menjadi `Approved` saat customer menyetujuinya.
@@ -94,6 +94,6 @@ Hari yang disetujui dipakai untuk beban kerja di `My Tasks` dan `Consultant Work
 
 **Saya tidak melihat tombol peninjauan.** Meninjau hanya untuk Helpdesk dan kepala. Hubungi administrator bila Anda merasa seharusnya memilikinya.
 
-**Saya penyetuju tetapi tidak melihat tombol `Approve`.** Tombol itu hanya muncul selama proposal menunggu di level Anda. Bila proposal menunggu di level lain, atau dikirim sebelum Anda ditetapkan sebagai penyetuju, berarti bukan giliran Anda. Muat ulang ticket setelah proposal dikirim.
+**Saya penyetuju tetapi tidak melihat tombol `Approve`.** Tombol itu hanya muncul selama proposal menunggu di level Anda. Bila proposal menunggu di level lain, berarti bukan giliran Anda. Muat ulang ticket setelah proposal dikirim.
 
 <!-- sources: routes/web.php, routes/api.php, routes/lite.php, app/Http/Controllers/MandaysController.php, app/Http/Controllers/Lite/LiteCustomerMandaysController.php, app/Services/CustomerMandaysApprovalService.php, app/Services/LiteCustomerMandaysPresenter.php, resources/views/ticket/show.blade.php, resources/views/ticket/task.blade.php -->

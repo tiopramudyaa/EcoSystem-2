@@ -48,7 +48,7 @@
                 <p>Levels run top to bottom; one person per level is enough. Empty names means everyone holding the position can approve.</p>
                 <p>Choosing names limits the level to those people. The position then only helps you find them.</p>
                 @if($openCount > 0)
-                <p class="text-amber-700"><i class="fas fa-info-circle mr-1"></i>{{ $openCount }} proposal(s) are waiting for approval now. They keep the approvers they were submitted with.</p>
+                <p class="text-amber-700"><i class="fas fa-info-circle mr-1"></i>{{ $openCount }} proposal(s) are waiting for approval now. When you save, their levels that are not decided yet follow the new approvers. Levels already approved stay as they are.</p>
                 @endif
             </div>
             <button type="submit" class="inline-flex items-center justify-center px-5 py-2.5 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all whitespace-nowrap">

@@ -165,6 +165,11 @@ class LiteTicketController extends Controller
                 return response()->json(['success' => false, 'message' => 'Ticket not found.'], 404);
             }
 
+            // Sama dengan show(): ticket tersembunyi hanya untuk EC Administrator.
+            if ($ticket->is_hidden && (int) ($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
+                return response()->json(['success' => false, 'message' => 'Ticket not found.'], 404);
+            }
+
             $highlightMessageId = $request->query('highlight_message_id');
             $highlightMessageId = $highlightMessageId !== null ? (int) $highlightMessageId : null;
 
