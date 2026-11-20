@@ -19,11 +19,17 @@
 
 @include('hr-general.reimbursement.components.hub-tabs')
 @include('hr-general.recruitment.components.unsaved-guard')
+@include('hr-general.reimbursement.components.help-script')
 
 <div class="flex flex-col lg:flex-row gap-6 items-start">
     @include('hr-general.partials.settings-nav', ['title' => 'Reimbursement'])
 
     <div class="flex-1 min-w-0 w-full space-y-5" data-settings-content>
+
+    <div id="helpBanner" hidden class="flex items-start justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 print:hidden">
+        <p class="text-sm text-blue-900"><i class="fa-regular fa-circle-question mr-1" aria-hidden="true"></i> New: the <strong>?</strong> icon next to each section explains the setting, suggests a value, and links to the guide. It only helps; nothing changes until you save.</p>
+        <button type="button" data-help-banner-close class="shrink-0 text-xs font-semibold text-blue-800 hover:underline">Got it</button>
+    </div>
 
     {{-- Approval Workflow - its own slug (D180): shown only to its holders. --}}
     @if($can('general.approval-workflow.reimbursement'))
@@ -37,12 +43,12 @@
 
     {{-- Rules - shown only to holders of `general.settings.reimbursement`; saved by the same slug. --}}
     @if($can('general.settings.reimbursement'))
-    <form method="POST" action="{{ route('general.reimbursement.settings.update') }}" class="bg-white rounded-xl p-6 shadow-sm space-y-7" data-unsaved-label="Reimbursement Rules"
+    <form id="rulesForm" method="POST" action="{{ route('general.reimbursement.settings.update') }}" class="bg-white rounded-xl p-6 shadow-sm space-y-7" data-unsaved-label="Reimbursement Rules"
           data-confirm="These rules apply to every reimbursement submitted from now on. Documents already submitted keep the rules they were submitted under." data-confirm-title="Save reimbursement rules?" data-confirm-ok="Save rules" data-cancel-message="Cancelled. The reimbursement rules were not changed.">
         @csrf
 
         <div class="pb-3 border-b-2 border-gray-100">
-            <h2 class="text-2xl font-bold text-gray-900">Reimbursement Rules</h2>
+            <div class="flex items-center gap-1"><h2 class="text-2xl font-bold text-gray-900">Reimbursement Rules</h2>@include('hr-general.reimbursement.components.help-tip', ['key' => 'rules.main', 'form' => 'rulesForm'])</div>
             <p class="text-sm text-gray-500 mt-0.5">
                 <strong>0</strong> means no limit. A rule set to <em>flag</em> only highlights the document; <em>block</em> refuses it.
             </p>
@@ -50,7 +56,7 @@
 
         {{-- ── Printed document ─────────────────────────────────────────── --}}
         <section>
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Printed Document</h3>
+            <div class="flex items-center gap-1 mb-3"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Printed Document</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'rules.printed', 'form' => 'rulesForm'])</div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                     <label class="{{ $label }}">Company name</label>
@@ -90,7 +96,7 @@
 
         {{-- ── Dates & deadlines ────────────────────────────────────────── --}}
         <section>
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Dates &amp; Deadlines</h3>
+            <div class="flex items-center gap-1 mb-3"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Dates &amp; Deadlines</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'rules.dates', 'form' => 'rulesForm'])</div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <label class="flex items-start gap-2">
@@ -158,7 +164,7 @@
 
         {{-- ── Items & amounts ──────────────────────────────────────────── --}}
         <section>
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Items &amp; Amounts</h3>
+            <div class="flex items-center gap-1 mb-3"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Items &amp; Amounts</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'rules.amounts', 'form' => 'rulesForm'])</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
                     <label class="{{ $label }}">Maximum items per document</label>
@@ -202,7 +208,7 @@
 
         {{-- ── Evidence & completeness ──────────────────────────────────── --}}
         <section>
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Evidence &amp; Completeness</h3>
+            <div class="flex items-center gap-1 mb-3"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Evidence &amp; Completeness</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'rules.evidence', 'form' => 'rulesForm'])</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <label class="flex items-start gap-2">
                     <input type="checkbox" name="require_supporting_url" value="1" @checked($settings->require_supporting_url)
@@ -242,7 +248,7 @@
 
         {{-- ── Approval rules ───────────────────────────────────────────── --}}
         <section>
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Approval Rules</h3>
+            <div class="flex items-center gap-1 mb-3"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Approval Rules</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'rules.approval', 'form' => 'rulesForm'])</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <label class="flex items-start gap-2">
                     <input type="checkbox" name="allow_self_approval" value="1" @checked($settings->allow_self_approval)

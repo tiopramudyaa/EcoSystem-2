@@ -72,7 +72,7 @@
     @endif
 
     <div class="mb-4 pb-3 border-b-2 border-gray-100">
-        <h2 class="text-2xl font-bold text-gray-900">{{ $wf['title'] }}</h2>
+        <div class="flex items-center gap-1"><h2 class="text-2xl font-bold text-gray-900">{{ $wf['title'] }}</h2>@if(!empty($wf['help']))@include('hr-general.reimbursement.components.help-tip', ['key' => $wf['help']])@endif</div>
         <p class="text-sm text-gray-500 mt-0.5">
             {{ $wf['blurb'] }} Changes are applied together when you press <strong>Save Workflow</strong>.
         </p>

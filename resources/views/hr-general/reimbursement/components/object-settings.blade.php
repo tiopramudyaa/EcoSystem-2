@@ -27,7 +27,7 @@
 
 <div class="bg-white rounded-xl p-6 shadow-sm space-y-8" id="object-settings">
     <div class="pb-3 border-b-2 border-gray-100">
-        <h2 class="text-2xl font-bold text-gray-900">Objects and Funds</h2>
+        <div class="flex items-center gap-1"><h2 class="text-2xl font-bold text-gray-900">Objects and Funds</h2>@include('hr-general.reimbursement.components.help-tip', ['key' => 'object.main', 'form' => 'objectFlowForm'])</div>
         <p class="text-sm text-gray-500 mt-0.5">
             Each reimbursement item is charged to an <strong>Office</strong>, a <strong>Project</strong>, or a <strong>Support</strong> ticket.
             The Object decides who approves the document and which fund is checked. Turning this off returns reimbursement to the previous behaviour; no data is deleted.
@@ -49,7 +49,7 @@
         ];
     @endphp
     <div class="rounded-xl border border-gray-200 bg-gray-50 p-5">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Setup checklist</h3>
+        <div class="flex items-center gap-1 mb-3"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Setup checklist</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'object.checklist'])</div>
         <ul class="space-y-2">
             @foreach($steps as [$done, $title, $detail])
                 <li class="flex items-start gap-3 text-sm">
@@ -79,7 +79,7 @@
     </div>
 
     {{-- ── Flow and policy ──────────────────────────────────────────────── --}}
-    <form method="POST" action="{{ route('general.reimbursement.settings.objects.flow') }}" class="space-y-6" data-unsaved-label="Object flow"
+    <form id="objectFlowForm" method="POST" action="{{ route('general.reimbursement.settings.objects.flow') }}" class="space-y-6" data-unsaved-label="Object flow"
           data-confirm="New reimbursements and cash advances use these approvers and fund policies from now on. Documents already submitted keep their own flow." data-confirm-title="Save flow and policy?" data-confirm-ok="Save" data-cancel-message="Cancelled. Flow and policy were not changed.">
         @csrf
 
@@ -100,7 +100,7 @@
         </label>
 
         <section>
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Project approvals</h3>
+            <div class="flex items-center gap-1 mb-3"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Project approvals</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'object.project_approvals', 'form' => 'objectFlowForm'])</div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="space-y-3">
                     <label class="flex items-start gap-3 cursor-pointer">
@@ -133,7 +133,7 @@
         </section>
 
         <section>
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Support approvals</h3>
+            <div class="flex items-center gap-1 mb-3"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Support approvals</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'object.support_approvals', 'form' => 'objectFlowForm'])</div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="space-y-3">
                     <label class="flex items-start gap-3 cursor-pointer">
@@ -161,7 +161,7 @@
         </section>
 
         <section>
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">Who can charge costs to a project or ticket</h3>
+            <div class="flex items-center gap-1 mb-1"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Who can charge costs to a project or ticket</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'object.access', 'form' => 'objectFlowForm'])</div>
             <p class="text-xs text-gray-500 mb-3">
                 <strong>Team</strong> lets the lead and members of the project or ticket charge to it (recommended).
                 <strong>Lead only</strong> allows just the lead. <strong>Everyone</strong> allows any employee.
@@ -182,7 +182,7 @@
         </section>
 
         <section>
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">When an amount exceeds the remaining fund</h3>
+            <div class="flex items-center gap-1 mb-1"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">When an amount exceeds the remaining fund</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'object.policy', 'form' => 'objectFlowForm'])</div>
             <p class="text-xs text-gray-500 mb-3"><strong>Warn</strong> accepts the document and asks the requester for a reason. <strong>Block</strong> refuses it. An Object without a fund is never checked.</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 @foreach(['policy_project' => 'Project', 'policy_office' => 'Office', 'policy_support' => 'Support'] as $field => $title)
@@ -206,7 +206,7 @@
     <form method="POST" action="{{ route('general.reimbursement.settings.objects.offices') }}" class="border-t border-gray-100 pt-6" data-unsaved-label="Office funds"
           data-confirm="Each office uses its responsible person and monthly fund for documents submitted from now on." data-confirm-title="Save offices?" data-confirm-ok="Save offices" data-cancel-message="Cancelled. The offices were not changed.">
         @csrf
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">Office funds and responsible person</h3>
+        <div class="flex items-center gap-1 mb-1"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Office funds and responsible person</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'object.offices'])</div>
         <p class="text-xs text-gray-500 mb-4">
             Every office needs a responsible person, who approves reimbursements charged to it. The monthly fund is optional: when it is off, the office is not checked against a fund.
         </p>
@@ -254,7 +254,7 @@
 
     {{-- ── Project and ticket allocations ───────────────────────────────── --}}
     <div class="border-t border-gray-100 pt-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">Project and ticket fund allocations</h3>
+        <div class="flex items-center gap-1 mb-1"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Project and ticket fund allocations</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'object.allocations'])</div>
         <p class="text-xs text-gray-500 mb-4">
             An allocation is the amount that may be reimbursed for a project or a ticket, per category. Funds decrease when a document is fully approved.
             A project or ticket without an allocation is not checked. These allocations are separate from the project cost plan and never change it.
@@ -359,7 +359,7 @@
 
     {{-- ── Access exceptions ─────────────────────────────────────────────── --}}
     <div class="border-t border-gray-100 pt-6" id="access-exceptions">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">Exceptions for one project or ticket</h3>
+        <div class="flex items-center gap-1 mb-1"><h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Exceptions for one project or ticket</h3>@include('hr-general.reimbursement.components.help-tip', ['key' => 'object.exceptions'])</div>
         <p class="text-xs text-gray-500 mb-4">An exception replaces the default above for that project or ticket only, for example one ticket that everyone may charge to.</p>
 
         @if($accessRules->isNotEmpty())

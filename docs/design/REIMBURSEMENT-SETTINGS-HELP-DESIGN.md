@@ -1,6 +1,6 @@
 # Rancangan ikon bantuan (?) untuk Reimbursement Settings
 
-Status: RANCANGAN. Belum diterapkan. Menunggu pilihan opsi 1 atau 2.
+Status: DITERAPKAN dengan Opsi 2 (arahan dan penjelasan) pada 2026-11-20. Beralih ke Opsi 1 cukup dengan mengubah `mode` di config/reimbursement_help.php menjadi `explain`.
 
 ## 1. Tujuan
 

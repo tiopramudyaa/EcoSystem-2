@@ -54,7 +54,7 @@ Buka dokumen, klik `Delete`, lalu isi alasan. Dokumen yang dihapus tetap terliha
 
 ### Mengatur aturan (Settings)
 
-1. Buka tab `Settings`.
+1. Buka tab `Settings`. Klik ikon `?` di samping sebuah bagian untuk melihat fungsinya, nilai yang disarankan, dan tautan ke panduan ini. `Use recommended` hanya mengisi kolom; tidak ada yang tersimpan sebelum Anda menyimpan.
 2. Di `Approval Workflow`, tambah atau atur langkah, lalu klik `Save Workflow`.
 3. Di `Reimbursement Rules`, atur batas dan isian wajib, lalu klik `Save Settings`. Aturan flag hanya menyorot dokumen; block menolaknya. Nilai 0 berarti tanpa batas.
 

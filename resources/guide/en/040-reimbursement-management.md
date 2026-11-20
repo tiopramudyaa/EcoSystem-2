@@ -54,7 +54,7 @@ Open the document and click `Delete`, then give a reason. Deleted documents stay
 
 ### Set the rules (Settings)
 
-1. Open the `Settings` tab.
+1. Open the `Settings` tab. Click the `?` icon beside a section for an explanation and a recommended value. `Use recommended` only fills fields; nothing is saved until you save.
 2. In `Approval Workflow`, add or arrange the steps and click `Save Workflow`.
 3. In `Reimbursement Rules`, set the limits and required fields, then click `Save Settings`. A rule set to flag only highlights the document; block refuses it. A value of 0 means no limit.
 
@@ -82,9 +82,9 @@ Every save asks for confirmation first; cancelling changes nothing.
 
 ## Rules to know
 
-- The Object concept applies only to documents submitted while `Use Objects and funds for new reimbursements` is on. Documents already submitted keep their flow.
+- The Object concept applies only to documents submitted while `Use Objects and funds for new reimbursements` is on.
 - Approvers are assigned automatically at submission and do not change afterwards. Project items go to the `Project Admin` and `Project Manager`, support items to the `Ticket Lead` (and the `Support Manager` if on), office items to the office's responsible person. These steps come first, then the steps in `Approval Workflow`.
-- Who can charge: with `Team`, the project lead, delivery manager and members, or the ticket lead and members, may charge to it. With `Lead only`, just the lead. Office is not restricted. The rule applies to the document owner, also when HR creates the document for them. A project or ticket the requester may not use is not offered in the search. An exception replaces the default for that one project or ticket.
+- Who can charge: with `Team`, the project lead, delivery manager and members, or the ticket lead and members. With `Lead only`, just the lead. Office is not restricted. The rule applies to the document owner, also when HR creates the document. A project or ticket the requester may not use is not offered in the search. An exception replaces the default for that one project or ticket.
 - The same person is asked only once. A requester who is also an approver skips that step, and the skip is recorded.
 - Submitting is refused, with the reason, when a project is closed, an approver is inactive, a project or ticket has no approver and no fallback, or an office has no responsible person.
 - A fund decreases only when the document is fully approved, not at submission.
@@ -93,8 +93,8 @@ Every save asks for confirmation first; cancelling changes nothing.
 - An Object without a fund (office with `Fund active` off, project or ticket without an allocation) is not checked but still goes through approval.
 - Office funds are monthly. Project and ticket allocations have no end date. An allocation with no category covers every category without its own.
 - With `Warn`, an amount above the remaining fund can still be submitted with a reason (at least 10 characters); reviewers see it and the document is marked `Over fund allocation`. With `Block`, it is refused.
-- An allocation cannot be set lower than what approved documents already used.
-- A category is only a label, such as Transport. The requester sees `Fund category` only when the project or ticket has an allocation with a category. The `Setup checklist` shows what is still missing.
+- An allocation cannot be lower than what approved documents already used.
+- A category is only a label, such as Transport. The requester sees `Fund category` only when the project or ticket has an allocation with a category.
 - Only a user who can record payments can void, and only an approved, unpaid document. Voiding needs a reason and cannot be undone here.
 - An allocation that follows the project plan uses the released amount of the chosen cost line (or its budget) and updates by itself. It never changes the plan. If the line is removed, the last amount stays. Tickets have no plan budget, so type the amount.
 - `Approval Workflow` holds only the steps for every reimbursement, such as Accounting, Cashier and the final approver. Do not add project, ticket or office approvers there.
