@@ -67,7 +67,7 @@ class MyCashAdvanceController extends Controller
 
         return view('hr-general.cash-advance.submit', array_merge([
             'settings'      => $settings,
-            'costCenters'   => $ca->costCenterOptions(),
+            'costCenters'   => $ca->costCenterOptions((int) session('user.id')),
             'objectMode'    => $ca->objectMode(),
             'lookupBase'    => url('/general/my-cash-advance/objects'),
             'steps'         => $steps,

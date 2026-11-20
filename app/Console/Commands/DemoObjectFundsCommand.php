@@ -168,6 +168,9 @@ class DemoObjectFundsCommand extends Command
         // Rina bekerja di tiket DEMO-T-0001 (delivery support); Bayu adalah anggota project Demo ERP Alpha.
         DB::table('ticket_member')->insert(['ticket_id' => (int) DB::table('ticket')->where('ticket_number', 'DEMO-T-0001')->value('ticket_id'), 'employee_id' => $emp('DEMO007'), 'created_at' => now(), 'updated_at' => now()]);
         DB::table('delivery_project_employee')->insert(['delivery_projects_id' => (int) DB::table('delivery_projects')->where('io_number', 'DEMO-001')->value('id'), 'employee_id' => $emp('DEMO008'), 'created_at' => now(), 'updated_at' => now()]);
+        // Aturan akses bawaan 'team': pemohon demo harus anggota agar dapat membebankan biaya ke project dan tiket demo.
+        DB::table('ticket_member')->insert(['ticket_id' => (int) DB::table('ticket')->where('ticket_number', 'DEMO-T-0001')->value('ticket_id'), 'employee_id' => $emp('DEMO001'), 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('delivery_project_employee')->insert(['delivery_projects_id' => (int) DB::table('delivery_projects')->where('io_number', 'DEMO-001')->value('id'), 'employee_id' => $emp('DEMO001'), 'created_at' => now(), 'updated_at' => now()]);
     }
 
     /** Nilai contoh untuk Objects and Funds. Hanya dengan --configure. */

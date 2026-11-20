@@ -19,6 +19,10 @@
     // Aktif hanya bila form merender sel Object. Satu kumpulan perilaku untuk
     // form pengajuan, "New RB", dan Edit.
     const lookupBase = @json($lookupBase ?? null);
+    const ownerParam = () => {
+        const owner = document.querySelector('select[name="employee_id"]');
+        return owner && owner.value ? '&employee_id=' + encodeURIComponent(owner.value) : '';
+    };
     const csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
     const preview = document.getElementById('objectPreview');
     let previewTimer = null;
@@ -63,7 +67,7 @@
 
         if (!lookupBase || !ref) { wrap.hidden = true; category.value = ''; return; }
 
-        json(lookupBase + '/categories?type=' + encodeURIComponent(type) + '&ref=' + encodeURIComponent(ref)).then(function (res) {
+        json(lookupBase + '/categories?type=' + encodeURIComponent(type) + '&ref=' + encodeURIComponent(ref) + ownerParam()).then(function (res) {
             const names = (res && res.data) || [];
             const wanted = category.value || category.dataset.selected || '';
             category.innerHTML = '<option value="">- none -</option>' + names.map(function (n) {
@@ -134,7 +138,7 @@
             if (!lookupBase) return;
             renderTicketPanel(input, [], true);
 
-            json(lookupBase + '/tickets?q=' + encodeURIComponent(input.value.trim())).then(function (res) {
+            json(lookupBase + '/tickets?q=' + encodeURIComponent(input.value.trim()) + ownerParam()).then(function (res) {
                 renderTicketPanel(input, (res && res.data) || [], false);
             }).catch(function () {
                 const panel = input.closest('.js-item-row').querySelector('.js-ticket-panel');

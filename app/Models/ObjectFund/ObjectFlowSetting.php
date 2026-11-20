@@ -18,7 +18,7 @@ class ObjectFlowSetting extends Model
         'project_fallback_role_id', 'project_fallback_employee_id',
         'support_lead_enabled', 'support_manager_enabled',
         'support_fallback_role_id', 'support_fallback_employee_id',
-        'policy_project', 'policy_office', 'policy_support', 'updated_by',
+        'policy_project', 'policy_office', 'policy_support', 'access_project', 'access_support', 'updated_by',
     ];
 
     protected $casts = [

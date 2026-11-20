@@ -5,7 +5,7 @@ order: 60
 title: Cash Advance Management
 summary: Approve cash advances (CA) and their settlement reports (CAR), follow overdue reports and set the rules.
 requires: [general.cash-advance, general.cash-advance-report, general.cash-advance-dashboard, management.cash-advance-settings, management.approval-workflow.cash-advance, management.approval-workflow.cash-advance-report]
-updated: 2026-11-19
+updated: 2026-11-20
 ---
 A Cash Advance (CA) is money given to an employee before spending. After spending, the employee files a Cash Advance Report (CAR) to settle it. Cash Advance Management is where approvers and Finance process both documents. It has four tabs: `Dashboard`, `Cash Advance (CA)`, `Cash Advance Report (CAR)` and `Settings`.
 
@@ -68,6 +68,7 @@ Each approved CA has a reporting deadline. A report filed after the due day is f
 
 - The Object concept applies only to cash advances submitted while its switch is on. Cash advances already submitted keep their flow.
 - A cash advance is charged to exactly one Object: an `Office`, a `Project`, or a `Support` ticket. The Object is required, and it cannot be changed when the document is edited.
+- Who may charge to a project or ticket follows the rule set in `Reimbursement` › `Settings` › `Objects and Funds` (`Team`, `Lead only` or `Everyone`, with exceptions). It is checked for the document owner when the cash advance is submitted. Office is not restricted.
 - Approvers are assigned automatically when the cash advance is submitted and do not change afterwards. They come first, as `Verificator` steps, followed by the steps in `Approval Workflow`. The same person is asked only once, and a requester who is also an approver skips that step.
 - Submitting is refused, with the reason, when the project is closed, a required approver is no longer active, a project or ticket has no approver and no fallback is set, or an office has no responsible person.
 - The fund decreases by the advance amount only when the cash advance is fully approved. Just before the last approval the remaining fund is checked again.

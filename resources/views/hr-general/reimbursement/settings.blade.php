@@ -37,7 +37,8 @@
 
     {{-- Rules - shown only to holders of `general.settings.reimbursement`; saved by the same slug. --}}
     @if($can('general.settings.reimbursement'))
-    <form method="POST" action="{{ route('general.reimbursement.settings.update') }}" class="bg-white rounded-xl p-6 shadow-sm space-y-7" data-unsaved-label="Reimbursement Rules">
+    <form method="POST" action="{{ route('general.reimbursement.settings.update') }}" class="bg-white rounded-xl p-6 shadow-sm space-y-7" data-unsaved-label="Reimbursement Rules"
+          data-confirm="These rules apply to every reimbursement submitted from now on. Documents already submitted keep the rules they were submitted under." data-confirm-title="Save reimbursement rules?" data-confirm-ok="Save rules" data-cancel-message="Cancelled. The reimbursement rules were not changed.">
         @csrf
 
         <div class="pb-3 border-b-2 border-gray-100">

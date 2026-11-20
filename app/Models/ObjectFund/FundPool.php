@@ -18,6 +18,7 @@ class FundPool extends Model
     protected $fillable = [
         'object_type', 'ref_id', 'ref_label', 'category', 'period',
         'amount', 'is_active', 'status', 'proposed_by', 'approved_by', 'approved_at', 'notes',
+        'source', 'source_cost_id',
     ];
 
     protected $casts = [
@@ -33,8 +34,19 @@ class FundPool extends Model
 
     public const TYPES = [self::TYPE_OFFICE, self::TYPE_PROJECT, self::TYPE_SUPPORT];
 
+    /** Alokasi diketik Finance. */
+    public const SOURCE_MANUAL = 'manual';
+
+    /** Alokasi mengikuti rencana biaya project (dibaca, tidak pernah ditulis). */
+    public const SOURCE_PROJECT_PLAN = 'project_plan';
+
     public const STATUS_PROPOSED = 'proposed';
     public const STATUS_APPROVED = 'approved';
+
+    public function isLinked(): bool
+    {
+        return $this->source === self::SOURCE_PROJECT_PLAN;
+    }
 
     public function entries()
     {

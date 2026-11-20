@@ -43,6 +43,12 @@
         return form ? form.querySelector('[name="' + name + '"]') : null;
     }
 
+    /* Form HR: pemilik dokumen dipilih di form; server memakai ini untuk aturan akses. Form ESS mengabaikannya. */
+    function ownerParam() {
+        var owner = field('employee_id');
+        return owner && owner.value ? '&employee_id=' + encodeURIComponent(owner.value) : '';
+    }
+
     function refValue(type) {
         if (type === 'project') return (root.querySelector('.js-project') || {}).value || '';
         if (type === 'support') return ticketId.value || '';
@@ -81,7 +87,7 @@
 
         if (!base || !ref) { wrap.hidden = true; category.value = ''; return; }
 
-        json(base + '/categories?type=' + encodeURIComponent(type) + '&ref=' + encodeURIComponent(ref)).then(function (res) {
+        json(base + '/categories?type=' + encodeURIComponent(type) + '&ref=' + encodeURIComponent(ref) + ownerParam()).then(function (res) {
             var names = (res && res.data) || [];
             var wanted = category.value || category.dataset.selected || '';
 
@@ -148,7 +154,7 @@
             if (!base) return;
             renderTickets([], true);
 
-            json(base + '/tickets?q=' + encodeURIComponent(ticketInput.value.trim())).then(function (res) {
+            json(base + '/tickets?q=' + encodeURIComponent(ticketInput.value.trim()) + ownerParam()).then(function (res) {
                 renderTickets((res && res.data) || [], false);
             }).catch(function () {
                 panel.innerHTML = '';

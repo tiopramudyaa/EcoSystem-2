@@ -674,6 +674,9 @@ Route::prefix('general')
                     Route::post('/objects/offices', [ReimbursementObjectSettingController::class, 'syncOffices'])->name('objects.offices');
                     Route::post('/objects/pools', [ReimbursementObjectSettingController::class, 'storePool'])->name('objects.pools.store');
                     Route::post('/objects/pools/{pool}', [ReimbursementObjectSettingController::class, 'updatePool'])->name('objects.pools.update');
+                    Route::get('/objects/project-costs', [ReimbursementObjectSettingController::class, 'projectCosts'])->name('objects.project-costs');
+                    Route::post('/objects/access', [ReimbursementObjectSettingController::class, 'storeAccessRule'])->name('objects.access.store');
+                    Route::post('/objects/access/{rule}/delete', [ReimbursementObjectSettingController::class, 'destroyAccessRule'])->name('objects.access.destroy');
                 });
             });
 

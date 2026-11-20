@@ -14,7 +14,7 @@
 <script>
     document.addEventListener('submit', async function (event) {
         const form = event.target;
-        if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm') || form.dataset.confirmed === '1') return;
+        if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm') || form.dataset.confirmed === '1' || event.defaultPrevented || window.__ecConfirmForms) return;
 
         event.preventDefault();
         const ok = await window.showConfirm(

@@ -5,7 +5,7 @@ order: 60
 title: Cash Advance Management
 summary: Setujui Cash Advance (CA) dan laporan penyelesaiannya (CAR), pantau laporan terlambat, dan atur aturannya.
 requires: [general.cash-advance, general.cash-advance-report, general.cash-advance-dashboard, management.cash-advance-settings, management.approval-workflow.cash-advance, management.approval-workflow.cash-advance-report]
-updated: 2026-11-19
+updated: 2026-11-20
 ---
 Cash Advance (CA) adalah uang yang diberikan kepada Employee sebelum dibelanjakan. Setelah itu Employee membuat Cash Advance Report (CAR) untuk menyelesaikannya. Cash Advance Management adalah tempat Approver dan Finance memproses kedua dokumen tersebut. Halaman ini memiliki empat tab: `Dashboard`, `Cash Advance (CA)`, `Cash Advance Report (CAR)`, dan `Settings`.
 
@@ -68,6 +68,7 @@ Setiap CA yang disetujui memiliki batas waktu pelaporan. Laporan yang dikirim se
 
 - Konsep Object hanya berlaku untuk cash advance yang diajukan saat saklarnya aktif. Cash advance yang sudah diajukan tetap memakai alurnya.
 - Satu cash advance dibebankan ke tepat satu Object: `Office`, `Project`, atau tiket `Support`. Object wajib diisi dan tidak dapat diubah saat dokumen diedit.
+- Siapa yang boleh membebankan ke project atau tiket mengikuti aturan di `Reimbursement` › `Settings` › `Objects and Funds` (`Team`, `Lead only`, atau `Everyone`, beserta pengecualian). Diperiksa untuk pemilik dokumen saat cash advance diajukan. Office tidak dibatasi.
 - Penyetuju ditetapkan otomatis saat cash advance diajukan dan tidak berubah sesudahnya. Mereka berjalan lebih dulu sebagai langkah `Verificator`, disusul langkah di `Approval Workflow`. Orang yang sama hanya diminta sekali, dan pemohon yang juga penyetuju melewati langkah itu.
 - Pengajuan ditolak beserta alasannya bila project sudah ditutup, penyetuju yang dibutuhkan sudah tidak aktif, project atau tiket tidak punya penyetuju dan tidak ada pengganti, atau office belum punya penanggung jawab.
 - Dana berkurang sebesar nominal uang muka hanya saat cash advance disetujui sepenuhnya. Tepat sebelum persetujuan terakhir sisa dana diperiksa ulang.

@@ -12,7 +12,7 @@
 <script>
     document.addEventListener('submit', async function (event) {
         const form = event.target;
-        if (!form.matches || !form.matches('form[data-confirm]') || event.defaultPrevented) return;
+        if (!form.matches || !form.matches('form[data-confirm]') || event.defaultPrevented || form.dataset.confirmed === '1' || window.__ecConfirmForms) return;
 
         event.preventDefault();
         const confirmed = await showConfirm(form.dataset.confirm, form.dataset.confirmTitle || 'Confirm', 'danger', {

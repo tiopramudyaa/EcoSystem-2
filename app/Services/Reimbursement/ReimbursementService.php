@@ -118,7 +118,7 @@ class ReimbursementService
         $objectNotes       = [];
 
         if ($objectMode) {
-            $gate = $this->checkObjectItems($items);
+            $gate = $this->checkObjectItems($items, $employeeId);
             if (!$gate['allowed']) {
                 return $gate + ['request' => null];
             }
@@ -281,7 +281,7 @@ class ReimbursementService
         }
 
         if ($objectDoc) {
-            $gate = $this->checkObjectItems($items);
+            $gate = $this->checkObjectItems($items, (int) $request->employee_id);
             if (!$gate['allowed']) {
                 return $gate;
             }
@@ -372,6 +372,11 @@ class ReimbursementService
                 'deleted_by'    => $actorId,
                 'delete_reason' => $reason,
             ]);
+
+            // Dokumen yang dihapus tidak boleh menahan dana: entri dananya dikembalikan.
+            if ($request->hasFlag(ReimbursementRequest::FLAG_OBJECT_FLOW)) {
+                $this->funds()->release($request, $actorId, 'Document deleted: ' . $reason);
+            }
 
             $request->delete();
         });
@@ -608,17 +613,6 @@ class ReimbursementService
             ->where('status', ReimbursementRequestApproval::STATUS_WAITING)
             ->exists();
 
-        // Pemeriksaan ulang sisa dana tepat sebelum persetujuan terakhir: dokumen
-        // lain bisa saja sudah menyetujui dan memakai sisa yang sama (keputusan D4).
-        if ($isObjectFlow && $isLastStep) {
-            $request->loadMissing('items');
-            $message = $this->funds()->recheckForApproval($request, ObjectFlowSetting::current());
-
-            if ($message !== null) {
-                return ['allowed' => false, 'reason' => $message, 'completed' => false];
-            }
-        }
-
         // Menyetujui = menandatangani: tanda tangan aktor dari master data
         // disalin ke langkah ini. Tanpa tanda tangan, tindakannya ditolak -
         // dokumen yang dicetak tidak boleh memuat persetujuan tanpa tanda tangan.
@@ -633,7 +627,27 @@ class ReimbursementService
             ];
         }
 
-        $completed = DB::transaction(function () use ($request, $approval, $actorId, $payload, $signature, $isObjectFlow) {
+        try {
+        $completed = DB::transaction(function () use ($request, $approval, $actorId, $payload, $signature, $isObjectFlow, $isLastStep) {
+            // Dua orang yang menekan Approve bersamaan: yang kedua melihat langkah sudah berubah dan ditolak.
+            $locked  = ReimbursementRequest::whereKey($request->id)->lockForUpdate()->first();
+            $current = $locked ? $locked->approvals()->whereKey($approval->id)->lockForUpdate()->first() : null;
+
+            if (!$locked || !$locked->isOpen() || !$current || !$current->isWaiting()) {
+                throw new \DomainException('This document was just updated by someone else. Reload the page to see its current state.');
+            }
+
+            // Pemeriksaan ulang sisa dana tepat sebelum persetujuan terakhir, di dalam transaksi dan setelah kantong
+            // dana dikunci: dokumen lain bisa saja sudah menyetujui dan memakai sisa yang sama (keputusan D4).
+            if ($isObjectFlow && $isLastStep) {
+                $locked->load('items');
+                $message = $this->funds()->recheckForApproval($locked, ObjectFlowSetting::current());
+
+                if ($message !== null) {
+                    throw new \DomainException($message);
+                }
+            }
+
             if ($actorId === (int) $request->employee_id) {
                 $this->addFlag($request, ReimbursementRequest::FLAG_SELF_APPROVED);
             }
@@ -689,6 +703,9 @@ class ReimbursementService
 
             return true;
         });
+        } catch (\DomainException $e) {
+            return ['allowed' => false, 'reason' => $e->getMessage(), 'completed' => false];
+        }
 
         $this->notify($request, $completed ? 'approved' : 'progressed', $payload['notes'] ?? null);
 
@@ -1150,9 +1167,17 @@ class ReimbursementService
     }
 
     /** Project yang masih berjalan, untuk pilihan Object bertipe Project. */
-    public function projectOptions(): Collection
+    public function projectOptions(?int $ownerId = null): Collection
     {
-        return \App\Models\DeliveryProject::where('is_closed', 0)
+        // Dengan $ownerId (form karyawan), hanya project yang boleh dibebani karyawan itu.
+        $query = \App\Models\DeliveryProject::where('is_closed', 0);
+
+        if ($ownerId !== null) {
+            $policy = app(\App\Services\ObjectFund\ObjectAccessPolicy::class);
+            $query  = $policy->restrict($query, 'id', $policy->scope($ownerId, 'project'));
+        }
+
+        return $query
             ->orderBy('name')
             ->get(['id', 'io_number', 'name'])
             ->map(fn ($p) => [
@@ -1542,8 +1567,10 @@ class ReimbursementService
      *
      * @return array{allowed: bool, reason: string}
      */
-    private function checkObjectItems(array $items): array
+    private function checkObjectItems(array $items, int $ownerId): array
     {
+        $policy = app(\App\Services\ObjectFund\ObjectAccessPolicy::class);
+
         foreach ($items as $item) {
             $line = (int) $item['line_no'];
 
@@ -1552,11 +1579,17 @@ class ReimbursementService
                     if (empty($item['delivery_project_id']) || $item['cost_center_label'] === null) {
                         return ['allowed' => false, 'reason' => "Line {$line}: choose the project this expense is charged to."];
                     }
+                    if (!$policy->canCharge($ownerId, 'project', (int) $item['delivery_project_id'])) {
+                        return ['allowed' => false, 'reason' => "Line {$line}: " . $policy->denyMessage('project', (string) $item['cost_center_label'], (int) $item['delivery_project_id'])];
+                    }
                     break;
 
                 case ReimbursementItem::COST_CENTER_SUPPORT:
                     if (empty($item['ticket_id']) || $item['cost_center_label'] === null) {
                         return ['allowed' => false, 'reason' => "Line {$line}: choose the support ticket this expense is charged to."];
+                    }
+                    if (!$policy->canCharge($ownerId, 'support', (int) $item['ticket_id'])) {
+                        return ['allowed' => false, 'reason' => "Line {$line}: " . $policy->denyMessage('support', (string) $item['cost_center_label'], (int) $item['ticket_id'])];
                     }
                     break;
 

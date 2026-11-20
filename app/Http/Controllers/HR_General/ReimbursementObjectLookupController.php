@@ -8,6 +8,7 @@ use App\Models\ObjectFund\ObjectFlowSetting;
 use App\Models\Reimbursement\ReimbursementApprovalStep;
 use App\Models\Ticket;
 use App\Services\ObjectFund\FundService;
+use App\Services\ObjectFund\ObjectAccessPolicy;
 use App\Services\ObjectFund\ObjectApproverResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -27,11 +28,18 @@ class ReimbursementObjectLookupController extends Controller
      * supaya daftar langsung tampil saat kolom dibuka. Dengan kata kunci:
      * dicari pada nomor dan deskripsi. Hasil dibatasi supaya ringan.
      */
-    public function tickets(Request $request)
+    public function tickets(Request $request, ObjectAccessPolicy $policy)
     {
         $q = trim((string) $request->query('q', ''));
 
         $query = Ticket::query();
+
+        // Hanya tiket yang boleh dibebani pemohon (aturan akses di Reimbursement Settings), tidak seluruh daftar tiket.
+        $owner = $this->ownerOf($request, $request->query('employee_id'));
+        $query = $policy->restrict($query, 'ticket_id', $policy->scope($owner, 'support'));
+        if (\Illuminate\Support\Facades\Schema::hasColumn('ticket', 'is_hidden')) {
+            $query->whereNull('is_hidden');
+        }
 
         if ($q !== '') {
             $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $q) . '%';
@@ -51,13 +59,25 @@ class ReimbursementObjectLookupController extends Controller
         return response()->json(['success' => true, 'message' => '', 'data' => $rows]);
     }
 
+    /** Pemilik dokumen yang diperiksa: ESS selalu dirinya sendiri; form HR boleh menyebut karyawan lain. */
+    private function ownerOf(Request $request, $requested): int
+    {
+        return $request->routeIs('general.my-*')
+            ? (int) session('user.id')
+            : (int) ($requested ?: session('user.id'));
+    }
+
     /** Kategori dana yang tersedia untuk sebuah project atau tiket (nama saja, tanpa nominal). */
-    public function categories(Request $request)
+    public function categories(Request $request, ObjectAccessPolicy $policy)
     {
         $type = (string) $request->query('type', '');
         $ref  = (int) $request->query('ref', 0);
 
         if (!in_array($type, [FundPool::TYPE_PROJECT, FundPool::TYPE_SUPPORT], true) || $ref <= 0) {
+            return response()->json(['success' => true, 'message' => '', 'data' => []]);
+        }
+
+        if (! $policy->canCharge($this->ownerOf($request, $request->query('employee_id')), $type, $ref)) {
             return response()->json(['success' => true, 'message' => '', 'data' => []]);
         }
 
@@ -77,7 +97,7 @@ class ReimbursementObjectLookupController extends Controller
      * Memakai pembentuk penyetuju dan pemeriksa dana yang sama dengan pengiriman,
      * sehingga yang terlihat di layar sama dengan yang terjadi saat dikirim.
      */
-    public function preview(Request $request, ObjectApproverResolver $resolver, FundService $funds)
+    public function preview(Request $request, ObjectApproverResolver $resolver, FundService $funds, ObjectAccessPolicy $policy)
     {
         $settings = ObjectFlowSetting::current();
         $module   = (string) $request->input('module', 'reimbursement');
@@ -89,6 +109,7 @@ class ReimbursementObjectLookupController extends Controller
 
         $items = collect($request->input('items', []))
             ->filter(fn ($r) => is_array($r))
+            ->take(50)
             ->map(fn ($r) => [
                 'cost_center_type'    => (string) ($r['cost_center_type'] ?? 'branch'),
                 'branch_id'           => $r['branch_id'] ?? null,
@@ -101,7 +122,23 @@ class ReimbursementObjectLookupController extends Controller
             ->values()
             ->all();
 
-        $requester = (int) ($request->input('employee_id') ?: session('user.id'));
+        // Sisi karyawan (ESS) selalu memakai dirinya sendiri; hanya form buat-atas-nama milik HR yang boleh
+        // menyebut karyawan lain, dan itu pun diperiksa ulang saat dokumen dikirim.
+        $requester = $request->routeIs('general.my-*')
+            ? (int) session('user.id')
+            : (int) ($request->input('employee_id') ?: session('user.id'));
+        // Akses: pemohon harus boleh membebani setiap project atau tiket yang dipilih.
+        foreach ($items as $item) {
+            $type = $item['cost_center_type'] === 'project' ? 'project' : ($item['cost_center_type'] === 'support' ? 'support' : null);
+            $ref  = (int) ($type === 'project' ? $item['delivery_project_id'] : ($type === 'support' ? $item['ticket_id'] : 0));
+
+            if ($type && $ref && ! $policy->canCharge($requester, $type, $ref)) {
+                return response()->json(['success' => true, 'message' => '', 'data' => [
+                    'enabled' => true, 'error' => $policy->denyMessage($type, '', $ref), 'steps' => [], 'skipped' => [], 'blocked' => null, 'needs_reason' => false,
+                ]]);
+            }
+        }
+
         $resolved  = $resolver->resolve($items, $requester, $settings);
 
         $steps = collect($resolved['steps'])->pluck('name')->all();
@@ -114,7 +151,13 @@ class ReimbursementObjectLookupController extends Controller
             $steps[] = $step->name;
         }
 
-        $fund = $funds->evaluate($items, Carbon::parse($request->input('request_date') ?: now()), $settings);
+        try {
+            $date = Carbon::parse((string) ($request->input('request_date') ?: now()));
+        } catch (\Throwable $e) {
+            $date = now();
+        }
+
+        $fund = $funds->evaluate($items, $date, $settings);
 
         return response()->json([
             'success' => true,

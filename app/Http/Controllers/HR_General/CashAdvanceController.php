@@ -255,6 +255,12 @@ class CashAdvanceController extends Controller
     /** Void an approved cash advance (manage permission). The fund goes back to its pool; the reason is required. */
     public function void(Request $request, CashAdvance $cashAdvance, CashAdvanceService $service)
     {
+        // The route admits designated approvers and the requester so they can open the document; voiding is a
+        // financial correction and needs the manage permission itself.
+        if (! $this->canManage()) {
+            return back()->with('error', 'Only users who can manage cash advances can void a cash advance.');
+        }
+
         $data = $request->validate(
             ['reason' => ['required', 'string', 'min:10', 'max:255']],
             ['reason.required' => 'Say why the cash advance is voided.', 'reason.min' => 'Say why the cash advance is voided (at least 10 characters).']

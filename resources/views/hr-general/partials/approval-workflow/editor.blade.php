@@ -64,7 +64,8 @@
 @endphp
 
 <form method="POST" action="{{ $wf['action'] }}" class="bg-white rounded-xl p-6 shadow-sm" id="workflowForm-{{ $wf['uid'] }}"
-      data-wf data-unsaved-label="{{ $wf['title'] }}">
+      data-wf data-unsaved-label="{{ $wf['title'] }}"
+      data-confirm="New documents follow these steps. Documents already in progress are only extended when you tick the option to apply new steps to them." data-confirm-title="Save approval workflow?" data-confirm-ok="Save workflow" data-cancel-message="Cancelled. The approval workflow was not changed.">
     @csrf
     @if($wf['module'])
         <input type="hidden" name="module" value="{{ $wf['module'] }}">

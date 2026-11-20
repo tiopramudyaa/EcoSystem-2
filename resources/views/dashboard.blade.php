@@ -2010,6 +2010,11 @@
                 showToast(@json(session('warning')), 'warning', 5000);
             });
         @endif
+        @if(session('info'))
+            document.addEventListener('DOMContentLoaded', function () {
+                showToast(@json(session('info')), 'info', 4000);
+            });
+        @endif
 
         // â”€â”€ Modal backdrop blur (auto-applied, no per-modal changes needed) â”€â”€
         (function () {

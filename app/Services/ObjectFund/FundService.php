@@ -86,15 +86,19 @@ class FundService
 
         $period = $date->format('Y-m');
 
-        $pool = FundPool::firstOrCreate(
-            ['object_type' => FundPool::TYPE_OFFICE, 'ref_id' => $branchId, 'category' => '', 'period' => $period],
-            [
+        $keys = ['object_type' => FundPool::TYPE_OFFICE, 'ref_id' => $branchId, 'category' => '', 'period' => $period];
+
+        try {
+            $pool = FundPool::firstOrCreate($keys, [
                 'ref_label' => $label !== '' ? $label : null,
                 'amount'    => $setting->monthly_amount,
                 'is_active' => true,
                 'status'    => FundPool::STATUS_APPROVED,
-            ]
-        );
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            // Dua permintaan membuat kantong bulan yang sama bersamaan: yang kalah memakai yang sudah ada.
+            $pool = FundPool::where($keys)->firstOrFail();
+        }
 
         // Mengubah nominal bulanan memengaruhi bulan berjalan dan mendatang,
         // tidak menulis ulang bulan yang sudah lewat.
@@ -114,7 +118,7 @@ class FundService
             ->where('status', FundEntry::STATUS_COMMITTED)
             ->sum('amount');
 
-        $allocation = (float) $pool->amount;
+        $allocation = $this->allocationOf($pool);
 
         return [
             'allocation' => $allocation,
@@ -122,6 +126,28 @@ class FundService
             'available'  => round($allocation - $committed, 2),
             'pending'    => $this->pending($pool),
         ];
+    }
+
+    /**
+     * Alokasi yang berlaku. Kantong yang mengikuti rencana biaya project membaca nilainya langsung
+     * dari sana (release, selain itu budget). Bila barisnya hilang atau kosong, nilai terakhir yang
+     * tersimpan tetap dipakai supaya dana tidak mendadak nol.
+     */
+    public function allocationOf(FundPool $pool): float
+    {
+        if ($pool->isLinked()) {
+            $linked = app(ProjectBudgetReader::class)->amountFor($pool);
+
+            if ($linked !== null) {
+                if (abs((float) $pool->amount - $linked) >= 0.005) {
+                    $pool->forceFill(['amount' => $linked])->save();
+                }
+
+                return $linked;
+            }
+        }
+
+        return (float) $pool->amount;
     }
 
     /** Jumlah dokumen yang masih menunggu untuk kantong ini. Hanya informasi, tidak mengurangi sisa. */
@@ -190,6 +216,14 @@ class FundService
      */
     public function evaluate(array $items, Carbon $date, ObjectFlowSetting $settings): array
     {
+        // Kategori harus sesuai dengan kantong yang ada. Tanpa ini, mengarang kategori (atau
+        // mengosongkannya) pada Object yang hanya punya kantong berkategori melewati pemeriksaan dana.
+        foreach ($items as $item) {
+            if ($message = $this->categoryProblem($item, $date)) {
+                return ['blocked' => $message, 'warnings' => [], 'needs_reason' => false, 'checked' => []];
+            }
+        }
+
         $demand = $this->demandByPool($items, $date);
 
         $blocked  = null;
@@ -214,10 +248,10 @@ class FundService
             }
 
             if ($settings->policyFor($pool->object_type) === ObjectFlowSetting::POLICY_BLOCK) {
+                // Sisa dana tidak disebut: pemohon tidak melihat dana, hanya berapa yang melebihinya.
                 $blocked ??= 'The amount for ' . $pool->label() . ' exceeds the remaining fund by '
-                    . ReimbursementRequest::formatRupiah($over) . '. Remaining: '
-                    . ReimbursementRequest::formatRupiah(max(0, $balance['available']))
-                    . '. Reduce the amount or ask for a larger allocation.';
+                    . ReimbursementRequest::formatRupiah($over)
+                    . '. Reduce the amount or ask Finance for a larger allocation.';
             } else {
                 $warnings[] = [
                     'pool'      => $pool->label(),
@@ -233,6 +267,56 @@ class FundService
             'needs_reason' => $warnings !== [],
             'checked'      => $checked,
         ];
+    }
+
+    /**
+     * Pesan bila kategori sebuah baris tidak cocok dengan kantong dana Object-nya; null bila baik-baik saja.
+     * Object tanpa kantong sama sekali tidak diperiksa dananya (itu bukan masalah kategori).
+     */
+    private function categoryProblem(array $item, Carbon $date): ?string
+    {
+        $type = $this->objectTypeOf($item);
+        $ref  = $this->refIdOf($item);
+
+        if ($type === null || $ref === null || $type === FundPool::TYPE_OFFICE) {
+            return null;
+        }
+
+        $pools = FundPool::usable()->where('object_type', $type)->where('ref_id', $ref)->pluck('category');
+
+        if ($pools->isEmpty()) {
+            return null;
+        }
+
+        $category = trim((string) ($item['fund_category'] ?? ''));
+
+        if ($pools->contains('') || $pools->contains($category)) {
+            return null;
+        }
+
+        $names = $pools->filter()->values()->implode(', ');
+        $label = trim((string) ($item['cost_center_label'] ?? '')) ?: ucfirst($type);
+
+        return $category === ''
+            ? 'Choose a fund category for ' . $label . '. Available: ' . $names . '.'
+            : 'The category "' . $category . '" is not set up for ' . $label . '. Available: ' . $names . '.';
+    }
+
+    /** Kunci baris kantong dana yang disentuh dokumen agar dua persetujuan tidak memakai sisa yang sama. */
+    private function lockPoolsFor(array $items, Carbon $date): void
+    {
+        $ids = [];
+
+        foreach ($items as $item) {
+            $pool = $this->poolFor($item, $date);
+            if ($pool) {
+                $ids[$pool->id] = $pool->id;
+            }
+        }
+
+        if ($ids !== []) {
+            FundPool::whereIn('id', array_values($ids))->lockForUpdate()->get();
+        }
     }
 
     /**
@@ -267,8 +351,12 @@ class FundService
             return null;
         }
 
-        $items  = $request->items->map(fn ($i) => $i->toArray())->all();
-        $result = $this->evaluate($items, Carbon::parse($request->request_date), $settings);
+        $items = $request->items->map(fn ($i) => $i->toArray())->all();
+        $date  = Carbon::parse($request->request_date);
+
+        $this->lockPoolsFor($items, $date);
+
+        $result = $this->evaluate($items, $date, $settings);
 
         return $result['blocked']
             ? 'The remaining fund changed since this document was submitted. ' . $result['blocked']
@@ -479,7 +567,12 @@ class FundService
             return null;
         }
 
-        $result = $this->evaluate([$this->itemOfCashAdvance($advance)], Carbon::parse($advance->request_date), $settings);
+        $items = [$this->itemOfCashAdvance($advance)];
+        $date  = Carbon::parse($advance->request_date);
+
+        $this->lockPoolsFor($items, $date);
+
+        $result = $this->evaluate($items, $date, $settings);
 
         return $result['blocked']
             ? 'The remaining fund changed since this cash advance was submitted. ' . $result['blocked']
@@ -506,7 +599,7 @@ class FundService
             'pool_id'         => $pool->id,
             'document_type'   => 'cash_advance',
             'document_id'     => $advance->id,
-            'item_id'         => null,
+            'item_id'         => 0,
             'amount'          => (float) $advance->amount,
             'status'          => FundEntry::STATUS_COMMITTED,
             'over_allocation' => (float) $advance->amount > $available,

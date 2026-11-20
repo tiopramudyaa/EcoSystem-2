@@ -112,7 +112,7 @@ class CashAdvanceService
         $overReason   = null;
 
         $costCenter = $objectMode
-            ? $this->resolveObjectCenter($payload)
+            ? $this->resolveObjectCenter($payload, $employeeId)
             : $this->resolveCostCenter($payload, $settings);
         if (! $costCenter['allowed']) {
             return ['allowed' => false, 'reason' => $costCenter['reason'], 'request' => null];
@@ -434,6 +434,11 @@ class CashAdvanceService
                 'delete_reason' => $reason,
             ]);
 
+            // Dokumen yang dihapus tidak boleh menahan dana.
+            if ($request->hasFlag(CashAdvance::FLAG_OBJECT_FLOW)) {
+                $this->funds()->releaseDocument('cash_advance', (int) $request->id, $actorId, 'Document deleted: ' . $reason);
+            }
+
             $request->delete();
         });
 
@@ -548,16 +553,24 @@ class CashAdvanceService
             ->where('status', CashAdvanceApproval::STATUS_WAITING)
             ->exists();
 
-        // Pemeriksaan ulang sisa dana tepat sebelum persetujuan terakhir.
-        if ($isObjectFlow && $isLastStep) {
-            $message = $this->funds()->recheckAdvanceForApproval($request, ObjectFlowSetting::current());
+        try {
+        $completed = DB::transaction(function () use ($request, $approval, $actorId, $payload, $isObjectFlow, $isLastStep) {
+            $locked  = CashAdvance::whereKey($request->id)->lockForUpdate()->first();
+            $current = $locked ? $locked->approvals()->whereKey($approval->id)->lockForUpdate()->first() : null;
 
-            if ($message !== null) {
-                return ['allowed' => false, 'reason' => $message, 'completed' => false];
+            if (! $locked || ! $locked->isOpen() || ! $current || ! $current->isWaiting()) {
+                throw new \DomainException('This document was just updated by someone else. Reload the page to see its current state.');
             }
-        }
 
-        $completed = DB::transaction(function () use ($request, $approval, $actorId, $payload, $isObjectFlow) {
+            // Pemeriksaan ulang sisa dana tepat sebelum persetujuan terakhir, setelah kantong dana dikunci.
+            if ($isObjectFlow && $isLastStep) {
+                $message = $this->funds()->recheckAdvanceForApproval($locked, ObjectFlowSetting::current());
+
+                if ($message !== null) {
+                    throw new \DomainException($message);
+                }
+            }
+
             if ($actorId === (int) $request->employee_id) {
                 $this->addFlag($request, self::FLAG_SELF_APPROVED, $actorId);
             }
@@ -614,6 +627,9 @@ class CashAdvanceService
 
             return true;
         });
+        } catch (\DomainException $e) {
+            return ['allowed' => false, 'reason' => $e->getMessage(), 'completed' => false];
+        }
 
         $this->notify($request, $completed ? 'approved' : 'progressed', $payload['notes'] ?? null);
 
@@ -833,7 +849,7 @@ class CashAdvanceService
      *
      * @return array{branch: array<int, array{id: int, label: string}>, project: array<int, array{id: int, label: string}>}
      */
-    public function costCenterOptions(): array
+    public function costCenterOptions(?int $ownerId = null): array
     {
         $settings = CashAdvanceSetting::current();
         $out      = ['branch' => [], 'project' => []];
@@ -851,7 +867,15 @@ class CashAdvanceService
         }
 
         if ($all || $settings->allowsCostCenterType(CashAdvance::COST_CENTER_PROJECT)) {
-            $out['project'] = DeliveryProject::where('is_closed', 0)
+            $projects = DeliveryProject::where('is_closed', 0);
+
+            // Dengan $ownerId (form karyawan dengan konsep Object), hanya project yang boleh dibebani karyawan itu.
+            if ($ownerId !== null && $this->objectMode()) {
+                $policy   = app(\App\Services\ObjectFund\ObjectAccessPolicy::class);
+                $projects = $policy->restrict($projects, 'id', $policy->scope($ownerId, 'project'));
+            }
+
+            $out['project'] = $projects
                 ->orderBy('name')
                 ->get()
                 ->map(fn (DeliveryProject $p) => ['id' => (int) $p->id, 'label' => $this->projectLabel($p)])
@@ -1081,8 +1105,10 @@ class CashAdvanceService
      *
      * @return array<string, mixed>
      */
-    private function resolveObjectCenter(array $payload): array
+    private function resolveObjectCenter(array $payload, int $ownerId): array
     {
+        $policy = app(\App\Services\ObjectFund\ObjectAccessPolicy::class);
+
         $fail = fn (string $message) => [
             'allowed' => false, 'reason' => $message,
             'type' => null, 'branch_id' => null, 'project_id' => null, 'ticket_id' => null, 'label' => null, 'category' => null,
@@ -1108,12 +1134,20 @@ class CashAdvanceService
         if ($type === CashAdvance::COST_CENTER_PROJECT) {
             $project = DeliveryProject::where('is_closed', 0)->find($payload['charged_project_id'] ?? null);
 
+            if ($project && ! $policy->canCharge($ownerId, 'project', (int) $project->id)) {
+                return $fail($policy->denyMessage('project', $this->projectLabel($project), (int) $project->id));
+            }
+
             return $project
                 ? ['allowed' => true, 'reason' => '', 'type' => $type, 'branch_id' => null, 'project_id' => (int) $project->id, 'ticket_id' => null, 'label' => $this->projectLabel($project), 'category' => $category]
                 : $fail('Choose a project that is still running. Closed projects cannot be charged.');
         }
 
         $ticket = Ticket::find($payload['charged_ticket_id'] ?? null);
+
+        if ($ticket && ! $policy->canCharge($ownerId, 'support', (int) $ticket->ticket_id)) {
+            return $fail($policy->denyMessage('support', (string) $ticket->ticket_number, (int) $ticket->ticket_id));
+        }
 
         return $ticket
             ? ['allowed' => true, 'reason' => '', 'type' => $type, 'branch_id' => null, 'project_id' => null, 'ticket_id' => (int) $ticket->ticket_id, 'label' => (string) $ticket->ticket_number, 'category' => $category]

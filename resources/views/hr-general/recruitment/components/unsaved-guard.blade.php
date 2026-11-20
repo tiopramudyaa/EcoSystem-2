@@ -225,6 +225,7 @@
 
         // ── Saving one form while another has changes: the reload would lose them ──
         document.addEventListener('submit', async event => {
+            if (event.defaultPrevented) return; // a confirm dialog is asking first: nothing is being saved yet
             const form = event.target;
             if (form.dataset.unsavedBypass) { delete form.dataset.unsavedBypass; saving = form; return; }
 

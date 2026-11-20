@@ -79,7 +79,8 @@
     </div>
 
     {{-- ── Flow and policy ──────────────────────────────────────────────── --}}
-    <form method="POST" action="{{ route('general.reimbursement.settings.objects.flow') }}" class="space-y-6" data-unsaved-label="Object flow">
+    <form method="POST" action="{{ route('general.reimbursement.settings.objects.flow') }}" class="space-y-6" data-unsaved-label="Object flow"
+          data-confirm="New reimbursements and cash advances use these approvers and fund policies from now on. Documents already submitted keep their own flow." data-confirm-title="Save flow and policy?" data-confirm-ok="Save" data-cancel-message="Cancelled. Flow and policy were not changed.">
         @csrf
 
         <label class="flex items-start gap-3 cursor-pointer">
@@ -160,6 +161,27 @@
         </section>
 
         <section>
+            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">Who can charge costs to a project or ticket</h3>
+            <p class="text-xs text-gray-500 mb-3">
+                <strong>Team</strong> lets the lead and members of the project or ticket charge to it (recommended).
+                <strong>Lead only</strong> allows just the lead. <strong>Everyone</strong> allows any employee.
+                Leads and teams are the ones set in the Project and Ticket menus. Office is not restricted. Exceptions for one project or ticket are set below.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                @foreach(['access_project' => 'Projects', 'access_support' => 'Support tickets'] as $field => $title)
+                    <div>
+                        <label class="{{ $label }}">{{ $title }}</label>
+                        <select name="{{ $field }}" class="{{ $input }}">
+                            @foreach(\App\Services\ObjectFund\ObjectAccessPolicy::MODE_LABELS as $mode => $modeLabel)
+                                <option value="{{ $mode }}" @selected(old($field, $objectFlow->{$field} ?: 'team') === $mode)>{{ $modeLabel }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
+        <section>
             <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">When an amount exceeds the remaining fund</h3>
             <p class="text-xs text-gray-500 mb-3"><strong>Warn</strong> accepts the document and asks the requester for a reason. <strong>Block</strong> refuses it. An Object without a fund is never checked.</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -181,7 +203,8 @@
     </form>
 
     {{-- ── Office funds ─────────────────────────────────────────────────── --}}
-    <form method="POST" action="{{ route('general.reimbursement.settings.objects.offices') }}" class="border-t border-gray-100 pt-6" data-unsaved-label="Office funds">
+    <form method="POST" action="{{ route('general.reimbursement.settings.objects.offices') }}" class="border-t border-gray-100 pt-6" data-unsaved-label="Office funds"
+          data-confirm="Each office uses its responsible person and monthly fund for documents submitted from now on." data-confirm-title="Save offices?" data-confirm-ok="Save offices" data-cancel-message="Cancelled. The offices were not changed.">
         @csrf
         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">Office funds and responsible person</h3>
         <p class="text-xs text-gray-500 mb-4">
@@ -256,13 +279,18 @@
                                 <span class="font-medium text-gray-900">{{ $pool->ref_label ?: ucfirst($pool->object_type) . ' #' . $pool->ref_id }}</span>
                                 <span class="block text-xs text-gray-400">{{ ucfirst($pool->object_type) }}</span>
                             </td>
-                            <td class="px-3 py-3 text-gray-700">{{ $pool->category !== '' ? $pool->category : 'General' }}</td>
+                            <td class="px-3 py-3 text-gray-700">{{ $pool->category !== '' ? $pool->category : 'General' }}@if($pool->isLinked())<span class="block text-xs text-blue-700">Follows the project plan</span>@endif</td>
                             <td class="px-3 py-3 text-right tabular-nums text-gray-700">{{ $rp($row['balance']['committed']) }}</td>
                             <td class="px-3 py-3 text-right tabular-nums font-semibold {{ $row['balance']['available'] < 0 ? 'text-red-700' : 'text-gray-900' }}">{{ $rp($row['balance']['available']) }}</td>
                             <td class="px-3 py-3">
-                                <form method="POST" action="{{ route('general.reimbursement.settings.objects.pools.update', $pool) }}" class="flex flex-wrap items-center gap-2">
+                                <form method="POST" action="{{ route('general.reimbursement.settings.objects.pools.update', $pool) }}" class="flex flex-wrap items-center gap-2"
+                                      data-confirm="The remaining fund is recalculated right away. Documents already approved keep their amounts." data-confirm-title="Update this allocation?" data-confirm-ok="Update" data-cancel-message="Cancelled. The allocation was not changed.">
                                     @csrf
-                                    <input type="number" name="amount" min="1" step="1000" required value="{{ (int) $pool->amount }}" class="w-36 px-2 py-1.5 border border-gray-300 rounded text-sm text-right">
+                                    @if($pool->isLinked())
+                                        <span class="w-36 px-2 py-1.5 text-sm text-right tabular-nums text-gray-700">{{ $rp($pool->amount) }}</span>
+                                    @else
+                                        <input type="number" name="amount" min="1" step="1000" required value="{{ (int) $pool->amount }}" class="w-36 px-2 py-1.5 border border-gray-300 rounded text-sm text-right">
+                                    @endif
                                     <label class="flex items-center gap-1 text-xs text-gray-600">
                                         <input type="checkbox" name="is_active" value="1" @checked($pool->is_active) class="w-4 h-4 rounded border-gray-300 text-red-800 focus:ring-red-800"> Active
                                     </label>
@@ -277,7 +305,8 @@
             </table>
         </div>
 
-        <form method="POST" action="{{ route('general.reimbursement.settings.objects.pools.store') }}" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end" id="poolForm">
+        <form method="POST" action="{{ route('general.reimbursement.settings.objects.pools.store') }}" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end" id="poolForm"
+              data-confirm="From now on, documents charged to this project or ticket are checked against it." data-confirm-title="Add this allocation?" data-confirm-ok="Add allocation" data-cancel-message="Cancelled. No allocation was added.">
             @csrf
             <div>
                 <label class="{{ $label }}">Object</label>
@@ -303,15 +332,104 @@
                 <label class="{{ $label }}">Category (optional)</label>
                 <input type="text" name="category" maxlength="60" value="{{ old('category') }}" placeholder="e.g. Transport" class="{{ $input }}">
             </div>
-            <div>
+            <div class="md:col-span-2" id="poolSourceWrap">
+                <label class="{{ $label }}">Amount comes from</label>
+                <select name="source" id="poolSource" class="{{ $input }}">
+                    <option value="manual" @selected(old('source', 'manual') === 'manual')>Typed amount</option>
+                    <option value="project_plan" @selected(old('source') === 'project_plan')>Project plan (read only)</option>
+                </select>
+            </div>
+            <div class="md:col-span-2" id="poolCostWrap" hidden>
+                <label class="{{ $label }}">Plan cost line</label>
+                <select name="source_cost_id" id="poolCost" data-url="{{ route('general.reimbursement.settings.objects.project-costs') }}" class="{{ $input }}">
+                    <option value="">- choose a project first -</option>
+                </select>
+            </div>
+            <div id="poolAmountWrap">
                 <label class="{{ $label }}">Allocation (IDR)</label>
-                <input type="number" name="amount" min="1" step="1000" required value="{{ old('amount') }}" class="{{ $input }}">
+                <input type="number" name="amount" id="poolAmount" min="1" step="1000" value="{{ old('amount') }}" class="{{ $input }}">
             </div>
             <div>
                 <button type="submit" class="w-full px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all">Add allocation</button>
             </div>
         </form>
         <p class="{{ $hint }} mt-2">Leave the category empty for one general allocation that covers every category without its own allocation.</p>
+        <p class="{{ $hint }} mt-1"><strong>Project plan</strong> reads the released amount of a cost line from the project's Plan Cost tab (or its budget when nothing is released yet) and follows later changes. It never changes the plan. Tickets have no plan budget, so type the amount.</p>
+    </div>
+
+    {{-- ── Access exceptions ─────────────────────────────────────────────── --}}
+    <div class="border-t border-gray-100 pt-6" id="access-exceptions">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">Exceptions for one project or ticket</h3>
+        <p class="text-xs text-gray-500 mb-4">An exception replaces the default above for that project or ticket only, for example one ticket that everyone may charge to.</p>
+
+        @if($accessRules->isNotEmpty())
+            <div class="overflow-x-auto border border-gray-200 rounded-lg mb-5">
+                <table class="w-full text-sm min-w-[560px]">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            <th class="px-3 py-3">Object</th>
+                            <th class="px-3 py-3">Who can charge</th>
+                            <th class="px-3 py-3">Note</th>
+                            <th class="px-3 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach($accessRules as $rule)
+                            <tr>
+                                <td class="px-3 py-3"><span class="font-medium text-gray-900">{{ $rule->ref_label }}</span><span class="block text-xs text-gray-400">{{ $rule->object_type === 'project' ? 'Project' : 'Support ticket' }}</span></td>
+                                <td class="px-3 py-3 text-gray-700">{{ \App\Services\ObjectFund\ObjectAccessPolicy::MODE_LABELS[$rule->mode] ?? $rule->mode }}</td>
+                                <td class="px-3 py-3 text-gray-500">{{ $rule->notes }}</td>
+                                <td class="px-3 py-3 text-right">
+                                    <form method="POST" action="{{ route('general.reimbursement.settings.objects.access.destroy', $rule) }}"
+                                          data-confirm="{{ $rule->ref_label }} goes back to the default rule." data-confirm-title="Remove this exception?" data-confirm-ok="Remove" data-confirm-variant="danger" data-cancel-message="Cancelled. The exception was kept.">
+                                        @csrf
+                                        <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-red-800 border border-red-200 rounded-lg hover:bg-red-50">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p class="text-sm text-gray-400 mb-5">No exceptions. Every project and ticket follows the default rule.</p>
+        @endif
+
+        <form method="POST" action="{{ route('general.reimbursement.settings.objects.access.store') }}" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end" id="accessForm"
+              data-confirm="This replaces the default rule for that project or ticket right away." data-confirm-title="Save this exception?" data-confirm-ok="Save exception" data-cancel-message="Cancelled. No exception was saved.">
+            @csrf
+            <div>
+                <label class="{{ $label }}">Object</label>
+                <select name="object_type" id="accessType" class="{{ $input }}">
+                    <option value="project" @selected(old('object_type') !== 'support')>Project</option>
+                    <option value="support" @selected(old('object_type') === 'support')>Support ticket</option>
+                </select>
+            </div>
+            <div class="md:col-span-2" id="accessProjectWrap">
+                <label class="{{ $label }}">Project</label>
+                <select name="project_id" data-searchable="true" data-search-placeholder="Search project…" class="{{ $input }}">
+                    <option value="">- choose a project -</option>
+                    @foreach($projectOptions as $project)
+                        <option value="{{ $project['id'] }}" @selected((string) old('project_id') === (string) $project['id'])>{{ $project['label'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="md:col-span-2" id="accessTicketWrap" hidden>
+                <label class="{{ $label }}">Ticket number</label>
+                <input type="text" name="ticket_number" maxlength="50" value="{{ old('ticket_number') }}" placeholder="Full ticket number" class="{{ $input }}">
+            </div>
+            <div>
+                <label class="{{ $label }}">Who can charge</label>
+                <select name="mode" class="{{ $input }}">
+                    @foreach(\App\Services\ObjectFund\ObjectAccessPolicy::MODE_LABELS as $mode => $modeLabel)
+                        <option value="{{ $mode }}" @selected(old('mode') === $mode)>{{ $modeLabel }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="w-full px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all">Save exception</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -323,14 +441,54 @@
     const ticketWrap = document.getElementById('poolTicketWrap');
     if (!type) return;
 
+    const source = document.getElementById('poolSource');
+    const sourceWrap = document.getElementById('poolSourceWrap');
+    const costWrap = document.getElementById('poolCostWrap');
+    const cost = document.getElementById('poolCost');
+    const amountWrap = document.getElementById('poolAmountWrap');
+    const projectSelect = document.querySelector('#poolProjectWrap select');
+
     function sync() {
         const isSupport = type.value === 'support';
         projectWrap.hidden = isSupport;
         ticketWrap.hidden = !isSupport;
+        sourceWrap.hidden = isSupport;
+        if (isSupport) source.value = 'manual';
+        const linked = source.value === 'project_plan';
+        costWrap.hidden = !linked;
+        amountWrap.hidden = linked;
+    }
+
+    async function loadCosts() {
+        if (source.value !== 'project_plan' || !projectSelect.value) return;
+        cost.innerHTML = '<option value="">Loading…</option>';
+        try {
+            const res = await fetch(cost.dataset.url + '?project_id=' + encodeURIComponent(projectSelect.value), { headers: { Accept: 'application/json' } });
+            const json = await res.json();
+            const rows = json.data || [];
+            cost.innerHTML = '<option value="">- choose a cost line -</option>' + rows.map(r =>
+                '<option value="' + r.id + '">' + String(r.name).replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])) + ' (Rp ' + Number(r.amount).toLocaleString('id-ID') + ')</option>').join('');
+            if (!rows.length) cost.innerHTML = '<option value="">This project has no plan cost lines</option>';
+        } catch (e) {
+            cost.innerHTML = '<option value="">Could not load cost lines</option>';
+        }
     }
 
     type.addEventListener('change', sync);
+    source.addEventListener('change', () => { sync(); loadCosts(); });
+    projectSelect.addEventListener('change', loadCosts);
     sync();
+
+    const aType = document.getElementById('accessType');
+    if (aType) {
+        const sync2 = () => {
+            const s = aType.value === 'support';
+            document.getElementById('accessProjectWrap').hidden = s;
+            document.getElementById('accessTicketWrap').hidden = !s;
+        };
+        aType.addEventListener('change', sync2);
+        sync2();
+    }
 })();
 </script>
 @endpush

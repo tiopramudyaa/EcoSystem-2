@@ -145,5 +145,63 @@
         return false;
     };
 })();
+
+/*
+ * Konfirmasi untuk setiap <form data-confirm="..."> di seluruh aplikasi.
+ *
+ * Sebelumnya atribut ini hanya bekerja di halaman yang memuat penanganannya sendiri
+ * (Payroll, Legal, Recruitment), sehingga form di modul lain mengabaikannya diam-diam.
+ * Atribut:
+ *   data-confirm          pertanyaan (wajib)
+ *   data-confirm-title    judul (bawaan "Please confirm")
+ *   data-confirm-ok       teks tombol OK (bawaan "Confirm")
+ *   data-confirm-variant  primary | danger (bawaan: danger bila judul memuat delete/remove/void, selain itu primary)
+ *   data-cancel-message   pesan saat dibatalkan (bawaan "Cancelled. Nothing was changed.")
+ *
+ * Setelah disetujui, form dikirim ulang dengan requestSubmit() supaya validasi sisi klien dan
+ * penjaga perubahan belum disimpan tetap berjalan. Dibatalkan = toast "Cancelled".
+ * Penanda window.__ecConfirmForms mencegah penangan lama di modul lain berjalan dua kali.
+ */
+(function () {
+    if (window.__ecConfirmForms) return;
+    window.__ecConfirmForms = true;
+
+    document.addEventListener('submit', async function (event) {
+        var form = event.target;
+        if (!form || !form.matches || !form.matches('form[data-confirm]')) return;
+        if (form.dataset.confirmed === '1' || event.defaultPrevented) return;
+
+        event.preventDefault();
+
+        var title = form.dataset.confirmTitle || 'Please confirm';
+        var variant = form.dataset.confirmVariant || (/delete|remove|void/i.test(title) ? 'danger' : 'primary');
+        var submitter = event.submitter || null;
+
+        var ok = await window.showConfirm(form.dataset.confirm, title, variant, {
+            okText: form.dataset.confirmOk || 'Confirm',
+            cancelText: 'Cancel',
+        });
+
+        if (!ok) {
+            if (typeof window.showToast === 'function') {
+                window.showToast(form.dataset.cancelMessage || 'Cancelled. Nothing was changed.', 'info', 3500);
+            }
+            return;
+        }
+
+        // Biarkan pengiriman asli selesai didispatch dulu: requestSubmit() diabaikan browser
+        // selama form masih menembakkan event submit-nya.
+        await new Promise(function (resolve) { setTimeout(resolve, 0); });
+
+        form.dataset.confirmed = '1';
+        try {
+            if (form.requestSubmit) { form.requestSubmit(submitter && submitter.form === form ? submitter : undefined); }
+            else { form.submit(); }
+        } finally {
+            // Bila penangan lain membatalkan pengiriman (validasi), percobaan berikutnya meminta konfirmasi lagi.
+            delete form.dataset.confirmed;
+        }
+    }, true);
+})();
 </script>
 @endverbatim

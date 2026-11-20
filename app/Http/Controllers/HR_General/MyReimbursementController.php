@@ -48,7 +48,7 @@ class MyReimbursementController extends Controller
             'settings' => $settings,
             'branches' => $reimbursement->branchOptions(),
             'objectMode' => $reimbursement->objectMode(),
-            'projects'   => $reimbursement->objectMode() ? $reimbursement->projectOptions() : collect(),
+            'projects'   => $reimbursement->objectMode() ? $reimbursement->projectOptions((int) session('user.id')) : collect(),
             'lookupBase' => url('/general/my-reimbursement/objects'),
             'steps'    => $reimbursement->activeSteps(),
             'choiceSteps' => $reimbursement->choiceSteps(),

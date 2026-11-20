@@ -99,6 +99,7 @@ class ReimbursementSettingController extends Controller
                     return ['pool' => $pool, 'balance' => $balance];
                 }),
             'projectOptions' => $reimbursement->projectOptions(),
+            'accessRules'    => \App\Models\ObjectFund\ObjectAccessRule::orderBy('object_type')->orderBy('ref_label')->get(),
 
             // Hanya karyawan aktif, dan hanya kolom yang benar-benar dipakai -
             // 209 baris berisi seluruh kolom membuat halaman berat tanpa manfaat.
@@ -145,7 +146,7 @@ class ReimbursementSettingController extends Controller
             'after'    => $settings->fresh()->only(array_keys($before)),
         ]);
 
-        return back()->with('success', 'Reimbursement settings saved.');
+        return back()->with('success', 'Reimbursement rules saved. They apply to documents submitted from now on.');
     }
 
     // ── Alur persetujuan ────────────────────────────────────────────────────
