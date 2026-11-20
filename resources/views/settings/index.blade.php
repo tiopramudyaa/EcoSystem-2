@@ -160,9 +160,9 @@
                     $stCurrent = $preferences['seasonal_theme'] ?? 'default';
                     $stPalettes = collect(\App\Support\SeasonalThemes::catalog())->map(fn ($m) => $m['palette'])->all();
                 @endphp
-                <div class="px-8 py-6">
-                    <div class="flex items-start justify-between gap-8">
-                        <div class="w-48 flex-shrink-0">
+                <div class="px-4 sm:px-8 py-6">
+                    <div class="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-8">
+                        <div class="w-full sm:w-48 flex-shrink-0">
                             <p class="text-sm font-medium text-gray-800">{{ __('ui.seasonal.title') }}</p>
                             <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ __('ui.seasonal.subtitle') }}</p>
                             <p class="text-xs text-gray-400 mt-2 leading-relaxed">
@@ -177,7 +177,7 @@
                                 </a>
                             @endif
                         </div>
-                        <div class="flex flex-wrap items-center justify-end gap-3" id="seasonalPicker">
+                        <div class="flex flex-wrap items-center justify-start sm:justify-end gap-3" id="seasonalPicker">
                     @include('partials.seasonal-icons')
                             {{-- 'default' bukan bagian dari SeasonalThemes (katalog tema yang bisa
                                  dirender): ini pilihan "ikut admin" di level preferensi user,
@@ -792,8 +792,9 @@
 .st-card { border-color:#e5e7eb; background:transparent; }
 .st-card:hover { border-color:var(--st-card-accent); }
 .st-card.is-selected { border-color:var(--st-card-accent); box-shadow:0 0 0 1px var(--st-card-accent); }
-.st-card .st-card-label { color:#6b7280; }
-.st-card.is-selected .st-card-label { color:#111827; font-weight:600; }
+/* Warna label mengikuti tema terang/gelap halaman (var(--text-color)), bukan hex tetap. */
+.st-card .st-card-label { color:var(--text-color, #111827); opacity:.68; }
+.st-card.is-selected .st-card-label { color:var(--text-color, #111827); opacity:1; font-weight:600; }
 .se-btn { display:flex; align-items:center; }
 .se-label.is-placeholder { color:#9ca3af; }
 .se-wrap.is-open .se-arrow { transform:rotate(180deg); }

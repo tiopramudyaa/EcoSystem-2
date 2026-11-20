@@ -8,6 +8,17 @@ let webglOk = null;
 let threePromise = null;
 const scenePromises = {};
 
+// Tier kualitas: perangkat lemah (memori atau core sedikit, Save-Data) memakai pixel ratio 1 dan
+// tanpa antialias. Jaga tambahan: bila 10 frame pertama rata-rata di atas 40 ms, pixel ratio turun ke 1.
+function qualityTier() {
+  try {
+    const n = navigator;
+    const weak = (n.deviceMemory && n.deviceMemory <= 4) || (n.hardwareConcurrency && n.hardwareConcurrency <= 4)
+      || (n.connection && n.connection.saveData);
+    return weak ? 'low' : 'high';
+  } catch (e) { return 'high'; }
+}
+
 export function supportsWebGL() {
   if (webglOk !== null) return webglOk;
   try {
@@ -67,8 +78,9 @@ export async function play(canvas, opts = {}) {
   };
 
   try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    const tier = qualityTier();
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: tier === 'high', alpha: false });
+    renderer.setPixelRatio(tier === 'high' ? Math.min(window.devicePixelRatio || 1, 1.5) : 1);
     renderer.shadowMap.enabled = false;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -83,18 +95,36 @@ export async function play(canvas, opts = {}) {
 
     scn = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1200);
-    impl = mod.create(THREE, { scene: scn, camera, renderer, palette, width, height, duration });
+    impl = mod.create(THREE, { scene: scn, camera, renderer, palette, width, height, duration, quality: tier });
 
-    onResize = () => { [width, height] = size(); camera.aspect = width / height; camera.updateProjectionMatrix(); };
+    // Layar potret (ponsel): fov vertikal dilebarkan supaya cakupan horizontal tidak menyempit
+    // dan tokoh utama tidak terpotong; dibatasi 85 derajat agar tidak terdistorsi.
+    const baseFov = camera.fov;
+    const fitAspect = () => {
+      const a = width / height;
+      camera.aspect = a;
+      camera.fov = a >= 1 ? baseFov : Math.min(85, (2 * Math.atan(Math.tan((baseFov * Math.PI) / 360) / a) * 180) / Math.PI);
+      camera.updateProjectionMatrix();
+    };
+    fitAspect();
+    onResize = () => { [width, height] = size(); fitAspect(); };
     window.addEventListener('resize', onResize);
 
-    let elapsed = 0, last = performance.now();
+    let elapsed = 0, last = performance.now(), sampled = 0, sampleSum = 0, downgraded = tier === 'low';
     const frame = (now) => {
       if (ended) return;
       raf = requestAnimationFrame(frame);
       const dtRaw = (now - last) / 1000;
       last = now;
       if (document.visibilityState !== 'visible') return;
+      if (!downgraded && sampled < 10 && dtRaw > 0) {
+        sampleSum += dtRaw; sampled++;
+        if (sampled === 10 && sampleSum / 10 > 0.04) {
+          downgraded = true;
+          renderer.setPixelRatio(1);
+          [width, height] = size();
+        }
+      }
       const dt = Math.min(Math.max(dtRaw, 0), 1 / 30);
       elapsed += dt * 1000;
       const t = Math.min(1, elapsed / duration);

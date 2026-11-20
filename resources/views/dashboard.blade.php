@@ -1633,9 +1633,12 @@
             return String(parseFloat(Number(value).toFixed(2)));
         };
     </script>
-    {{-- Remap warna tombol/aksen brand ke palet musiman. Selector-nya html[data-season], jadi inert tanpa tema;
-         selalu dimuat supaya pratinjau tema di Settings (data-season dipasang via JS) ikut berlaku. --}}
-    @include('partials.seasonal-ui-remap', ['dark' => ($preferences['theme'] ?? 'light') === 'dark'])
+    {{-- Remap warna tombol/aksen brand ke palet musiman. Selector-nya html[data-season], jadi inert tanpa tema.
+         Dimuat hanya saat tema aktif, atau di halaman Settings (pratinjau memasang data-season lewat JS),
+         supaya halaman tanpa tema tidak membawa 5 KB CSS yang tidak terpakai. --}}
+    @if(($seasonalTheme['key'] ?? 'none') !== 'none' || request()->routeIs('settings.*'))
+        @include('partials.seasonal-ui-remap', ['dark' => ($preferences['theme'] ?? 'light') === 'dark'])
+    @endif
 </head>
 
 <body class="text-gray-900 min-h-screen" style="background-color: var(--bg-color);">
@@ -1659,10 +1662,11 @@
             <header class="sticky top-0 z-40 shadow-sm border-b border-gray-100"
                 style="background-color: var(--card-bg);">
                 @if($effectiveSeasonalTheme !== 'none')
-                    @include('partials.seasonal-theme', [
+                    {{-- Hiasan vektor selebar navbar (menggantikan tiga aksen pudar placement 'header'). --}}
+                    @include('partials.seasonal-navbar', [
                         'themeKey' => $effectiveSeasonalTheme,
                         'showAnimations' => $preferences['show_animations'] ?? true,
-                        'placement' => 'header',
+                        'dark' => ($preferences['theme'] ?? 'light') === 'dark',
                     ])
                 @endif
                 <div class="px-3 sm:px-6 py-2.5 sm:py-4 flex justify-between items-center gap-2 sm:gap-3">

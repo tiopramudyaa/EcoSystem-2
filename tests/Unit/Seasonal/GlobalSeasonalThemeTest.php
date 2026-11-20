@@ -40,6 +40,21 @@ class GlobalSeasonalThemeTest extends TestCase
         return CarbonImmutable::parse($date);
     }
 
+    public function test_all_dibaca_sekali_per_request_lalu_di_memo(): void
+    {
+        $this->save(['theme' => 'natal']);
+        $this->assertSame('natal', GlobalSeasonalTheme::all()['theme']);
+
+        // Perubahan di penyimpanan tidak terlihat dalam request yang sama (tanpa SELECT ulang).
+        $this->save(['theme' => 'imlek']);
+        $this->assertSame('natal', GlobalSeasonalTheme::all()['theme']);
+        $this->assertSame('natal', GlobalSeasonalTheme::active());
+
+        // flushMemo() (dipanggil save()) memaksa pembacaan baru.
+        GlobalSeasonalTheme::flushMemo();
+        $this->assertSame('imlek', GlobalSeasonalTheme::all()['theme']);
+    }
+
     public function test_default_saat_belum_ada_data(): void
     {
         $this->assertSame(

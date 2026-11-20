@@ -126,15 +126,19 @@ class SeasonalThemeSettingsController extends Controller
     public function uploadSound(Request $request): RedirectResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:wav,mp3,ogg,aac|max:3072',
+            // 'extensions' memeriksa ekstensi nama file yang benar-benar disimpan
+            // (mimes hanya memeriksa isi), sehingga nama seperti .pht atau .shtml
+            // berisi audio asli tetap ditolak dan tidak masuk ke public/sounds.
+            'file' => 'required|file|mimes:wav,mp3,ogg,aac|extensions:wav,mp3,ogg,aac|max:3072',
         ], [
-            'file.mimes' => __('ui.seasonal.admin.upload_type'),
-            'file.max'   => __('ui.seasonal.admin.upload_size'),
+            'file.mimes'      => __('ui.seasonal.admin.upload_type'),
+            'file.extensions' => __('ui.seasonal.admin.upload_type'),
+            'file.max'        => __('ui.seasonal.admin.upload_size'),
         ]);
 
         $file     = $request->file('file');
         $slug     = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
-        $ext      = $file->getClientOriginalExtension();
+        $ext      = strtolower($file->getClientOriginalExtension());
         $filename = ($slug !== '' ? $slug : 'track') . '_' . time() . '.' . $ext;
 
         $file->move(public_path('sounds'), $filename);

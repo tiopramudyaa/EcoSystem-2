@@ -33,8 +33,22 @@
         ];
     }
 
+    // Satu versi untuk SEMUA modul 3D = mtime terbaru di public/js/seasonal. Import map di bawah
+    // memetakan tiap modul (termasuk impor relatif antar-modul dan three.js) ke URL berversi,
+    // sehingga deploy baru tidak pernah memuat campuran modul lama dan baru dari cache browser.
+    $slModuleFiles = array_merge(
+        glob(public_path('js/seasonal/*.js')) ?: [],
+        glob(public_path('js/seasonal/scenes/*.js')) ?: [],
+        glob(public_path('vendor/three/*.js')) ?: []
+    );
+    $slVersion = $slModuleFiles ? max(array_map('filemtime', $slModuleFiles)) : 0;
+    $slImportMap = [];
+    foreach ($slModuleFiles as $slFile) {
+        $slPath = '/' . str_replace('\\', '/', ltrim(substr($slFile, strlen(public_path())), '\\/'));
+        $slImportMap[$slPath] = $slPath . '?v=' . $slVersion;
+    }
     $slStageFile = public_path('js/seasonal/stage.js');
-    $slStageUrl = is_file($slStageFile) ? '/js/seasonal/stage.js?v=' . filemtime($slStageFile) : null;
+    $slStageUrl = is_file($slStageFile) ? '/js/seasonal/stage.js?v=' . $slVersion : null;
     $slSound = $slGlobal['soundUrl'] ?? null;
 @endphp
 @if(!empty($slThemes))
@@ -80,7 +94,15 @@
         position: relative; z-index: 2; padding: 0 1.5rem;
         display: flex; flex-direction: column; align-items: center;
     }
-    .seasonal-loading.is-3d .seasonal-loading__content { margin-top: 38vh; text-shadow: 0 2px 14px rgba(0,0,0,.45); }
+    /* Teks 3D di pita bawah dengan scrim gelap: tidak menimpa tokoh utama adegan dan tetap terbaca. */
+    .seasonal-loading.is-3d .seasonal-loading__content {
+        position: absolute; left: 0; right: 0; bottom: 0; margin: 0; z-index: 3;
+        padding: 4.5rem 1.5rem calc(1.75rem + env(safe-area-inset-bottom, 0px));
+        background: linear-gradient(to top, rgba(0,0,0,.74) 0%, rgba(0,0,0,.46) 55%, rgba(0,0,0,0) 100%);
+        text-shadow: 0 2px 12px rgba(0,0,0,.6);
+    }
+    .seasonal-loading.is-3d .seasonal-loading__title { margin-top: 0; font-size: 1.375rem; }
+    .seasonal-loading.is-3d .seasonal-loading__subtitle { font-size: .9375rem; color: rgba(255,255,255,.9); }
     .seasonal-loading__icon { width: 3.5rem; height: 3.5rem; color: var(--st-accent, #f2c14e); fill: currentColor; }
     .seasonal-loading.is-3d .seasonal-loading__icon { display: none; }
     .seasonal-loading__title { margin: 1rem 0 0; font-size: 1.0625rem; font-weight: 700; color: #fff; letter-spacing: .02em; }
@@ -109,6 +131,9 @@
     }
 </style>
 
+@if($slStageUrl)
+<script type="importmap">@json(['imports' => $slImportMap])</script>
+@endif
 <script>
     window.__seasonalThemes = @json($slThemes);
     (function () {
@@ -125,7 +150,10 @@
         }
 
         // Pemanasan aset 3D hanya bila tema global aktif; tema none tidak mengunduh apa pun.
-        if (GLOBAL_KEY !== 'none' && THEMES[GLOBAL_KEY] && STAGE) {
+        // Dilewati saat Save-Data aktif atau koneksi 2g/3g agar tidak memboroskan kuota.
+        var conn = navigator.connection || {};
+        var slow = !!(conn.saveData || /(^|-)(2g|3g)$/.test(conn.effectiveType || ''));
+        if (GLOBAL_KEY !== 'none' && THEMES[GLOBAL_KEY] && STAGE && !slow) {
             var warm = function () {
                 loadStage().then(function (m) { return m.preload(THEMES[GLOBAL_KEY].scene); }).catch(function () {});
             };

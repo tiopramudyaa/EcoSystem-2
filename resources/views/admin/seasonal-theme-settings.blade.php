@@ -50,8 +50,9 @@
     .st-card { border-color:#e5e7eb; background:transparent; }
     .st-card:hover { border-color:var(--st-card-accent); }
     .st-card.is-selected { border-color:var(--st-card-accent); box-shadow:0 0 0 1px var(--st-card-accent); }
-    .st-card .st-card-label { color:#6b7280; }
-    .st-card.is-selected .st-card-label { color:#111827; font-weight:600; }
+    /* Warna label mengikuti tema terang/gelap halaman (var(--text-color)), bukan hex tetap. */
+    .st-card .st-card-label { color:var(--text-color, #111827); opacity:.68; }
+    .st-card.is-selected .st-card-label { color:var(--text-color, #111827); opacity:1; font-weight:600; }
     .st-mode { border-color:#e5e7eb; }
     .st-mode:has(input:checked) { border-color:#374151; box-shadow:0 0 0 1px #374151; }
 </style>
@@ -83,7 +84,7 @@
                 <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
                     <i class="fas fa-palette text-sm"></i>
                 </div>
-                <div class="min-w-0 flex-1">
+                <div class="min-w-0 flex-1 basis-44">
                     <h2 class="text-sm font-semibold text-gray-900">{{ __('ui.seasonal.admin.theme_title') }}</h2>
                     <p class="text-xs text-gray-500">{{ __('ui.seasonal.admin.theme_hint') }} {{ __('ui.seasonal.admin.theme_manual') }}</p>
                 </div>
@@ -169,9 +170,9 @@
             </header>
 
             <div class="p-6 space-y-4">
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <select name="sound" id="globalSoundSelect"
-                        class="flex-1 rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+                        class="min-w-0 flex-1 basis-44 rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
                         <option value="" {{ !$activeSound ? 'selected' : '' }}>{{ __('ui.seasonal.admin.music_none') }}</option>
                         @foreach($availableSounds as $file)
                             <option value="{{ $file }}" {{ $activeSound === $file ? 'selected' : '' }}>{{ $file }}</option>

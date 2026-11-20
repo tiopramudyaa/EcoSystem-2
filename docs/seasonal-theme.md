@@ -76,7 +76,11 @@ Dekorasi bergerak hanya bila preferensi `Show animations` pengguna aktif dan per
 
 ### Warna tombol dan UI
 
-`partials/seasonal-theme-vars` menimpa `--primary-rgb`, `--primary-dark-rgb`, `--primary-color`, dan `--primary-surface` di bawah `html[data-season]`, sehingga sidebar, `.primary-*`, dan halaman accent-remap ikut berubah. `partials/seasonal-ui-remap` memetakan utility merek (`bg-red-700/800/900`, hover-nya, `text-red-700/800` pada tautan dan tombol, border, ring, gradien) ke palet. Warna bahaya tidak ikut: `bg-red-500/600`, elemen `[data-danger]`, `onclick` yang memuat delete, reject, atau revoke, lencana `.uppercase`, dan isi kotak peringatan. Tombol hapus atau tolak baru yang memakai `bg-red-700/800` wajib diberi atribut `data-danger`. Warna `#991b1b` yang ditulis langsung di blok `<style>` halaman tidak ikut dipetakan.
+`partials/seasonal-theme-vars` menimpa `--primary-rgb`, `--primary-dark-rgb`, `--primary-color`, dan `--primary-surface` di bawah `html[data-season]`, sehingga sidebar, `.primary-*`, dan halaman accent-remap ikut berubah. `partials/seasonal-ui-remap` memetakan utility merek (`bg-red-700/800/900`, hover-nya, `text-red-700/800` pada tautan dan tombol, border, ring, gradien) ke palet. Warna bahaya tidak ikut: `bg-red-500/600`, elemen `[data-danger]`, `onclick` yang memuat delete, reject, atau revoke, lencana `.uppercase`, dan isi kotak peringatan. Tombol hapus atau tolak baru yang memakai `bg-red-700/800` wajib diberi atribut `data-danger`. Warna `#991b1b` yang ditulis langsung di blok `<style>` halaman tidak ikut dipetakan. CSS remap hanya dimuat saat tema aktif atau di halaman `settings.*` (pratinjau memasang `data-season` lewat JS); halaman tanpa tema tidak membawanya. Pratinjau tema di luar `settings.*` di masa depan harus ikut memuatnya.
+
+### Hiasan navbar
+
+`partials/seasonal-navbar` menaruh satu lapisan dekoratif selebar header, bersumber dari ubin SVG berulang `public/images/seasonal/navbar/<key>.svg` (plus `<key>-lights.svg` untuk natal, tahun_baru, ramadan). Aturan lapisan: `position:absolute` di tepi bawah header, `z-index:-1` di bawah semua kontrol, `pointer-events:none`, `contain: layout paint size`, tidak mengubah tinggi header (tanpa CLS), tumpah maksimal 10 px ke bawah (6 px di layar kecil), disembunyikan saat print dan `prefers-contrast: more`. Kedipan lampu hanya animasi `opacity`, aktif bila `Show animations` menyala dan perangkat tidak reduced motion. Ubin hanya diminta saat tema aktif, URL-nya memakai `?v=<mtime>` agar desain baru tidak tertahan cache 30 hari. Tema baru wajib menambah ubin (maks 14 KB).
 
 ### Loading screen 3D
 
@@ -88,7 +92,15 @@ Setelah login sukses, respons `POST /api/auth/login` membawa `seasonal_theme` (t
 | 3D berjalan | maks(adegan selesai, 2200 ms), tidak pernah lebih dari 3600 ms |
 | WebGL tidak ada, impor gagal, atau reduced motion | Versi statis, 1800 ms |
 
-Pengalihan selalu dijadwalkan lebih dulu oleh satu timer sehingga kegagalan apa pun tidak menahan login. three.js (r170, `public/vendor/three`) dan modul adegan baru diunduh saat adegan akan diputar, atau saat idle bila tema global tidak `none`; tidak ada unduhan untuk tema `none`. Adegan membuang semua geometri, material, dan konteks WebGL setelah selesai, membatasi pixel ratio 1,5, tanpa shadow map, dan maksimal 2500 partikel. Dashboard tidak lagi memiliki splash. Musik latar hanya diatur admin (lagu dan volume, global); pengguna hanya dapat membisukannya secara lokal di browser (WCAG 1.4.2).
+Pengalihan selalu dijadwalkan lebih dulu oleh satu timer sehingga kegagalan apa pun tidak menahan login. three.js (r170, `public/vendor/three`) dan modul adegan baru diunduh saat adegan akan diputar, atau saat idle bila tema global tidak `none`; tidak ada unduhan untuk tema `none`. Adegan membuang semua geometri, material, dan konteks WebGL setelah selesai, membatasi pixel ratio 1,5, tanpa shadow map, dan maksimal 2500 partikel. Dashboard tidak lagi memiliki splash.
+
+**Versi aset 3D.** `seasonal-loading` mencetak import map yang memetakan setiap modul di `public/js/seasonal` dan `public/vendor/three` ke URL `?v=<mtime terbaru>`, termasuk impor relatif antar-modul, sehingga deploy baru tidak memuat campuran modul lama dan baru dari cache browser (browser tanpa import map tetap bekerja, hanya tanpa jaminan itu).
+
+**Kualitas adaptif.** `stage.js` memakai tier `low` (pixel ratio 1, tanpa antialias) bila `deviceMemory <= 4`, `hardwareConcurrency <= 4`, atau Save-Data aktif; pada tier `high` pixel ratio maksimal 1,5. Bila rata-rata 10 frame pertama di atas 40 ms, pixel ratio turun ke 1. Preload idle dilewati saat Save-Data atau koneksi 2g/3g.
+
+**Adegan.** `sleigh` (Natal: desa bersalju, gereja, bulan bertekstur), `fireworks` (Tahun Baru: kota, sungai, jembatan, lima jenis kembang api), `crescent` (Ramadan: bulan sabit berfase, masjid Utsmani dengan pantulan, lentera berpola), `eid` (Lebaran: keluarga berkumpul, ketupat dua warna hijau tua dan janur), `lunar` (Imlek: naga emas dan lampion), `flag` (HUT RI: bendera naik, barisan hormat, bambu runcing). Figur manusia memakai pembuat parametrik `scenes/_people.js`. Batas per adegan: tanpa shadow map, maksimal 2500 partikel dan 250 draw call, semua resource dibuang di akhir.
+
+**Memo server.** `GlobalSeasonalTheme::all()` dibaca sekali per request lewat memo di container (satu SELECT cache bila `CACHE_STORE=database`, nol bila hangat); `save()` memanggil `flushMemo()`. Daemon `queue:work` memakai container seumur proses, jadi job yang membaca ini harus memanggil `flushMemo()` dulu. Musik latar hanya diatur admin (lagu dan volume, global); pengguna hanya dapat membisukannya secara lokal di browser (WCAG 1.4.2).
 
 ## 8. Peta file
 
@@ -102,6 +114,7 @@ Pengalihan selalu dijadwalkan lebih dulu oleh satu timer sehingga kegagalan apa 
 | `resources/views/admin/seasonal-theme-settings.blade.php` | Halaman Control Center > Seasonal Theme |
 | `resources/views/settings/index.blade.php` | Picker di Settings > Appearance |
 | `resources/views/partials/seasonal-theme.blade.php` | Dekorasi |
+| `resources/views/partials/seasonal-navbar.blade.php` | Hiasan vektor selebar navbar (di dalam header dashboard). Satu div dekoratif `data-season-trim` memakai ubin SVG repeat-x `public/images/seasonal/navbar/<key>.svg`, plus `<key>-lights.svg` yang berkedip (opacity CSS, hanya bila Show animations aktif dan tanpa reduced motion) untuk natal, tahun_baru, ramadan. z-index -1, pointer-events none, menjuntai maksimal 10px, disembunyikan saat print dan prefers-contrast: more. Menggantikan placement `header` pada partial dekorasi |
 | `resources/views/partials/seasonal-theme-vars.blade.php` | CSS variable `--st-*` dari palet tema |
 | `resources/views/partials/seasonal-loading.blade.php` | Overlay loading (kanvas 3D, versi statis, data tema) |
 | `resources/views/partials/seasonal-icons.blade.php` | Sprite SVG: `st-icon-<key>` dan `st-orn-<nama>` |

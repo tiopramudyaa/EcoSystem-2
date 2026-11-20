@@ -232,3 +232,203 @@ export function skyline(THREE, rnd, { count = 40, spread = 120, z = -60, minH = 
   const mat = new THREE.MeshStandardMaterial({ color, emissiveMap: tex, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0.75, roughness: 1 });
   return new THREE.Mesh(geo, mat);
 }
+
+// ===== Tambahan ronde 3 (append-only; dipakai sleigh, fireworks, crescent) =====
+
+/** Titik pada bola langit dari azimut (rad, kanan positif, 0 = lurus ke -z) dan elevasi. */
+export function skyDir(THREE, az, el, r, out) {
+  const v = out || new THREE.Vector3();
+  return v.set(Math.sin(az) * Math.cos(el) * r, Math.sin(el) * r, -Math.cos(az) * Math.cos(el) * r);
+}
+
+/** Gabungkan banyak geometri jadi satu. parts: [{ geo, m?: Matrix4, color?, uvScale?: [u, v] }]. Atribut: position, normal, color, uv. */
+export function mergeParts(THREE, parts) {
+  let n = 0, ni = 0;
+  for (const p of parts) { const c = p.geo.attributes.position.count; n += c; ni += p.geo.index ? p.geo.index.count : c; }
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3), uv = new Float32Array(n * 2), idx = new Uint32Array(ni);
+  const v = new THREE.Vector3(), nm = new THREE.Matrix3(), c = new THREE.Color(), I = new THREE.Matrix4();
+  let o = 0, oi = 0;
+  for (const { geo, m, color = '#ffffff', uvScale } of parts) {
+    const P = geo.attributes.position, N = geo.attributes.normal, U = geo.attributes.uv, M = m || I;
+    nm.getNormalMatrix(M); c.set(color);
+    for (let i = 0; i < P.count; i++) {
+      const j = o + i;
+      v.fromBufferAttribute(P, i).applyMatrix4(M); pos[j * 3] = v.x; pos[j * 3 + 1] = v.y; pos[j * 3 + 2] = v.z;
+      if (N) { v.fromBufferAttribute(N, i).applyMatrix3(nm).normalize(); nor[j * 3] = v.x; nor[j * 3 + 1] = v.y; nor[j * 3 + 2] = v.z; }
+      col[j * 3] = c.r; col[j * 3 + 1] = c.g; col[j * 3 + 2] = c.b;
+      if (U) { uv[j * 2] = U.getX(i) * (uvScale ? uvScale[0] : 1); uv[j * 2 + 1] = U.getY(i) * (uvScale ? uvScale[1] : 1); }
+    }
+    if (geo.index) for (let i = 0; i < geo.index.count; i++) idx[oi++] = geo.index.getX(i) + o;
+    else for (let i = 0; i < P.count; i++) idx[oi++] = o + i;
+    o += P.count;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  return g;
+}
+
+/**
+ * Langit terlukis (gradasi + pita bimasakti) pada bola parsial yang hanya menutup sudut pandang depan,
+ * sehingga 1024 px cukup tajam. stops: [[0..1 (horizon ke zenit), warna], ...].
+ * paint(g, m) opsional; m = { W, H, k, x(az), y(el) }.
+ */
+export function paintedSky(THREE, rnd, { stops, milky = null, paint = null, span = 2.3, upTop = 1.0, below = 0.15, radius = 500 } = {}) {
+  const W = 1024, H = 512, tot = upTop + below;
+  const m = { W, H, k: H / tot, x: (az) => W * (0.5 - az / span), y: (el) => H * (upTop - el) / tot };
+  const tex = canvasTex(THREE, W, H, (g) => {
+    const css = (c) => (typeof c === 'string' ? c : '#' + c.getHexString());
+    g.fillStyle = css(stops[0][1]); g.fillRect(0, 0, W, H);
+    const gr = g.createLinearGradient(0, 0, 0, m.y(0));
+    stops.forEach(([p, col]) => gr.addColorStop(1 - p, css(col)));
+    g.fillStyle = gr; g.fillRect(0, 0, W, m.y(0) + 1);
+    if (milky) {
+      const { az0, el0, az1, el1, width = 70, color = '255,244,225', alpha = 0.09 } = milky;
+      for (let i = 0; i < 170; i++) {
+        const s = rnd(), jx = (rnd() - 0.5) * width * 1.3, jy = (rnd() - 0.5) * width * 0.9;
+        const x = m.x(az0 + (az1 - az0) * s) + jx, y = m.y(el0 + (el1 - el0) * s) + jy, r = width * (0.25 + rnd() * 0.5);
+        const rg = g.createRadialGradient(x, y, 0, x, y, r);
+        const a = alpha * (0.4 + rnd() * 0.9) * (1 - Math.abs(jx / (width * 0.65)) * 0.5);
+        rg.addColorStop(0, `rgba(${color},${a})`); rg.addColorStop(1, `rgba(${color},0)`);
+        g.fillStyle = rg; g.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+      for (let i = 0; i < 26; i++) {
+        const s = rnd(), x = m.x(az0 + (az1 - az0) * s) + (rnd() - 0.5) * width * 0.5, y = m.y(el0 + (el1 - el0) * s) + (rnd() - 0.5) * width * 0.4, r = 10 + rnd() * 22;
+        const rg = g.createRadialGradient(x, y, 0, x, y, r);
+        rg.addColorStop(0, 'rgba(5,8,20,0.1)'); rg.addColorStop(1, 'rgba(5,8,20,0)');
+        g.fillStyle = rg; g.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+    }
+    if (paint) paint(g, m);
+  });
+  const geo = new THREE.SphereGeometry(radius, 48, 24, Math.PI * 1.5 - span / 2, span, Math.PI / 2 - upTop, tot);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false, depthWrite: false }));
+  mesh.renderOrder = -10;
+  mesh.frustumCulled = false;
+  return mesh;
+}
+
+/** Bintang padat hanya di sudut pandang depan: dua Points (kecil dan besar), berkelip. */
+export function starField(THREE, rnd, count, { span = 2.3, upTop = 1.0, radius = 450, color = '#ffffff', tex, size = 1.7, bigShare = 0.1, minEl = 0.0 } = {}) {
+  const tints = [new THREE.Color(color), new THREE.Color('#ffe2b4'), new THREE.Color('#b4ccff')];
+  const mk = (n, sz) => {
+    const pos = new Float32Array(n * 3), col = new Float32Array(n * 3), ph = new Float32Array(n), orig = new Float32Array(n * 3), v = new THREE.Vector3();
+    for (let i = 0; i < n; i++) {
+      const az = (rnd() - 0.5) * span * 0.96, el = minEl + Math.pow(rnd(), 0.8) * (upTop - minEl);
+      skyDir(THREE, az, el, radius, v); pos[i * 3] = v.x; pos[i * 3 + 1] = v.y; pos[i * 3 + 2] = v.z;
+      const t = tints[rnd() < 0.7 ? 0 : 1 + (rnd() < 0.5 ? 0 : 1)], b = 0.22 + Math.pow(rnd(), 2.2) * 0.9;
+      orig[i * 3] = col[i * 3] = t.r * b; orig[i * 3 + 1] = col[i * 3 + 1] = t.g * b; orig[i * 3 + 2] = col[i * 3 + 2] = t.b * b;
+      ph[i] = rnd() * 6.28;
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: sz, map: tex, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: false, fog: false }));
+    pts.frustumCulled = false;
+    return { pts, g, col, orig, ph, n };
+  };
+  const nb = Math.round(count * bigShare), A = mk(count - nb, size), B = mk(nb, size * 2.2);
+  const group = new THREE.Group(); group.add(A.pts, B.pts);
+  return {
+    group,
+    update(time) {
+      for (const S of [A, B]) {
+        for (let i = 0; i < S.n; i++) {
+          const k = 0.6 + 0.4 * Math.sin(time * (2.4 + (i % 5) * 0.5) + S.ph[i]);
+          S.col[i * 3] = S.orig[i * 3] * k; S.col[i * 3 + 1] = S.orig[i * 3 + 1] * k; S.col[i * 3 + 2] = S.orig[i * 3 + 2] * k;
+        }
+        S.g.attributes.color.needsUpdate = true;
+      }
+    },
+  };
+}
+
+/** Texture permukaan bulan: maria, kawah, bintik. 1024x512 (equirect). */
+export function moonTexture(THREE, rnd, { base = '#d8d3c4', mare = '#5f6068' } = {}) {
+  return canvasTex(THREE, 1024, 512, (g, W, H) => {
+    g.fillStyle = base; g.fillRect(0, 0, W, H);
+    const blob = (x, y, r, col, a) => {
+      for (const dx of [-W, 0, W]) {
+        const rg = g.createRadialGradient(x + dx, y, 0, x + dx, y, r);
+        rg.addColorStop(0, col.replace('A', a)); rg.addColorStop(0.7, col.replace('A', a * 0.7)); rg.addColorStop(1, col.replace('A', 0));
+        g.fillStyle = rg; g.fillRect(x + dx - r, y - r, r * 2, r * 2);
+      }
+    };
+    const mc = 'rgba(' + new THREE.Color(mare).toArray().map((v) => Math.round(Math.pow(v, 1 / 2.2) * 255)).join(',') + ',A)';
+    [[250, 190, 90], [330, 250, 70], [190, 270, 60], [280, 130, 55], [370, 170, 45], [220, 220, 80], [300, 300, 40]].forEach(([x, y, r]) => {
+      for (let i = 0; i < 7; i++) blob(x + (rnd() - 0.5) * r * 0.9, y + (rnd() - 0.5) * r * 0.7, r * (0.35 + rnd() * 0.5), mc, 0.2 + rnd() * 0.14);
+    });
+    for (let i = 0; i < 700; i++) blob(rnd() * W, rnd() * H, 18 + rnd() * 50, mc, 0.03 + rnd() * 0.05);
+    for (let i = 0; i < 4200; i++) { g.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.07)' : 'rgba(40,40,50,0.08)'; g.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 2, 1 + rnd() * 2); }
+    for (let i = 0; i < 230; i++) {
+      const x = rnd() * W, y = 30 + rnd() * (H - 60), r = 2 + Math.pow(rnd(), 3) * 26;
+      const rg = g.createRadialGradient(x, y, r * 0.2, x, y, r);
+      rg.addColorStop(0, 'rgba(60,60,70,0.30)'); rg.addColorStop(0.85, 'rgba(90,90,100,0.16)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = rg; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
+      g.strokeStyle = 'rgba(255,255,250,0.30)'; g.lineWidth = Math.max(1, r * 0.12); g.beginPath(); g.arc(x, y, r, 3.6, 5.3); g.stroke();
+    }
+    for (let i = 0; i < 9; i++) {
+      const x = rnd() * W, y = 60 + rnd() * (H - 120);
+      for (let s = 0; s < 14; s++) {
+        const a = rnd() * 6.283, l = 20 + rnd() * 70;
+        g.strokeStyle = 'rgba(255,255,255,0.06)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l * 0.8); g.stroke();
+      }
+      blob(x, y, 9, 'rgba(255,255,255,A)', 0.5);
+    }
+  });
+}
+
+/**
+ * Bulan berfase: bola berpencahayaan Lambert dengan terminator lembut, tekstur, bayangan bumi redup.
+ * sunDir = arah cahaya (dunia). Mengembalikan mesh (ShaderMaterial, tanpa kabut).
+ */
+export function phasedMoon(THREE, map, { radius = 10, sunDir, tint = '#fff4dc', earth = 0.05, gain = 1.25, uOff = 0 } = {}) {
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { map: { value: map }, sunDir: { value: sunDir.clone().normalize() }, tint: { value: new THREE.Color(tint) }, earth: { value: earth }, gain: { value: gain }, uOff: { value: uOff } },
+    vertexShader: 'varying vec3 vN; varying vec2 vUv; varying vec3 vV; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); vec4 wp = modelMatrix * vec4(position,1.0); vV = normalize(cameraPosition - wp.xyz); gl_Position = projectionMatrix * viewMatrix * wp; }',
+    fragmentShader: 'uniform sampler2D map; uniform vec3 sunDir; uniform vec3 tint; uniform float earth; uniform float gain; uniform float uOff; varying vec3 vN; varying vec2 vUv; varying vec3 vV;\n'
+      + 'void main(){ vec3 n = normalize(vN); float d = dot(n, normalize(sunDir)); float lit = smoothstep(-0.03, 0.16, d); float lam = pow(max(d, 0.0), 0.55);\n'
+      + ' vec3 a = texture2D(map, vec2(vUv.x + uOff, vUv.y)).rgb; float fr = pow(max(dot(n, normalize(vV)), 0.0), 0.35);\n'
+      + ' vec3 c = a * tint * (lit * (0.18 + 0.95 * lam) * gain + earth * vec3(0.55, 0.65, 1.0)) * mix(0.7, 1.0, fr);\n'
+      + ' gl_FragColor = vec4(c, clamp(lit + earth * 2.5, 0.0, 1.0));\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}',
+  });
+  mat.transparent = true; mat.depthWrite = false; // sisi gelap tembus ke langit
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 64, 48), mat);
+  mesh.frustumCulled = false;
+  return mesh;
+}
+
+/** Sinar cahaya: bilah tipis aditif memancar dari titik asal (satu draw call). Mengembalikan { mesh, tex }. */
+export function godRays(THREE, rnd, { n = 8, len = 140, width = 12, color = '#cfdcff', opacity = 0.05 } = {}) {
+  const tex = canvasTex(THREE, 128, 32, (g, w, h) => {
+    const gx = g.createLinearGradient(0, 0, w, 0); gx.addColorStop(0, 'rgba(255,255,255,0.9)'); gx.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gx; g.fillRect(0, 0, w, h);
+    g.globalCompositeOperation = 'destination-in';
+    const gy = g.createLinearGradient(0, 0, 0, h); gy.addColorStop(0, 'rgba(0,0,0,0)'); gy.addColorStop(0.5, 'rgba(0,0,0,1)'); gy.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gy; g.fillRect(0, 0, w, h);
+  });
+  const parts = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * 6.283 + (rnd() - 0.5) * 0.5, L = len * (0.55 + rnd() * 0.6), Wd = width * (0.5 + rnd());
+    const m = new THREE.Matrix4().makeRotationZ(a).multiply(new THREE.Matrix4().makeTranslation(L / 2, 0, 0));
+    parts.push({ geo: new THREE.PlaneGeometry(L, Wd), m });
+  }
+  const geo = mergeParts(THREE, parts); parts.forEach((p) => p.geo.dispose());
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, color, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+  mesh.frustumCulled = false;
+  return { mesh, tex };
+}
+
+/** Texture awan lembut 256x128 (alpha putih), untuk sprite/bidang awan. */
+export function cloudTexture(THREE, rnd) {
+  return canvasTex(THREE, 256, 128, (g, w, h) => {
+    for (let i = 0; i < 38; i++) {
+      const t = rnd(), x = w * (0.12 + 0.76 * t), y = h * (0.58 - Math.sin(t * Math.PI) * 0.16 + (rnd() - 0.5) * 0.22), r = 14 + rnd() * 30 * (0.5 + Math.sin(t * Math.PI));
+      const rg = g.createRadialGradient(x, y, 0, x, y, r);
+      rg.addColorStop(0, `rgba(255,255,255,${0.16 + rnd() * 0.16})`); rg.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = rg; g.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+  });
+}

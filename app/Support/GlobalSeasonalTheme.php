@@ -33,6 +33,9 @@ final class GlobalSeasonalTheme
 {
     public const KEY = 'seasonal_theme.global';
 
+    /** Kunci memo di container, berlaku selama satu request. */
+    private const MEMO = 'seasonal_theme.global.memo';
+
     /** File musik latar harus ada di public/sounds/ - validasi lihat sanitizeSound(). */
     private const SOUND_DIR = 'sounds';
 
@@ -100,6 +103,19 @@ final class GlobalSeasonalTheme
     /** @return array{theme: string, sound: ?string, volume: int, mode: string, schedule: array<int, array{theme: string, start: string, end: string}>} */
     public static function all(): array
     {
+        // Memo per request: satu halaman dashboard memanggil ini 4 sampai 5 kali
+        // (composer, musik latar, resolver) dan CACHE_STORE bisa berupa database,
+        // jadi tanpa memo tiap panggilan = satu SELECT. Disimpan di container
+        // (bukan properti static) supaya hilang di akhir request (FPM, Octane) dan
+        // per test. Daemon queue:work atau schedule:work memakai satu container
+        // seumur proses, jadi job yang membaca ini sebaiknya memanggil
+        // flushMemo() lebih dulu (saat ini tidak ada job yang membacanya).
+        // save() selalu membuangnya.
+        $app = app();
+        if ($app->bound(self::MEMO)) {
+            return $app->make(self::MEMO);
+        }
+
         $stored = [];
 
         try {
@@ -112,7 +128,16 @@ final class GlobalSeasonalTheme
             ]);
         }
 
-        return self::sanitize(is_array($stored) ? $stored : []);
+        $clean = self::sanitize(is_array($stored) ? $stored : []);
+        $app->instance(self::MEMO, $clean);
+
+        return $clean;
+    }
+
+    /** Buang memo request ini (dipakai save() dan test). */
+    public static function flushMemo(): void
+    {
+        app()->forgetInstance(self::MEMO);
     }
 
     /**
@@ -129,7 +154,13 @@ final class GlobalSeasonalTheme
     {
         $clean = self::sanitize($input);
 
+        self::flushMemo();
+
         AppConfig::setJson(self::KEY, $clean, 'Tema musiman + musik latar default untuk semua user + halaman login (Control Center → Seasonal Theme)');
+
+        // Dibuang lagi setelah tulis: bila ada pembacaan di antara dua langkah di atas,
+        // memo tidak boleh menyimpan nilai lama.
+        self::flushMemo();
     }
 
     /** @param array<string, mixed> $input */

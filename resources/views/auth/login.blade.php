@@ -898,6 +898,9 @@
 
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
+        // Satu permintaan login dalam satu waktu: Enter berulang tidak boleh mengirim ulang
+        // atau memulai adegan loading kedua (tombol dinonaktifkan oleh setLoading).
+        if (btn.disabled) return;
         clearErrors();
         const email    = emailEl.value.trim();
         const password = passEl.value;
