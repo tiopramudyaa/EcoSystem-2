@@ -5,7 +5,7 @@ order: 115
 title: Timesheets
 summary: Catat jam kerja pada project, ticket, atau pekerjaan kantor, kirim untuk persetujuan, dan minta akses terlambat.
 requires: [calendar.timesheets]
-updated: 2026-11-11
+updated: 2026-11-21
 ---
 `Calendar` › `Timesheets` adalah tempat Anda mencatat jam kerja dan mengirimnya untuk persetujuan.
 
@@ -72,7 +72,7 @@ Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar,
 - Memindahkan entri yang sudah ada ke tanggal lain memeriksa lagi batas periode untuk tanggal baru.
 - Jam selesai harus lebih lambat dari jam mulai, dan deskripsi aktivitas wajib diisi.
 - Bila role Anda termasuk domain Project atau Support, Anda hanya dapat mencatat waktu di periode berjalan atau periode sebelumnya, dan hanya selama periode itu terbuka. Periode terbuka bila RPMO sudah membukanya dan Head domain Anda sudah membuka domain Anda. Bila tertutup, minta akses terlambat. Role yang tidak termasuk domain mana pun tidak dibatasi oleh aturan periode ini.
-- Anda dapat mengubah entri sendiri selama berstatus `Draft` atau `Rejected`. Hanya EC Administrator, RPMO Head, serta Head of Project dan Head of Support yang juga dapat mengubah entri orang lain. Entri `Submitted` dan `Approved` tidak bisa diubah maupun dihapus. Hanya `Draft` yang bisa dihapus.
+- Anda dapat mengubah entri sendiri selama berstatus `Draft` atau `Rejected`. Hanya EC Administrator, RPMO Head, serta Head of Project dan Head of Support yang juga dapat mengubah entri orang lain. Entri `Submitted` dan `Approved` tidak bisa diubah.
 
 ### Entri support (dengan ticket)
 
@@ -105,7 +105,8 @@ Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar,
 - Anda hanya dapat mengirim entri `Draft` milik sendiri. Pengiriman memberi notifikasi ke semua orang yang rolenya boleh menyetujui tipe itu (lihat poin berikutnya).
 - Menyetujui dan menolak diatur per tipe di `Menu Access`, di bawah `Timesheets`: `Approve or Reject Project Timesheet`, `Approve or Reject Non Project Timesheet`, `Approve or Reject Support Timesheet`, dan `Approve or Reject Office Timesheet`. Masing-masing mencakup menyetujui dan menolak, dan Anda hanya melihat dan memproses tipe yang Anda pegang. Secara bawaan Head of Project memegang Project dan Non Project, Head of Support memegang Support, RPMO Head memegang Office, dan EC Administrator memegang keempatnya. Hanya entri `Submitted` yang dapat disetujui atau ditolak, satu per satu atau sekaligus. Menyetujui entri support memeriksa kuota lagi: jika `MD Consumed` tidak lagi muat dalam kuota yang disetujui, persetujuan ditolak.
 - Penolakan memerlukan alasan tertulis. Karyawan melihatnya, dapat memperbaiki entri (kembali ke `Draft`), dan mengirimnya lagi.
-- Entri yang sudah disetujui bersifat final: tidak dapat dibuka kembali, diubah, atau dihapus dari halaman ini.
+- Entri yang sudah disetujui bersifat final: tidak dapat dibuka kembali atau diubah.
+- Hanya `Draft` yang bisa dihapus, kecuali Anda memegang `Delete Timesheet in Any Status` (secara bawaan hanya EC Administrator).
 
 ## Apa yang terjadi selanjutnya
 
@@ -119,4 +120,4 @@ Entri yang ditolak menampilkan alasannya: perbaiki (entri kembali ke `Draft`) la
 
 **Mengapa `Quota MD` dan `Remaining` kosong?** Keduanya terisi setelah Anda memilih ticket.
 
-<!-- sources: routes/web.php, app/Http/Controllers/CalendarController.php, app/Http/Controllers/TimesheetController.php, resources/views/calendar/timesheets.blade.php -->
+<!-- sources: routes/web.php, app/Http/Controllers/CalendarController.php, app/Http/Controllers/TimesheetController.php, resources/views/calendar/timesheets.blade.php, resources/views/calendar/partials/timesheet-detail-panel.blade.php -->
