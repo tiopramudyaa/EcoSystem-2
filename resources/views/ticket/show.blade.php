@@ -4365,6 +4365,45 @@
         closeMentionDropdown();
     }
 
+    // Ambil HANYA mention yang chip-nya masih ada di editor saat ini.
+    // pendingList bertambah setiap kali user memilih nama dari dropdown, tetapi
+    // tidak berkurang saat chip dihapus (Backspace, salah pilih lalu ganti orang,
+    // dsb). Tanpa penyaringan ini orang yang chip-nya sudah dihapus tetap ikut
+    // terkirim dan menerima notifikasi "mentioned you" (kasus tiket #26110345:
+    // salah pilih "Rizqi Akbar Romadhoni", dihapus, lalu pilih "Muhamad Rizqi
+    // Alhuda" - keduanya ternotifikasi). Chip dikenali dari run teks berwarna
+    // mention, dan teksnya harus SAMA PERSIS dengan "@Nama" (bukan sekadar
+    // mengandung), supaya "@Rizqi" tidak dianggap ada di dalam "@Rizqi Akbar".
+    function collectActiveMentions(quill, pendingList) {
+        if (!quill || !pendingList || !pendingList.length) return [];
+        const runs = [];
+        let current = null;
+        for (const op of (quill.getContents().ops || [])) {
+            const color = op.attributes && op.attributes.color;
+            if (typeof op.insert === 'string' && MENTION_COLORS.includes(color)) {
+                if (current && current.color === color) {
+                    current.text += op.insert;
+                } else {
+                    current = { color, text: op.insert };
+                    runs.push(current);
+                }
+            } else {
+                current = null;
+            }
+        }
+        const norm = s => (s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        const chipTexts = new Set(runs.map(r => norm(r.text)));
+        const seen = new Set();
+        return pendingList.filter(m => {
+            const key = m.type + ':' + m.id;
+            if (seen.has(key)) return false;
+            const chip = m.display.startsWith('@') ? m.display : `@${m.display}`;
+            if (!chipTexts.has(norm(chip))) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+
     function closeMentionDropdown() {
         document.getElementById('mentionDropdown')?.classList.add('hidden');
         mentionQuery = null;
@@ -4619,7 +4658,7 @@
         // Jika body sudah punya inline image: abaikan is_inline (sudah ada di message_html)
         const inlineImgs = bodyHasInlineImages
             ? []
-            : attachments.filter(a => a.is_inline && a.mime_type?.startsWith('image/'));
+            : attachments.filter(a => a.is_inline && a.url && a.mime_type?.startsWith('image/'));
         // Bila body sudah punya inline image: juga exclude is_inline=true dari files (sudah ada di HTML body)
         const files = bodyHasInlineImages
             ? attachments.filter(a => !a.is_inline)
@@ -4648,7 +4687,11 @@
                 // Link cloud (referenceAttachment OneDrive/SharePoint): buka di tab baru,
                 // bukan diunduh (file ada di drive pengirim, tak bisa kita proxy).
                 const isLink = file.attachment_type === 'link';
-                const actions = isLink
+                // Tanpa URL jangan render tautan: href="null" membuat browser
+                // mengunduh halaman 404 ("File wasn't available on site").
+                const actions = !file.url
+                    ? `<span class="text-xs text-gray-400" title="This file cannot be retrieved">File unavailable</span>`
+                    : isLink
                     ? `<a href="${file.url}" target="_blank" rel="noopener" class="text-xs text-blue-500 hover:underline">Open</a>`
                     : `${isImg ? `<a href="${file.url}" target="_blank" class="text-xs text-blue-500 hover:underline">View</a>` : ''}
                        <a href="${file.url}" download="${escHtml(file.file_name)}" class="text-xs text-blue-500 hover:underline">Download</a>`;
@@ -5700,13 +5743,12 @@
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             };
 
-            // Collect mention IDs for internal notes
-            const mentionedEmployeeIds = messageType === 'internal_note'
-                ? pendingMentions.filter(m => m.type === 'employee').map(m => m.id)
+            // Collect mention IDs for internal notes - hanya yang chip-nya masih ada di editor
+            const activeMentions = messageType === 'internal_note'
+                ? collectActiveMentions(quillEditor, pendingMentions)
                 : [];
-            const mentionedRoleIds = messageType === 'internal_note'
-                ? pendingMentions.filter(m => m.type === 'role').map(m => m.id)
-                : [];
+            const mentionedEmployeeIds = activeMentions.filter(m => m.type === 'employee').map(m => m.id);
+            const mentionedRoleIds     = activeMentions.filter(m => m.type === 'role').map(m => m.id);
 
             // Pastikan input TO yang belum ter-commit (user mengetik tanpa Enter) ikut terkirim.
             commitToInput();
@@ -8871,10 +8913,12 @@
 
         // Mention baru yang ditambahkan selama edit ini (mention lama tidak perlu dikirim
         // ulang - backend union-kan dengan yang sudah tersimpan di message).
-        editNotePendingMentions
+        // Hanya yang chip-nya masih ada di editor (chip yang dihapus tidak ikut ternotifikasi).
+        const editActiveMentions = collectActiveMentions(editNoteQuill, editNotePendingMentions);
+        editActiveMentions
             .filter(m => m.type === 'employee')
             .forEach(m => formData.append('mentioned_employee_ids[]', m.id));
-        editNotePendingMentions
+        editActiveMentions
             .filter(m => m.type === 'role')
             .forEach(m => formData.append('mentioned_role_ids[]', m.id));
 

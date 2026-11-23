@@ -245,8 +245,12 @@ class LiteTicketController extends Controller
             $emailFailed = false;
 
             if ($isInternalNote) {
-                $mentionedEmployeeIds = $request->input('mentioned_employee_ids', []);
-                $mentionedRoleIds     = $request->input('mentioned_role_ids', []);
+                // Hanya mention yang "@Nama"-nya benar-benar ada di teks note.
+                [$mentionedEmployeeIds, $mentionedRoleIds] = \App\Services\MentionTextGuard::filter(
+                    (string) $request->message,
+                    (array) $request->input('mentioned_employee_ids', []),
+                    (array) $request->input('mentioned_role_ids', [])
+                );
 
                 $message = TicketMessage::create([
                     'ticket_id'              => $ticketId,
