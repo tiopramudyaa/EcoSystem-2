@@ -40,6 +40,8 @@ use Illuminate\Support\Facades\Log;
  */
 class CashAdvanceService
 {
+    use \App\Services\Approval\LocksApprovalStep;
+
     /** Sinyal anomali yang dapat menempel pada dokumen (pola D10). */
     public const FLAG_OVER_LIMIT     = 'over_limit';
     public const FLAG_SELF_APPROVED  = 'self_approved';
@@ -558,6 +560,10 @@ class CashAdvanceService
         }
 
         $completed = DB::transaction(function () use ($request, $approval, $actorId, $payload, $isObjectFlow) {
+            if (!$this->lockStepStillWaiting($request, $approval)) {
+                return null;
+            }
+
             if ($actorId === (int) $request->employee_id) {
                 $this->addFlag($request, self::FLAG_SELF_APPROVED, $actorId);
             }
@@ -615,6 +621,10 @@ class CashAdvanceService
             return true;
         });
 
+        if ($completed === null) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided. Reload the page to see the latest status.', 'completed' => false];
+        }
+
         $this->notify($request, $completed ? 'approved' : 'progressed', $payload['notes'] ?? null);
 
         if (!$completed) {
@@ -652,7 +662,11 @@ class CashAdvanceService
         /** @var CashAdvanceApproval $approval */
         $approval = $gate['approval'];
 
-        DB::transaction(function () use ($request, $approval, $actorId, $notes) {
+        $decided = DB::transaction(function () use ($request, $approval, $actorId, $notes) {
+            if (!$this->lockStepStillWaiting($request, $approval)) {
+                return false;
+            }
+
             $approval->update([
                 'status'   => CashAdvanceApproval::STATUS_REJECTED,
                 'acted_by' => $actorId,
@@ -670,7 +684,13 @@ class CashAdvanceService
                 'current_step_order' => null,
                 'completed_at'       => now(),
             ]);
+
+            return true;
         });
+
+        if (!$decided) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided. Reload the page to see the latest status.'];
+        }
 
         $this->notify($request, 'rejected', $notes);
 

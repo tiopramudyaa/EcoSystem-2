@@ -57,6 +57,7 @@ class ContractSigningService
         [$approverName, $approverTitle] = $approverId ? $this->signerIdentity($approverId) : [null, null];
 
         return DB::transaction(function () use ($c, $actorId, $deadline, $note, $approverId, $approverName, $approverTitle) {
+            $this->lockFresh($c, S::ACTION_SEND, 'send this contract to the employee');
             $this->dropSignedPdf($c);
             $c->update([
                 'sign_stage'           => S::WITH_EMPLOYEE,
@@ -100,6 +101,7 @@ class ContractSigningService
         [$name, $title] = $this->signerIdentity($approverId);
 
         return DB::transaction(function () use ($c, $actorId, $approverId, $name, $title, $note) {
+            $this->lockFresh($c, S::ACTION_FORWARD, 'forward this contract');
             $c->update(['sign_stage' => S::WITH_APPROVER, 'approver_employee_id' => $approverId, 'approver_name' => $name, 'approver_title' => $title]);
             $this->log($c, 'forwarded', $actorId, $note, ['approver_id' => $approverId, 'approver' => $name]);
             $this->notify($approverId, 'contract_sign_forwarded',
@@ -115,6 +117,7 @@ class ContractSigningService
         $this->assertCan($c, S::ACTION_RELEASE, 'release this contract');
 
         return DB::transaction(function () use ($c, $actorId) {
+            $this->lockFresh($c, S::ACTION_RELEASE, 'release this contract');
             $c->update(['sign_stage' => S::RELEASED, 'released_at' => now(), 'released_by' => $actorId]);
             $this->log($c, 'released', $actorId);
             $this->notify((int) $c->employee_id, 'contract_released',
@@ -130,6 +133,7 @@ class ContractSigningService
         $this->assertCan($c, S::ACTION_CANCEL, 'withdraw this contract from signing');
 
         return DB::transaction(function () use ($c, $actorId, $note) {
+            $this->lockFresh($c, S::ACTION_CANCEL, 'withdraw this contract from signing');
             $this->dropSignedPdf($c);
             $c->update([
                 'sign_stage' => null, 'sign_deadline' => null, 'sign_sent_at' => null, 'sign_sent_by' => null, 'sign_file_hash' => null,
@@ -159,6 +163,7 @@ class ContractSigningService
         }
 
         return DB::transaction(function () use ($c, $employeeId) {
+            $this->lockFresh($c, S::ACTION_EMPLOYEE_SIGN, 'sign this contract');
             $c->employee_signed_at = now();
             $result = $this->buildSignedPdf($c);
             $c->update(['sign_stage' => S::WITH_LEGAL, 'employee_signed_at' => $c->employee_signed_at, 'signed_pdf_path' => $result['path']]);
@@ -189,6 +194,7 @@ class ContractSigningService
         }
 
         return DB::transaction(function () use ($c, $approverId) {
+            $this->lockFresh($c, S::ACTION_APPROVER_SIGN, 'approve this contract');
             $c->approver_signed_at = now();
             $result = $this->buildSignedPdf($c);
             $c->update(['sign_stage' => S::APPROVED, 'approver_signed_at' => $c->approver_signed_at, 'signed_pdf_path' => $result['path'] ?? $c->signed_pdf_path]);
@@ -222,6 +228,7 @@ class ContractSigningService
         $this->assertCan($c, S::ACTION_REVISION, 'send this contract back');
 
         return DB::transaction(function () use ($c, $actorId, $note, $isEmployee) {
+            $this->lockFresh($c, S::ACTION_REVISION, 'send this contract back');
             $this->dropSignedPdf($c);
             $c->update(['sign_stage' => S::REVISION, 'employee_signed_at' => null, 'approver_signed_at' => null, 'signed_pdf_path' => null]);
             $this->log($c, 'revision', $actorId, $note, ['by' => $isEmployee ? 'employee' : 'approver']);
@@ -288,6 +295,23 @@ class ContractSigningService
     }
 
     // ── internals ─────────────────────────────────────────────────────────
+
+    /**
+     * First statement inside every transition's transaction: lock the contract row, reload its
+     * current values, and re-check the action is still allowed. The check before the transaction
+     * ran on a copy that may be stale, so two people acting at once (employee signs while Legal
+     * withdraws, double click on Sign) would otherwise both go through.
+     *
+     * @throws \DomainException
+     */
+    private function lockFresh(EmployeeContract $c, string $action, string $what): void
+    {
+        $fresh = EmployeeContract::whereKey($c->getKey())->lockForUpdate()->first();
+        if ($fresh) {
+            $c->setRawAttributes($fresh->getAttributes(), true);
+        }
+        $this->assertCan($c, $action, $what);
+    }
 
     /** @throws \DomainException */
     private function assertCan(EmployeeContract $c, string $action, string $what): void

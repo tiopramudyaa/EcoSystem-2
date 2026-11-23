@@ -35,6 +35,8 @@ use Illuminate\Support\Facades\Log;
  */
 class CashAdvanceReportService
 {
+    use \App\Services\Approval\LocksApprovalStep;
+
     public const FLAG_OVER_ADVANCE  = 'over_advance';
     public const FLAG_LOCKED_PERIOD = 'locked_period';
     public const FLAG_ADMIN_CREATED = 'admin_created';
@@ -457,6 +459,10 @@ class CashAdvanceReportService
         $approval = $gate['approval'];
 
         $completed = DB::transaction(function () use ($report, $approval, $actorId, $payload) {
+            if (!$this->lockStepStillWaiting($report, $approval)) {
+                return null;
+            }
+
             $approval->update([
                 'status'   => CashAdvanceReportApproval::STATUS_APPROVED,
                 'acted_by' => $actorId,
@@ -493,6 +499,10 @@ class CashAdvanceReportService
             return true;
         });
 
+        if ($completed === null) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided. Reload the page to see the latest status.', 'completed' => false];
+        }
+
         $this->notify($report, $completed ? 'approved' : 'progressed', $payload['notes'] ?? null);
 
         if (!$completed) {
@@ -525,7 +535,11 @@ class CashAdvanceReportService
         /** @var CashAdvanceReportApproval $approval */
         $approval = $gate['approval'];
 
-        DB::transaction(function () use ($report, $approval, $actorId, $notes) {
+        $decided = DB::transaction(function () use ($report, $approval, $actorId, $notes) {
+            if (!$this->lockStepStillWaiting($report, $approval)) {
+                return false;
+            }
+
             $approval->update([
                 'status'   => CashAdvanceReportApproval::STATUS_REJECTED,
                 'acted_by' => $actorId,
@@ -547,7 +561,13 @@ class CashAdvanceReportService
             // CA-nya kembali menunggu pertanggungjawaban: laporan yang ditolak
             // tidak menutup buku apa pun.
             $this->syncCashAdvance($report->cashAdvance);
+
+            return true;
         });
+
+        if (!$decided) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided. Reload the page to see the latest status.'];
+        }
 
         $this->notify($report, 'rejected', $notes);
 

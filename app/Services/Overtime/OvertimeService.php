@@ -33,6 +33,8 @@ use Illuminate\Support\Facades\Log;
  */
 class OvertimeService
 {
+    use \App\Services\Approval\LocksApprovalStep;
+
     public function __construct(private HolidayService $holidays)
     {
     }
@@ -258,8 +260,14 @@ class OvertimeService
         $settings  = OvertimeSetting::current();
         $approval  = $gate['approval'];
         $completed = false;
+        $stale     = false;
 
-        DB::transaction(function () use ($request, $approval, $actorId, $payload, $settings, &$completed) {
+        DB::transaction(function () use ($request, $approval, $actorId, $payload, $settings, &$completed, &$stale) {
+            if (!$this->lockStepStillWaiting($request, $approval)) {
+                $stale = true;
+                return;
+            }
+
             $this->applyTimeAdjustment($request, $actorId, $payload, $settings);
 
             // Disetujui pemohonnya sendiri tetap ditandai meski diizinkan -
@@ -299,6 +307,10 @@ class OvertimeService
             $request->save();
         });
 
+        if ($stale) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided. Reload the page to see the latest status.', 'completed' => false];
+        }
+
         $this->notify(
             $request,
             $completed ? 'approved' : 'progressed',
@@ -330,7 +342,11 @@ class OvertimeService
 
         $approval = $gate['approval'];
 
-        DB::transaction(function () use ($request, $approval, $actorId, $notes) {
+        $decided = DB::transaction(function () use ($request, $approval, $actorId, $notes) {
+            if (!$this->lockStepStillWaiting($request, $approval)) {
+                return false;
+            }
+
             $approval->update([
                 'status'   => OvertimeRequestApproval::STATUS_REJECTED,
                 'acted_by' => $actorId,
@@ -350,7 +366,13 @@ class OvertimeService
                 'current_step_order' => null,
                 'completed_at'       => now(),
             ]);
+
+            return true;
         });
+
+        if (!$decided) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided. Reload the page to see the latest status.'];
+        }
 
         $this->notify($request, 'rejected', $notes);
 

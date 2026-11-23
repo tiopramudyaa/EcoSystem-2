@@ -147,7 +147,16 @@ class AttendanceCorrectionController extends Controller
             'hr_note' => ['nullable', 'string', 'max:255'],
         ]);
 
-        DB::transaction(function () use ($correction, $validated, $attendance) {
+        $stale = false;
+
+        DB::transaction(function () use ($correction, $validated, $attendance, &$stale) {
+            // Lock + re-check: the isPending() test above ran before this transaction, so two reviewers
+            // approving at the same moment would otherwise both apply the correction.
+            if (!$this->lockStillPending($correction)) {
+                $stale = true;
+                return;
+            }
+
             $record = $correction->attendance_record_id
                 ? AttendanceRecord::find($correction->attendance_record_id)
                 : AttendanceRecord::where('employee_id', $correction->employee_id)
@@ -210,6 +219,10 @@ class AttendanceCorrectionController extends Controller
             ])->save();
         });
 
+        if ($stale) {
+            return $this->backToReview($request)->with('error', 'That correction has already been reviewed.');
+        }
+
         $this->notify($correction, 'approved');
 
         return $this->backToReview($request)->with('success', 'Correction approved and attendance updated.');
@@ -229,13 +242,25 @@ class AttendanceCorrectionController extends Controller
             'hr_note.required' => 'Please explain why the correction is rejected.',
         ]);
 
-        $correction->update([
-            'status'           => AttendanceCorrection::STATUS_REJECTED,
-            'approved_by'      => session('user.id'),
-            'approved_by_type' => AttendanceCorrection::APPROVER_HR,
-            'approved_at'      => now(),
-            'hr_note'          => $validated['hr_note'],
-        ]);
+        $decided = DB::transaction(function () use ($correction, $validated) {
+            if (!$this->lockStillPending($correction)) {
+                return false;
+            }
+
+            $correction->update([
+                'status'           => AttendanceCorrection::STATUS_REJECTED,
+                'approved_by'      => session('user.id'),
+                'approved_by_type' => AttendanceCorrection::APPROVER_HR,
+                'approved_at'      => now(),
+                'hr_note'          => $validated['hr_note'],
+            ]);
+
+            return true;
+        });
+
+        if (!$decided) {
+            return $this->backToReview($request)->with('error', 'That correction has already been reviewed.');
+        }
 
         $this->notify($correction, 'rejected');
 
@@ -243,6 +268,18 @@ class AttendanceCorrectionController extends Controller
     }
 
     // ── internal ────────────────────────────────────────────────────────────
+
+    /** Inside a transaction: lock the correction row, reload it, and say whether it is still pending. */
+    private function lockStillPending(AttendanceCorrection $correction): bool
+    {
+        $fresh = AttendanceCorrection::whereKey($correction->getKey())->lockForUpdate()->first();
+        if (!$fresh || !$fresh->isPending()) {
+            return false;
+        }
+        $correction->setRawAttributes($fresh->getAttributes(), true);
+
+        return true;
+    }
 
     /**
      * Back to the review list by NAME (keeping the status / search the reviewer was looking at), instead of

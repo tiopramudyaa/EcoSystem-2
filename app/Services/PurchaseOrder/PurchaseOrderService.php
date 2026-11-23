@@ -246,14 +246,25 @@ class PurchaseOrderService
             return ['allowed' => false, 'reason' => 'Only the approver chosen on this purchase order can decide it.'];
         }
 
-        $order->update([
-            'status'         => $status,
-            'decided_by'     => $actorId,
-            'decided_at'     => now(),
-            'decision_notes' => $notes,
-        ]);
+        // Lock the row and re-check it is still submitted: the checks above ran before the write,
+        // so two simultaneous decisions would otherwise both pass and the later one would overwrite.
+        return DB::transaction(function () use ($order, $actorId, $status, $notes) {
+            $fresh = PurchaseOrder::whereKey($order->getKey())->lockForUpdate()->first();
 
-        return ['allowed' => true, 'reason' => ''];
+            if (!$fresh || !$fresh->isSubmitted()) {
+                return ['allowed' => false, 'reason' => 'This purchase order is already ' . ($fresh->status ?? 'removed') . '.'];
+            }
+
+            $fresh->update([
+                'status'         => $status,
+                'decided_by'     => $actorId,
+                'decided_at'     => now(),
+                'decision_notes' => $notes,
+            ]);
+            $order->refresh();
+
+            return ['allowed' => true, 'reason' => ''];
+        });
     }
 
     private function header(array $data, array $totals): array

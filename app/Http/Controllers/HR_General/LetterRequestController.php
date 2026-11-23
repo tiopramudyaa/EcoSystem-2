@@ -104,7 +104,9 @@ class LetterRequestController extends Controller
             $letterRequest->refresh();
         }
 
-        $this->letters->reject($letterRequest, $reason, (int) session('user.id'));
+        if (!$this->letters->reject($letterRequest, $reason, (int) session('user.id'))) {
+            return back()->with('error', 'This request was already handled by someone else. Reload the page to see its current status.');
+        }
 
         return back()->with('success', "The request of {$letterRequest->employeeName()} was rejected. They can see the reason in My Letter Requests.");
     }
