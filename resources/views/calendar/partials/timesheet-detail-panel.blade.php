@@ -15,6 +15,40 @@
         <i class="fas fa-circle-info text-gray-400 w-3.5"></i>
         Detail
     </button>
+    {{-- Shown only with Menu Access "Delete Timesheet in Any Status" and a non-draft row --}}
+    <button type="button" id="tsCtxDelete"
+        class="hidden w-full flex items-center gap-2.5 px-4 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors text-left">
+        <i class="fas fa-trash-alt text-red-400 w-3.5"></i>
+        Delete
+    </button>
+</div>
+
+{{-- Delete confirmation for a Submitted, Approved or Rejected timesheet --}}
+<div id="tsForceDeleteModal" class="hidden fixed inset-0 bg-black/50 items-center justify-center p-4" style="z-index:10000;">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900">Delete Timesheet</h3>
+        </div>
+        <div class="px-5 py-4 space-y-3">
+            <p class="text-sm text-gray-700">
+                Delete the <span id="tsfdStatus" class="font-semibold"></span> timesheet of
+                <span id="tsfdEmployee" class="font-semibold"></span> on <span id="tsfdDate" class="font-semibold"></span>?
+            </p>
+            <p class="text-xs text-gray-500">
+                The entry is removed from Timesheets, MD Recap and the other reports, and its mandays no longer count
+                against the ticket quota. The deletion is recorded in the Audit Log under your name.
+            </p>
+        </div>
+        <div class="px-5 py-4 border-t border-gray-100 flex gap-2">
+            <button type="button" onclick="closeTsForceDelete()"
+                class="flex-1 px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-all">Cancel</button>
+            <button type="button" id="tsfdConfirmBtn" onclick="confirmTsForceDelete()"
+                class="flex-1 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-all">Delete</button>
+        </div>
+    </div>
 </div>
 
 <div id="tsDetailOverlay" class="hidden"
@@ -40,6 +74,10 @@
                 <button type="button" id="tsdReviewBtn" onclick="tsDetailReview()"
                     class="hidden inline-flex items-center justify-center px-3.5 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition whitespace-nowrap">
                     Review
+                </button>
+                <button type="button" id="tsdDeleteBtn" onclick="tsDetailDelete()"
+                    class="hidden inline-flex items-center justify-center px-3.5 py-2 border border-red-300 rounded-lg text-xs font-semibold text-red-600 hover:bg-red-50 transition whitespace-nowrap">
+                    Delete
                 </button>
                 <button type="button" onclick="closeTsDetailPanel()"
                     class="w-9 h-9 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
@@ -244,6 +282,14 @@
             const reviewBtn = document.getElementById('tsdReviewBtn');
             const canReview = (window.isApprovalMode || window.isHoSMode) && t.status === 'submitted';
             reviewBtn.classList.toggle('hidden', !canReview);
+
+            document.getElementById('tsdDeleteBtn').classList.toggle('hidden', !canForceDelete(t));
+        }
+
+        // Drafts keep the normal Delete flow; this covers Submitted, Approved and Rejected,
+        // for holders of Menu Access "Delete Timesheet in Any Status" only.
+        function canForceDelete(t) {
+            return !!window.canDeleteAnyTimesheet && !!t && t.status !== 'draft';
         }
 
         function renderGps(t) {
@@ -308,8 +354,11 @@
             e.stopPropagation();
             ctxId = id;
 
+            const showDelete = canForceDelete(find(id));
+            document.getElementById('tsCtxDelete').classList.toggle('hidden', !showDelete);
+
             const vw = window.innerWidth, vh = window.innerHeight;
-            const mw = 180, mh = 60;
+            const mw = 180, mh = showDelete ? 96 : 60;
             let x = e.clientX, y = e.clientY;
             if (x + mw > vw) x = vw - mw - 8;
             if (y + mh > vh) y = vh - mh - 8;
@@ -325,6 +374,70 @@
             ctxId = null;
             if (id) openTsDetailPanel(id);
         });
+
+        document.getElementById('tsCtxDelete').addEventListener('click', function() {
+            const id = ctxId;
+            menu.classList.add('hidden');
+            ctxId = null;
+            if (id) openTsForceDelete(id);
+        });
+
+        // ── Delete in any status ──────────────────────────────────────────
+        const delModal = document.getElementById('tsForceDeleteModal');
+        let delId = null;
+
+        window.openTsForceDelete = function(id) {
+            const t = find(id);
+            if (!canForceDelete(t)) return;
+            delId = t.id;
+            const st = STATUS_PILL[t.status];
+            document.getElementById('tsfdStatus').textContent = st ? st[0] : t.status;
+            document.getElementById('tsfdEmployee').textContent = t.employee_name || 'this employee';
+            document.getElementById('tsfdDate').textContent = fmtDate(t.date) || '-';
+            delModal.classList.remove('hidden');
+            delModal.classList.add('flex');
+        };
+
+        window.closeTsForceDelete = function() {
+            delId = null;
+            delModal.classList.add('hidden');
+            delModal.classList.remove('flex');
+        };
+
+        window.confirmTsForceDelete = async function() {
+            if (!delId) return;
+            const btn = document.getElementById('tsfdConfirmBtn');
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/api/timesheets/${delId}/delete`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) {
+                    showNotification('Failed to delete timesheet: ' + (data.message || res.statusText), 'error');
+                    return;
+                }
+                if (openId === delId) closeTsDetailPanel();
+                closeTsForceDelete();
+                showNotification('Timesheet deleted successfully!', 'success');
+                if (typeof loadTimesheets === 'function') await loadTimesheets();
+                if (typeof loadStatistics === 'function') await loadStatistics();
+            } catch (e) {
+                showNotification('An error occurred while deleting timesheet', 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        window.tsDetailDelete = function() {
+            if (openId) openTsForceDelete(openId);
+        };
 
         document.addEventListener('click', function() {
             menu.classList.add('hidden');
@@ -370,6 +483,7 @@
         document.addEventListener('keydown', e => {
             if (e.key !== 'Escape') return;
             menu.classList.add('hidden');
+            if (!delModal.classList.contains('hidden')) { closeTsForceDelete(); return; }
             if (panel.getAttribute('aria-hidden') === 'false') closeTsDetailPanel();
         });
     })();

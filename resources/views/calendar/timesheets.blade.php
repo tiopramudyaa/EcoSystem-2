@@ -1165,6 +1165,8 @@
     window.allowedTypes    = {!! json_encode($allowedTypes ?? ['project','support','office']) !!};
     window.isHoSMode       = {{ $isHoSMode ? 'true' : 'false' }};
     window.canCreateTimesheet = {{ $can('timesheet.create') ? 'true' : 'false' }};
+    // Menu Access: delete a timesheet in any status (Submitted, Approved, Rejected), not only Draft
+    window.canDeleteAnyTimesheet = {{ $can('timesheet.delete.any-status') ? 'true' : 'false' }};
 </script>
 <script src="/js/custom-dropdown.js?v={{ filemtime(public_path('js/custom-dropdown.js')) }}"></script>
 <script src="/js/calendar-timesheets.js?v={{ filemtime(public_path('js/calendar-timesheets.js')) }}"></script>

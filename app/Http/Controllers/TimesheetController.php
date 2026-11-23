@@ -1015,14 +1015,20 @@ class TimesheetController extends Controller
             $currentEmployeeId = $sessionUser->id;
             $privilegedRoles   = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
 
-            if (!$sessionUser->hasAnyRole($privilegedRoles) && (int) $timesheet->employee_id !== (int) $currentEmployeeId) {
+            // Menu Access: timesheet.delete.any-status lets the holder delete any employee's
+            // timesheet in any status (Submitted, Approved, Rejected), not only Draft.
+            $canDeleteAnyStatus = $this->menuAllowed('timesheet.delete.any-status');
+
+            if (!$canDeleteAnyStatus
+                && !$sessionUser->hasAnyRole($privilegedRoles)
+                && (int) $timesheet->employee_id !== (int) $currentEmployeeId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden: you can only delete your own timesheets'
                 ], 403);
             }
 
-            if ($timesheet->status !== 'draft') {
+            if ($timesheet->status !== 'draft' && !$canDeleteAnyStatus) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Only draft timesheets can be deleted'

@@ -127,6 +127,7 @@ class MenuSeeder extends Seeder
             ['slug' => 'timesheet.approve.non-project',  'name' => 'Approve or Reject Non Project Timesheet', 'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 3],
             ['slug' => 'timesheet.approve.support',      'name' => 'Approve or Reject Support Timesheet', 'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 4],
             ['slug' => 'timesheet.approve.office',       'name' => 'Approve or Reject Office Timesheet', 'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 5],
+            ['slug' => 'timesheet.delete.any-status',    'name' => 'Delete Timesheet in Any Status',     'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 6],
 
             // ── Reporting ─────────────────────────────────────────────────────────
             ['slug' => 'reporting',                    'name' => 'Reporting',               'type' => 'group',    'parent_slug' => null,          'route_name' => null,                           'icon' => 'fa-chart-bar',         'order_seq' => 3],
@@ -351,6 +352,8 @@ class MenuSeeder extends Seeder
             'timesheet.approve.non-project' => [self::ADMIN=>$v, self::HOP=>$v],
             'timesheet.approve.support'     => [self::ADMIN=>$v, self::HOS=>$v],
             'timesheet.approve.office'      => [self::ADMIN=>$v, self::RPMO=>$v],
+            // Hapus timesheet di status apa pun (termasuk Approved): hanya Admin, role lain lewat Menu Access.
+            'timesheet.delete.any-status'   => [self::ADMIN=>$v],
             // Reporting
             'reporting'                   => [self::ADMIN=>$v,    self::EMPLOYEE=>$v,   self::HOP=>$v,      self::HOS=>$v,    self::HELPDESK=>$v,   self::RPMO=>$v],
             'reporting.validation'        => [self::ADMIN=>$vced, self::EMPLOYEE=>$v,   self::HOP=>$v,      self::HOS=>$vce,  self::HELPDESK=>$v,   self::RPMO=>$v],
