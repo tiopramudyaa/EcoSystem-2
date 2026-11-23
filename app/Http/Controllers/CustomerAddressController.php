@@ -27,7 +27,7 @@ class CustomerAddressController extends Controller
      * PENTING: bersifat non-destruktif. customer.email adalah "Company Email"
      * yang bisa di-set mandiri lewat form Create Customer atau import (kolom
      * "Email"). Kalau tidak ada satu pun alamat yang punya email, JANGAN
-     * mengosongkan customer.email — kalau tidak, sekadar edit/hapus alamat akan
+     * mengosongkan customer.email - kalau tidak, sekadar edit/hapus alamat akan
      * menghapus Company Email yang diimport (hilang dari list & header).
      */
     private function syncCustomerEmail(int $customerId): void
@@ -227,7 +227,7 @@ class CustomerAddressController extends Controller
                 auditableId: $addressId,
                 event: 'created',
                 recordLabel: $label,
-                description: "added Customer Address: {$label} — Customer #{$customerId}",
+                description: "added Customer Address: {$label} - Customer #{$customerId}",
                 old: null,
                 new: $addressData,
             );
@@ -303,7 +303,7 @@ class CustomerAddressController extends Controller
         }
 
         try {
-            // Snapshot before update — needed for the audit log entry below.
+            // Snapshot before update - needed for the audit log entry below.
             $existingAddress = DB::table('customer_address')
                 ->where('customer_id', $customerId)
                 ->where('address_id', $addressId)
@@ -360,7 +360,7 @@ class CustomerAddressController extends Controller
                 auditableId: $addressId,
                 event: 'updated',
                 recordLabel: $label,
-                description: "updated Customer Address: {$label} — Customer #{$customerId}",
+                description: "updated Customer Address: {$label} - Customer #{$customerId}",
                 old: (array) $existingAddress,
                 new: $updateData,
             );
@@ -396,7 +396,7 @@ class CustomerAddressController extends Controller
         ]);
 
         try {
-            // Snapshot before delete — needed for the audit log entry below.
+            // Snapshot before delete - needed for the audit log entry below.
             $existingAddress = DB::table('customer_address')
                 ->where('customer_id', $customerId)
                 ->where('address_id', $addressId)
@@ -424,7 +424,7 @@ class CustomerAddressController extends Controller
                 auditableId: $addressId,
                 event: 'deleted',
                 recordLabel: $label,
-                description: "deleted Customer Address: {$label} — Customer #{$customerId}",
+                description: "deleted Customer Address: {$label} - Customer #{$customerId}",
                 old: (array) $existingAddress,
                 new: null,
             );

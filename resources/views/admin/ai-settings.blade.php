@@ -37,7 +37,7 @@
         /*
          * Ikon, warna, dan satu kalimat penjelas per asisten. Dulu ini cuma
          * percabangan dua arah (Research vs "yang lain"), sehingga setiap
-         * asisten baru — Ticket Analyzer, AI Summarize, dua fase Word Report —
+         * asisten baru - Ticket Analyzer, AI Summarize, dua fase Word Report -
          * ikut dilabeli "Internal EcoSystem data only", yang untuk sebagian
          * besar dari mereka justru salah: mereka memang mencari ke web dan
          * ikut menagih biaya pencarian.
@@ -64,7 +64,7 @@
             \App\Support\AiModelSettings::TICKET_SUMMARY => [
                 'icon' => 'fa-wand-magic-sparkles',
                 'tone' => 'bg-sky-50 text-sky-600',
-                'desc' => 'The AI Summarize button on the ticket list. Reads the ticket internally, then searches vendor documentation for the fix — the highest-volume assistant here, so model price matters most on this row.',
+                'desc' => 'The AI Summarize button on the ticket list. Reads the ticket internally, then searches vendor documentation for the fix - the highest-volume assistant here, so model price matters most on this row.',
             ],
             \App\Support\AiModelSettings::WORD_REPORT => [
                 'icon' => 'fa-file-word',
@@ -79,7 +79,7 @@
         ];
 
         // Asisten yang ditambahkan di AiModelSettings tapi belum diberi entri di
-        // atas tetap tampil dan tetap bisa diatur — tanpa ini halamannya mati
+        // atas tetap tampil dan tetap bisa diatur - tanpa ini halamannya mati
         // dengan undefined index hanya karena kurang label.
         $assistantMetaFallback = [
             'icon' => 'fa-robot',
@@ -188,7 +188,7 @@
  * Katalog dikirim ke browser supaya daftar effort yang model itu terima
  * terlihat SEBELUM submit (kosakata Claude dan OpenAI berbeda, lihat
  * AiModelSettings::CATALOG). Plafon max_tokens tidak lagi diatur di form ini
- * — tiap model memakai bawaannya sendiri (AiModelSettings::DEFAULTS), yang
+ * - tiap model memakai bawaannya sendiri (AiModelSettings::DEFAULTS), yang
  * ditegakkan di AiModelSettings::sanitize() pada setiap penyimpanan DAN
  * setiap pembacaan.
  */

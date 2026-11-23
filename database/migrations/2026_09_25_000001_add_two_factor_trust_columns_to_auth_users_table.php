@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Schema;
  * Short-lived "2FA re-verification grace period" for the web login: after a
  * successful TOTP/recovery-code verification, the browser gets a device-bound
  * token (hashed here, matching the existing remember_token pattern) that lets
- * a subsequent login on the same device skip the OTP prompt — password is
- * still checked every time — until it expires (tied to config('session.lifetime')
+ * a subsequent login on the same device skip the OTP prompt - password is
+ * still checked every time - until it expires (tied to config('session.lifetime')
  * at issue time, not extended by each skip). See TwoFactorAuthService.
  */
 return new class extends Migration

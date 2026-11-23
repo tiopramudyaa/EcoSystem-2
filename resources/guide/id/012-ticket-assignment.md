@@ -5,7 +5,7 @@ order: 12
 title: Menugaskan ticket dan mengelola tim
 summary: Ambil ticket, tentukan ticket lead, tambah anggota tim, dan kaitkan ticket ke satu Delivery Support.
 requires: [ticket.assign-pic, ticket.assign-delivery-support, ui.ticket.manage-members, ticket.take]
-updated: 2026-11-02
+updated: 2026-11-23
 ---
 Setiap ticket butuh pemilik. Topik ini menunjukkan bagaimana ticket mendapat ticket lead dan timnya, serta dikaitkan ke sebuah Delivery Support.
 
@@ -31,6 +31,13 @@ Helpdesk dan kepala yang menugaskan ticket, serta konsultan yang mengambil ticke
 2. Pilih `Take This Ticket`.
 
 Jika ticket belum jelas atau di luar keahlian Anda, tulis `Internal Note` untuk Helpdesk, jangan didiamkan.
+
+### Menyebut rekan (mention) di internal note
+
+1. Di ticket, pilih `Internal Note`.
+2. Ketik `@` lalu sebagian nama orang atau role, kemudian pilih dari daftar. Nama tampil berwarna biru (role berwarna ungu).
+3. Jika salah pilih orang, hapus seluruh nama biru itu lalu pilih lagi.
+4. Kirim note.
 
 ### Menentukan ticket lead
 
@@ -68,6 +75,8 @@ Sebuah ticket hanya milik **satu** Delivery Support. Jika salah kaitan, lepas du
 - `Delete Ticket` hanya berfungsi untuk role yang diberi fungsi `Delete Ticket` di Menu Access. Secara bawaan: administrator, Delivery Support Manager II, dan Delivery Support Section Head. Selain itu ditolak, meskipun permintaan dikirim langsung.
 - Menghapus ticket mengeluarkannya dari semua daftar dan laporan, dan halamannya tidak bisa dibuka lagi. Tidak ada yang dihapus dari database: pesan, record SLA, Resolution Days, dan timesheet tetap tersimpan. EcoSystem tidak punya layar untuk mengembalikan ticket yang sudah dihapus, jadi penghapusan yang keliru perlu bantuan tim teknis. Penghapusan tercatat di `Audit Log` sebagai `Deleted Ticket`.
 - Untuk menyingkirkan ticket tetapi tetap bisa menampilkannya lagi, pakai `Hide Ticket`. Lihat `Hidden Tickets`.
+- Mention hanya menotifikasi orang yang namanya masih ada di note saat dikirim. Nama yang sudah dipilih lalu dihapus, atau diubah manual, tidak dinotifikasi. Mention sebuah role menotifikasi semua orang aktif di role itu. Anda tidak pernah mendapat notifikasi mention dari note Anda sendiri, dan mengedit note hanya menotifikasi orang yang baru disebut pada edit itu.
+- Mention hanya berlaku di `Internal Note`, tidak di balasan ke customer.
 
 ## Apa yang terjadi selanjutnya
 
@@ -77,6 +86,8 @@ Ticket muncul di tab `My Tickets` milik ticket lead dan anggota timnya, serta di
 
 **Seseorang tidak ada di daftar.** Ia mungkin tidak diizinkan menjadi ticket lead atau anggota, atau akunnya diblokir. Hubungi administrator.
 
+**Saya sudah menyebut seseorang tetapi ia tidak mendapat notifikasi.** Pastikan namanya masih tampil biru di note. Nama yang diketik atau diubah manual, bukan dipilih dari daftar, tidak dihitung sebagai mention.
+
 **Saya tidak dapat mengubah Delivery Support.** Role Anda mungkin tidak mencakup `Assign to Delivery Support`. Hubungi Helpdesk atau kepala Anda, atau minta administrator memberi fungsi itu ke role Anda di Menu Access.
 
-<!-- sources: routes/web.php, app/Http/Controllers/TicketController.php, resources/views/ticket/index.blade.php, resources/views/ticket/show.blade.php -->
+<!-- sources: routes/web.php, app/Http/Controllers/TicketController.php, resources/views/ticket/index.blade.php, resources/views/ticket/show.blade.php, app/Http/Controllers/TicketMessageController.php, app/Services/MentionTextGuard.php -->

@@ -28,7 +28,7 @@ class AuthController extends Controller
      * Cookie device-trust 2FA: memungkinkan login berikutnya di device yang
      * sama skip prompt kode OTP (password tetap wajib dicek) selama belum
      * melewati window (lihat TwoFactorAuthService::trustWindowMinutes()).
-     * Terpisah dari REMEMBER_COOKIE — remember-me tetap dimatikan total untuk
+     * Terpisah dari REMEMBER_COOKIE - remember-me tetap dimatikan total untuk
      * akun ber-2FA.
      */
     public const TWO_FACTOR_TRUST_COOKIE = 'ecosystem_2fa_trust';
@@ -66,7 +66,7 @@ class AuthController extends Controller
             ->first();
 
         // Employee di-blok atau ditandai untuk dihapus di Master Employee (Basic
-        // Data) — perlakukan sama seperti is_active = false: tidak boleh login,
+        // Data) - perlakukan sama seperti is_active = false: tidak boleh login,
         // dan sesi remember-me yang coba di-restore juga langsung gagal.
         if (!$employee || !$employee->is_active || $employee->block || $employee->deletion_flag) {
             return null;
@@ -107,7 +107,7 @@ class AuthController extends Controller
                 'phone'         => $employee->phone_number,
                 'position'      => $employee->position,
                 'department'    => $employee->department,
-                // Legacy: primary role (backward compat — masih dipakai banyak fitur)
+                // Legacy: primary role (backward compat - masih dipakai banyak fitur)
                 'role'          => [
                     'id'   => $primaryRoleId,
                     'name' => $primaryRoleName,
@@ -139,7 +139,7 @@ class AuthController extends Controller
 
             if ($hasToken) {
                 // Sudah login tapi membuka halaman login (mis. klik deep link lalu
-                // sempat mendarat di /auth/login) — langsung antar ke URL tujuan.
+                // sempat mendarat di /auth/login) - langsung antar ke URL tujuan.
                 $target = IntendedUrl::pull(request());
 
                 Log::channel('daily')->info('User already authenticated, redirecting', [
@@ -433,7 +433,7 @@ class AuthController extends Controller
             $deviceModel = 'Steam Deck';
             $deviceType  = 'desktop';
 
-        // ── Windows PC (generic — laptop/desktop brand NOT in standard UA) ─────
+        // ── Windows PC (generic - laptop/desktop brand NOT in standard UA) ─────
         } elseif (preg_match('/Windows NT/i', $ua)) {
             $deviceBrand = 'Windows PC';
             $deviceModel = null; // brand (Dell/HP/etc.) not available in UA
@@ -691,7 +691,7 @@ class AuthController extends Controller
             }
 
             // Brute-force guard: account already locked from prior failed
-            // attempts — reject without touching Hash::check() (also avoids
+            // attempts - reject without touching Hash::check() (also avoids
             // wasted bcrypt cost during an active attack).
             if ($loginSecurity->isAccountLocked($authUser)) {
                 Log::channel('daily')->warning('=== LOGIN BLOCKED: account is locked ===', [
@@ -745,7 +745,7 @@ class AuthController extends Controller
             $isEmployee = !is_null($authUser->employee_id);
             $isCustomer = !is_null($authUser->customer_id);
 
-            // Customer tidak memiliki akses ke EcoSystem — gunakan portal Jarvies
+            // Customer tidak memiliki akses ke EcoSystem - gunakan portal Jarvies
             if ($isCustomer) {
                 Log::channel('daily')->warning('=== CUSTOMER LOGIN ATTEMPT BLOCKED ===', [
                     'request_id'    => $requestId,
@@ -760,7 +760,7 @@ class AuthController extends Controller
                 ], 403);
             }
 
-            // Cek is_already_cp — user baru wajib verifikasi email & ganti password dulu
+            // Cek is_already_cp - user baru wajib verifikasi email & ganti password dulu
             if (!$authUser->is_already_cp) {
                 if (empty($authUser->email)) {
                     Log::channel('daily')->warning('=== USER REQUIRES PASSWORD SETUP BUT HAS NO EMAIL ===', [
@@ -940,19 +940,19 @@ class AuthController extends Controller
 
     /**
      * Finishes an employee login after every gate (password, customer-block,
-     * is_already_cp, system-access role, and — if enabled — 2FA) has passed:
+     * is_already_cp, system-access role, and - if enabled - 2FA) has passed:
      * remember-me cookie, auth_users/sessions table updates, session
      * put/regenerate/save, recordActivity(success), and the success response.
      * Called both directly from login() (2FA not enabled) and from
      * verifyTwoFactor() (after a 2FA challenge is confirmed), so the two
      * paths can't drift apart.
      *
-     * Takes the full $authUser row (not just $sessionData) — the DB writes
+     * Takes the full $authUser row (not just $sessionData) - the DB writes
      * below key off auth_users.id, which is NOT $sessionData['userData']['id']
      * (that key holds employee_id, a different value).
      *
      * $justVerified2fa: true only when this call follows a fresh TOTP/recovery
-     * code check (verifyTwoFactor()) — issues the device-trust cookie so the
+     * code check (verifyTwoFactor()) - issues the device-trust cookie so the
      * next login on this device can skip the OTP prompt for a while. Never
      * true for the trusted-device skip path itself or for non-2FA accounts,
      * so the trust window only ever resets on an actual code verification.
@@ -976,7 +976,7 @@ class AuthController extends Controller
         // akun password-initial, checkbox otomatis diabaikan.
         //
         // 2FA-enabled accounts never get a persistent-login cookie, even if
-        // "remember" was checked — every session expiry requires a full
+        // "remember" was checked - every session expiry requires a full
         // login + 2FA challenge again (confirmed policy; see CheckAuthToken,
         // which also refuses to restore a stale cookie for a 2FA account).
         $responseCookies = [];
@@ -985,7 +985,7 @@ class AuthController extends Controller
             $rememberUpdates['remember_token'] = hash('sha256', $rawRememberToken);
 
             // Cookie HttpOnly, SameSite=Lax, REMEMBER_DAYS hari
-            // secure: ikut SESSION_SECURE_COOKIE (.env) — false lokal, true production HTTPS
+            // secure: ikut SESSION_SECURE_COOKIE (.env) - false lokal, true production HTTPS
             $responseCookies[] = cookie(
                 self::REMEMBER_COOKIE,
                 $rawRememberToken,
@@ -1003,7 +1003,7 @@ class AuthController extends Controller
         DB::table('auth_users')->where('id', $authUser->id)->update($rememberUpdates);
 
         // ── 2FA device-trust cookie ──────────────────────────────────────
-        // Only issued right after a fresh OTP/recovery-code verification —
+        // Only issued right after a fresh OTP/recovery-code verification -
         // resets the grace-period window. A login that skipped the prompt
         // via an already-valid trust cookie leaves it untouched (fixed
         // expiry from the last real verification, not a sliding window).
@@ -1056,7 +1056,7 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Login successful',
             // URL tujuan hasil deep link (mis. /ticket/123 dari kartu Teams).
-            // Sudah disanitasi — selalu path relatif pada host sendiri.
+            // Sudah disanitasi - selalu path relatif pada host sendiri.
             'redirect_url' => IntendedUrl::pull($request),
             'data'    => [
                 'token' => $token,
@@ -1074,7 +1074,7 @@ class AuthController extends Controller
     /**
      * Completes login after a 2FA challenge issued by login(). Accepts
      * either a 6-digit TOTP code or an "XXXX-XXXX" recovery code
-     * (auto-detected by shape — the two formats can never collide).
+     * (auto-detected by shape - the two formats can never collide).
      * POST /api/auth/2fa/verify
      */
     public function verifyTwoFactor(Request $request)
@@ -1105,7 +1105,7 @@ class AuthController extends Controller
         $authUserId = $challenge['auth_user_id'];
 
         // Defense in depth: re-fetch fresh rather than trusting anything from
-        // before — is_active/locked_until could have changed in the challenge
+        // before - is_active/locked_until could have changed in the challenge
         // token's ~5-minute life (e.g. an admin action, or the password-login
         // brute-force guard tripping concurrently).
         $authUser = DB::table('auth_users')->where('id', $authUserId)->first();
@@ -1138,7 +1138,7 @@ class AuthController extends Controller
         if (!$verified) {
             $attempts = TwoFactorAuthService::recordFailedChallenge($authUserId);
 
-            // Idempotency guard — mirrors LoginSecurityService::checkAccountThreshold's
+            // Idempotency guard - mirrors LoginSecurityService::checkAccountThreshold's
             // "don't re-alert/re-extend on every attempt past the threshold" pattern.
             if (TwoFactorAuthService::isChallengeLocked($authUserId) && !$loginSecurity->isAccountLocked($authUser)) {
                 $lockedUntil = now()->addMinutes((int) config('security_center.two_factor.lockout_minutes', 30));
@@ -1182,8 +1182,8 @@ class AuthController extends Controller
     }
 
     /**
-     * Renders the 2FA challenge page. No server-side token validation here —
-     * the POST verify call is the real gate — this just bounces back to
+     * Renders the 2FA challenge page. No server-side token validation here -
+     * the POST verify call is the real gate - this just bounces back to
      * login if there's obviously nothing to verify.
      * GET /auth/2fa/verify
      */
@@ -1284,7 +1284,7 @@ class AuthController extends Controller
 
     /**
      * Kembalikan data user yang sedang login.
-     * Menggunakan session sebagai sumber data — lebih aman dari bearer token parsing.
+     * Menggunakan session sebagai sumber data - lebih aman dari bearer token parsing.
      */
     public function me(Request $request)
     {

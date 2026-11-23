@@ -9,7 +9,7 @@ use App\Models\DeliverySupportPaymentTerm;
 use Illuminate\Support\Collection;
 
 /**
- * Logika bersama Term Of Payment Plan Delivery Support — mirror ProjectTopPlan:
+ * Logika bersama Term Of Payment Plan Delivery Support - mirror ProjectTopPlan:
  *
  *   percentage → semua termin = % × revenue Sales Data. Total % ≤ 100 (diblokir).
  *   line_item  → termin dikaitkan ke Contract Line Item. Amount diambil dari
@@ -17,7 +17,7 @@ use Illuminate\Support\Collection;
  *                atau "fixed" (nominal diisi user). Basis % dari revenue dikunci
  *                untuk termin baru. Melebihi revenue hanya menghasilkan peringatan.
  *
- * Tanpa activity tracking / reminder — keduanya hanya berlaku untuk Delivery Project.
+ * Tanpa activity tracking / reminder - keduanya hanya berlaku untuk Delivery Project.
  */
 class SupportTopPlan
 {
@@ -101,7 +101,7 @@ class SupportTopPlan
     }
 
     /**
-     * Peringatan non-blocking — ditampilkan sebagai banner & notifikasi saat simpan.
+     * Peringatan non-blocking - ditampilkan sebagai banner & notifikasi saat simpan.
      *
      * @return array<int,string>
      */

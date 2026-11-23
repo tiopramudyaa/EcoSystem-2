@@ -14,19 +14,19 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 /**
- * Tombol "AI Summarize" di panel kanan halaman detail tiket — ringkasan
+ * Tombol "AI Summarize" di panel kanan halaman detail tiket - ringkasan
  * tiga-kartu (Issue/Resolution Steps/Conclusion), satu klik, hasilnya
  * di-stream sebagai Server-Sent Events lalu disimpan ke cache dengan kunci
  * ticket_id + MODEL AKTIF + SIDIK JARI ISI TIKET (lihat
  * TicketSummaryContext::fingerprint).
  *
- * Tanya-jawab lanjutan TIDAK lagi di sini — sudah dipindah ke tombol "Ask AI"
+ * Tanya-jawab lanjutan TIDAK lagi di sini - sudah dipindah ke tombol "Ask AI"
  * yang mengarah ke AI Research (lihat AiResearchController::openForTicket()),
  * bukan modal custom.
  *
  * Empat jenis event dari stream(): `meta` (dari cache atau tidak), `delta`
  * (potongan teks), `status` (progres riset dokumentasi luar), dan `sources`
- * (daftar rujukan yang dibuka model) — dua yang terakhir berasal dari server
+ * (daftar rujukan yang dibuka model) - dua yang terakhir berasal dari server
  * tool web search milik provider yang sedang aktif (lihat AiTicketSummaryService).
  * Karena itu yang masuk cache adalah ARRAY {text, sources}, bukan string; lihat
  * CACHE_VERSION.
@@ -49,7 +49,7 @@ class AiTicketSummaryController extends Controller
 
     /**
      * Ikut masuk kunci cache. Dinaikkan setiap kali BENTUK atau ISI ringkasan
-     * berubah secara mendasar — sidik jari tiket tidak menangkap itu, karena
+     * berubah secara mendasar - sidik jari tiket tidak menangkap itu, karena
      * yang berubah ada di sisi kita, bukan di tiketnya.
      *
      * v2 (24 Agu 2026): "Cara Penyelesaian" kini hasil riset dokumentasi luar
@@ -58,11 +58,11 @@ class AiTicketSummaryController extends Controller
      *
      * v3 (27 Agu 2026): heading berganti ke Issue / Resolution Steps /
      * Conclusion. Baris v2 memuat heading Indonesia yang TIDAK dikenali
-     * pemecah bagian di modal — kalau dipakai lagi, seluruh isinya menumpuk di
+     * pemecah bagian di modal - kalau dipakai lagi, seluruh isinya menumpuk di
      * satu kartu.
      *
      * v4 (27 Agu 2026): isi ringkasan kembali ditulis Bahasa Indonesia (heading
-     * tetap Inggris). Baris v3 berisi jawaban berbahasa Inggris seutuhnya —
+     * tetap Inggris). Baris v3 berisi jawaban berbahasa Inggris seutuhnya -
      * strukturnya masih terbaca, jadi tanpa naik versi ia akan disajikan
      * bertahun-tahun berikutnya seolah sudah sesuai.
      */
@@ -98,7 +98,7 @@ class AiTicketSummaryController extends Controller
         // sisi kita, yang tidak tertangkap sidik jari tiket. Tanpa ini, admin
         // memindahkan ringkasan dari Claude ke GPT lalu tetap disuguhi hasil
         // Claude selama 14 hari ke depan untuk setiap tiket yang sudah pernah
-        // diringkas — dan tidak ada satu tombol pun untuk membatalkannya.
+        // diringkas - dan tidak ada satu tombol pun untuk membatalkannya.
         $model = AiModelSettings::resolve(AiModelSettings::TICKET_SUMMARY)['model'];
 
         return "ai_ticket_summary:" . self::CACHE_VERSION . ":{$model}:{$ticket->ticket_id}:{$fingerprint}";
@@ -175,7 +175,7 @@ class AiTicketSummaryController extends Controller
                 );
 
                 // DUA alasan sebuah hasil tidak layak disimpan, dan keduanya
-                // bermuara ke hal yang sama — klik berikutnya akan memutar ulang
+                // bermuara ke hal yang sama - klik berikutnya akan memutar ulang
                 // ringkasan yang tidak utuh, dan tidak ada cara bagi user untuk
                 // memaksa ringkasan ulang selama isi tiketnya belum berubah:
                 //   - teks kosong  : dibatalkan/koneksi putus di tengah jalan;
@@ -197,7 +197,7 @@ class AiTicketSummaryController extends Controller
 
                     $send('notice', [
                         'message' => 'This summary stopped at the model output limit, so it may be cut off '
-                            . 'mid-step. It was not saved — reopen to generate it again, or raise the token '
+                            . 'mid-step. It was not saved - reopen to generate it again, or raise the token '
                             . 'ceiling in Control Center → AI Settings.',
                     ]);
                 }

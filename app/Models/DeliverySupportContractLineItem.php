@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Contract Line Item Delivery Support — mirror DeliveryProjectContractLineItem.
+ * Contract Line Item Delivery Support - mirror DeliveryProjectContractLineItem.
  * Acuan termin pada mode TOP "line_item". Type, frekuensi, batas periode, dan
  * rumus jadwal/nilai kontrak sama persis dengan versi project
  * (lihat Concerns\HasContractLineItemSchedule).

@@ -210,7 +210,7 @@
                             </div>
                         </div>
 
-                        {{-- IO Number + Vendor (opsional) — mirror form create. --}}
+                        {{-- IO Number + Vendor (opsional) - mirror form create. --}}
                         @php
                             $vendorVal   = old('vendor_id', $support->vendor_id);
                             $vendorLabel = optional(($vendors ?? collect())->firstWhere('customer_id', (int) $vendorVal))

@@ -602,7 +602,7 @@ class DeliverySupportActivityController extends Controller
         }
 
         // Akses diatur lewat Control Center → Menu Access (slug: delivery-support.remove-ticket),
-        // bukan role hardcode — samakan dengan gating tombolnya di Blade.
+        // bukan role hardcode - samakan dengan gating tombolnya di Blade.
         $canRemoveTicket = (bool) Employee::find($sessionUser['id'] ?? null)?->hasPermission('delivery-support.remove-ticket');
         if (!$canRemoveTicket) {
             return response()->json(['success' => false, 'message' => 'Anda tidak memiliki izin untuk melepas tautan tiket.'], 403);

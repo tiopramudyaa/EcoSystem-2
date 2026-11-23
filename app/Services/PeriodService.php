@@ -305,7 +305,7 @@ class PeriodService
 
         if ($period->global_status !== 'open') {
             throw new \InvalidArgumentException(
-                'Cannot open domain — period is not globally open. Waiting for RPMO.'
+                'Cannot open domain - period is not globally open. Waiting for RPMO.'
             );
         }
 
@@ -429,7 +429,7 @@ class PeriodService
     }
 
     /**
-     * Head rejects the request — flow ends.
+     * Head rejects the request - flow ends.
      */
     public function headRejectLateRequest(
         PeriodLateExceptionRequest $req,
@@ -451,7 +451,7 @@ class PeriodService
 
     /**
      * RPMO approves the request (Level 2).
-     * Must provide an expires_at deadline — this controls when access expires.
+     * Must provide an expires_at deadline - this controls when access expires.
      * No separate PeriodLateException is created; access is determined by this record.
      *
      * @throws \InvalidArgumentException if deadline is in the past or missing.
@@ -483,7 +483,7 @@ class PeriodService
     }
 
     /**
-     * RPMO rejects the request — flow ends.
+     * RPMO rejects the request - flow ends.
      */
     public function rpmoRejectLateRequest(
         PeriodLateExceptionRequest $req,

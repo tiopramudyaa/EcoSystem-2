@@ -9,12 +9,12 @@
     @vite(['resources/css/app.css'])
 
     {{-- Google Fonts is non-critical (page renders fine with the fallback font
-         for a moment) — loading it as a blocking <link rel="stylesheet"> delays
+         for a moment) - loading it as a blocking <link rel="stylesheet"> delays
          first paint on every page. Preload + swap the `rel` on load lets the
          browser fetch it in parallel with everything else without blocking
          rendering; the <noscript> fallback covers browsers/crawlers with JS
          disabled. `display=optional` (not `swap`) because the base stylesheet
-         applies Inter via a `*` selector — swapping it in after first paint
+         applies Inter via a `*` selector - swapping it in after first paint
          would reflow every element on the page and show up as layout shift;
          optional only uses Inter when it's already cached (e.g. a repeat
          visit), otherwise it sticks with the fallback for that load.
@@ -23,7 +23,7 @@
          from cdnjs 6.4.0) instead of the CDN: the upstream CSS ships
          `font-display:block` on every @font-face, which hides all icons for
          up to 3s on a slow connection (Lighthouse "Font display" audit) and
-         can't be overridden from a <link> tag — only by owning the CSS file.
+         can't be overridden from a <link> tag - only by owning the CSS file.
          Patched to `font-display:swap` in the local copy. Being same-origin
          also drops one third-party connection + DNS/TLS round trip. --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -46,10 +46,10 @@
             'seasonal_theme' => 'none',
         ]);
 
-        // Musik latar musiman — MURNI wewenang admin (Control Center → Seasonal
+        // Musik latar musiman - MURNI wewenang admin (Control Center → Seasonal
         // Theme), tidak ada preferensi per-user untuk memilih lagu/menonaktifkan
         // permanen. Null kalau admin belum pasang apa pun (tombol mute di header
-        // tidak dirender sama sekali dalam kondisi ini — lihat di bawah).
+        // tidak dirender sama sekali dalam kondisi ini - lihat di bawah).
         $globalBgMusicUrl = \App\Support\GlobalSeasonalTheme::soundUrl();
         $globalBgMusicVolume = \App\Support\GlobalSeasonalTheme::soundVolume();
 
@@ -96,7 +96,7 @@
     @endphp
     
     <style>
-        /* Cross-document View Transitions — pasangan dari deklarasi yang sama di
+        /* Cross-document View Transitions - pasangan dari deklarasi yang sama di
            auth/login.blade.php. Progressive enhancement murni CSS, tidak ada
            dampak di browser yang tidak mendukungnya. */
         @view-transition {
@@ -216,13 +216,13 @@
             box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
         }
 
-        /* Sidebar menu search — highlight a matching item instead of hiding others. */
+        /* Sidebar menu search - highlight a matching item instead of hiding others. */
         .nav-link.sidebar-search-match {
             background-color: rgba(255,255,255,0.18) !important;
             box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.5);
         }
 
-        /* Pin-to-Dashboard button injected into each sidebar link (JS) — faint
+        /* Pin-to-Dashboard button injected into each sidebar link (JS) - faint
            until hovered, solid gold once pinned, same icon state either way. */
         .nav-link { position: relative; }
         .nav-pin-btn {
@@ -246,9 +246,9 @@
         @if($preferences['theme'] === 'dark')
         /* ── Dark mode ────────────────────────────────────────────────────────
            Palet permukaan (surface) berlapis agar tidak "belang":
-             page   #0b1120  — latar terjauh (bg-gray-50)
-             raised #1f2937  — kartu / panel (bg-white)
-             sunken #111827  — area tenggelam (bg-gray-100/200)
+             page   #0b1120  - latar terjauh (bg-gray-50)
+             raised #1f2937  - kartu / panel (bg-white)
+             sunken #111827  - area tenggelam (bg-gray-100/200)
            Warna teks, border, divider, hover, placeholder, shadow, dan latar
            bertint merah muda semuanya dipetakan ulang. Elemen ber-brand
            (primary-*, gradient sidebar) sengaja TIDAK diubah. */
@@ -308,7 +308,7 @@
         .bg-red-200    { background-color: rgba(153,27,27,.30) !important; }
 
         /* Varian OPACITY pastel (mis. `bg-orange-50/40`, `bg-blue-50/40` di kolom
-           Plan Cost) — class berbeda dari `bg-orange-50`, ditangkap via atribut. */
+           Plan Cost) - class berbeda dari `bg-orange-50`, ditangkap via atribut. */
         [class*="bg-blue-50/"]    { background-color: rgba(59,130,246,.15) !important; }
         [class*="bg-sky-50/"]     { background-color: rgba(14,165,233,.15) !important; }
         [class*="bg-indigo-50/"]  { background-color: rgba(99,102,241,.15) !important; }
@@ -353,7 +353,7 @@
         body .primary-text { color: #f87171 !important; }
 
         /* Badge SOLID terang (mis. `bg-yellow-400 text-gray-900` = badge count di
-           sidebar) — latarnya tetap terang, jadi teks HARUS tetap gelap; jangan
+           sidebar) - latarnya tetap terang, jadi teks HARUS tetap gelap; jangan
            ikut dicerahkan seperti `.text-gray-900` biasa. Compound (0,2,0) menang. */
         .bg-yellow-300.text-gray-900, .bg-yellow-400.text-gray-900, .bg-yellow-500.text-gray-900,
         .bg-amber-300.text-gray-900,  .bg-amber-400.text-gray-900,  .bg-amber-500.text-gray-900,
@@ -404,7 +404,7 @@
         [class~="hover:bg-pink-50"]:hover,   [class~="hover:bg-pink-100"]:hover   { background-color: rgba(236,72,153,.22) !important; }
         [class~="hover:bg-red-50"]:hover,    [class~="hover:bg-red-100"]:hover    { background-color: rgba(153,27,27,.30) !important; }
 
-        /* Chip ikon dengan group-hover (mis. Quick Navigation) — samakan pola */
+        /* Chip ikon dengan group-hover (mis. Quick Navigation) - samakan pola */
         .group:hover [class*="group-hover:bg-gray-"],
         .group:hover [class*="group-hover:bg-slate-"] { background-color: #374151 !important; }
         .group:hover [class~="group-hover:bg-blue-100"]    { background-color: rgba(59,130,246,.26) !important; }
@@ -419,7 +419,7 @@
         /* Sidebar = permukaan ber-ACCENT (bukan gelap). Nav pakai overlay putih
            transparan (active `bg-white/opacity-15`, hover `hover:bg-white/opacity-10`).
            Kembalikan overlay itu agar tidak diubah jadi abu/gelap oleh aturan generik
-           di atas — `#sidebar` (ID) menang spesifisitas. */
+           di atas - `#sidebar` (ID) menang spesifisitas. */
         #sidebar .bg-white { background-color: rgba(255,255,255,0.15) !important; }
         #sidebar [class*="hover:bg-white"]:hover { background-color: rgba(255,255,255,0.10) !important; }
 
@@ -453,7 +453,7 @@
         /* Native <select> option list */
         option { background-color: #1f2937 !important; color: #e5e7eb !important; }
 
-        /* Enhanced <select> — public/js/select-enhance.js (.se-*) */
+        /* Enhanced <select> - public/js/select-enhance.js (.se-*) */
         .se-btn            { background: #374151 !important; border-color: #4b5563 !important; color: #e5e7eb !important; }
         .se-btn:hover      { border-color: #6b7280 !important; }
         .se-btn[disabled]  { background: #1f2937 !important; }
@@ -467,11 +467,11 @@
         .se-item.is-disabled { color: #4b5563 !important; }
         .se-search-head    { background: #1f2937 !important; border-color: #374151 !important; }
 
-        /* Custom dropdown — public/js/custom-dropdown.js (.custom-dd-*) */
+        /* Custom dropdown - public/js/custom-dropdown.js (.custom-dd-*) */
         .custom-dd-panel   { background: #1f2937 !important; border-color: #374151 !important; }
         .custom-dd-btn     { background: #374151 !important; border-color: #4b5563 !important; color: #e5e7eb !important; }
         /* Filter kolom di HEADER tabel juga memakai `.custom-dd-btn`, tapi di sana
-           harus TRANSPARAN mengikuti latar header (bg-gray-50 → #0b1120) — jika
+           harus TRANSPARAN mengikuti latar header (bg-gray-50 → #0b1120) - jika
            tidak, sel header berdropdown (Customer…Type) tampak lebih terang &
            belang dibanding sel header lain. Hover tetap ditangani utilitas
            `hover:bg-gray-*`. */
@@ -498,7 +498,7 @@
         tbody tr:hover .co-sticky-proj,
         tbody tr:hover .co-sticky-top { background: #1f2937 !important; }
         .co-amount-btn:hover { background: #374151 !important; }
-        /* Nilai amount di sel — dicerahkan agar terbaca di latar gelap */
+        /* Nilai amount di sel - dicerahkan agar terbaca di latar gelap */
         .co-open   { color: #cbd5e1 !important; }
         .co-paid   { color: #4ade80 !important; }
         .co-delay  { color: #fbbf24 !important; }
@@ -581,7 +581,7 @@
             background: #111827 !important; color: #9ca3af !important; border-color: #374151 !important;
         }
 
-        /* Ticket list (Support Tickets) — toggle aktif, stat-card aktif, baris unread */
+        /* Ticket list (Support Tickets) - toggle aktif, stat-card aktif, baris unread */
         #btnViewAll.active, #btnViewMy.active, #btnViewAllHd.active, #btnViewUnassigned.active {
             background: #374151 !important; color: #f9fafb !important;
         }
@@ -591,10 +591,10 @@
         }
         #ticketsListBody tr:hover { background: #374151 !important; }
         /* Dua kolom sticky (Last Update & Ticket#) memakai background PUTIH inline
-           (style="background:#ffffff") pada tiap baris — timpa jadi gelap. Baris
+           (style="background:#ffffff") pada tiap baris - timpa jadi gelap. Baris
            unread punya selector lebih spesifik di bawah sehingga tetap menang.
            PENTING: kolom sticky di-FREEZE dan mengambang di atas kolom lain yang
-           di-scroll horizontal, jadi latarnya WAJIB OPAQUE — jika translucent
+           di-scroll horizontal, jadi latarnya WAJIB OPAQUE - jika translucent
            (rgba), konten kolom di belakang akan tembus. Tint unread karena itu
            dipakai sebagai warna SOLID hasil blend di atas permukaan #1f2937,
            bukan rgba. */
@@ -621,7 +621,7 @@
         #cardAll, #cardDraft, #cardSubmitted, #cardApproved, #cardRejected { background-color: #1f2937 !important; }
 
         /* SLA → SLA Report: kolom sticky putih (.sc #ffffff), group header band
-           (.grp-info/resp/res), badge SLA (.sla-badge-*) — semua warna mentah. */
+           (.grp-info/resp/res), badge SLA (.sla-badge-*) - semua warna mentah. */
         .sla-table tbody .sc                     { background: #1f2937 !important; }
         .sla-table tbody tr:hover .sc            { background: #374151 !important; }
         .sla-table tbody tr.row-pending .sc      { background: rgba(245,158,11,.12) !important; }
@@ -649,12 +649,12 @@
            class or inline style can still override without needing !important.
            MUST be wrapped in @layer base: this <style> tag is raw HTML (not
            run through Vite/Tailwind), so without an explicit layer it lands
-           in the browser's unlayered "top" layer — which beats EVERY rule in
+           in the browser's unlayered "top" layer - which beats EVERY rule in
            Tailwind's own @layer utilities regardless of specificity, no
            matter how low :where() makes it. That silently broke every pl-*/
            pr-*/py-* utility on every <input>/<select>/<textarea> site-wide
            (e.g. search-box icons overlapping placeholder text) since whenever
-           this block was added — @layer base has lower priority than
+           this block was added - @layer base has lower priority than
            @layer utilities, restoring the "utilities can override" intent. */
         @layer base {
         :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"])),
@@ -662,7 +662,7 @@
         :where(textarea) {
             border-width: 1px;
             border-style: solid;
-            padding: 0.5rem 0.75rem;   /* py-2 px-3 — comfortable touch target */
+            padding: 0.5rem 0.75rem;   /* py-2 px-3 - comfortable touch target */
             line-height: 1.5rem;
             border-radius: 0.375rem;   /* rounded-md */
         }
@@ -672,7 +672,7 @@
         }
         }
 
-        /* primary-focus — consistent focus ring matching brand colour */
+        /* primary-focus - consistent focus ring matching brand colour */
         .primary-focus:focus,
         .primary-focus:focus-visible {
             outline: none;
@@ -763,7 +763,7 @@
         .toast-info .toast-close { color: #1e3a8a; }
         .toast-info .toast-progress { background: #3b82f6; }
 
-        /* Modal backdrop blur — applied automatically when overlay is visible */
+        /* Modal backdrop blur - applied automatically when overlay is visible */
         .modal-blur-active {
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
@@ -775,7 +775,7 @@
         // Rounds to 2 decimals first (kills float noise), then drops trailing zeros.
         window.formatMd = function (value, empty) {
             if (value === null || value === undefined || value === '' || isNaN(Number(value))) {
-                return empty === undefined ? '—' : empty;
+                return empty === undefined ? '-' : empty;
             }
             return String(parseFloat(Number(value).toFixed(2)));
         };
@@ -789,7 +789,7 @@
         <div id="sidebarOverlay" onclick="closeSidebar()" class="fixed inset-0 z-40 hidden lg:hidden" style="background-color: rgba(0,0,0,0.5);"></div>
 
         {{-- Tema musiman: resolve preferensi user ('default' → ikut admin) SEKALI di sini,
-             dipakai untuk dekorasi sidebar saja (bukan seluruh halaman — lihat feedback
+             dipakai untuk dekorasi sidebar saja (bukan seluruh halaman - lihat feedback
              di App\Support\SeasonalThemeResolver / partials.seasonal-theme). --}}
         @php
             $effectiveSeasonalTheme = \App\Support\SeasonalThemeResolver::effectiveFor($preferences['seasonal_theme'] ?? 'default');
@@ -804,7 +804,7 @@
                     'placement' => 'sidebar',
                 ])
             @endif
-            {{-- Fixed header: logo + menu search — stays put while the nav list below scrolls --}}
+            {{-- Fixed header: logo + menu search - stays put while the nav list below scrolls --}}
             <div class="shrink-0">
                 <!-- Logo Section -->
                 <div class="sidebar-logo p-5 pb-2 flex items-center justify-center">
@@ -918,7 +918,7 @@
                     </button>
                     @php
                         // Reporting dipisah jadi dua grup: Project & Support. Grup hanya
-                        // dirender kalau user punya minimal satu laporan di dalamnya —
+                        // dirender kalau user punya minimal satu laporan di dalamnya -
                         // tidak ada slug izin baru, murni pengelompokan visual.
                         // Catatan: 'reporting/collection-outlook*' TIDAK dipakai untuk grup
                         // Project karena wildcard-nya ikut menangkap collection-outlook-support.
@@ -1668,10 +1668,10 @@
                         <div class="flex items-center gap-2">
                             @if($globalBgMusicUrl)
                                 {{-- Musik latar musiman: admin-only (di atas, App\Support\GlobalSeasonalTheme).
-                                     Tombol ini CUMA mute/unmute LOKAL demi aksesibilitas (WCAG 1.4.2 —
+                                     Tombol ini CUMA mute/unmute LOKAL demi aksesibilitas (WCAG 1.4.2 -
                                      audio otomatis wajib bisa dikontrol user), BUKAN pemilihan lagu/tema.
                                      Status "sudah di-unmute" disimpan di sessionStorage (bukan preferensi
-                                     tersimpan permanen) — reset tiap sesi browser baru, dan TIDAK ditulis
+                                     tersimpan permanen) - reset tiap sesi browser baru, dan TIDAK ditulis
                                      ke server sama sekali. Digerbang keberadaan $globalBgMusicUrl: kalau
                                      admin belum pasang musik apa pun, tombol ini tidak dirender sama sekali. --}}
                                 <audio id="globalBgMusic" loop preload="auto" muted data-volume="{{ $globalBgMusicVolume }}" src="{{ $globalBgMusicUrl }}"></audio>
@@ -1802,12 +1802,12 @@
         // Below that we treat the sidebar as a slide-in drawer with a backdrop.
         function isDesktopViewport() { return window.innerWidth >= 1024; }
 
-        // Sidebar menu search — never hides anything (too risky to get a nested
+        // Sidebar menu search - never hides anything (too risky to get a nested
         // dropdown's show/hide logic wrong on a live page); instead it highlights
         // matches and force-opens whichever collapsed dropdown(s) contain one, so
         // the match is actually visible without relying on the collapse toggle.
         var sidebarSearchOpenedIds = [];
-        // Top-level wrappers (the `.mb-2` div around each root nav item/group —
+        // Top-level wrappers (the `.mb-2` div around each root nav item/group -
         // Home, Reporting, Control Center, ... all 21 of them, verified to be
         // the ONLY place that class is used inside the nav list; nested
         // sub-groups like Reporting > Project use a plain unclassed <div>) that
@@ -1826,7 +1826,7 @@
             if (!q) {
                 sidebarSearchHiddenWrappers.forEach(function (el) { el.style.removeProperty('display'); });
                 sidebarSearchHiddenWrappers = [];
-                // Re-collapse only the dropdowns THIS search opened — leave
+                // Re-collapse only the dropdowns THIS search opened - leave
                 // everything else (e.g. already-open-because-active-route) alone.
                 sidebarSearchOpenedIds.forEach(function (id) {
                     var el = document.getElementById(id);
@@ -1842,7 +1842,7 @@
             // (its own name, or any item/sub-item anywhere inside it) matches.
             // A section that matches is shown in full (its unrelated sub-groups
             // keep whatever expand state they already had) rather than trying
-            // to selectively hide individual nested items too — far less prone
+            // to selectively hide individual nested items too - far less prone
             // to a filtering bug accidentally swallowing a real menu item.
             scroll.querySelectorAll('.mb-2').forEach(function (wrapper) {
                 var wrapperHasMatch = false;
@@ -1886,7 +1886,7 @@
         }
 
         // Keep the sidebar's scroll position across full page navigations (this
-        // app is server-rendered — every menu click is a fresh page load, which
+        // app is server-rendered - every menu click is a fresh page load, which
         // otherwise resets scroll to the top). sessionStorage survives exactly
         // one tab's navigation history, which is the right scope here: per-tab
         // convenience, not shared/critical state.
@@ -1904,7 +1904,7 @@
                 try { sessionStorage.setItem(KEY, String(scrollEl.scrollTop)); } catch (e) {}
             }, { passive: true });
 
-            // A left-click on a real menu link navigates away immediately —
+            // A left-click on a real menu link navigates away immediately -
             // the 'scroll' listener above only fires on manual scrolling, so
             // also save scrollTop at the moment a link is clicked.
             scrollEl.addEventListener('click', function (ev) {
@@ -1915,7 +1915,7 @@
         })();
 
         // ── Pin menu (sidebar → Dashboard "Command Center") ─────────────────────
-        // Pins are identified by href, not a menu slug — the sidebar has no single
+        // Pins are identified by href, not a menu slug - the sidebar has no single
         // data source tagging each of its ~100 hardcoded <a> items with one, so
         // this reads/writes the already-rendered DOM instead of touching every nav
         // block. Persisted through the existing generic preferences endpoint
@@ -2046,8 +2046,8 @@
             document.getElementById('reportingDropdown').classList.toggle('hidden', !isReportingDropdownOpen);
         }
 
-        // Sub-grup Reporting (Project / Support). State dibaca dari DOM — bukan
-        // variabel — supaya tetap sinkron dengan kondisi awal yang di-render Blade
+        // Sub-grup Reporting (Project / Support). State dibaca dari DOM - bukan
+        // variabel - supaya tetap sinkron dengan kondisi awal yang di-render Blade
         // (grup yang memuat halaman aktif dibuka otomatis).
         function _toggleReportingGroup(submenuId, chevronId) {
             const submenu = document.getElementById(submenuId);
@@ -2254,11 +2254,11 @@
             });
         })();
     </script>
-    {{-- Global confirm modal — replaces browser native confirm() everywhere.
+    {{-- Global confirm modal - replaces browser native confirm() everywhere.
          Usage: if (await showConfirm('msg', 'title', 'danger')) { ... } --}}
     @include('partials.confirm-modal')
 
-    {{-- Global text-prompt modal — replaces browser native prompt() everywhere.
+    {{-- Global text-prompt modal - replaces browser native prompt() everywhere.
          Usage: const v = await showPrompt('msg', 'title', {placeholder, maxLength}) --}}
     @include('partials.prompt-modal')
 
@@ -2303,14 +2303,14 @@
             }
         });
 
-        /* ---- notification sound (HTML Audio — works without immediate user gesture) ---- */
+        /* ---- notification sound (HTML Audio - works without immediate user gesture) ---- */
         var _soundEnabled     = localStorage.getItem('notif_sound_enabled') !== 'false';
         var _lastUnreadCount  = null;
         var _lastNonMsgCount  = null;
         var _lastMessageCount = null;
         var _pageTitle        = document.title;
 
-        // Use <audio> element — simpler and respects Chrome's per-origin user activation,
+        // Use <audio> element - simpler and respects Chrome's per-origin user activation,
         // meaning it works even when triggered by push/postMessage without a direct click.
         var _defaultSoundFile = 'mixkit-software-interface-back-2575.wav';
         var _audioTicket  = new Audio('/sounds/' + _defaultSoundFile);
@@ -2400,17 +2400,17 @@
         _applySoundUi();
 
         // ── Musik latar musiman (admin-only, lihat App\Support\GlobalSeasonalTheme) ──
-        // sessionStorage BUKAN preferensi tersimpan — reset tiap sesi browser baru,
+        // sessionStorage BUKAN preferensi tersimpan - reset tiap sesi browser baru,
         // murni supaya status unmute tetap konsisten selagi user pindah-pindah
         // halaman DALAM sesi yang sama (tiap halaman = document baru, audio-nya
-        // ikut dibuat ulang dari nol setiap kali — lihat catatan di bawah).
+        // ikut dibuat ulang dari nol setiap kali - lihat catatan di bawah).
         (function initGlobalBgMusic() {
             const audio = document.getElementById('globalBgMusic');
             const btn   = document.getElementById('bgMusicToggleBtn');
             const icon  = document.getElementById('bgMusicToggleIcon');
             if (!audio || !btn || !icon) return; // admin belum pasang musik apa pun
 
-            // Volume diatur admin, berlaku sama untuk semua user — dibaca dari
+            // Volume diatur admin, berlaku sama untuk semua user - dibaca dari
             // data-volume (data-* attribute, bukan preferensi tersimpan di
             // browser) supaya nilainya selalu sinkron dengan apa yang admin set
             // di Control Center, tanpa kemungkinan tertinggal versi lama.
@@ -2428,10 +2428,10 @@
             audio.muted = !wantsUnmuted;
             // Selalu mulai lewat play() yang di-muted (diizinkan browser tanpa gesture
             // user apa pun). Kalau user sebelumnya sudah unmute di halaman lain dalam
-            // sesi ini, di sini dicoba unmute lagi langsung — browser MUNGKIN
+            // sesi ini, di sini dicoba unmute lagi langsung - browser MUNGKIN
             // mengizinkan (Chrome dkk punya heuristik "sudah pernah putar audio di
             // situs ini"), MUNGKIN juga tidak (kebijakan autoplay browser, beda-beda
-            // per browser/versi) — kalau diblokir, audio otomatis tetap ter-mute dan
+            // per browser/versi) - kalau diblokir, audio otomatis tetap ter-mute dan
             // ikon merefleksikan keadaan sebenarnya (tidak berpura-pura menyala),
             // user tinggal klik tombolnya sekali lagi (klik = gesture asli, dijamin
             // berhasil unmute).
@@ -2474,7 +2474,7 @@
             if (!document.hidden && !onTicketPage) {
                 playTicketSound();
             }
-            // OS notification — hanya saat tab background/minimize agar tidak mengganggu saat user sedang aktif
+            // OS notification - hanya saat tab background/minimize agar tidak mengganggu saat user sedang aktif
             if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
                 fetch('/api/notifications?limit=1', { credentials: 'same-origin' })
                     .then(function (r) { return r.json(); })
@@ -2620,10 +2620,11 @@
                 case 'late_exception_approved':      return 'Late Access Request approved by RPMO';
                 case 'late_exception_rejected':      return 'Late Access Request rejected by RPMO';
                 case 'customer_mandays_canceled':    return 'Customer Mandays Proposal canceled';
-                case 'customer_mandays_proposed':    return 'Customer Mandays — needs review';
+                case 'customer_mandays_proposed':    return 'Customer Mandays: needs review';
                 case 'customer_mandays_pending_approval': return 'Customer Mandays waiting for your approval';
                 case 'customer_mandays_rejected':    return 'Customer Mandays Proposal rejected';
-                case 'resolution_days_proposed':     return 'Resolution Days — needs review';
+                case 'resolution_days_proposed':     return 'Resolution Days: needs review';
+
                 case 'contract_end_reminder':        return 'Contract deadline reminder';
                 case 'top_invoice_reminder':         return 'Invoice submission due';
                 case 'timesheet_reminder':           return 'Timesheet reminder';
@@ -2789,7 +2790,7 @@
         /* ---- fire-and-forget mark-as-read (called on click, navigation proceeds normally) ----
            Marks this notification read; the backend also marks every other unread
            notification for the same ticket read in one go, so the badge can drop by more
-           than 1 — re-fetch the real count instead of guessing with a client-side decrement.
+           than 1 - re-fetch the real count instead of guessing with a client-side decrement.
            Still visible (as read) on the full /notifications page. */
         function markNotifReadBell(id) {
             fetch('/api/notifications/' + id + '/read', {
@@ -2801,7 +2802,7 @@
             }).catch(function () {});
         }
 
-        /* ---- mark all read (does NOT delete — read items remain on the full page) ---- */
+        /* ---- mark all read (does NOT delete - read items remain on the full page) ---- */
         function markAllNotificationsRead() {
             var list = document.getElementById('bellNotifList');
             if (list) setListMessage(list, 'No notifications');

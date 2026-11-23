@@ -32,7 +32,7 @@ use RuntimeException;
  *     dibagikan ke customer; lampiran internal note tidak boleh ikut terlihat.
  *  3. **Gagal = kembali ke tautan, bukan gagal kirim.** Semua kegagalan di sini
  *     membuat pemanggil memakai bentuk tautan yang lama. Kartu yang tampil tapi
- *     tidak bisa dibuka lebih buruk daripada tautan yang jalan — karena itu
+ *     tidak bisa dibuka lebih buruk daripada tautan yang jalan - karena itu
  *     kegagalan MEMBAGIKAN folder juga membatalkan seluruh penyalinan.
  */
 class TeamsFileService
@@ -82,7 +82,7 @@ class TeamsFileService
     /**
      * Salin lampiran ke OneDrive dan kembalikan bentuk lampiran Graph-nya.
      *
-     * Lampiran yang gagal disalin tidak ada di hasil — pemanggil mengirimnya
+     * Lampiran yang gagal disalin tidak ada di hasil - pemanggil mengirimnya
      * sebagai tautan. Kegagalan menyiapkan atau membagikan FOLDER dilempar,
      * karena tanpa itu tidak satu pun berkas bisa dibuka anggota grup.
      *
@@ -125,7 +125,7 @@ class TeamsFileService
      * Beri hak baca folder berkas tiket kepada orang yang baru masuk grup.
      *
      * Dipanggil saat member/PIC ditambahkan ke tiket. Tiket yang belum pernah
-     * mengirim berkas belum punya folder, dan tidak ada yang perlu dilakukan —
+     * mengirim berkas belum punya folder, dan tidak ada yang perlu dilakukan -
      * orangnya akan ikut dibagikan lewat roster pada kiriman berkas pertama.
      *
      * Semua kegagalan ditelan: ini langkah tambahan di ujung penambahan member.

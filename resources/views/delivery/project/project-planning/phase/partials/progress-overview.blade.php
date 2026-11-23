@@ -10,7 +10,7 @@
     
     // Calculate overall progress
     // - "actual"  : real progress from completed work (group->calculated_progress)
-    // - "planned" : schedule-based progress — where the project SHOULD be today
+    // - "planned" : schedule-based progress - where the project SHOULD be today
     //               based on weights and planned dates (group->planned_progress).
     // Both use the SAME phase/group weighting so they are directly comparable.
     $totalPhaseWeight = 0;
@@ -44,7 +44,7 @@
                 $phaseProgress = $weightedGroupProgress / $totalGroupWeight;
                 $phasePlanned  = $weightedGroupPlanned / $totalGroupWeight;
             } else {
-                // Bobot group belum diisi — bagi rata, jangan diperlakukan 0%.
+                // Bobot group belum diisi - bagi rata, jangan diperlakukan 0%.
                 // (Phase tetap menyumbang bobotnya ke penyebut overall, jadi kalau
                 // di-nol-kan progres proyek ikut tertarik turun tanpa sebab.)
                 $phaseProgress = $phaseGroups->avg(fn ($g) => (float) ($g->calculated_progress ?? $g->progress_percentage ?? 0)) ?? 0;
@@ -67,13 +67,13 @@
         ];
     }
 
-    // Raw (unrounded) values — used for SPI/CPI so rounding artifacts don't
+    // Raw (unrounded) values - used for SPI/CPI so rounding artifacts don't
     // distort the indices. The displayed bars use the rounded versions below.
     $overallProgressRaw = $totalPhaseWeight > 0 ? $weightedPhaseProgress / $totalPhaseWeight : 0;
     $plannedProgressRaw = $totalPhaseWeight > 0 ? $weightedPhasePlanned / $totalPhaseWeight : 0;
 
     // Keep 1 decimal so half-points (e.g. 62.5%) are shown faithfully instead
-    // of being rounded away — these values are meant to be compared against each
+    // of being rounded away - these values are meant to be compared against each
     // other. Presisi keduanya WAJIB sama, dan sama dengan yang dipakai kartu
     // Overall Progress / panel Plan-Actual di S-Curve (juga 1 desimal); dulu
     // actual dibulatkan ke bilangan bulat sehingga halaman ini menulis 51%
@@ -95,7 +95,7 @@
     //                               <0.80 At Critical. null = N/A (no baseline).
     // =====================================================================
 
-    // SPI — needs a schedule baseline (planned > 0)
+    // SPI - needs a schedule baseline (planned > 0)
     $spi = $plannedProgressRaw > 0
         ? round($overallProgressRaw / $plannedProgressRaw, 2)
         : null;
@@ -110,7 +110,7 @@
     $totalActual = (float) $leafCosts->sum('actual_amount'); // AC
     $earnedValue = ($overallProgressRaw / 100) * $totalBudget; // EV
 
-    // CPI — needs actual cost spent (AC > 0)
+    // CPI - needs actual cost spent (AC > 0)
     $cpi = $totalActual > 0
         ? round($earnedValue / $totalActual, 2)
         : null;
@@ -196,7 +196,7 @@
         </div>
     </div>
 
-    {{-- Planning Progress Bar (schedule-based — where the project SHOULD be today) --}}
+    {{-- Planning Progress Bar (schedule-based - where the project SHOULD be today) --}}
     <div class="px-3 sm:px-4 pt-3 sm:pt-4 pb-2 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100">
         <div class="flex items-center justify-between mb-2">
             <span class="inline-flex items-center text-xs sm:text-sm font-medium text-gray-700">
@@ -384,7 +384,7 @@
             <h4 class="text-xs sm:text-sm font-semibold text-gray-700 mb-3">Performance Indices</h4>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
-                {{-- SPI — Schedule Performance Index --}}
+                {{-- SPI - Schedule Performance Index --}}
                 <div class="relative {{ $spiStatus['card'] }} border-l-4 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
                     <div class="flex items-start justify-between mb-2">
                         <div class="flex items-center space-x-2 flex-1 min-w-0">
@@ -413,7 +413,7 @@
                     </div>
                 </div>
 
-                {{-- CPI — Cost Performance Index --}}
+                {{-- CPI - Cost Performance Index --}}
                 <div class="relative {{ $cpiStatus['card'] }} border-l-4 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
                     <div class="flex items-start justify-between mb-2">
                         <div class="flex items-center space-x-2 flex-1 min-w-0">

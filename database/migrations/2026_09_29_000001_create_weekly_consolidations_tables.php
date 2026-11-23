@@ -5,17 +5,17 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * WEEKLY CONSOLIDATION — recon tiket weekly per modul (Reporting → Support).
+ * WEEKLY CONSOLIDATION - recon tiket weekly per modul (Reporting → Support).
  *
  * Live-join by design: header + line di sini HANYA menyimpan tiket mana saja
  * yang masuk satu batch recon, plus notes-nya. Status/progress/PIC/team lead/
- * member TIDAK disalin ke sini — selalu dibaca langsung dari tabel `ticket`
+ * member TIDAK disalin ke sini - selalu dibaca langsung dari tabel `ticket`
  * saat batch dibuka/di-export (lihat App\Models\WeeklyConsolidation). Baris
  * lama karenanya ikut menampilkan kondisi tiket TERKINI, bukan snapshot histori
- * — trade-off yang disengaja demi kesederhanaan.
+ * - trade-off yang disengaja demi kesederhanaan.
  *
  * `period_start`/`period_end`/`period_label` adalah LABEL periode yang diisi
- * module lead (mis. minggu berjalan), BUKAN filter tanggal terhadap tiket —
+ * module lead (mis. minggu berjalan), BUKAN filter tanggal terhadap tiket -
  * kriteria tiket selalu "yang masih terbuka SEKARANG", terlepas kapan tiket
  * itu dibuat. Jangan dipakai sebagai filter created_at.
  */
@@ -31,7 +31,7 @@ return new class extends Migration
                 $table->date('period_end');
                 $table->string('period_label')->nullable();
 
-                // Nullable meski secara bisnis selalu diisi controller — MySQL
+                // Nullable meski secara bisnis selalu diisi controller - MySQL
                 // mewajibkan kolom boleh NULL kalau foreign key-nya ON DELETE SET NULL
                 // (error 1830 kalau tetap NOT NULL, sempat kejadian saat migrate pertama).
                 $table->unsignedBigInteger('generated_by_id')->nullable();

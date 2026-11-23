@@ -203,7 +203,7 @@ class DeliverySupportController extends Controller
         $employees = Employee::with('basicData')->where('is_active', true)->get();
         $modules = Module::active()->orderBy('name')->get();
 
-        // Dropdown "Type" — master data (menu Management > Master Delivery
+        // Dropdown "Type" - master data (menu Management > Master Delivery
         // Settings > Support Type), bukan hardcode lagi.
         $supportTypes = DeliverySupportType::active()->orderBy('order_seq')->orderBy('name')->pluck('name');
 
@@ -333,7 +333,7 @@ class DeliverySupportController extends Controller
         $employees = Employee::with('basicData')->where('is_active', true)->get();
         $modules   = Module::active()->orderBy('name')->get();
 
-        // Dropdown "Type" — master data, bukan hardcode lagi. Nilai type
+        // Dropdown "Type" - master data, bukan hardcode lagi. Nilai type
         // support ini tetap dipastikan muncul di daftar walau tipenya sudah
         // dinonaktifkan di master data, supaya form edit tidak diam-diam
         // "menghilangkan" pilihan yang sedang terpakai.
@@ -478,7 +478,7 @@ class DeliverySupportController extends Controller
             ->whereDoesntHave('children')
             ->sum('actual_amount');
 
-        // Tombol "Remove Ticket from DS" — dulu di-hardcode ke role EC Administrator,
+        // Tombol "Remove Ticket from DS" - dulu di-hardcode ke role EC Administrator,
         // sekarang diatur lewat Control Center → Menu Access (slug: delivery-support.remove-ticket).
         $canRemoveTicket = (bool) Employee::find(session('user.id'))?->hasPermission('delivery-support.remove-ticket');
 
@@ -509,7 +509,7 @@ class DeliverySupportController extends Controller
         $data = $request->input('data', []);
 
         // Satu endpoint melayani beberapa section, jadi izinnya tidak bisa
-        // ditentukan lewat middleware `menu:` di route — dicek per section di sini.
+        // ditentukan lewat middleware `menu:` di route - dicek per section di sini.
         // Team hanya punya aksi tambah/hapus, sehingga dipetakan ke `.manage`.
         $requiredSlug = [
             'support-info'  => 'delivery-support.general.edit',
@@ -657,7 +657,7 @@ class DeliverySupportController extends Controller
             // gross_profit & gross_profit_percentage sengaja TIDAK divalidasi/dipakai
             // dari request: keduanya nilai turunan yang dihitung ulang di server
             // (lihat di bawah). Selain menjaga konsistensi kalau JS gagal jalan,
-            // ini juga menghilangkan 422 palsu saat Plan Cost > Revenue — dulu
+            // ini juga menghilangkan 422 palsu saat Plan Cost > Revenue - dulu
             // persentase minus besar ditolak aturan `min:-100`.
         ], [
             'io_number.unique' => 'IO Number ini sudah digunakan oleh delivery support lain.',
@@ -1130,11 +1130,11 @@ class DeliverySupportController extends Controller
             $folderName = trim($request->input('folder_name') ?: ($support->name ?? 'Support-' . $support->id));
 
             if ($support->onedrive_folder_id) {
-                // Folder already exists — just recreate the share link (idempotent + upgrades to edit)
+                // Folder already exists - just recreate the share link (idempotent + upgrades to edit)
                 $link = $oneDrive->createShareLink($support->onedrive_folder_id);
                 $support->applyOneDriveShareLink($link);
             } else {
-                // First time — create folder then share link
+                // First time - create folder then share link
                 $folderId = $oneDrive->createFolder($folderName);
                 $support->update(['onedrive_folder_id' => $folderId]);
 
@@ -1350,7 +1350,7 @@ class DeliverySupportController extends Controller
     /**
      * GET /delivery/support/{support}/customer-contacts
      * Kembalikan customer contact milik client dari DS ini untuk pilihan dropdown PIC,
-     * kecuali contact yang sudah berstatus admin (can_view_all_tickets) — admin selalu
+     * kecuali contact yang sudah berstatus admin (can_view_all_tickets) - admin selalu
      * bisa lihat semua ticket company, jadi tidak relevan dijadikan PIC yang scope-nya dibatasi.
      */
     public function getClientContacts(DeliverySupport $support)
@@ -1385,7 +1385,7 @@ class DeliverySupportController extends Controller
             ->map(fn($p) => [
                 'id'         => $p->id,
                 'contact_id' => $p->contact_id,
-                'full_name'  => $p->contact->full_name ?? '—',
+                'full_name'  => $p->contact->full_name ?? '-',
                 'position'   => $p->contact->position ?? null,
                 'department' => $p->contact->department ?? null,
                 'email_work' => $p->contact->email_work ?? null,
@@ -1429,7 +1429,7 @@ class DeliverySupportController extends Controller
                 ], 422);
             }
 
-            // Contact yang berstatus admin (can_view_all_tickets) tidak boleh jadi PIC —
+            // Contact yang berstatus admin (can_view_all_tickets) tidak boleh jadi PIC -
             // scope PIC membatasi visibility ticket, sedangkan admin selalu lihat semua.
             $adminCount = AuthUser::whereIn('contact_id', $contactIds)
                 ->where('can_view_all_tickets', true)

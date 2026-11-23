@@ -14,11 +14,11 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Term Of Payment (TOP) plan untuk Delivery Support.
- * Mirror dari DeliveryProjectPaymentTermController — dua mode penagihan
+ * Mirror dari DeliveryProjectPaymentTermController - dua mode penagihan
  * (lihat SupportTopPlan):
  *   - percentage : amount = revenue × % / 100 (total % ≤ 100, diblokir).
  *   - line_item  : termin wajib dikaitkan ke Contract Line Item; amount diambil
- *                  dari nilai kontrak line item — basis "line_item" (% × nilai
+ *                  dari nilai kontrak line item - basis "line_item" (% × nilai
  *                  line item) ATAU "fixed" (nominal). Basis % dari revenue
  *                  dikunci (hanya termin lama yang sudah memakainya boleh tetap).
  *                  Total > revenue hanya diperingatkan.
@@ -128,7 +128,7 @@ class DeliverySupportPaymentTermController extends Controller
             'top_mode' => ['required', Rule::in(SupportTopPlan::MODES)],
         ]);
 
-        // Mode % hanya mengenal % dari revenue — termin yang amount-nya diambil
+        // Mode % hanya mengenal % dari revenue - termin yang amount-nya diambil
         // dari line item harus dihapus dulu supaya tidak ada termin yang
         // amount-nya tiba-tiba berubah.
         if ($validated['top_mode'] === 'percentage') {
@@ -244,7 +244,7 @@ class DeliverySupportPaymentTermController extends Controller
 
     /**
      * Termin basis % tidak boleh membuat total % melebihi 100 (= revenue).
-     * Termin basis line item tidak dihitung di sini — kelebihannya hanya
+     * Termin basis line item tidak dihitung di sini - kelebihannya hanya
      * diperingatkan lewat SupportTopPlan::warnings().
      */
     private function checkPercentageWithinRevenue(DeliverySupport $support, array $validated, $excludeId = null)

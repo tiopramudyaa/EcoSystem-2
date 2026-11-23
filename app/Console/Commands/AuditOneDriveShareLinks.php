@@ -169,7 +169,7 @@ class AuditOneDriveShareLinks extends Command
 
             $permissions = $this->oneDrive->listItemPermissions($row->onedrive_folder_id);
         } catch (\Throwable $e) {
-            Log::warning('onedrive:audit-links — Graph check failed', [
+            Log::warning('onedrive:audit-links - Graph check failed', [
                 'item'  => $name,
                 'error' => $e->getMessage(),
             ]);
@@ -213,7 +213,7 @@ class AuditOneDriveShareLinks extends Command
             $row->applyOneDriveShareLink($link);
         } catch (\Throwable $e) {
             $this->totals['failed']++;
-            Log::error('onedrive:audit-links — repair failed', [
+            Log::error('onedrive:audit-links - repair failed', [
                 'type'  => $label,
                 'item'  => $name,
                 'error' => $e->getMessage(),
@@ -223,11 +223,11 @@ class AuditOneDriveShareLinks extends Command
 
         $this->totals['fixed']++;
 
-        // Link baru pun bisa tetap non-anonymous kalau kebijakan tenant memblokirnya —
+        // Link baru pun bisa tetap non-anonymous kalau kebijakan tenant memblokirnya -
         // itu bukan bug aplikasi dan harus ditindaklanjuti admin M365.
         return $link['scope'] === 'anonymous'
             ? 'fixed (anyone with the link)'
-            : 'fixed but still ' . $link['scope'] . ' — check M365 sharing policy';
+            : 'fixed but still ' . $link['scope'] . ' - check M365 sharing policy';
     }
 
     /**
@@ -283,7 +283,7 @@ class AuditOneDriveShareLinks extends Command
                     $this->totals['fixed']++;
                     $outcome = $link['scope'] === 'anonymous'
                         ? 'fixed (anyone with the link)'
-                        : 'fixed but still ' . $link['scope'] . ' — check M365 sharing policy';
+                        : 'fixed but still ' . $link['scope'] . ' - check M365 sharing policy';
                 } catch (\Throwable $e) {
                     $this->totals['failed']++;
                     $outcome = 'FIX FAILED: ' . $e->getMessage();
@@ -297,7 +297,7 @@ class AuditOneDriveShareLinks extends Command
     /**
      * Supporting document expense (Plan Cost) di Delivery Project & Support.
      *
-     * Baris lama menyimpan `webUrl` hasil upload — path SharePoint langsung yang
+     * Baris lama menyimpan `webUrl` hasil upload - path SharePoint langsung yang
      * selalu meminta login / "Request access". Baris lama juga belum menyimpan
      * item ID, jadi ID-nya dipulihkan dulu dengan mencari file bernama sama di
      * subfolder "Plan Cost" milik project/support tersebut.
@@ -391,7 +391,7 @@ class AuditOneDriveShareLinks extends Command
             $link = (new PlanCostDocumentLink($this->oneDrive))->repair($item, $parentFolderId);
         } catch (\Throwable $e) {
             $this->totals['failed']++;
-            Log::error('onedrive:audit-links — expense document repair failed', [
+            Log::error('onedrive:audit-links - expense document repair failed', [
                 'item'  => $name,
                 'error' => $e->getMessage(),
             ]);
@@ -402,7 +402,7 @@ class AuditOneDriveShareLinks extends Command
 
         return $link['scope'] === 'anonymous'
             ? 'fixed (anyone with the link)'
-            : 'fixed but still ' . $link['scope'] . ' — check M365 sharing policy';
+            : 'fixed but still ' . $link['scope'] . ' - check M365 sharing policy';
     }
 
     /** @param array<int,string> $issues */

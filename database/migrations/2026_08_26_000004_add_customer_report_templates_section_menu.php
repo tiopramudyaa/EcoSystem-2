@@ -6,13 +6,13 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Section "Report Templates" di halaman detail Customer (master.customer),
- * pola sama persis dengan section lain (Attachment, Credential, dst — lihat
+ * pola sama persis dengan section lain (Attachment, Credential, dst - lihat
  * 2026_07_02_193812_restructure_profile_section_menus.php): slug
  * `customer.section.report_templates.{view|update}`, digate lewat
  * middleware `customer.section:report_templates,...` (CheckCustomerSectionAccess).
  *
  * SENGAJA lebih ketat dari akses edit Customer pada umumnya (bukan otomatis
- * ikut siapa pun yang boleh edit master.customer) — admin bisa membuka akses
+ * ikut siapa pun yang boleh edit master.customer) - admin bisa membuka akses
  * ke role lain lewat Control Center → Menu Access kalau diperlukan.
  */
 return new class extends Migration

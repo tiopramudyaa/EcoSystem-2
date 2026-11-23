@@ -26,7 +26,7 @@
                     <i class="fas {{ $k['icon'] }} {{ $k['color'] }} text-sm"></i>
                 </div>
             </div>
-            <p class="text-2xl font-bold text-gray-800" id="{{ $k['id'] }}">—</p>
+            <p class="text-2xl font-bold text-gray-800" id="{{ $k['id'] }}">-</p>
             <p class="text-xs text-gray-400 mt-0.5">{{ $k['label'] }}</p>
         </div>
         @endforeach
@@ -189,7 +189,7 @@
                 {{-- Label preview --}}
                 <div class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 flex items-center gap-2">
                     <span class="text-xs text-gray-400 flex-shrink-0">Label preview:</span>
-                    <span id="labelPreview" class="text-sm font-mono font-semibold text-red-700">—</span>
+                    <span id="labelPreview" class="text-sm font-mono font-semibold text-red-700">-</span>
                 </div>
 
                 <div>
@@ -488,7 +488,7 @@ const PRIO_CFG   = {
 };
 
 function makeLabel(dsName, priority, scale) {
-    const short = dsName ? dsName.toUpperCase().replace(/\s+/g,'').substring(0,10) : '—';
+    const short = dsName ? dsName.toUpperCase().replace(/\s+/g,'').substring(0,10) : '-';
     return `${short}${PRIO_NUM[priority] || '?'}: ${priority} / ${scale}`;
 }
 
@@ -506,7 +506,7 @@ function updatePreview() {
         is24hEl.disabled = true;
         labelEl.classList.add('opacity-75', 'cursor-not-allowed');
         labelEl.classList.remove('cursor-pointer', 'hover:bg-gray-100');
-        noteEl.textContent = 'Required 24/7 — Very High priority always uses full calendar hours.';
+        noteEl.textContent = 'Required 24/7 - Very High priority always uses full calendar hours.';
     } else {
         is24hEl.disabled = false;
         labelEl.classList.remove('opacity-75', 'cursor-not-allowed');
@@ -708,10 +708,10 @@ function renderPolicies(policies) {
             ? `<div class="flex items-center gap-2">
                 <span class="text-xs font-medium text-gray-700">${p.delivery_support_name}</span>
                </div>`
-            : `<span class="text-xs text-gray-400 italic">—</span>`;
+            : `<span class="text-xs text-gray-400 italic">-</span>`;
 
         const breakLabel = (p.break_start_time && p.break_end_time) ? ` (break ${p.break_start_time}-${p.break_end_time})` : '';
-        const workHoursLabel = (p.work_start_time && p.work_end_time) ? ` ${p.work_start_time}–${p.work_end_time}${breakLabel}` : '';
+        const workHoursLabel = (p.work_start_time && p.work_end_time) ? ` ${p.work_start_time}-${p.work_end_time}${breakLabel}` : '';
         const modeCell = p.is_24_hours
             ? `<span class="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full"><i class="fas fa-infinity text-[9px]"></i>24/7</span>`
             : `<span class="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Business${workHoursLabel}</span>`;
@@ -809,7 +809,7 @@ function openEditModal(p) {
 }
 function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
 
-// ── Response unit (hours / minutes) — always sent to the API in hours ─────────
+// ── Response unit (hours / minutes) - always sent to the API in hours ─────────
 function respUnitAttrs(inp, unit) {
     inp.step = inp.min = unit === 'minutes' ? '1' : '0.01';
     inp.placeholder = unit === 'minutes' ? 'e.g. 30' : 'e.g. 4';
@@ -843,7 +843,7 @@ function editUpdate24h() {
         el24.checked  = true; el24.disabled = true;
         lbl24.classList.add('opacity-75','cursor-not-allowed');
         lbl24.classList.remove('cursor-pointer','hover:bg-gray-100');
-        note24.textContent = 'Required 24/7 — Very High priority always uses full calendar hours.';
+        note24.textContent = 'Required 24/7 - Very High priority always uses full calendar hours.';
     } else {
         el24.disabled = false;
         lbl24.classList.remove('opacity-75','cursor-not-allowed');

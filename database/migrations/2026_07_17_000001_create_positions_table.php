@@ -6,12 +6,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Tabel referensi Position — single source of truth untuk opsi dropdown
+ * Tabel referensi Position - single source of truth untuk opsi dropdown
  * Position di form employee basic data (master/profile).
  *
  * Catatan desain (sama seperti tabel `grades`): `employee_basic_data.position`
  * TETAP menyimpan nama position sebagai string (penghubung lewat `positions.name`),
- * bukan FK — agar minim disrupsi & import tetap berbasis nama. Data lama (~78 nilai
+ * bukan FK - agar minim disrupsi & import tetap berbasis nama. Data lama (~78 nilai
  * posisi konsultan yang sudah dipakai) TIDAK ikut di-seed di sini karena vocabulary-nya
  * beda dari daftar standar HR di bawah; nilai lama tetap tersimpan & tampil apa adanya
  * di record masing-masing (lihat custom-dropdown.js -> setCustomDropdownValue()).

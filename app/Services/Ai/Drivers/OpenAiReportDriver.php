@@ -30,7 +30,7 @@ use Throwable;
  * adalah panggilan Responses API biasa tanpa tool sandbox sama sekali,
  * supaya dua fase ringan itu tetap murah & cepat.
  *
- * $tools (AiTool registry) SAMA PERSIS dengan yang dipakai driver Claude —
+ * $tools (AiTool registry) SAMA PERSIS dengan yang dipakai driver Claude -
  * cuma diterjemahkan ke bentuk `function` tool milik Responses API di sini.
  */
 class OpenAiReportDriver implements ReportGenerationDriver

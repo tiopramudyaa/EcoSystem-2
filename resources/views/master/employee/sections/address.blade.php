@@ -57,7 +57,7 @@
                 </div>
             </div>
 
-            <!-- Country (dropdown — data-driven dari dropdown_configs, fallback Indonesia) -->
+            <!-- Country (dropdown - data-driven dari dropdown_configs, fallback Indonesia) -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Country</label>
                 <select id="country" onchange="addrOnCountryChange()" class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
@@ -494,7 +494,7 @@
        COUNTRY-DEPENDENT MODE: Indonesia pakai dropdown wilayah cascading di
        atas; negara lain (mis. Singapura) pakai input manual karena tabel
        `wilayah` memang data resmi Indonesia-only. Kolom yang disimpan tetap
-       region/city/district/rural_urban_village (string bebas — backend
+       region/city/district/rural_urban_village (string bebas - backend
        sudah menerima teks apa pun), jadi tidak ada perubahan payload/API.
        ───────────────────────────────────────────────────────────────────── */
     const ADDR_WILAYAH_COUNTRY = 'Indonesia';
@@ -521,7 +521,7 @@
     }
 
     // Set value Country secara programatic (load/reset), lalu dispatch 'change'
-    // supaya label tombol select-enhance ikut ter-refresh — widget kustom itu
+    // supaya label tombol select-enhance ikut ter-refresh - widget kustom itu
     // hanya dengar event 'change'/mutasi DOM, TIDAK dengar assignment `.value =`
     // langsung (persis alasan kenapa reset Region di bawah sudah dispatch event
     // juga). Guard flag mencegah addrOnCountryChange() (listener kita sendiri,
@@ -574,7 +574,7 @@
                 addressesData = data.data;
                 renderAddressTable(data.data);
                 // Saat load awal: auto-pilih alamat primary (atau pertama) agar form
-                // di atas — termasuk Cell Phone — langsung terisi tanpa perlu klik baris.
+                // di atas - termasuk Cell Phone - langsung terisi tanpa perlu klik baris.
                 if (autoSelect) {
                     const primary = data.data.find(a => a.is_primary) || data.data[0];
                     if (primary) {
@@ -800,7 +800,7 @@
             if (data.success) {
                 showNotification(isUpdate ? 'Address updated successfully!' : 'Address created successfully!', 'success');
                 // Peringatan saat email_work primary gagal disinkronkan ke email login
-                // (mis. email sudah dipakai akun lain) — tampilkan agar admin sadar.
+                // (mis. email sudah dipakai akun lain) - tampilkan agar admin sadar.
                 if (data.warning) showNotification(data.warning, 'error');
                 loadAddresses();
                 if (typeof window.refreshHeader === 'function') window.refreshHeader({{ $employeeId }});

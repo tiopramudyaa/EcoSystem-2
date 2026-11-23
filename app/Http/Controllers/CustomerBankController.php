@@ -172,7 +172,7 @@ class CustomerBankController extends Controller
                 auditableId: $bankId,
                 event: 'created',
                 recordLabel: $label,
-                description: "added Customer Bank: {$label} — Customer #{$customerId}",
+                description: "added Customer Bank: {$label} - Customer #{$customerId}",
                 old: null,
                 new: $this->redactBankRow($bankData),
             );
@@ -231,7 +231,7 @@ class CustomerBankController extends Controller
         }
 
         try {
-            // Snapshot before update — needed for the audit log entry below.
+            // Snapshot before update - needed for the audit log entry below.
             $existingBank = DB::table('customer_bank')
                 ->where('customer_id', $customerId)
                 ->where('bank_id', $bankId)
@@ -279,7 +279,7 @@ class CustomerBankController extends Controller
                 auditableId: $bankId,
                 event: 'updated',
                 recordLabel: $label,
-                description: "updated Customer Bank: {$label} — Customer #{$customerId}",
+                description: "updated Customer Bank: {$label} - Customer #{$customerId}",
                 old: $this->redactBankRow((array) $existingBank),
                 new: $this->redactBankRow($updateData),
             );
@@ -315,7 +315,7 @@ class CustomerBankController extends Controller
         ]);
 
         try {
-            // Snapshot before delete — needed for the audit log entry below.
+            // Snapshot before delete - needed for the audit log entry below.
             $existingBank = DB::table('customer_bank')
                 ->where('customer_id', $customerId)
                 ->where('bank_id', $bankId)
@@ -341,7 +341,7 @@ class CustomerBankController extends Controller
                 auditableId: $bankId,
                 event: 'deleted',
                 recordLabel: $label,
-                description: "deleted Customer Bank: {$label} — Customer #{$customerId}",
+                description: "deleted Customer Bank: {$label} - Customer #{$customerId}",
                 old: $this->redactBankRow((array) $existingBank),
                 new: null,
             );

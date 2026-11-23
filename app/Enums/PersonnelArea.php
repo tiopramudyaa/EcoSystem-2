@@ -4,7 +4,7 @@ namespace App\Enums;
 
 /**
  * Personnel Area employee. Label murni, daftar pendek & stabil, sehingga cukup
- * enum PHP (bukan tabel) — sama pola dengan HomeBase.
+ * enum PHP (bukan tabel) - sama pola dengan HomeBase.
  *
  * Penggunaan:
  *   PersonnelArea::options()   // ['BACK OFFICE', 'SALES', 'OPERATION']

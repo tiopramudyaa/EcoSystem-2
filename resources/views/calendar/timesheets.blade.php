@@ -9,7 +9,7 @@
     $isAdminMode    = isset($isAdmin) && $isAdmin;
     // $isHoSMode is true when the employee holds the Delivery Support Head role
     // (checked against ALL assigned roles in the controller, not just whichever
-    // role happens to be "primary" in session — see CalendarController::timesheets()).
+    // role happens to be "primary" in session - see CalendarController::timesheets()).
     // Delivery Support Users (role_id=2) also have lockedType='support' but do NOT get isHoSMode,
     // so they see support spreadsheet WITHOUT approve/reject buttons.
     $isHoSMode      = isset($isHoS) && $isHoS;
@@ -46,7 +46,7 @@
                 <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                <span id="tsBadgeLabel">—</span>
+                <span id="tsBadgeLabel">-</span>
                 <span id="tsBadgeStatus" class="font-semibold"></span>
             </div>
             @if(!$isApprovalMode && !$isHoSMode && $can('timesheet.create'))
@@ -133,7 +133,7 @@
     </div>
     @endif
 
-    <!-- Support MD Summary — shown only while the Support type filter is active.
+    <!-- Support MD Summary - shown only while the Support type filter is active.
          Totals follow whatever is currently filtered in the table (search, status,
          date range, etc.), recomputed in updateSupportMdSummary(). -->
     <div id="supportMdSummary" class="hidden grid grid-cols-2 gap-3 mb-4">
@@ -147,7 +147,7 @@
         </div>
     </div>
 
-    <!-- Type Tabs — hidden when locked to a single type, otherwise show only allowed types -->
+    <!-- Type Tabs - hidden when locked to a single type, otherwise show only allowed types -->
     @php
         $lockedType   = $lockedType ?? null;
         $allowedTypes = $allowedTypes ?? ['project','support','office'];
@@ -203,15 +203,15 @@
     </div>
     @endif
 
-    <!-- Filters removed — column filters are now embedded in table headers -->
+    <!-- Filters removed - column filters are now embedded in table headers -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" style="display:none">
-            <!-- Period (hidden — replaced by column filters) -->
+            <!-- Period (hidden - replaced by column filters) -->
             <div class="flex flex-col">
                 <label class="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Period</label>
                 <div class="flex items-center gap-2">
                     <div class="custom-dd relative flex-1" data-onchange="updateTsPeriodLabel">
                         <button type="button" class="custom-dd-btn w-full flex items-center justify-between pl-3 pr-2 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 transition-all text-left">
-                            <span class="custom-dd-label text-gray-700">—</span>
+                            <span class="custom-dd-label text-gray-700">-</span>
                             <svg class="custom-dd-arrow w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
                         <input type="hidden" id="filterMonth" value="">
@@ -307,7 +307,7 @@
             </div>
             <div id="noBulkActions" class="flex items-center gap-3">
                 <span class="text-xs text-gray-400">
-                    Showing <span class="font-semibold text-gray-600" id="currentRangeStart">1</span>&ndash;<span class="font-semibold text-gray-600" id="currentRangeEnd">20</span>
+                    Showing <span class="font-semibold text-gray-600" id="currentRangeStart">1</span>-<span class="font-semibold text-gray-600" id="currentRangeEnd">20</span>
                     <span class="text-gray-300 mx-1">of</span>
                     <span class="font-semibold text-gray-700" id="totalItems">0</span> timesheets
                 </span>
@@ -347,7 +347,7 @@
                                 <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">Employee</span>
                                 <svg class="w-3.5 h-3.5 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                                 <svg id="tsTextIcon_Employee" class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 011 1v1.586a1 1 0 01-.293.707l-4.121 4.121A1 1 0 0012 12.121V15.5l-4 1.5v-4.879a1 1 0 00-.293-.707L3.586 7.293A1 1 0 013.293 6.586L3 5z" clip-rule="evenodd"/></svg>
-                                <span id="tsSortEmpIcon" onclick="event.stopPropagation(); toggleTsEmpSort()" title="Click to toggle sort (A–Z ↔ Z–A)" class="cursor-pointer text-[10px] text-gray-300 font-bold shrink-0 ml-auto hover:text-red-500 transition-colors">⇅</span>
+                                <span id="tsSortEmpIcon" onclick="event.stopPropagation(); toggleTsEmpSort()" title="Click to toggle sort (A-Z ↔ Z-A)" class="cursor-pointer text-[10px] text-gray-300 font-bold shrink-0 ml-auto hover:text-red-500 transition-colors">⇅</span>
                             </button>
                             <div id="tsTextPanel_Employee" class="hidden absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] p-3" style="min-width:220px;">
                                 <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Search employee</label>
@@ -495,7 +495,7 @@
                                 </div>
                             </div>
                         </th>
-                        {{-- Year: custom-dd (options populated dynamically from data — see _populateTsYearDd in calendar-timesheets.js) --}}
+                        {{-- Year: custom-dd (options populated dynamically from data - see _populateTsYearDd in calendar-timesheets.js) --}}
                         <th class="p-0 text-left whitespace-nowrap border-b border-gray-200 bg-gray-50" style="min-width:70px;">
                             <div class="custom-dd relative w-full" id="ddColFilterTsYear" data-fixed="true" data-onchange="applyColFilter">
                                 <button type="button" class="custom-dd-btn w-full flex items-center gap-1.5 px-3 py-2.5 cursor-pointer hover:bg-gray-100 transition-colors">
@@ -514,7 +514,7 @@
                                 <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">Name</span>
                                 <svg class="w-3.5 h-3.5 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                                 <svg id="tsTextIcon_Employee" class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 011 1v1.586a1 1 0 01-.293.707l-4.121 4.121A1 1 0 0012 12.121V15.5l-4 1.5v-4.879a1 1 0 00-.293-.707L3.586 7.293A1 1 0 013.293 6.586L3 5z" clip-rule="evenodd"/></svg>
-                                <span id="tsSortEmpIcon" onclick="event.stopPropagation(); toggleTsEmpSort()" title="Click to toggle sort (A–Z ↔ Z–A)" class="cursor-pointer text-[10px] text-gray-300 font-bold shrink-0 ml-auto hover:text-red-500 transition-colors">⇅</span>
+                                <span id="tsSortEmpIcon" onclick="event.stopPropagation(); toggleTsEmpSort()" title="Click to toggle sort (A-Z ↔ Z-A)" class="cursor-pointer text-[10px] text-gray-300 font-bold shrink-0 ml-auto hover:text-red-500 transition-colors">⇅</span>
                             </button>
                             <div id="tsTextPanel_Employee" class="hidden absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] p-3" style="min-width:220px;">
                                 <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Search name</label>
@@ -944,7 +944,7 @@
                         <p id="timesheetDateHint" class="hidden mt-1 text-xs text-gray-400">Project and Non Project timesheets are always logged on today's date. For work on an earlier day, mention it in Activity Detail.</p>
                     </div>
 
-                    {{-- Period Selector (populated by JS — shown only when late exception exists) --}}
+                    {{-- Period Selector (populated by JS - shown only when late exception exists) --}}
                     <div id="periodFieldRow" class="hidden"></div>
 
                     {{-- Start + End Time + Duration --}}
@@ -980,7 +980,7 @@
                         </div>
                         {{-- Duration badge --}}
                         <p class="mt-1.5 text-xs text-gray-400">
-                            Duration: <span id="timesheetDuration" class="font-semibold text-gray-600">—</span>
+                            Duration: <span id="timesheetDuration" class="font-semibold text-gray-600">-</span>
                         </p>
                         <p id="timesheetTimeError" class="hidden mt-1 text-xs text-red-500">End time must be later than start time.</p>
                         {{-- Project: time ranges already used today (filled by loadProjectFormContext) --}}
@@ -1165,6 +1165,8 @@
     window.allowedTypes    = {!! json_encode($allowedTypes ?? ['project','support','office']) !!};
     window.isHoSMode       = {{ $isHoSMode ? 'true' : 'false' }};
     window.canCreateTimesheet = {{ $can('timesheet.create') ? 'true' : 'false' }};
+    // Menu Access: delete a timesheet in any status (Submitted, Approved, Rejected), not only Draft
+    window.canDeleteAnyTimesheet = {{ $can('timesheet.delete.any-status') ? 'true' : 'false' }};
 </script>
 <script src="/js/custom-dropdown.js?v={{ filemtime(public_path('js/custom-dropdown.js')) }}"></script>
 <script src="/js/calendar-timesheets.js?v={{ filemtime(public_path('js/calendar-timesheets.js')) }}"></script>
@@ -1202,7 +1204,7 @@
             <div class="flex flex-col">
                 <label class="text-xs font-semibold text-gray-600 mb-1.5">Select Period <span class="text-red-600">*</span></label>
                 <select id="laPeriodSelect" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 bg-white">
-                    <option value="">— Loading periods... —</option>
+                    <option value="">- Loading periods... -</option>
                 </select>
             </div>
 
@@ -1250,8 +1252,8 @@ async function openLateAccessModal() {
         const data = await res.json();
         const sel  = document.getElementById('laPeriodSelect');
         if (data.success && data.data.length) {
-            sel.innerHTML = '<option value="">— Select period —</option>'
-                + data.data.map(p => `<option value="${p.id}">${p.label} (${p.start_date} – ${p.end_date})</option>`).join('');
+            sel.innerHTML = '<option value="">- Select period -</option>'
+                + data.data.map(p => `<option value="${p.id}">${p.label} (${p.start_date} - ${p.end_date})</option>`).join('');
         } else {
             sel.innerHTML = '<option value="">No closed periods available</option>';
         }
@@ -1315,7 +1317,7 @@ async function loadLateAccessHistory() {
                     }
                     const ok = p.global_status === 'open' && p.domain_status === 'open';
                     return `<span class="inline-flex items-center gap-1 mr-2 mb-1 px-2 py-0.5 ${ok ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'} rounded-full font-semibold">
-                        ${p.label} <span class="font-normal opacity-75">(${p.type === 'current' ? 'current period' : 'previous period'}${ok ? '' : ' — not open'})</span>
+                        ${p.label} <span class="font-normal opacity-75">(${p.type === 'current' ? 'current period' : 'previous period'}${ok ? '' : ' - not open'})</span>
                     </span>`;
                 }).join('');
                 document.getElementById('laValidPeriodsList').innerHTML = `<div class="flex flex-wrap mt-1">${lines}</div>`;
@@ -1398,7 +1400,7 @@ async function submitLateAccessRequest() {
 @endif
 
 {{-- ── Timesheet Export (Head & above) ──────────────────────────────────── --}}
-{{-- No modal/filter form — exports exactly what's currently on screen: whichever
+{{-- No modal/filter form - exports exactly what's currently on screen: whichever
      type tab (All/Project/Support/Office) is active decides the column layout,
      and every active filter (search, status, date range, sort) is already baked
      into `filteredTimesheets`, so the export can't drift out of sync with the table. --}}

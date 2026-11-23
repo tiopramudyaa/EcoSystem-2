@@ -13,7 +13,6 @@ use App\Support\SessionUser;
 use App\Support\TimesheetApproval;
 use App\Models\ConsultantMandays;
 use App\Models\ConsultantMandaysDetail;
-use App\Models\CustomerMandays;
 use App\Models\DeliveryProject;
 use App\Models\DeliveryProjectActivity;
 use App\Models\DeliverySupportActivity;
@@ -155,12 +154,12 @@ class TimesheetController extends Controller
     /**
      * Export timesheets to Excel (Head & above).
      *
-     * Exports exactly the rows the caller currently has on screen — the frontend
+     * Exports exactly the rows the caller currently has on screen - the frontend
      * sends the ids of its already-filtered/sorted table (`filteredTimesheets`),
      * so there is no separate filtering logic to keep in sync with the table's
      * column filters, stat-card status, date range, sort, etc. `type_filter`
      * only decides which column layout to use (it mirrors whichever type tab is
-     * active), not which rows to include — that's already been decided by `ids`.
+     * active), not which rows to include - that's already been decided by `ids`.
      *
      * POST /api/timesheets/export  { ids: number[], type_filter: '' | 'support' | 'project' | 'office' }
      */
@@ -184,7 +183,7 @@ class TimesheetController extends Controller
             ->whereNull('deleted_at');
         $rows = TimesheetApproval::constrain($rowsQuery, $approvable)->get();
 
-        // whereIn() doesn't preserve order — reorder to match the on-screen
+        // whereIn() doesn't preserve order - reorder to match the on-screen
         // sort/order the frontend sent.
         $order = array_flip($ids);
         $rows  = $rows->sortBy(fn ($r) => $order[$r->id] ?? PHP_INT_MAX)->values();
@@ -194,7 +193,7 @@ class TimesheetController extends Controller
         if ($type === 'support') {
             $ticketIds = $rows->pluck('ticket_id')->filter()->unique()->values();
 
-            // Per-employee quota MD — same batch lookup used by index()/submittedForApproval().
+            // Per-employee quota MD - same batch lookup used by index()/submittedForApproval().
             $jatahMap = [];
             if ($ticketIds->isNotEmpty()) {
                 $jatahMap = ConsultantMandaysDetail::approvedQuotas($ticketIds);
@@ -253,8 +252,8 @@ class TimesheetController extends Controller
         $quota = ConsultantMandaysDetail::approvedQuotas([$ticketId], (int) $employeeId)[$ticketId . '_' . $employeeId] ?? null;
 
         // Total MD consumed by this employee for this ticket.
-        // Draft timesheets count — they represent planned/in-progress work.
-        // Rejected timesheets return their MD to the quota — exclude them.
+        // Draft timesheets count - they represent planned/in-progress work.
+        // Rejected timesheets return their MD to the quota - exclude them.
         $consumed = (float) Timesheet::where('ticket_id', $ticketId)
             ->where('employee_id', $employeeId)
             ->whereIn('status', ['draft', 'submitted', 'approved'])
@@ -328,7 +327,7 @@ class TimesheetController extends Controller
         $svc    = app(PeriodService::class);
         $domain = $svc->getDomainForRole($roleId ?? 0);
 
-        // Roles without a domain (Admin, RPMO, etc.) — return just the current active period
+        // Roles without a domain (Admin, RPMO, etc.) - return just the current active period
         if ($domain === null) {
             $active = ReportingPeriod::getActive();
             return response()->json([
@@ -615,7 +614,7 @@ class TimesheetController extends Controller
             } elseif ($request->filled('ticket_id')) {
                 $rules['ticket_id'] = 'nullable|integer';
                 $rules['delivery_projects_id'] = 'nullable';
-                // Activity date has no window restriction (unlike `date`, the submit date) —
+                // Activity date has no window restriction (unlike `date`, the submit date) -
                 // it just needs to be a real date, tracking when the work actually happened.
                 $rules['activity_date'] = 'required|date';
             }
@@ -1016,14 +1015,20 @@ class TimesheetController extends Controller
             $currentEmployeeId = $sessionUser->id;
             $privilegedRoles   = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_RPMO_HEAD->value], RoleId::HEAD_GROUP);
 
-            if (!$sessionUser->hasAnyRole($privilegedRoles) && (int) $timesheet->employee_id !== (int) $currentEmployeeId) {
+            // Menu Access: timesheet.delete.any-status lets the holder delete any employee's
+            // timesheet in any status (Submitted, Approved, Rejected), not only Draft.
+            $canDeleteAnyStatus = $this->menuAllowed('timesheet.delete.any-status');
+
+            if (!$canDeleteAnyStatus
+                && !$sessionUser->hasAnyRole($privilegedRoles)
+                && (int) $timesheet->employee_id !== (int) $currentEmployeeId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Forbidden: you can only delete your own timesheets'
                 ], 403);
             }
 
-            if ($timesheet->status !== 'draft') {
+            if ($timesheet->status !== 'draft' && !$canDeleteAnyStatus) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Only draft timesheets can be deleted'
@@ -1078,26 +1083,9 @@ class TimesheetController extends Controller
                 $empId    = $timesheet->employee_id;
                 $ticketId = $timesheet->ticket_id;
 
-                // Customer Mandays approval is only required for Change Request tickets
-                // (same ticket_type check used by MandaysController's CR gates on Resolution
-                // Days). Other ticket types never require a Customer Mandays proposal, so
-                // gating their timesheets on it would block submission forever.
-                if ($timesheet->ticket?->ticket_type === 'Change Request') {
-                    // Latest Customer Mandays version for this ticket must be approved before
-                    // any timesheet can be submitted — an older approved version doesn't count
-                    // if a newer draft/revision superseded it.
-                    $latestCustomerMandays = CustomerMandays::where('ticket_id', $ticketId)
-                        ->orderBy('version', 'desc')
-                        ->first();
-
-                    if (!$latestCustomerMandays || $latestCustomerMandays->status !== 'approved') {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Customer Mandays status is not approved yet, cannot submit timesheet.',
-                        ], 422);
-                    }
-                }
-
+                // No Customer Mandays check here: on a Change Request the Customer Mandays must be
+                // approved before the Head can approve Resolution Days (MandaysController), and the
+                // quota below comes only from the approved Resolution Days.
                 $quota = ConsultantMandaysDetail::approvedQuotas([$ticketId], (int) $empId)[$ticketId . '_' . $empId] ?? null;
 
                 if ($quota === null) {
@@ -1155,7 +1143,7 @@ class TimesheetController extends Controller
 
             $type = TimesheetApproval::typeOf($timesheet);
 
-            // Submitter name — use session if available, else query
+            // Submitter name - use session if available, else query
             $submitter = Employee::where('employee_id', $timesheet->employee_id)->first();
             $fromName  = $submitter?->name ?? $submitter?->eci ?? "Employee #{$timesheet->employee_id}";
 
@@ -1168,7 +1156,7 @@ class TimesheetController extends Controller
 
             // Build notification message
             if ($isSupport) {
-                $preview = "Ticket #{$ticketNumber} — {$fromName} submitted a timesheet for validation";
+                $preview = "Ticket #{$ticketNumber}: {$fromName} submitted a timesheet for validation";
             } elseif ($isProject) {
                 $preview = "{$fromName} submitted a project timesheet for approval";
             } elseif ($isNonProject) {
@@ -1543,10 +1531,10 @@ class TimesheetController extends Controller
     /**
      * For support timesheets: verify this MD Consumed value won't push the employee's
      * remaining quota for this ticket negative. Mirrors the "remaining < 0" hard-stop
-     * already enforced at submit() (see submit() above) — applied earlier, at
+     * already enforced at submit() (see submit() above) - applied earlier, at
      * create/update, so a timesheet can't end up stuck as an unsubmittable draft.
      * Returns an error message if blocked, or null if OK (including when no approved
-     * proposal exists yet — that case is caught later by submit(), not here).
+     * proposal exists yet - that case is caught later by submit(), not here).
      */
     private function checkResolutionQuota(int $ticketId, int $employeeId, float $newMdConsumed, ?int $excludeTimesheetId = null): ?string
     {
@@ -1573,7 +1561,7 @@ class TimesheetController extends Controller
 
     /**
      * Personnel whose subarea (Employee > Basic Data > Personnel Subarea) is
-     * "Project" may consume at most 1 MD per single support timesheet entry —
+     * "Project" may consume at most 1 MD per single support timesheet entry -
      * they're expected to be doing support work only occasionally, so it should
      * be logged in smaller increments rather than one lump entry. No such cap
      * for Support/Administrasi/Other subareas.
@@ -1645,7 +1633,7 @@ class TimesheetController extends Controller
     }
 
     /**
-     * The employee's project timesheets on a date that occupy time — every status
+     * The employee's project timesheets on a date that occupy time - every status
      * except rejected (a rejected entry frees its slot again).
      */
     private function bookedProjectTimesQuery(int $employeeId, string $date, ?int $excludeId = null)
@@ -1675,7 +1663,7 @@ class TimesheetController extends Controller
     /**
      * Returns an error message when [start, end) overlaps another project timesheet
      * of the employee on that date, or null when the slot is free. Ranges that only
-     * touch (08:00–12:00 then 12:00–15:00) do not overlap.
+     * touch (08:00-12:00 then 12:00-15:00) do not overlap.
      */
     private function checkProjectTimeOverlap(int $employeeId, string $date, string $start, string $end, ?int $excludeId = null): ?string
     {
@@ -1694,7 +1682,7 @@ class TimesheetController extends Controller
         }
 
         return sprintf(
-            'Time %s–%s overlaps your other project timesheet (%s, %s–%s). Please choose a free time slot.',
+            'Time %s-%s overlaps your other project timesheet (%s, %s-%s). Please choose a free time slot.',
             substr($start, 0, 5), substr($end, 0, 5),
             $clash->delivery_project?->name ?? ($clash->is_non_project ? 'Non Project' : 'Project #' . $clash->delivery_projects_id),
             substr((string) $clash->start_time, 0, 5), substr((string) $clash->end_time, 0, 5)

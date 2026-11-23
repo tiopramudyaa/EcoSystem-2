@@ -472,7 +472,7 @@
 </script>
 
 <script>
-// Command Center — reads the sidebar's already-rendered nav links (this page
+// Command Center - reads the sidebar's already-rendered nav links (this page
 // and the sidebar share one document) rather than querying a backend menu
 // list, so it only ever shows exactly what this user's sidebar shows them.
 (function () {

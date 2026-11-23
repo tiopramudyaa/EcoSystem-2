@@ -18,7 +18,7 @@ class AdminNotificationSoundController extends Controller
     }
 
     /**
-     * GET /admin/sounds  — management page
+     * GET /admin/sounds  - management page
      */
     public function index()
     {
@@ -28,7 +28,7 @@ class AdminNotificationSoundController extends Controller
     }
 
     /**
-     * POST /admin/sounds  — upload new sound
+     * POST /admin/sounds  - upload new sound
      */
     public function store(Request $request)
     {
@@ -67,7 +67,7 @@ class AdminNotificationSoundController extends Controller
     }
 
     /**
-     * DELETE /admin/sounds/{id}  — remove sound
+     * DELETE /admin/sounds/{id}  - remove sound
      */
     public function destroy($id)
     {
@@ -98,7 +98,7 @@ class AdminNotificationSoundController extends Controller
     }
 
     /**
-     * GET /api/notification-sounds  — JSON list for settings page
+     * GET /api/notification-sounds  - JSON list for settings page
      */
     public function list()
     {

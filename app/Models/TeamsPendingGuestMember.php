@@ -40,7 +40,7 @@ class TeamsPendingGuestMember extends Model
         'flow_payload',
     ];
 
-    /** Disamakan dengan default kolom di migrasi — lihat TicketTeamsChat. */
+    /** Disamakan dengan default kolom di migrasi - lihat TicketTeamsChat. */
     protected $attributes = [
         'status'   => self::STATUS_PENDING,
         'attempts' => 0,

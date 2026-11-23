@@ -97,7 +97,7 @@ class AuditLogController extends Controller
                 'auditable_label' => $this->humanizeClassName($row->auditable_type),
                 'auditable_id'   => $row->auditable_id,
                 'record_label'   => $row->record_label ?? '-',
-                'description'    => $row->description ?? '-',
+                'description'    => \App\Models\Notification::stripDashes($row->description) ?? '-',
                 'event'          => $row->event,
                 'event_label'    => $row->getEventLabel(),
                 'event_color'    => $row->getEventColor(),

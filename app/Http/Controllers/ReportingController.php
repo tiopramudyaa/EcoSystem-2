@@ -59,7 +59,7 @@ class ReportingController extends Controller
     public function currentPeriod()
     {
         try {
-            // The globally-open period (as RPMO's period management sees it) — not
+            // The globally-open period (as RPMO's period management sees it) - not
             // just "whatever month today's date falls in". RPMO can reopen an older
             // period (e.g. for late corrections) while the calendar-current month has
             // never been opened; the badge must reflect the former, not the latter.
@@ -98,7 +98,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Close period (legacy endpoint — delegates to PeriodService) ─────
+    // ── API: Close period (legacy endpoint - delegates to PeriodService) ─────
 
     public function closePeriod(Request $request)
     {
@@ -357,7 +357,7 @@ class ReportingController extends Controller
                 ];
             });
 
-            // Apply md_status filter (computed field — must filter after running totals)
+            // Apply md_status filter (computed field - must filter after running totals)
             if ($filterMdStatus !== '') {
                 $exportRows = $exportRows->filter(fn($r) => $r['status'] === $filterMdStatus);
             }
@@ -400,7 +400,7 @@ class ReportingController extends Controller
                 ->whereNotNull('delivery_support_id')
                 ->select('ticket_id', 'delivery_support_id')
                 ->get()
-                ->unique('ticket_id'); // one Delivery Support per ticket — first match wins
+                ->unique('ticket_id'); // one Delivery Support per ticket - first match wins
 
             $supportNames = DeliverySupport::whereIn('id', $activities->pluck('delivery_support_id')->unique())
                 ->pluck('name', 'id');
@@ -579,7 +579,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── Web: MD Recap export (Summary — no Delivery breakdown) ─────────────
+    // ── Web: MD Recap export (Summary - no Delivery breakdown) ─────────────
 
     /**
      * Same filters/access as exportMdRecap(), but grouped by employee + mode
@@ -718,7 +718,7 @@ class ReportingController extends Controller
 
             $exportRows = $rows->map(function ($r) {
                 $isApproved = $r->proposal_status === 'approved';
-                // Before Head approval there's nothing "approved" yet — fall back to the
+                // Before Head approval there's nothing "approved" yet - fall back to the
                 // raw proposed numbers so pending rows keep showing what they always showed,
                 // instead of suddenly reading as 0.
                 $total = $isApproved
@@ -776,13 +776,13 @@ class ReportingController extends Controller
 
     /**
      * Label tampilan status Customer Mandays untuk report ini. Hanya 5 status
-     * yang relevan — "approved" SENGAJA tidak termasuk: begitu Customer Mandays
+     * yang relevan - "approved" SENGAJA tidak termasuk: begitu Customer Mandays
      * disetujui, tiketnya dianggap selesai tahap proposal dan tidak lagi
      * ditampilkan di report tracking ini (lihat customerMdRows()).
      *
      * "Review by Module Lead" = label untuk status `pending_helpdesk` (proposal
      * sudah disubmit PIC/Ticket Lead, sedang direview sebelum dikirim ke
-     * customer) — penamaan mengikuti istilah yang dipakai user, bukan nama
+     * customer) - penamaan mengikuti istilah yang dipakai user, bukan nama
      * status di database.
      */
     private const CUSTOMER_MD_STATUS_LABELS = [
@@ -801,7 +801,7 @@ class ReportingController extends Controller
      *
      * Cakupan: semua tiket yang type-nya Change Request DAN/ATAU sudah punya
      * Customer Mandays proposal (mandays_proposal_status bukan null/none),
-     * KECUALI yang sudah Approved — begitu disetujui, tiketnya keluar dari
+     * KECUALI yang sudah Approved - begitu disetujui, tiketnya keluar dari
      * tracking report ini (lihat CUSTOMER_MD_STATUS_LABELS).
      *
      * @return \Illuminate\Support\Collection<int, array<string, mixed>>
@@ -812,7 +812,7 @@ class ReportingController extends Controller
             ->whereNull('deleted_at')
             ->whereNull('is_hidden')
             ->where(function ($q) {
-                // "Punya Customer Mandays" berarti statusnya bukan 'none' — kolom ini
+                // "Punya Customer Mandays" berarti statusnya bukan 'none' - kolom ini
                 // TIDAK PERNAH benar-benar NULL di DB (defaultnya string 'none'), jadi
                 // whereNotNull() di sini akan salah menangkap SEMUA tiket. whereNull()
                 // tetap disertakan sebagai jaga-jaga kalau skema kolom berubah nullable.
@@ -832,7 +832,7 @@ class ReportingController extends Controller
         $ticketIds = $tickets->pluck('ticket_id');
 
         // Satu tiket cuma bisa punya satu Delivery Support aktif (lihat
-        // [[project_changes_2026_07_02]] — aturan "one-DS-per-ticket").
+        // [[project_changes_2026_07_02]] - aturan "one-DS-per-ticket").
         $deliveryMap = DeliverySupportActivity::with('deliverySupport')
             ->whereIn('ticket_id', $ticketIds)
             ->whereNotNull('ticket_id')
@@ -840,7 +840,7 @@ class ReportingController extends Controller
             ->keyBy('ticket_id');
 
         // Latest version's proposed total per ticket (a ticket can have several
-        // draft/revision versions — only the newest one reflects the current proposal).
+        // draft/revision versions - only the newest one reflects the current proposal).
         $mandaysMap = CustomerMandays::whereIn('ticket_id', $ticketIds)
             ->orderByDesc('version')
             ->get()
@@ -857,7 +857,7 @@ class ReportingController extends Controller
                 'ticket_type'   => $ticket->ticket_type,
                 'customer_name' => $ticket->customer?->basicData?->name_1 ?? $ticket->customer?->email,
                 'delivery_name' => $deliveryMap->get($ticket->ticket_id)?->deliverySupport?->name,
-                // ?: null (bukan cuma ?? null) — trim() bisa hasilkan '' kalau ticketLead
+                // ?: null (bukan cuma ?? null) - trim() bisa hasilkan '' kalau ticketLead
                 // ada tapi basicData-nya kosong; '' ?? 'Unassigned' di CustomerMdExport
                 // tidak akan trigger karena '' bukan null, jadi harus dinormalisasi di sini.
                 'lead_name'     => $ticket->ticketLead
@@ -935,7 +935,7 @@ class ReportingController extends Controller
 
     // ── API: Resolution Days (unapproved) list ─────────────────────────────
     // Tickets whose resolution_days_status is 'none' (never proposed) or
-    // 'pending_head' (submitted, awaiting Head approval) — i.e. everything
+    // 'pending_head' (submitted, awaiting Head approval) - i.e. everything
     // that isn't approved/rejected/draft yet, across all tickets company-wide.
 
     public function resolutionDays(Request $request)
@@ -1150,7 +1150,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Collection Outlook — ubah status penagihan sebuah TOP ────────
+    // ── API: Collection Outlook - ubah status penagihan sebuah TOP ────────
     //
     // Hanya menyentuh field pelunasan (status, paid date, submit invoice date,
     // invoice number). Nominal/percentage tetap dikelola dari Delivery Info
@@ -1217,7 +1217,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── Web: Collection Outlook — Excel export (list rincian per termin) ──────
+    // ── Web: Collection Outlook - Excel export (list rincian per termin) ──────
     //
     // Satu baris per Term Of Payment dalam range bulan terpilih (placement =
     // estimated_date → paid_date → submit_invoice_date, sama seperti tampilan).
@@ -1274,7 +1274,7 @@ class ReportingController extends Controller
                     'line_item_name'      => $t->line_item_name ?: '',
                     'payment_percentage'  => $t->basis === 'fixed' ? null : (float) $t->payment_percentage,
                     'basis'               => $t->basis,
-                    // Sama dengan tampilan halaman — lihat collectionOutlook().
+                    // Sama dengan tampilan halaman - lihat collectionOutlook().
                     'amount'              => \App\Models\DeliveryProjectPaymentTerm::amountFor($t->basis, $t->payment_percentage, $t->amount, $t->project_revenue),
                     'status'              => $t->status,
                     'estimated_date'      => $t->estimated_date ? Carbon::parse($t->estimated_date)->format('d M Y') : '',
@@ -1334,14 +1334,14 @@ class ReportingController extends Controller
 
         $monthCount = ($end->year - $start->year) * 12 + ($end->month - $start->month) + 1;
         if ($monthCount > self::COLLECTION_OUTLOOK_MAX_MONTHS) {
-            return [null, null, "Selected period {$start->format('M Y')} – {$end->format('M Y')} spans {$monthCount} months, exceeding the maximum of "
+            return [null, null, "Selected period {$start->format('M Y')} - {$end->format('M Y')} spans {$monthCount} months, exceeding the maximum of "
                 . self::COLLECTION_OUTLOOK_MAX_MONTHS . ' months (' . intdiv(self::COLLECTION_OUTLOOK_MAX_MONTHS, 12) . ' years). Please narrow the period.'];
         }
 
         return [$start, $end, null];
     }
 
-    /** Sumber baris Collection Outlook (halaman & export) — semua TOP project + konteksnya. */
+    /** Sumber baris Collection Outlook (halaman & export) - semua TOP project + konteksnya. */
     private function collectionOutlookTerms(string $filterAe): \Illuminate\Support\Collection
     {
         return DB::table('delivery_project_payment_terms as pt')
@@ -1362,7 +1362,7 @@ class ReportingController extends Controller
     }
 
     // =========================================================================
-    // COLLECTION OUTLOOK — DELIVERY SUPPORT
+    // COLLECTION OUTLOOK - DELIVERY SUPPORT
     // Mirror halaman Collection Outlook (project) untuk sumber Term Of Payment
     // milik Delivery Support. Filter memakai "Type" support (bukan Account
     // Executive), dan tidak memanggil ProjectReminderService.
@@ -1610,7 +1610,7 @@ class ReportingController extends Controller
                     'line_item_name'      => $t->line_item_name ?: '',
                     'payment_percentage'  => $t->basis === 'fixed' ? null : (float) $t->payment_percentage,
                     'basis'               => $t->basis,
-                    // Sama dengan tampilan halaman — lihat collectionOutlookSupport().
+                    // Sama dengan tampilan halaman - lihat collectionOutlookSupport().
                     'amount'              => \App\Models\DeliveryProjectPaymentTerm::amountFor($t->basis, $t->payment_percentage, $t->amount, $t->support_revenue),
                     'status'              => $t->status,
                     'estimated_date'      => $t->estimated_date ? Carbon::parse($t->estimated_date)->format('d M Y') : '',
@@ -1635,7 +1635,7 @@ class ReportingController extends Controller
         }
     }
 
-    /** Sumber baris Collection Outlook Support (halaman & export) — semua TOP support + konteksnya. */
+    /** Sumber baris Collection Outlook Support (halaman & export) - semua TOP support + konteksnya. */
     private function collectionOutlookSupportTerms(string $filterType): \Illuminate\Support\Collection
     {
         return DB::table('delivery_support_payment_terms as pt')
@@ -1679,10 +1679,10 @@ class ReportingController extends Controller
         return view('reporting.diagram-report', ['user' => session('user'), 'customers' => $customers]);
     }
 
-    // ── API: Diagram Report — Chart 1 (Ticket qty per month, from start
+    // ── API: Diagram Report - Chart 1 (Ticket qty per month, from start
     // to current period) ────────────────────────────────────────────────────
     //
-    // Period (date_from/date_to) is required — there is no default range.
+    // Period (date_from/date_to) is required - there is no default range.
     // Tickets are counted into a month based on created_at, all statuses included.
 
     public function diagramTicketQty(Request $request)
@@ -1736,12 +1736,12 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 2 (Tickets per Module, grouped into
+    // ── API: Diagram Report - Chart 2 (Tickets per Module, grouped into
     // Incident/Error, Request/Konsultasi, Request/CR, Other) ────────────────
     //
     // Incident→Incident/Error, Consult→Request/Konsultasi, Change Request→
     // Request/CR. All other ticket_type values (Service Request, EWA, RISE,
-    // etc. — including null) fall into "Other" so the total stays consistent
+    // etc. - including null) fall into "Other" so the total stays consistent
     // with Chart 1 (all statuses/types counted). X-axis = all active modules
     // from the modules table + a "No Modul Assign" bucket. Period is required.
 
@@ -1824,7 +1824,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 3 (Ticket Type per month: Incident/Error,
+    // ── API: Diagram Report - Chart 3 (Ticket Type per month: Incident/Error,
     // Request/Konsultasi, Request/CR + TOTAL row) ───────────────────────────
     //
     // Month columns follow the Period (date_from/date_to) range picked in the
@@ -1920,13 +1920,13 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 4 (Ticket Type per Module: Incident/Error,
-    // Request/Konsultasi, Request/CR — no "Other") ──────────────────────────
+    // ── API: Diagram Report - Chart 4 (Ticket Type per Module: Incident/Error,
+    // Request/Konsultasi, Request/CR - no "Other") ──────────────────────────
     //
     // X-axis = active modules (ordered by id/creation order) + an "ALL MODULE"
     // bucket for tickets not tied to any specific module. Modules with zero
     // tickets are hidden entirely (same as Chart 2). Only the 3 ticket_type
-    // values above are counted — other types don't appear in this chart at all.
+    // values above are counted - other types don't appear in this chart at all.
 
     public function diagramTicketByModuleType(Request $request)
     {
@@ -2008,7 +2008,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 5 (Ticket Type x Module table, with a
+    // ── API: Diagram Report - Chart 5 (Ticket Type x Module table, with a
     // per-row Total Tickets column) ─────────────────────────────────────────
     //
     // Rows = Incident/Error, Request/Konsultasi, Request/CR. Columns = every
@@ -2103,10 +2103,10 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 6 (Ticket count per module) ────────────
+    // ── API: Diagram Report - Chart 6 (Ticket count per module) ────────────
     //
     // Follows the same Customer & Period (Start/End Date) filters as Charts
-    // 1-5 — Period is required, same as the others. Counts ALL ticket_type
+    // 1-5 - Period is required, same as the others. Counts ALL ticket_type
     // values (not just Incident/Konsultasi/CR). Modules with zero tickets are
     // hidden.
 
@@ -2174,10 +2174,10 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 7 (Ticket count by Ticket Type) ────────
+    // ── API: Diagram Report - Chart 7 (Ticket count by Ticket Type) ────────
     //
     // Follows the same Customer & Period (Start/End Date) filters as the
-    // other charts — Period is required. All 3 ticket types (Incident/Error,
+    // other charts - Period is required. All 3 ticket types (Incident/Error,
     // Request/Konsultasi, Request/CR) are always shown, even if a type has
     // 0 tickets in the filtered range.
 
@@ -2231,14 +2231,14 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 8 (CR vs Non-CR by Close/Open status) ──
+    // ── API: Diagram Report - Chart 8 (CR vs Non-CR by Close/Open status) ──
     //
     // Follows the same Customer & Period (Start/End Date) filters as the
-    // other charts — Period is required. X-axis = Non CR (every ticket_type
+    // other charts - Period is required. X-axis = Non CR (every ticket_type
     // except Change Request) vs Request CR (ticket_type = Change Request).
     // Series = Close (status: closed, cancelled) vs Open (status: inprocess,
     // waiting_on_customer, waiting_to_confirmation, hold, waiting_on_3rd_party).
-    // Tickets still at the raw 'open' status are intentionally excluded —
+    // Tickets still at the raw 'open' status are intentionally excluded -
     // per explicit confirmation, this chart only covers the 7 statuses above.
 
     public function diagramTicketByCrStatus(Request $request)
@@ -2304,14 +2304,14 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 9 (CR vs Non-CR per month, from start
+    // ── API: Diagram Report - Chart 9 (CR vs Non-CR per month, from start
     // to current period) ─────────────────────────────────────────────────────
     //
     // Same month-bucketing as Chart 1 (all statuses included, one column per
     // month across the whole date_from/date_to range), but split into two
     // series: Non CR (every ticket_type except Change Request) and
     // Request / CR (ticket_type = Change Request). Follows the same
-    // Customer & Period filters as the other charts — Period is required.
+    // Customer & Period filters as the other charts - Period is required.
 
     public function diagramTicketByCrPerMonth(Request $request)
     {
@@ -2378,13 +2378,13 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 10 (Closed tickets per month, from start
+    // ── API: Diagram Report - Chart 10 (Closed tickets per month, from start
     // to current period) ─────────────────────────────────────────────────────
     //
     // Same month-bucketing as Chart 1, filtered to status = 'closed' only
-    // (not 'cancelled' — the title specifically says "status closed").
+    // (not 'cancelled' - the title specifically says "status closed").
     // Bucketed by created_at, same convention as the rest of this page.
-    // Follows the same Customer & Period filters as the other charts —
+    // Follows the same Customer & Period filters as the other charts -
     // Period is required.
 
     public function diagramTicketClosedPerMonth(Request $request)
@@ -2488,7 +2488,7 @@ class ReportingController extends Controller
 
             $data = $rows->map(fn($r) => [
                 'customer_id'        => $r->customer_id,
-                'customer_name'      => $r->customer_name ?: '—',
+                'customer_name'      => $r->customer_name ?: '-',
                 'total_mandays'      => (int) ($mandaysByCustomer[$r->customer_id] ?? 0),
                 'open_tickets'       => (int) $r->open_tickets,
                 'inprocess_tickets'  => (int) $r->inprocess_tickets,
@@ -2505,7 +2505,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Ticketing Overview — tickets for one customer ─────────────────
+    // ── API: Ticketing Overview - tickets for one customer ─────────────────
 
     public function ticketingOverviewDetail(Request $request, $customerId)
     {
@@ -2583,7 +2583,7 @@ class ReportingController extends Controller
                 return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
             }
 
-            // select() dibatasi ke kolom yang benar-benar dipakai di response bawah — tabel
+            // select() dibatasi ke kolom yang benar-benar dipakai di response bawah - tabel
             // `ticket` punya puluhan kolom (SLA, mandays, confirmation, dst) yang kalau ikut
             // ter-hydrate untuk SETIAP tiket (endpoint ini load seluruh tabel, tanpa filter
             // tanggal/pagination) jadi biaya memori & waktu terbesar di endpoint ini.
@@ -2696,7 +2696,7 @@ class ReportingController extends Controller
         return view('reporting.log-shifting', ['user' => session('user')]);
     }
 
-    // ── API: Log Shifting — tickets that have at least one SLA message ─────
+    // ── API: Log Shifting - tickets that have at least one SLA message ─────
 
     public function logShifting(Request $request)
     {
@@ -2749,7 +2749,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Log Shifting — SLA message detail rows for one ticket ─────────
+    // ── API: Log Shifting - SLA message detail rows for one ticket ─────────
 
     public function logShiftingDetail($ticketId)
     {
@@ -2812,11 +2812,11 @@ class ReportingController extends Controller
         }
     }
 
-    // ── Log Shifting export — SLA notes flat, filtered by date(+optional hour) range ──
+    // ── Log Shifting export - SLA notes flat, filtered by date(+optional hour) range ──
     //
     // "Tanggal" yang dipakai adalah created_at bubble chat itu sendiri (sama seperti
     // logShiftingDetail), bukan tanggal tiket dibuat. Kalau time_from/time_to kosong,
-    // batasnya jadi awal/akhir hari penuh untuk tanggal tsb — jadi semua jam ikut.
+    // batasnya jadi awal/akhir hari penuh untuk tanggal tsb - jadi semua jam ikut.
     private function logShiftingDateRange(Request $request): array
     {
         $dateFrom = $request->query('date_from');
@@ -2856,8 +2856,8 @@ class ReportingController extends Controller
 
             return [
                 'ticket_id'     => $msg->ticket->ticket_id ?? null,
-                'ticket_number' => $msg->ticket->ticket_number ?? '—',
-                'description'   => $msg->ticket->description ?? '—',
+                'ticket_number' => $msg->ticket->ticket_number ?? '-',
+                'description'   => $msg->ticket->description ?? '-',
                 'bubble_date'   => $msg->created_at,
                 'sla_message'   => $msg->sla_message,
                 'pic'           => $byName,
@@ -2865,7 +2865,7 @@ class ReportingController extends Controller
         })->values();
     }
 
-    // ── API: Log Shifting — flat SLA notes for the export/report table ─────
+    // ── API: Log Shifting - flat SLA notes for the export/report table ─────
     public function logShiftingNotes(Request $request)
     {
         try {
@@ -2892,7 +2892,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── Web: Log Shifting — export flat SLA notes to Excel ─────────────────
+    // ── Web: Log Shifting - export flat SLA notes to Excel ─────────────────
     public function exportLogShifting(Request $request)
     {
         try {
@@ -2947,7 +2947,7 @@ class ReportingController extends Controller
      *
      * Satu baris = satu penugasan (satu baris pivot `delivery_project_employee`),
      * jadi orang yang memegang dua peran/modul di project yang sama muncul dua
-     * kali — sama seperti tabel Team Members di halaman project.
+     * kali - sama seperti tabel Team Members di halaman project.
      */
     public function consultantAssignment(Request $request)
     {
@@ -3058,7 +3058,7 @@ class ReportingController extends Controller
      * Guard bersama untuk endpoint API Consultant Assignment.
      *
      * Izin diresolve lewat Menu Access (`canAccessMenu`), BUKAN daftar RoleId
-     * hardcode — supaya keputusan admin di Control Center benar-benar berlaku.
+     * hardcode - supaya keputusan admin di Control Center benar-benar berlaku.
      *
      * @return \App\Models\Employee|\Illuminate\Http\JsonResponse
      */
@@ -3081,7 +3081,7 @@ class ReportingController extends Controller
      * Bangun baris laporan Consultant Assignment + ringkasannya.
      *
      * Seluruh filter dikerjakan di sini (server-side) supaya halaman dan tombol
-     * Export memakai hasil yang sama persis — tidak ada logika filter kembar di
+     * Export memakai hasil yang sama persis - tidak ada logika filter kembar di
      * JavaScript yang bisa menyimpang.
      *
      * `stats` dihitung SEBELUM filter Assignment Status diterapkan, karena kartu
@@ -3134,7 +3134,7 @@ class ReportingController extends Controller
                 'dpe.role',
                 'dpe.employee_type',
                 'dpe.vendor_name',
-                // Anggota vendor tidak ada di master employee — identitasnya di pivot.
+                // Anggota vendor tidak ada di master employee - identitasnya di pivot.
                 'dpe.member_name',
                 'dpe.member_position',
                 'dpe.start_date',
@@ -3350,7 +3350,7 @@ class ReportingController extends Controller
         // ── Facet Internal / External ─────────────────────────────────────────
         // Kartu Internal & External/Vendor DI RINGKASAN sekaligus jadi kontrol
         // filter employee_type. Angkanya karena itu dihitung SEBELUM filter
-        // employee_type diterapkan — kalau ikut dipersempit oleh pilihannya
+        // employee_type diterapkan - kalau ikut dipersempit oleh pilihannya
         // sendiri, kartu External akan menampilkan 0 padahal mengkliknya
         // memunculkan baris. Filter lain (project, periode, dst.) tetap ikut.
         $facet = collect($rows);
@@ -3368,7 +3368,7 @@ class ReportingController extends Controller
         $collection = collect($rows);
         $stats = [
             'assignments'  => $collection->count(),
-            // Anggota vendor tidak punya employee_id — dihitung per nama supaya
+            // Anggota vendor tidak punya employee_id - dihitung per nama supaya
             // tidak semuanya melebur jadi satu "konsultan null".
             'consultants'  => $collection
                 ->map(fn (array $r) => $r['employee_id'] !== null
@@ -3459,7 +3459,7 @@ class ReportingController extends Controller
         $start = $r->start_date ? Carbon::parse($r->start_date)->format('Y-m-d') : null;
         $end   = $r->end_date   ? Carbon::parse($r->end_date)->format('Y-m-d')   : null;
 
-        // Status penugasan murni turunan tanggal — tidak dipersist, jadi tidak
+        // Status penugasan murni turunan tanggal - tidak dipersist, jadi tidak
         // bisa jadi basi. Tanpa start_date tidak ada yang bisa disimpulkan.
         if (!$start) {
             $assignmentStatus = 'No Period';

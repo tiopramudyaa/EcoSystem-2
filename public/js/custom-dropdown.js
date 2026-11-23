@@ -1,25 +1,25 @@
 /**
- * Custom dropdown component — notification-style panels.
+ * Custom dropdown component - notification-style panels.
  *
- * A minified copy (custom-dropdown.min.js) is used by pages that opt into it —
+ * A minified copy (custom-dropdown.min.js) is used by pages that opt into it -
  * run `npm run minify:js` after editing this file to regenerate it, otherwise
  * those pages keep serving the old, now-mismatched behavior.
  *
  * Usage: add class `custom-dd` to a wrapper div with:
- *   data-onchange="myFunction"  (optional — called after selection)
- *   data-fixed="true"           (optional — use fixed positioning, needed inside overflow:auto modals)
+ *   data-onchange="myFunction"  (optional - called after selection)
+ *   data-fixed="true"           (optional - use fixed positioning, needed inside overflow:auto modals)
  * Children:
- *   .custom-dd-btn   — the visible button trigger
- *   .custom-dd-label — text inside the button showing current selection
- *   .custom-dd-arrow — chevron SVG that rotates when open
- *   .custom-dd-panel — the dropdown panel (initially hidden)
- *   .custom-dd-item[data-value] — each option row
- *   input[type=hidden] — hidden input that holds the value (read via getElementById)
+ *   .custom-dd-btn   - the visible button trigger
+ *   .custom-dd-label - text inside the button showing current selection
+ *   .custom-dd-arrow - chevron SVG that rotates when open
+ *   .custom-dd-panel - the dropdown panel (initially hidden)
+ *   .custom-dd-item[data-value] - each option row
+ *   input[type=hidden] - hidden input that holds the value (read via getElementById)
  *
  * Keyboard navigation:
- *   ArrowDown / ArrowUp — highlight next/previous visible item (wraps around)
- *   Enter               — select highlighted item (or the only visible result when searching)
- *   Escape              — close dropdown
+ *   ArrowDown / ArrowUp - highlight next/previous visible item (wraps around)
+ *   Enter               - select highlighted item (or the only visible result when searching)
+ *   Escape              - close dropdown
  */
 
 // Threshold item count untuk otomatis menampilkan search input.
@@ -27,7 +27,7 @@
 // Bisa di-override per dropdown via data-searchable="true|false".
 const _DD_SEARCH_THRESHOLD = 7;
 
-// Inject highlight CSS sekali saja — self-contained agar tidak perlu edit stylesheet.
+// Inject highlight CSS sekali saja - self-contained agar tidak perlu edit stylesheet.
 (function _injectDdStyles() {
     if (document.getElementById('_dd_kb_style')) return;
     const s = document.createElement('style');
@@ -61,7 +61,7 @@ function initCustomDropdowns(root) {
 
         // Wire up search input. Tiga kondisi yang trigger:
         // 1. Hardcoded di HTML (`<input class="custom-dd-search">` sudah ada di markup)
-        //    — selalu wire up, tidak peduli threshold. Ini pattern yang dipakai untuk
+        //    - selalu wire up, tidak peduli threshold. Ini pattern yang dipakai untuk
         //    panel yang programmer ingin selalu punya search regardless of item count.
         // 2. data-searchable="true" eksplisit di .custom-dd
         // 3. Auto-inject jika item count > _DD_SEARCH_THRESHOLD (dan tidak data-searchable="false")
@@ -85,7 +85,7 @@ function initCustomDropdowns(root) {
                     // hidden, tidak masalah karena _positionFixed pakai estimasi
                     // tinggi dari inline max-height, bukan scrollHeight) → lepas
                     // class hidden. Saat panel jadi visible, sudah di posisi
-                    // benar — tidak ada flash di posisi salah.
+                    // benar - tidak ada flash di posisi salah.
                     document.body.appendChild(panel);
                     panel._ddOwner = dd;
                     _positionFixed(btn, panel);
@@ -101,7 +101,7 @@ function initCustomDropdowns(root) {
             }
         });
 
-        // Keyboard: button trigger — Enter/Space/ArrowDown buka panel;
+        // Keyboard: button trigger - Enter/Space/ArrowDown buka panel;
         // Arrow juga highlights item pertama/terakhir untuk dropdown tanpa search.
         btn.addEventListener('keydown', e => {
             const isOpen = !panel.classList.contains('hidden');
@@ -144,7 +144,7 @@ function initCustomDropdowns(root) {
             }
         });
 
-        // Panel-level event delegation — handles both static and dynamically injected items
+        // Panel-level event delegation - handles both static and dynamically injected items
         panel.addEventListener('click', e => {
             const item = e.target.closest('.custom-dd-item');
             if (!item) return;
@@ -177,7 +177,7 @@ function _onScrollMaybeClose(e) {
     const t = e.target;
     if (t && t.nodeType === 1 && t.closest && t.closest('.custom-dd-panel')) return;
 
-    // Tutup semua panel yang sedang terbuka begitu ada scroll di luar panel —
+    // Tutup semua panel yang sedang terbuka begitu ada scroll di luar panel -
     // baik mode fixed (di-detach ke <body>) maupun non-fixed.
     //
     // Sebelumnya panel mode fixed di-REPOSISI mengikuti tombol trigger lewat
@@ -185,10 +185,10 @@ function _onScrollMaybeClose(e) {
     // dengan wrapper yang scroll horizontal terpisah (mis. tabel lebar dengan
     // header freeze): getBoundingClientRect() tetap melaporkan posisi
     // geometris tombol walau tombolnya sudah tersembunyi di balik tepi
-    // wrapper — jadi panel dipindah ke koordinat yang sudah tidak valid
+    // wrapper - jadi panel dipindah ke koordinat yang sudah tidak valid
     // secara visual (bisa nongol jauh di luar tabel, menimpa elemen lain
     // seperti sidebar). Tutup-saat-scroll menghindari kelas bug ini sama
-    // sekali karena tidak pernah menghitung ulang posisi — sama seperti
+    // sekali karena tidak pernah menghitung ulang posisi - sama seperti
     // perilaku panel non-fixed (mis. ECI di Master Employee) yang dari awal
     // memang menutup, bukan mengikuti, saat discroll.
     _closeAllDropdowns();
@@ -223,7 +223,7 @@ function _positionFixed(btn, panel) {
     // Reset max-height ke nilai asli sebelum hitung penempatan.
     panel.style.maxHeight = panel._origMaxHeight;
 
-    // PENTING: saat flip ke atas (set bottom), kita HARUS set `top: auto` —
+    // PENTING: saat flip ke atas (set bottom), kita HARUS set `top: auto` -
     // bukan `top: ''`. Markup punya class Tailwind `top-full` (top:100%) yang
     // jadi aktif kembali begitu inline top di-clear, dan kombinasi `top:100%`
     // + `bottom:Ypx` → panel height jadi 0 → invisible.
@@ -241,7 +241,7 @@ function _positionFixed(btn, panel) {
         panel.style.top    = 'auto';
         panel.style.bottom = `${window.innerHeight - r.top + 4}px`;
     } else {
-        // Dua-duanya sempit — pilih sisi yang lebih luas, cap max-height
+        // Dua-duanya sempit - pilih sisi yang lebih luas, cap max-height
         const cap = Math.max(120, Math.max(spaceBelow, spaceAbove));
         if (spaceBelow >= spaceAbove) {
             panel.style.top    = `${r.bottom + 4}px`;
@@ -259,9 +259,9 @@ function _positionFixed(btn, panel) {
 // atau yang punya data-searchable="true".
 //
 // Mendukung dua mode:
-// 1. Hardcoded — jika di HTML panel sudah ada `<input class="custom-dd-search">`
+// 1. Hardcoded - jika di HTML panel sudah ada `<input class="custom-dd-search">`
 //    (mis. dibuat manual di Blade), fungsi ini cukup wire up event filter.
-// 2. Auto-inject — jika belum ada, fungsi ini buat sticky search bar di atas panel.
+// 2. Auto-inject - jika belum ada, fungsi ini buat sticky search bar di atas panel.
 function _injectSearch(dd, panel) {
     if (panel._ddSearch) return; // already wired
 
@@ -278,7 +278,7 @@ function _injectSearch(dd, panel) {
         wrap.style.zIndex = '1';
         // Cancel the panel's own top padding (e.g. Tailwind `pt-*`/`py-*`) so this
         // sticky bar sits flush against the scrollport's top edge. Without this,
-        // that padding is a gap the sticky bar doesn't cover — scrolled list items
+        // that padding is a gap the sticky bar doesn't cover - scrolled list items
         // peek through above it instead of staying hidden behind an opaque bar.
         const panelPaddingTop = parseFloat(getComputedStyle(panel).paddingTop) || 0;
         if (panelPaddingTop > 0) wrap.style.marginTop = `-${panelPaddingTop}px`;
@@ -335,7 +335,7 @@ function _injectSearch(dd, panel) {
         }
     });
 
-    // Real-time filter — match by item textContent
+    // Real-time filter - match by item textContent
     input.addEventListener('input', () => {
         // Reset highlight saat query berubah agar posisi ulang dari awal
         _clearHighlight(panel);
@@ -419,7 +419,7 @@ function _selectHighlightedOrFirst(panel, dd) {
         }
         return;
     }
-    // Tidak ada yang di-highlight — auto-select jika hanya satu item visible
+    // Tidak ada yang di-highlight - auto-select jika hanya satu item visible
     const items = _getVisibleItems(panel);
     if (items.length === 1) {
         items[0].click();
@@ -474,7 +474,7 @@ function _closeDropdown(p) {
 }
 
 function _selectItem(dd, val, text) {
-    // Panel may be detached from dd when fixed mode is active — use stored ref
+    // Panel may be detached from dd when fixed mode is active - use stored ref
     const panel  = dd.querySelector('.custom-dd-panel') || dd._ddPanel;
     const label  = dd.querySelector('.custom-dd-label');
     const arrow  = dd.querySelector('.custom-dd-arrow');
@@ -501,7 +501,7 @@ function _selectItem(dd, val, text) {
         // Re-attach to original owner if detached via fixed mode
         if (panel._ddOwner && panel.parentElement !== panel._ddOwner) {
             panel._ddOwner.appendChild(panel);
-            // Hanya bersihkan property fixed-mode — pertahankan inline style asli
+            // Hanya bersihkan property fixed-mode - pertahankan inline style asli
             // (mis. `style="max-height:280px"`) supaya tidak hilang saat reuse.
             _clearFixedStyles(panel);
         }
@@ -540,7 +540,7 @@ function _toggleMultiItem(dd, item, val) {
     if (!hidden) return;
 
     // The "All" option (data-value="") clears every selection instead of
-    // toggling itself — there's nothing meaningful to "check" for it.
+    // toggling itself - there's nothing meaningful to "check" for it.
     if (val === '') {
         _clearMultiSelection(dd);
         return;
@@ -593,7 +593,7 @@ function _updateMultiLabel(dd, ids) {
     }
 }
 
-// Called once during init for data-multi dropdowns — marks items as checked
+// Called once during init for data-multi dropdowns - marks items as checked
 // and sets the initial label from the hidden input's pre-filled CSV value
 // (used by edit/show pages where some items are already selected).
 function _syncMultiVisualState(dd) {
@@ -614,8 +614,8 @@ function _syncMultiVisualState(dd) {
 
 /**
  * Programmatically set a custom dropdown's value and update its label.
- * @param {string} hiddenId  — the id of the hidden input inside the dropdown
- * @param {string} value     — the value to select ('' for the "All …" option)
+ * @param {string} hiddenId  - the id of the hidden input inside the dropdown
+ * @param {string} value     - the value to select ('' for the "All …" option)
  */
 function setCustomDropdownValue(hiddenId, value) {
     const hidden = document.getElementById(hiddenId);
@@ -642,7 +642,7 @@ function setCustomDropdownValue(hiddenId, value) {
 /**
  * Programmatically clear all selections for a multi-select custom dropdown
  * (data-multi="true"). Counterpart to setCustomDropdownValue() for single-select.
- * @param {string} hiddenId — the id of the hidden input inside the dropdown
+ * @param {string} hiddenId - the id of the hidden input inside the dropdown
  */
 function clearCustomDropdownMulti(hiddenId) {
     const hidden = document.getElementById(hiddenId);
@@ -657,8 +657,8 @@ function clearCustomDropdownMulti(hiddenId) {
  * (data-multi="true"), replacing whatever was selected before. Lets a page
  * drive a column filter from somewhere else in the UI (e.g. a summary card)
  * while keeping the dropdown itself as the single source of truth.
- * @param {string} hiddenId — the id of the hidden input inside the dropdown
- * @param {string[]|string} values — values to select; empty clears everything
+ * @param {string} hiddenId - the id of the hidden input inside the dropdown
+ * @param {string[]|string} values - values to select; empty clears everything
  */
 function setCustomDropdownMulti(hiddenId, values) {
     const hidden = document.getElementById(hiddenId);

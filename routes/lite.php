@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Route;
 |
 | Autentikasi:
 |   - Public: POST /api/lite/auth/login
-|   - Protected: middleware 'lite.auth' — session cookie ATAU Bearer token
+|   - Protected: middleware 'lite.auth' - session cookie ATAU Bearer token
 |
 */
 

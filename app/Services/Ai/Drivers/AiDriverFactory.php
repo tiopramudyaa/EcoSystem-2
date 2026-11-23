@@ -11,13 +11,13 @@ use Illuminate\Contracts\Container\Container;
 /**
  * Resolves the provider driver for whatever AiModelSettings::resolve()
  * returned as 'provider' ('anthropic'|'openai'). Kept as a thin container
- * lookup — not a `new`-er — so Anthropic\Client/OpenAI\Client keep coming
+ * lookup - not a `new`-er - so Anthropic\Client/OpenAI\Client keep coming
  * from their existing AppServiceProvider singletons (and any constructor
  * dependency a future driver needs resolves the normal Laravel way).
  *
  * Unknown/legacy provider values fall back to Anthropic: DEFAULTS in
  * AiModelSettings are all 'anthropic', and app_configs rows written before
- * this class existed have no 'provider' key at all — self-healing the same
+ * this class existed have no 'provider' key at all - self-healing the same
  * way AiModelSettings::sanitize() already self-heals unknown models.
  */
 class AiDriverFactory

@@ -9,7 +9,7 @@ use Closure;
  * provider is behind $model (see AiDriverFactory).
  *
  * Messages and tools travel in the SAME canonical (Anthropic-shaped) format
- * AiChatService already caches — implementations translate to/from their own
+ * AiChatService already caches - implementations translate to/from their own
  * wire format internally, so runTools(), buildUserContent(), and the chat
  * cache stay provider-agnostic:
  *   text:        ['type' => 'text', 'text' => string]

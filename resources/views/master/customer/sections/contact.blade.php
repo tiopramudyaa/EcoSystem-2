@@ -343,7 +343,7 @@
         <div class="flex justify-between items-center px-6 py-5 border-b border-gray-200">
             <div>
                 <h3 class="text-lg font-bold text-gray-900">Contact Groups</h3>
-                <p class="text-xs text-gray-500 mt-0.5">Members in the same group can see each other's tickets in Jarvies. Admin contacts cannot be added — they already see every company ticket.</p>
+                <p class="text-xs text-gray-500 mt-0.5">Members in the same group can see each other's tickets in Jarvies. Admin contacts cannot be added - they already see every company ticket.</p>
             </div>
             <button onclick="closeGroupsModal()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:bg-red-800 hover:text-white transition-all flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -374,7 +374,7 @@
                 </svg>
             </div>
             <h3 class="text-lg font-bold text-gray-900 text-center mb-2">Delete Group</h3>
-            <p class="text-sm text-gray-600 text-center mb-1">Members will simply be ungrouped — their contact records are not affected.</p>
+            <p class="text-sm text-gray-600 text-center mb-1">Members will simply be ungrouped - their contact records are not affected.</p>
             <p class="text-sm font-semibold text-gray-900 text-center mb-6" id="deleteGroupInfo"></p>
             <div class="flex gap-3">
                 <button onclick="closeConfirmDeleteGroup()" class="flex-1 px-4 py-2.5 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all">Cancel</button>
@@ -482,7 +482,7 @@
                 loginBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400">No Access</span>`;
             }
 
-            // Ticket access — toggle switch checkbox (only when contact has login account)
+            // Ticket access - toggle switch checkbox (only when contact has login account)
             let ticketAccessBadge;
             if (contact.auth_user_id) {
                 const isAdmin = contact.can_view_all_tickets == 1 || contact.can_view_all_tickets === true;
@@ -501,13 +501,13 @@
                         <span class="text-xs font-semibold ${isAdmin ? 'text-blue-700' : 'text-gray-400'}" id="cbAdminLabel_${contact.contact_id}">${isAdmin ? 'Admin' : 'Member'}</span>
                     </label>`;
             } else {
-                ticketAccessBadge = `<span class="text-gray-300 text-xs">—</span>`;
+                ticketAccessBadge = `<span class="text-gray-300 text-xs">-</span>`;
             }
 
-            // Group badge — which Contact Group (if any) this contact shares ticket visibility with
+            // Group badge - which Contact Group (if any) this contact shares ticket visibility with
             const groupBadge = contact.group_id
                 ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-700">${escapeHtmlLocal(contact.group_name)}</span>`
-                : `<span class="text-gray-300 text-xs">—</span>`;
+                : `<span class="text-gray-300 text-xs">-</span>`;
 
             return `
                 <tr class="hover:bg-gray-50 transition-colors cursor-pointer" onclick="window.selectContactRow(${contact.contact_id}, event)">
@@ -559,7 +559,7 @@
     }
 
     /**
-     * Select contact — update Grant/Revoke buttons based on login status
+     * Select contact - update Grant/Revoke buttons based on login status
      */
     function selectContact(contactId) {
         selectedContactId = contactId;
@@ -964,7 +964,7 @@
     }
 
     /**
-     * Toggle can_view_all_tickets — callable from checkbox (contactId param) or action button (uses selectedContactId)
+     * Toggle can_view_all_tickets - callable from checkbox (contactId param) or action button (uses selectedContactId)
      */
     async function toggleViewAllTickets(contactId) {
         const resolvedId = contactId || selectedContactId;
@@ -1037,7 +1037,13 @@
             return;
         }
         const contact = contactsData.find(c => parseInt(c.contact_id) === parseInt(selectedContactId));
-        if (!confirm(`Send a password reset link to ${contact?.full_name || 'this contact'}?`)) return;
+        const ok = await showConfirm(
+            `Send a password reset link to ${contact?.full_name || 'this contact'}?`,
+            'Send Reset Link',
+            'primary',
+            { okText: 'Send' }
+        );
+        if (!ok) return;
 
         const btn = document.getElementById('btnSendResetLink');
         btn.disabled = true;
@@ -1106,7 +1112,7 @@
     }
 
     /**
-     * Contact Groups — shared ticket visibility between Member-level contacts
+     * Contact Groups - shared ticket visibility between Member-level contacts
      */
     function isAdminContact(contact) {
         return !!contact.auth_user_id && (contact.can_view_all_tickets == 1 || contact.can_view_all_tickets === true);

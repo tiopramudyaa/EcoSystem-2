@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
  *   - line_item  : termin bernominal tetap yang wajib dikaitkan ke Contract
  *                  Line Item (mis. kontrak berisi service + license, dan license
  *                  tidak ikut TOP). Nominal diisi sendiri, tidak diturunkan dari
- *                  revenue — hanya diperingatkan bila totalnya melebihi revenue.
+ *                  revenue - hanya diperingatkan bila totalnya melebihi revenue.
  */
 return new class extends Migration
 {

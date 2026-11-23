@@ -5,22 +5,22 @@ namespace App\Support;
 use App\Models\Ticket;
 
 /**
- * Konteks awal room AI Research BERSAMA — dibangun dari hasil AI Analyzer
+ * Konteks awal room AI Research BERSAMA - dibangun dari hasil AI Analyzer
  * (staging_tickets.ai_analysis, lihat AiTicketAnalyzerService::analyze())
  * saat StagingTicketController::approve() membuat room-nya, BUKAN dari
  * TicketSummaryContext seperti AiResearchController::ticketContextSeed()
- * (yang dipakai jalur privat/legacy — tombol "Ask AI Research" untuk tiket
+ * (yang dipakai jalur privat/legacy - tombol "Ask AI Research" untuk tiket
  * lama). Konten di sini SUDAH kerja analisa, bukan cuma ringkasan status
  * tiket: overview, dugaan akar masalah, dan langkah penyelesaian yang
- * disarankan — supaya konsultan yang buka room langsung tahu titik mula
+ * disarankan - supaya konsultan yang buka room langsung tahu titik mula
  * pengerjaan, bukan mulai dari nol.
  *
  * Prefiks baris pertama SENGAJA sama persis dengan AIR_TICKET_CONTEXT_PREFIX
  * (resources/views/ai/research.blade.php) supaya pesan ini otomatis dirender
- * sebagai kartu collapsed yang sudah ada — tidak perlu ubah JS.
+ * sebagai kartu collapsed yang sudah ada - tidak perlu ubah JS.
  *
  * @param array<string, mixed> $analysis bentuk persis StagingTicket::ai_analysis
- *        (lihat AiTicketAnalyzerService::analyze()) — overview,
+ *        (lihat AiTicketAnalyzerService::analyze()) - overview,
  *        root_cause_hypothesis, resolution_steps[], risks[],
  *        suggested_assignees[], dll.
  */
@@ -72,14 +72,14 @@ class TicketAnalysisSeed
         $body = implode("\n\n", $sections) ?: 'Analisa AI tidak memberi rincian tambahan untuk tiket ini.';
 
         return <<<TEXT
-            📋 Konteks tiket (otomatis — hasil AI Analyzer saat tiket ini divalidasi, lihat halaman tiket untuk detail lengkap):
+            📋 Konteks tiket (otomatis - hasil AI Analyzer saat tiket ini divalidasi, lihat halaman tiket untuk detail lengkap):
 
             Ticket #{$ticket->ticket_number}: {$ticket->description}
 
             {$body}
 
             ---
-            Catatan: ini hasil analisa OTOMATIS saat validasi, bukan jawaban final —
+            Catatan: ini hasil analisa OTOMATIS saat validasi, bukan jawaban final -
             kalau saya bertanya, fokuskan jawaban pada memvalidasi/memperdalam
             langkah penyelesaian di atas dengan solusi teknis konkret, cari
             dokumentasi resmi (web search) kalau perlu.

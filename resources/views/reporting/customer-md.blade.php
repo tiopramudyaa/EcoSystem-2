@@ -28,7 +28,7 @@
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
                 <div class="flex items-center gap-3">
                     <p class="text-xs text-gray-400">
-                        Showing <span class="font-semibold text-gray-600" id="cmdRangeStart">0</span>&ndash;<span class="font-semibold text-gray-600" id="cmdRangeEnd">0</span>
+                        Showing <span class="font-semibold text-gray-600" id="cmdRangeStart">0</span>-<span class="font-semibold text-gray-600" id="cmdRangeEnd">0</span>
                         <span class="text-gray-300 mx-1">of</span>
                         <span class="font-semibold text-gray-700" id="cmdTotalItems">0</span> tickets
                     </p>
@@ -482,7 +482,7 @@ function renderCustomerMd(rows) {
     renderCmdPageNumbers(totalPages);
 }
 
-// Numbered pagination: always show first/last, current ±1, with "…" gaps —
+// Numbered pagination: always show first/last, current ±1, with "…" gaps -
 // keeps the bar short even with hundreds of pages.
 function renderCmdPageNumbers(totalPages) {
     const wrap = document.getElementById('cmdPageNumbers');
@@ -537,18 +537,18 @@ function cmdChangePageSize(val) {
 }
 
 function cmdRow(r) {
-    const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-    const sInfo = CMD_STATUS_MAP[r.md_status] || { label: r.md_status_label || r.md_status || '—', cls: 'bg-gray-100 text-gray-500' };
+    const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+    const sInfo = CMD_STATUS_MAP[r.md_status] || { label: r.md_status_label || r.md_status || '-', cls: 'bg-gray-100 text-gray-500' };
     const mdStr = (r.customer_mandays !== null && r.customer_mandays !== undefined)
         ? formatMd(r.customer_mandays)
-        : '—';
+        : '-';
 
     return `
     <tr class="cursor-pointer hover:bg-gray-50" onclick="window.location='/ticket/${r.ticket_id}'">
-        <td class="cmd-td text-sm font-semibold text-gray-700 sticky left-0 bg-white">${escHtml(r.ticket_number || '—')}</td>
-        <td class="cmd-td cmd-td-desc text-sm text-gray-700">${escHtml(r.description || '—')}</td>
-        <td class="cmd-td text-sm text-gray-700">${escHtml(r.ticket_type || '—')}</td>
-        <td class="cmd-td text-sm text-gray-700">${r.customer_name ? escHtml(r.customer_name) : '<span class="text-gray-300 italic">—</span>'}</td>
+        <td class="cmd-td text-sm font-semibold text-gray-700 sticky left-0 bg-white">${escHtml(r.ticket_number || '-')}</td>
+        <td class="cmd-td cmd-td-desc text-sm text-gray-700">${escHtml(r.description || '-')}</td>
+        <td class="cmd-td text-sm text-gray-700">${escHtml(r.ticket_type || '-')}</td>
+        <td class="cmd-td text-sm text-gray-700">${r.customer_name ? escHtml(r.customer_name) : '<span class="text-gray-300 italic">-</span>'}</td>
         <td class="cmd-td text-sm text-gray-700">${r.delivery_name ? escHtml(r.delivery_name) : '<span class="text-gray-300 italic">Unassigned</span>'}</td>
         <td class="cmd-td text-sm text-gray-700">${r.lead_name ? escHtml(r.lead_name) : '<span class="text-gray-300 italic">Unassigned</span>'}</td>
         <td class="cmd-td"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${sInfo.cls}">${escHtml(sInfo.label)}</span></td>

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('delivery_project_risks', function (Blueprint $table) {
-            // Threat | Opportunity — menentukan opsi response strategy yang tersedia
+            // Threat | Opportunity - menentukan opsi response strategy yang tersedia
             $table->string('risk_type', 20)->default('Threat')->after('risk_number');
             // Diisi saat status = Closed
             $table->date('actual_end_date')->nullable()->after('target_date');

@@ -10,7 +10,7 @@ use HTMLPurifier_Config;
  * Quill editors before it is persisted (message_html), rendered back into
  * the message thread, or relayed to the customer's inbox as email HTML.
  *
- * Nothing upstream of this class was sanitizing user-authored HTML —
+ * Nothing upstream of this class was sanitizing user-authored HTML -
  * TicketMessageController stored the raw `message_body` from the browser
  * as-is. This whitelist covers every format the editor toolbar can
  * currently produce (bold/italic/underline/strike, blockquote, ordered/

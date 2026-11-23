@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('io_number', 255)->nullable()->change();
         });
 
-        // Tambah unique index (nullable — dua NULL tetap dianggap berbeda di MySQL/MariaDB)
+        // Tambah unique index (nullable - dua NULL tetap dianggap berbeda di MySQL/MariaDB)
         Schema::table('delivery_projects', function (Blueprint $table) {
             $table->unique('io_number', 'delivery_projects_io_number_unique');
         });

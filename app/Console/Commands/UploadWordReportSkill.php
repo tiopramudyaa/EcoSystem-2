@@ -8,12 +8,12 @@ use Illuminate\Console\Command;
 
 /**
  * Upload (atau tambah versi baru untuk) Agent Skill custom
- * "laravel-word-report-generator" ke workspace Anthropic — sekali jalan,
+ * "laravel-word-report-generator" ke workspace Anthropic - sekali jalan,
  * bukan bagian dari alur request user. Skill ini dipakai ClaudeReportService
  * untuk fitur generate laporan .docx/.pdf dari template Word.
  *
  * Pola env var (ANTHROPIC_WORD_REPORT_SKILL_ID) sengaja sejajar dengan
- * ANTHROPIC_TICKET_ANALYZER_SKILL_ID yang sudah ada — bedanya skill itu
+ * ANTHROPIC_TICKET_ANALYZER_SKILL_ID yang sudah ada - bedanya skill itu
  * dibuat manual di Anthropic Console, skill ini di-upload lewat command ini.
  *
  * Pertama kali: `php artisan claude:upload-skill` → buat skill baru, salin

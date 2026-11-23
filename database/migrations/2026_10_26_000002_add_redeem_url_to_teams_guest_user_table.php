@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * dan tautan penerimaannya (inviteRedeemUrl) dikirim lewat mailbox support
  * bersama tautan langsung ke group chat tiket.
  *
- * redeem_url disimpan karena hanya muncul sekali, di respons undangan — padahal
+ * redeem_url disimpan karena hanya muncul sekali, di respons undangan - padahal
  * emailnya baru dikirim belakangan, saat guest benar-benar masuk grup.
  */
 return new class extends Migration

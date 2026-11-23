@@ -220,7 +220,7 @@
                         {{-- Phase Weight Limit Panel --}}
                         <div id="phaseWeightPanel" class="hidden border border-gray-200 rounded-lg p-4 bg-gray-50">
                             <p class="text-xs font-semibold text-gray-700 mb-3">
-                                Phase Weight Limit — <span id="phaseWeightPhaseName" class="text-gray-500 font-normal"></span>
+                                Phase Weight Limit - <span id="phaseWeightPhaseName" class="text-gray-500 font-normal"></span>
                             </p>
                             <div class="flex items-center justify-between text-xs mb-2">
                                 <span class="text-gray-500">Used (others): <strong id="phaseUsedDisplay" class="text-gray-800">0%</strong></span>
@@ -234,7 +234,7 @@
                             </div>
                             <div class="flex items-center justify-between mt-2">
                                 <span class="text-xs" id="phaseRemainingLabel">
-                                    Remaining after save: <strong id="phaseRemainingDisplay" class="text-green-700">—</strong>
+                                    Remaining after save: <strong id="phaseRemainingDisplay" class="text-green-700">-</strong>
                                 </span>
                                 <span id="phaseWeightWarning" class="hidden text-xs font-semibold text-red-600">⚠ Exceeds phase limit!</span>
                             </div>
@@ -469,7 +469,7 @@ async function loadPhaseWeightInfo(phaseId, excludeActivityId = null) {
     }
 }
 
-// Weight bisa 3 desimal — tampilkan hingga 3 angka di belakang koma tanpa
+// Weight bisa 3 desimal - tampilkan hingga 3 angka di belakang koma tanpa
 // nol berlebih (mis. 10.125, 10.5, 10).
 function fmtWeight(v) {
     return parseFloat((Number(v) || 0).toFixed(3)).toString();
@@ -499,7 +499,7 @@ function updatePhaseWeightDisplay() {
     const warnEl = document.getElementById('phaseWeightWarning');
 
     if (totalAfter > phaseWeightLimit + 0.01) {
-        remEl.textContent  = '—';
+        remEl.textContent  = '-';
         remEl.className    = 'text-red-600 font-semibold';
         barNew.className   = 'absolute top-0 h-2.5 bg-red-500 transition-all duration-300';
         warnEl.classList.remove('hidden');
@@ -532,7 +532,7 @@ async function initActivityModalPickers() {
 
     destroyActivityPickers();
 
-    // Contract window bounds — planning dates may not fall outside the contract period.
+    // Contract window bounds - planning dates may not fall outside the contract period.
     // PENTING: contract dates datang sebagai string ISO ('Y-m-d'), tapi dateFormat
     // picker ini 'd/m/Y'. Flatpickr mem-parse minDate/maxDate STRING memakai dateFormat,
     // sehingga '2026-06-04' salah di-parse → bounds ngawur → SEMUA tanggal ke-disable.

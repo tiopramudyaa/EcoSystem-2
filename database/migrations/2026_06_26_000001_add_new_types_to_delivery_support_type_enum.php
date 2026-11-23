@@ -12,7 +12,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Rows with new types will be lost if downgraded — convert first
+        // Rows with new types will be lost if downgraded - convert first
         DB::statement("UPDATE delivery_support SET type = 'Internal' WHERE type IN ('CR','RISE','CLOUD','POSTPAID')");
         DB::statement("ALTER TABLE delivery_support MODIFY COLUMN type ENUM('AMS','MO','ATS','Project','Internal') NOT NULL");
     }

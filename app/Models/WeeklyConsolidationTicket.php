@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Satu baris tiket dalam batch Weekly Consolidation. Hanya `ticket_id` + notes
- * yang disimpan di sini — status/progress/PIC/team lead/member SELALU dibaca
+ * yang disimpan di sini - status/progress/PIC/team lead/member SELALU dibaca
  * live lewat relasi ticket() saat ditampilkan/di-export, tidak pernah disalin
  * ke kolom sendiri. Jangan tergoda menambah kolom snapshot di sini.
  */

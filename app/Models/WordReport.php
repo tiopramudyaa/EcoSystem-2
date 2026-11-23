@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Satu permintaan generate laporan .docx dari template Word (fitur
- * ReportGeneratorService) — lihat migrasi create_word_reports_table.
+ * ReportGeneratorService) - lihat migrasi create_word_reports_table.
  *
  * template_path/template_original_name adalah SNAPSHOT template yang benar-
  * benar dipakai generate ini (dibaca driver AI); report_template_id cuma

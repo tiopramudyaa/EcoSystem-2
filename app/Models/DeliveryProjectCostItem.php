@@ -35,7 +35,7 @@ class DeliveryProjectCostItem extends Model
         return $this->belongsTo(DeliveryProjectCost::class, 'delivery_project_cost_id');
     }
 
-    /** Cost item tidak menyimpan FK project — ambil lewat cost induknya. */
+    /** Cost item tidak menyimpan FK project - ambil lewat cost induknya. */
     protected function projectIdForActivity()
     {
         return DeliveryProjectCost::whereKey($this->delivery_project_cost_id)->value('delivery_projects_id');

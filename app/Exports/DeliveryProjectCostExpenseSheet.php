@@ -13,7 +13,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 /**
- * Sheet "Expense Details" — satu baris per actual expense
+ * Sheet "Expense Details" - satu baris per actual expense
  * (lihat DeliveryProjectCostExport).
  *
  * Header di baris 1 + AutoFilter supaya bisa langsung difilter per Period /

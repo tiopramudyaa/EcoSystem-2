@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SLA Activity Log — {{ $ticket->ticket_number }}</title>
+    <title>SLA Activity Log - {{ $ticket->ticket_number }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -247,12 +247,12 @@
     <div class="doc-banner-left">
         <strong>Ticket #{{ $ticket->ticket_number }}</strong>
         &nbsp;&bull;&nbsp;
-        {{ mb_substr($ticket->description ?? '—', 0, 80) }}{{ strlen($ticket->description ?? '') > 80 ? '…' : '' }}
+        {{ mb_substr($ticket->description ?? '-', 0, 80) }}{{ strlen($ticket->description ?? '') > 80 ? '…' : '' }}
     </div>
     <div class="doc-banner-right">
         Generated: <strong>{{ now()->format('d M Y, H:i') }}</strong>
         &nbsp;&bull;&nbsp;
-        Status: <strong>{{ strtoupper(str_replace('_', ' ', $ticket->status ?? '—')) }}</strong>
+        Status: <strong>{{ strtoupper(str_replace('_', ' ', $ticket->status ?? '-')) }}</strong>
     </div>
 </div>
 
@@ -263,24 +263,24 @@
         <tr>
             <td class="info-label">Customer</td>
             <td style="width:6px">:</td>
-            <td class="info-value" style="width:30%">{{ optional(optional($ticket->customer)->basicData)->name_1 ?? '—' }}</td>
+            <td class="info-value" style="width:30%">{{ optional(optional($ticket->customer)->basicData)->name_1 ?? '-' }}</td>
             <td class="info-separator"></td>
             <td class="info-label">Ticket Type</td>
             <td style="width:6px">:</td>
-            <td class="info-value" style="width:30%">{{ $ticket->ticket_type ?? '—' }}</td>
+            <td class="info-value" style="width:30%">{{ $ticket->ticket_type ?? '-' }}</td>
             <td class="info-separator"></td>
             <td class="info-label">Priority</td>
             <td style="width:6px">:</td>
-            <td class="info-value">{{ $ticket->ticket_priority ?? '—' }}</td>
+            <td class="info-value">{{ $ticket->ticket_priority ?? '-' }}</td>
         </tr>
         <tr>
             <td class="info-label">SLA Start</td>
             <td style="width:6px">:</td>
-            <td class="info-value">{{ $sla?->sla_start_at?->format('d M Y, H:i') ?? '—' }}</td>
+            <td class="info-value">{{ $sla?->sla_start_at?->format('d M Y, H:i') ?? '-' }}</td>
             <td class="info-separator"></td>
             <td class="info-label">Scale</td>
             <td style="width:6px">:</td>
-            <td class="info-value">{{ $ticket->scale ?? '—' }}</td>
+            <td class="info-value">{{ $ticket->scale ?? '-' }}</td>
             <td class="info-separator"></td>
             <td class="info-label">SLA Mode</td>
             <td style="width:6px">:</td>
@@ -289,7 +289,7 @@
         <tr>
             <td class="info-label">Hour Calculation</td>
             <td style="width:6px">:</td>
-            <td class="info-value">{{ $policy?->is_24_hours ? '24/7 Calendar Hours' : 'Business Hours (Mon–Fri 09:00–18:00)' }}</td>
+            <td class="info-value">{{ $policy?->is_24_hours ? '24/7 Calendar Hours' : 'Business Hours (Mon-Fri 09:00-18:00)' }}</td>
             <td class="info-separator"></td>
             <td class="info-label">Resolved At</td>
             <td style="width:6px">:</td>
@@ -297,7 +297,7 @@
             <td class="info-separator"></td>
             <td class="info-label">Ball Holder</td>
             <td style="width:6px">:</td>
-            <td class="info-value">{{ $sla ? ucfirst($sla->ball_holder) : '—' }}</td>
+            <td class="info-value">{{ $sla ? ucfirst($sla->ball_holder) : '-' }}</td>
         </tr>
     </table>
 </div>
@@ -314,13 +314,13 @@
                     <div class="sla-box-label">Response SLA</div>
                     @php $rCls = match($responseStatusLive) { 'met' => 'c-met', 'breached' => 'c-breached', default => 'c-pending' }; @endphp
                     <div class="sla-box-value {{ $rCls }}">
-                        {{ $responseActualHours !== null ? number_format($responseActualHours, 2) : '—' }}
+                        {{ $responseActualHours !== null ? number_format($responseActualHours, 2) : '-' }}
                         <span style="font-size:10px; font-weight:normal; color:#888;">hrs</span>
                     </div>
                     <div class="sla-box-detail">
-                        Target: <strong>{{ $policy?->response_hours ?? '—' }} hrs</strong><br>
-                        Deadline: {{ $responseDueAt?->format('d M Y H:i') ?? '—' }}<br>
-                        Responded: {{ $sla->first_responded_at?->format('d M Y H:i') ?? '—' }}
+                        Target: <strong>{{ $policy?->response_hours ?? '-' }} hrs</strong><br>
+                        Deadline: {{ $responseDueAt?->format('d M Y H:i') ?? '-' }}<br>
+                        Responded: {{ $sla->first_responded_at?->format('d M Y H:i') ?? '-' }}
                     </div>
                     @php $rBg = match($responseStatusLive) { 'met' => 'bg-met', 'breached' => 'bg-breached', default => 'bg-pending' }; @endphp
                     <div class="sla-box-status {{ $rBg }}">{{ strtoupper($responseStatusLive) }}</div>
@@ -334,18 +334,18 @@
                     @if($sla->sla_mode === 'full')
                         @php $resCls = match($resolutionStatusLive) { 'met' => 'c-met', 'breached' => 'c-breached', 'paused' => 'c-paused', default => 'c-pending' }; @endphp
                         <div class="sla-box-value {{ $resCls }}">
-                            {{ $resolutionNetHours !== null ? number_format($resolutionNetHours, 2) : '—' }}
+                            {{ $resolutionNetHours !== null ? number_format($resolutionNetHours, 2) : '-' }}
                             <span style="font-size:10px; font-weight:normal; color:#888;">hrs</span>
                         </div>
                         <div class="sla-box-detail">
-                            Target: <strong>{{ $policy?->resolution_hours ?? '—' }} hrs</strong><br>
-                            Deadline: {{ $sla->resolution_due_at?->format('d M Y H:i') ?? '—' }}<br>
+                            Target: <strong>{{ $policy?->resolution_hours ?? '-' }} hrs</strong><br>
+                            Deadline: {{ $sla->resolution_due_at?->format('d M Y H:i') ?? '-' }}<br>
                             Waiting deducted: {{ number_format($liveWaitingHours, 2) }} hrs
                         </div>
                         @php $resBg = match($resolutionStatusLive) { 'met' => 'bg-met', 'breached' => 'bg-breached', 'paused' => 'bg-paused', default => 'bg-pending' }; @endphp
                         <div class="sla-box-status {{ $resBg }}">{{ strtoupper($resolutionStatusLive) }}</div>
                     @else
-                        <div class="sla-box-value c-pending">— <span style="font-size:10px; font-weight:normal; color:#888;">hrs</span></div>
+                        <div class="sla-box-value c-pending">- <span style="font-size:10px; font-weight:normal; color:#888;">hrs</span></div>
                         <div class="sla-box-detail">Response-only mode.<br>Resolution is not tracked for this ticket type.</div>
                         <div class="sla-box-status bg-pending">RESPONSE ONLY</div>
                     @endif
@@ -367,7 +367,7 @@
                                     ? round($sla->sla_start_at->floatDiffInHours($sla->resolved_at), 2)
                                     : null;
                             @endphp
-                            <div class="metric-value">{{ $grossH !== null ? $grossH . ' hrs' : '—' }}</div>
+                            <div class="metric-value">{{ $grossH !== null ? $grossH . ' hrs' : '-' }}</div>
                         </td>
                         <td>
                             <div class="metric-label">Pause Count</div>
@@ -412,11 +412,11 @@
         <tbody>
             @foreach($pauses as $p)
             <tr>
-                <td style="white-space:nowrap">{{ $p->started_at?->format('d M Y, H:i') ?? '—' }}</td>
+                <td style="white-space:nowrap">{{ $p->started_at?->format('d M Y, H:i') ?? '-' }}</td>
                 <td style="white-space:nowrap">{{ $p->ended_at?->format('d M Y, H:i') ?? 'Still active' }}</td>
-                <td style="text-align:right; font-weight:600;">{{ $p->duration_hours !== null ? number_format($p->duration_hours, 2) : '—' }}</td>
+                <td style="text-align:right; font-weight:600;">{{ $p->duration_hours !== null ? number_format($p->duration_hours, 2) : '-' }}</td>
                 <td>{{ ucwords(str_replace('_', ' ', $p->pause_reason)) }}</td>
-                <td>{{ $p->triggered_by_status ? str_replace('_', ' ', $p->triggered_by_status) : '—' }}</td>
+                <td>{{ $p->triggered_by_status ? str_replace('_', ' ', $p->triggered_by_status) : '-' }}</td>
             </tr>
             @endforeach
             <tr style="background:#f0f0f0; font-weight:bold;">
@@ -513,7 +513,7 @@
                         $respStr = number_format((float)$e['response_hours'], 2) . ' h(' . $rm . ' min)';
                     }
 
-                    // Resolution — format sama dengan Waiting: "1.20 h(72 min)"
+                    // Resolution - format sama dengan Waiting: "1.20 h(72 min)"
                     $resStr = null;
                     if ($e['meeting_paused'] ?? false) {
                         $resStr = 'Paused (Meeting)';
@@ -531,7 +531,7 @@
                     $ballLabel = ($e['ball_after'] ?? null) ? ($ballLabels[$e['ball_after']] ?? null) : null;
                     $ballCls   = ($e['ball_after'] ?? null) ? ($ballClass[$e['ball_after']] ?? '') : '';
 
-                    // Message / notes — sender_name ditampilkan di kolom pesan untuk identifikasi
+                    // Message / notes - sender_name ditampilkan di kolom pesan untuk identifikasi
                     $msgText = $e['message_preview'] ?? $e['notes'] ?? null;
                     if ($msgText && ($e['sender_name'] ?? null)) {
                         $msgText = $e['sender_name'] . ': ' . $msgText;
@@ -550,13 +550,13 @@
                     <td class="col-date" style="color:#888;">{{ $dateStr }}</td>
                     <td class="col-time" style="font-family:monospace; color:#444;">{{ $timeStr }}</td>
                     <td class="col-wait" style="text-align:right; color:#b45309; font-weight:{{ $waitStr ? '600' : 'normal' }};">
-                        {{ $waitStr ?? '—' }}
+                        {{ $waitStr ?? '-' }}
                     </td>
                     <td class="col-resp" style="text-align:right; color:#1d4ed8; font-weight:{{ $respStr ? '600' : 'normal' }};">
-                        {{ $respStr ?? '—' }}
+                        {{ $respStr ?? '-' }}
                     </td>
                     <td class="col-res" style="text-align:right; color:#4f46e5; font-weight:{{ $resStr ? '600' : 'normal' }}; font-family:monospace;">
-                        {{ $resStr ?? '—' }}
+                        {{ $resStr ?? '-' }}
                     </td>
                     <td class="col-event">
                         <span class="dot" style="background:{{ $dot }};"></span>
@@ -566,17 +566,17 @@
                         @if($statusLabel)
                             <span class="status-badge">{{ $statusLabel }}</span>
                         @else
-                            <span style="color:#ccc;">—</span>
+                            <span style="color:#ccc;">-</span>
                         @endif
                     </td>
                     <td class="col-ball">
                         @if($ballLabel)
                             <span class="ball-badge {{ $ballCls }}">{{ $ballLabel }}</span>
                         @else
-                            <span style="color:#ccc;">—</span>
+                            <span style="color:#ccc;">-</span>
                         @endif
                     </td>
-                    <td class="col-msg" style="color:#4b5563; word-break:break-word;">{{ $msgText ?? '—' }}</td>
+                    <td class="col-msg" style="color:#4b5563; word-break:break-word;">{{ $msgText ?? '-' }}</td>
                 </tr>
             @endforeach
         </tbody>

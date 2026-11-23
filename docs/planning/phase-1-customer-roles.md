@@ -1,4 +1,4 @@
-# Fase 1 — Customer Admin / Member Roles
+# Fase 1 - Customer Admin / Member Roles
 
 > ✅ **STATUS: SELESAI (2026-06-30).** Ringkasan implementasi ada di bagian "Hasil Implementasi" paling bawah.
 
@@ -17,17 +17,17 @@
 ## Lingkup file (perkiraan)
 
 ### EcoSystem (admin set role saat grant/manage akun)
-- `app/Http/Controllers/CustomerController.php` — endpoint grant/revoke login & update contact → tambah set `can_view_all_tickets`.
-- `resources/views/master/customer/` — UI Contact Person: dropdown **Admin/Member** saat Grant Access / edit akun.
+- `app/Http/Controllers/CustomerController.php` - endpoint grant/revoke login & update contact → tambah set `can_view_all_tickets`.
+- `resources/views/master/customer/` - UI Contact Person: dropdown **Admin/Member** saat Grant Access / edit akun.
 - (cek) endpoint `create-login` / contact API yang dipakai untuk provisioning `auth_users`.
 
 ### JARVIES (enforcement visibility)
 - `app/Http/Controllers/TicketController.php`
-  - `getTickets()` — sudah ada cabang `can_view_all_tickets`; pastikan benar & tambah logika **domain company** untuk admin (lihat tiket company termasuk email non-contact).
-  - `myTickets()` — saat ini selalu filter `customer_id` saja (tanpa cek `can_view_all_tickets`); **perlu disamakan** dengan aturan member/admin.
-  - `getStagingTickets()` / staging branch — pastikan member hanya lihat staging miliknya.
-- `app/Http/Controllers/AuthController.php` — sudah kirim `can_view_all_tickets` ke session; pastikan konsisten.
-- `resources/views/tickets/index.blade.php` — sudah baca flag; sesuaikan label/indikator role bila perlu.
+  - `getTickets()` - sudah ada cabang `can_view_all_tickets`; pastikan benar & tambah logika **domain company** untuk admin (lihat tiket company termasuk email non-contact).
+  - `myTickets()` - saat ini selalu filter `customer_id` saja (tanpa cek `can_view_all_tickets`); **perlu disamakan** dengan aturan member/admin.
+  - `getStagingTickets()` / staging branch - pastikan member hanya lihat staging miliknya.
+- `app/Http/Controllers/AuthController.php` - sudah kirim `can_view_all_tickets` ke session; pastikan konsisten.
+- `resources/views/tickets/index.blade.php` - sudah baca flag; sesuaikan label/indikator role bila perlu.
 
 ## Subtask (checklist)
 - [ ] **EcoSystem UI**: dropdown Admin/Member di Grant Access + edit akun contact.
@@ -47,7 +47,7 @@
 
 ## Catatan / risiko
 - Pastikan `customer.domain` terisi untuk company yang relevan.
-- Hati-hati `myTickets()` vs `getTickets()` punya aturan berbeda saat ini — samakan.
+- Hati-hati `myTickets()` vs `getTickets()` punya aturan berbeda saat ini - samakan.
 - Backward-compat akun lama (`contact_id` null, default `can_view_all_tickets = true` = Admin).
 
 ---
@@ -61,7 +61,7 @@ Konteks: EcoSystem (cwd) + JARVIES di D:\Magang\PT Eclectic Consulting Yogyakart
 
 Tugas: implement Customer Admin/Member role pakai ulang kolom auth_users.can_view_all_tickets (Admin=true, Member=false). 
 - EcoSystem: dropdown Admin/Member saat Grant Access / edit akun contact + simpan flag.
-- JARVIES TicketController: getTickets/myTickets/staging enforce — Admin lihat semua tiket company (termasuk tiket email yg domain pengirim = customer.domain, walau pengirim bukan contact terdaftar), Member hanya submitted_by_email miliknya.
+- JARVIES TicketController: getTickets/myTickets/staging enforce - Admin lihat semua tiket company (termasuk tiket email yg domain pengirim = customer.domain, walau pengirim bukan contact terdaftar), Member hanya submitted_by_email miliknya.
 
 Baca dulu file planning + TicketController kedua project, lalu mulai implement. Ikuti pola repo (session('user'), AJAX JSON, dll).
 ```
@@ -79,18 +79,18 @@ Mekanisme admin-side **sudah terbangun**:
 
 ### Yang diubah
 
-**EcoSystem** — `resources/views/master/customer/sections/contact.blade.php`
+**EcoSystem** - `resources/views/master/customer/sections/contact.blade.php`
 - Label toggle "Regular" → **"Member"** + tooltip disesuaikan (Admin/Member). (Mekanisme tak berubah; hanya istilah agar sesuai permintaan.)
 
-**JARVIES** — `app/Http/Controllers/TicketController.php`
+**JARVIES** - `app/Http/Controllers/TicketController.php`
 - Tambah 3 helper privat:
-  - `customerCanViewAll($sessionUser)` — baca `session('user')['can_view_all_tickets']` (fallback query `auth_users`), default `true` untuk akun lama.
-  - `applyCustomerTicketVisibility($query, $sessionUser)` — `where customer_id`, dan untuk Member tambah `where submitted_by_email = email`.
-  - `customerCanAccessTicket($sessionUser, $ticket)` — guard akses 1 tiket (Admin: semua company; Member: hanya submit sendiri, `strcasecmp`).
-- Diterapkan di: `getTickets` (refactor pakai helper), `myTickets` (sebelumnya TIDAK cek flag — diperbaiki), `byStatus`, `statistics`, `show`, `getMessages`, `addComment` (reply), `updateManDays`, `getMandaysHistory`, `showMyTicket`, serta staging (`pendingPage`, `getStagingTickets`).
+  - `customerCanViewAll($sessionUser)` - baca `session('user')['can_view_all_tickets']` (fallback query `auth_users`), default `true` untuk akun lama.
+  - `applyCustomerTicketVisibility($query, $sessionUser)` - `where customer_id`, dan untuk Member tambah `where submitted_by_email = email`.
+  - `customerCanAccessTicket($sessionUser, $ticket)` - guard akses 1 tiket (Admin: semua company; Member: hanya submit sendiri, `strcasecmp`).
+- Diterapkan di: `getTickets` (refactor pakai helper), `myTickets` (sebelumnya TIDAK cek flag - diperbaiki), `byStatus`, `statistics`, `show`, `getMessages`, `addComment` (reply), `updateManDays`, `getMandaysHistory`, `showMyTicket`, serta staging (`pendingPage`, `getStagingTickets`).
 
-**JARVIES** — `app/Services/StagingTicketService.php`
-- `getByCustomer($customerId, ?string $submittedByEmail = null)` — Member difilter `submitted_by_email`.
+**JARVIES** - `app/Services/StagingTicketService.php`
+- `getByCustomer($customerId, ?string $submittedByEmail = null)` - Member difilter `submitted_by_email`.
 
 ### Domain rule
 Sudah terpenuhi di **intake** EcoSystem: `EmailController@processInbox` me-resolve `customer_id` via `customer.domain` (`LOWER(domain)` match). Tiket email dari domain company (termasuk pengirim non-contact / tanpa akses Jarvies) otomatis ber-`customer_id` company → Admin melihatnya lewat filter `customer_id`. Tidak perlu perubahan tambahan di JARVIES.

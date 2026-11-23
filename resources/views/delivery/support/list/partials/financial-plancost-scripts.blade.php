@@ -1,5 +1,5 @@
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- FINANCIAL + PLAN COST + TOP — SCRIPTS (mirror Delivery Project) --}}
+{{-- FINANCIAL + PLAN COST + TOP - SCRIPTS (mirror Delivery Project) --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- Flatpickr + HolidayCalendar (header bulan statis, weekend/libur disabled) --}}
 @include('delivery.partials.holiday-flatpickr')
@@ -108,11 +108,11 @@
     }
 
     function fmt(val) {
-        if (val === null || val === undefined) return '—';
+        if (val === null || val === undefined) return '-';
         return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(val);
     }
     function fmtRp(val) {
-        if (val === null || val === undefined) return '—';
+        if (val === null || val === undefined) return '-';
         return 'Rp ' + new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(val);
     }
 
@@ -157,7 +157,7 @@
     let _view         = 'plan';
     let _monthlyStale = true;
 
-    // Izin section (UI saja — penegakan di middleware route).
+    // Izin section (UI saja - penegakan di middleware route).
     const _section   = document.getElementById('plancost');
     const CAN_EDIT   = _section?.dataset.permEdit === '1';
     const CAN_MANAGE = _section?.dataset.permManage === '1';
@@ -170,7 +170,7 @@
     async function ensureInit() {
         try {
             await axios.post(`${BASE_URL}/init`);
-        } catch (e) { /* already initialised — ignore */ }
+        } catch (e) { /* already initialised - ignore */ }
     }
 
     async function load() {
@@ -364,8 +364,8 @@
 
         const abEl = document.getElementById('previewAvailBudget');
         const arEl = document.getElementById('previewAvailRelease');
-        abEl.textContent = ab !== null ? `Rp ${fmt(ab)}` : '—';
-        arEl.textContent = ar !== null ? `Rp ${fmt(ar)}` : '—';
+        abEl.textContent = ab !== null ? `Rp ${fmt(ab)}` : '-';
+        arEl.textContent = ar !== null ? `Rp ${fmt(ar)}` : '-';
         abEl.className = `font-semibold ml-1 ${ab !== null && ab < 0 ? 'text-red-600' : 'text-green-700'}`;
         arEl.className = `font-semibold ml-1 ${ar !== null && ar < 0 ? 'text-red-600' : 'text-teal-700'}`;
     }
@@ -1041,16 +1041,16 @@
     // ── Period helpers ────────────────────────────────────────────
     const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    /** "2026-10" (atau "2026-10-04") → "Okt 2026"; kosong (expense lama) → "—". */
+    /** "2026-10" (atau "2026-10-04") → "Okt 2026"; kosong (expense lama) → "-". */
     function _fmtPeriod(period) {
-        if (!period) return '—';
+        if (!period) return '-';
         const [y, m] = String(period).split('-');
         return `${MONTHS_SHORT[Number(m) - 1] ?? m} ${y}`;
     }
 
     /** "2026-11-04" → "04/11/2026". */
     function _fmtDate(date) {
-        if (!date) return '—';
+        if (!date) return '-';
         const [y, m, d] = String(date).split('-');
         return `${d}/${m}/${y}`;
     }
@@ -1170,7 +1170,7 @@
                    </svg>
                    ${_esc(item.document_name ?? 'View')}
                </a>`
-            : `<span class="text-gray-300 text-xs">—</span>`;
+            : `<span class="text-gray-300 text-xs">-</span>`;
     }
 
     function _adUpdateRow(tr, item) {
@@ -1364,7 +1364,7 @@ window.SupportPaymentTermPlan = (function () {
         const pill = (cls, text) => `<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${cls}">${text}</span>`;
         const head = `Revenue in Sales Data: <span class="font-semibold text-gray-700">${fmtRp(revenue)}</span>`;
         if (revenue <= 0) {
-            return head + pill('bg-gray-100 text-gray-600', 'Revenue is empty — cannot compare');
+            return head + pill('bg-gray-100 text-gray-600', 'Revenue is empty - cannot compare');
         }
         const diff = total - revenue;
         if (Math.abs(diff) < 1) {
@@ -1394,7 +1394,7 @@ window.SupportPaymentTermPlan = (function () {
         let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
         while (cursor <= end && periods.length < 120) {
             const pEnd = new Date(cursor.getFullYear(), cursor.getMonth() + months - 1, 1);
-            periods.push(months === 1 ? monthLabel(cursor) : `${monthLabel(cursor)} – ${monthLabel(pEnd)}`);
+            periods.push(months === 1 ? monthLabel(cursor) : `${monthLabel(cursor)} - ${monthLabel(pEnd)}`);
             cursor = new Date(cursor.getFullYear(), cursor.getMonth() + months, 1);
         }
         return periods;
@@ -1594,7 +1594,7 @@ window.SupportPaymentTermPlan = (function () {
             html += visible.map(t => rowHtml(t)).join('');
 
             if (terms.length >= COLLAPSE_AT) {
-                const range = hidden.length ? `${hidden[0].period || hidden[0].payment_term} – ${hidden[hidden.length - 1].period || hidden[hidden.length - 1].payment_term}` : '';
+                const range = hidden.length ? `${hidden[0].period || hidden[0].payment_term} - ${hidden[hidden.length - 1].period || hidden[hidden.length - 1].payment_term}` : '';
                 html += `<tr><td colspan="${span}" class="px-3 py-2 text-center text-xs">
                     <button type="button" data-perm-keep onclick="SupportPaymentTermPlan.toggleGroup(${key})" class="text-gray-500 hover:text-gray-800 underline-offset-2 hover:underline">
                         ${collapse ? `… ${hidden.length} more term${hidden.length > 1 ? 's' : ''} (${esc(range)}) · Show all` : 'Show less'}
@@ -1625,7 +1625,7 @@ window.SupportPaymentTermPlan = (function () {
         const totalPct = revTerms.reduce((s, t) => s + (Number(t.payment_percentage) || 0), 0);
         const pctCell  = _mode === 'percentage' && revTerms.length
             ? `<td class="px-3 py-3 text-center ${totalPct > 100 ? 'text-red-600' : 'text-gray-700'}">${fmtPct(totalPct)}</td>`
-            : `<td class="px-3 py-3 text-center text-gray-400">—</td>`;
+            : `<td class="px-3 py-3 text-center text-gray-400">-</td>`;
 
         // Rincian status penagihan (dari total TOP).
         const byStatus = s => _terms.filter(t => t.status === s).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
@@ -1662,14 +1662,14 @@ window.SupportPaymentTermPlan = (function () {
         return `<tr class="hover:bg-gray-50 align-top">
             <td class="px-3 py-3 text-center text-xs font-mono text-gray-600">${t.term_number}</td>
             <td class="px-3 py-3 text-xs text-gray-800"><div class="line-clamp-3">${esc(t.payment_term)}</div></td>
-            ${_mode === 'line_item' ? `<td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(t.period) || '—'}</td>` : ''}
+            ${_mode === 'line_item' ? `<td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(t.period) || '-'}</td>` : ''}
             <td class="px-3 py-3 text-center text-xs font-semibold text-gray-700">${pctCell}</td>
             <td class="px-3 py-3 text-right text-xs font-semibold text-gray-800 whitespace-nowrap">${fmtRp(t.amount)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[260px]"><div class="line-clamp-3">${esc(t.requirements) || '—'}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.estimated_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.submit_invoice_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(t.invoice_number) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.paid_date_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[260px]"><div class="line-clamp-3">${esc(t.requirements) || '-'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.estimated_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.submit_invoice_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(t.invoice_number) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.paid_date_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${statusBadge(t.status)}</td>
             <td class="px-3 py-3 text-center whitespace-nowrap">
                 <button type="button" onclick="SupportPaymentTermPlan.openEdit(${t.id})"
@@ -1698,7 +1698,7 @@ window.SupportPaymentTermPlan = (function () {
         if (mode === _mode) return;
 
         const question = mode === 'line_item'
-            ? 'Existing % of Revenue terms stay as they are. New payment terms must be linked to a contract line item and take their amount from it — "% of Revenue" is locked.'
+            ? 'Existing % of Revenue terms stay as they are. New payment terms must be linked to a contract line item and take their amount from it - "% of Revenue" is locked.'
             : 'Contract line items are kept but hidden. Only possible when no term takes its amount from a line item.';
         const title = mode === 'line_item'
             ? 'Switch TOP Type to "Contract Line Item"?'
@@ -1730,7 +1730,7 @@ window.SupportPaymentTermPlan = (function () {
 
     function round2(n) { return Math.round(n * 100) / 100; }
 
-    // Porsi (%) nilai line item yang belum masuk TOP — prefill Payment %.
+    // Porsi (%) nilai line item yang belum masuk TOP - prefill Payment %.
     function remainingShare(li) {
         if (!li || !(li.total > 0)) return 0;
         const editId = document.getElementById('paymentTermModalMode').value === 'edit'
@@ -1764,7 +1764,7 @@ window.SupportPaymentTermPlan = (function () {
             btn.classList.toggle('text-gray-700', !active && allowed);
             btn.classList.toggle('text-gray-400', !active && !allowed);
             btn.classList.toggle('bg-gray-100', !active && !allowed);
-            // Type "% of Revenue" hanya punya satu basis — tombol lain disembunyikan.
+            // Type "% of Revenue" hanya punya satu basis - tombol lain disembunyikan.
             if (b !== 'percentage') btn.classList.toggle('hidden', _mode !== 'line_item');
         });
 
@@ -1789,8 +1789,8 @@ window.SupportPaymentTermPlan = (function () {
 
         document.getElementById('pt_basis_hint').textContent = {
             percentage: `Amount = Payment % × revenue in Sales Data (${fmtRp(currentRevenue())}).`,
-            line_item:  'Fill in Payment % — Amount = Payment % × the selected line item value.',
-            fixed:      'Fill in the Amount — its share (%) of the selected line item value is calculated automatically.',
+            line_item:  'Fill in Payment % - Amount = Payment % × the selected line item value.',
+            fixed:      'Fill in the Amount - its share (%) of the selected line item value is calculated automatically.',
         }[basis];
 
         // Pertahankan nilai yang sudah terisi saat berpindah Payment % ↔ Amount.
@@ -1808,13 +1808,13 @@ window.SupportPaymentTermPlan = (function () {
     function populateLineItemSelect(selectedId) {
         const sel = document.getElementById('pt_line_item');
         if (!sel) return;
-        sel.innerHTML = `<option value="">— Select line item —</option>` +
+        sel.innerHTML = `<option value="">- Select line item -</option>` +
             _lineItems.map(li => `<option value="${li.id}">${esc(li.name)} · ${esc(li.type_label)} · ${
                 li.type === 'recurring' ? fmtRp(li.amount) + ' / period' : fmtRp(li.total)}</option>`).join('');
         sel.value = selectedId ? String(selectedId) : '';
     }
 
-    // Prefill dari line item yang dipilih — tetap bisa diubah:
+    // Prefill dari line item yang dipilih - tetap bisa diubah:
     //   Amount    → nominal line item (per periode untuk recurring)
     //   Payment % → sisa porsi line item yang belum masuk TOP
     function onLineItemChange(fromBasisSwitch) {
@@ -1888,7 +1888,7 @@ window.SupportPaymentTermPlan = (function () {
         }
 
         box.classList.toggle('hidden', !msgs.length);
-        box.innerHTML = msgs.map(m => `<p>⚠ ${esc(m)}</p>`).join('') + (msgs.length ? '<p class="mt-1 text-amber-700/80">You can still save — this is only a notification.</p>' : '');
+        box.innerHTML = msgs.map(m => `<p>⚠ ${esc(m)}</p>`).join('') + (msgs.length ? '<p class="mt-1 text-amber-700/80">You can still save - this is only a notification.</p>' : '');
     }
 
     // Toggle indikator "wajib" pada Invoice Number sesuai isi Submit Invoice Date
@@ -1947,7 +1947,7 @@ window.SupportPaymentTermPlan = (function () {
     function openAdd(lineItemId) {
         // Amount diambil dari Contract Line Item → line item wajib ada dulu.
         if (_mode === 'line_item' && !_lineItems.length) {
-            showNotification('Add a contract line item first — payment terms in Contract Line Item mode must be linked to one.', 'warning');
+            showNotification('Add a contract line item first - payment terms in Contract Line Item mode must be linked to one.', 'warning');
             openAddLineItem();
             return;
         }
@@ -2033,7 +2033,7 @@ window.SupportPaymentTermPlan = (function () {
         if (status === 'Paid' && !paidDate) { showNotification('Paid Date is required when Status is Paid.', 'error'); return; }
 
         // Guard: total termin basis % of Revenue tidak boleh melebihi 100% / revenue.
-        // Basis line item tidak diblokir — hanya diperingatkan (lihat checkOver()).
+        // Basis line item tidak diblokir - hanya diperingatkan (lihat checkOver()).
         const editId = mode === 'edit' ? parseInt(document.getElementById('paymentTermModalId').value, 10) : null;
         if (_basis === 'percentage') {
             const otherPct = _terms.reduce((s, t) => (t.id === editId || t.basis !== 'percentage' ? s : s + (Number(t.payment_percentage) || 0)), 0);
@@ -2147,7 +2147,7 @@ window.SupportPaymentTermPlan = (function () {
         const amount = parseAmount(document.getElementById('li_amount').value) || 0;
 
         if (document.getElementById('li_type').value === 'milestone') {
-            box.textContent = `Contract value: ${fmtRp(amount)} — billed in several terms (milestones). Add each term with "Payment %" of this line item.`;
+            box.textContent = `Contract value: ${fmtRp(amount)} - billed in several terms (milestones). Add each term with "Payment %" of this line item.`;
             return;
         }
         if (document.getElementById('li_type').value !== 'recurring') {
@@ -2303,9 +2303,9 @@ window.SupportPaymentTermPlan = (function () {
         if (!periods.length) {
             box.textContent = 'Fill in the start and end date to see the schedule.';
         } else if (!fresh.length) {
-            box.textContent = `All ${periods.length} period(s) already have a payment term — nothing to generate.`;
+            box.textContent = `All ${periods.length} period(s) already have a payment term - nothing to generate.`;
         } else {
-            box.textContent = `Will create ${fresh.length} payment term(s) (${li.name} – ${fresh[0]} to ${li.name} – ${fresh[fresh.length - 1]}), total ${fmtRp((amount || 0) * fresh.length)}.`
+            box.textContent = `Will create ${fresh.length} payment term(s) (${li.name} - ${fresh[0]} to ${li.name} - ${fresh[fresh.length - 1]}), total ${fmtRp((amount || 0) * fresh.length)}.`
                 + (skipped ? ` ${skipped} existing period(s) will be skipped.` : '');
         }
 
@@ -2362,7 +2362,7 @@ window.SupportPaymentTermPlan = (function () {
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        // Date pickers — pakai HolidayCalendar (sama dengan Delivery Project):
+        // Date pickers - pakai HolidayCalendar (sama dengan Delivery Project):
         // header bulan statis, weekend + libur nasional merah & non-selectable.
         if (window.HolidayCalendar) {
             window.HolidayCalendar.load().then(function () {
@@ -2372,7 +2372,7 @@ window.SupportPaymentTermPlan = (function () {
                 });
                 window._fpSupPtPaid          = HolidayCalendar.initPicker(document.getElementById('pt_paid_date'));
 
-                // TOP mode Line Item — jadwal Contract Line Item & Generate Schedule.
+                // TOP mode Line Item - jadwal Contract Line Item & Generate Schedule.
                 // Jadwal kontrak boleh jatuh di hari libur (mis. 1 Jan) → jangan disable tanggal apa pun.
                 const preview = (fn) => ({ disable: [], onChange: function () { fn(); } });
                 window._fpSupLiStart = HolidayCalendar.initPicker(document.getElementById('li_start_date'), preview(previewLineItem));

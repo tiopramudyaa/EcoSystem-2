@@ -48,20 +48,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Microsoft Graph — chat Teams (sinkron chat <-> internal note)
+    | Microsoft Graph - chat Teams (sinkron chat <-> internal note)
     |--------------------------------------------------------------------------
     |
     | Kredensialnya SENGAJA jatuh balik ke app registration email (MS_*), sesuai
     | keputusan 17 Sep 2026: dua app berarti dua client secret dengan dua tanggal
     | kedaluwarsa, dan secret kedaluwarsa adalah penyebab kegagalan integrasi yang
     | paling sering. Isi MS_TEAMS_* hanya kalau Teams nanti dipindah ke app sendiri
-    | — pemisahannya cukup lewat .env, tanpa ubah kode.
+    | - pemisahannya cukup lewat .env, tanpa ubah kode.
     |
     | Rincian: docs/teams-chat-sync-design.md §2.
     |
     | Ditulis dengan `?:`, BUKAN sebagai argumen default `env($k, $fallback)`.
     | Bedanya menentukan: variabel yang ADA TAPI KOSONG di .env (`MS_TEAMS_TENANT_ID=`)
-    | membuat env() mengembalikan string kosong, bukan null — sehingga nilai default
+    | membuat env() mengembalikan string kosong, bukan null - sehingga nilai default
     | tidak pernah dipakai dan integrasi Teams mati diam-diam. Padahal "ada tapi
     | kosong" justru keadaan yang kita anjurkan di .env.example.
     |
@@ -80,7 +80,7 @@ return [
     |
     | Semua default MATI. Dua arahnya bisa dinyalakan terpisah: kalau ada yang
     | aneh, matikan satu arah tanpa mengganggu yang lain, dan mematikan keduanya
-    | mengembalikan sistem ke keadaan sebelum fitur ini ada — tanpa deploy ulang.
+    | mengembalikan sistem ke keadaan sebelum fitur ini ada - tanpa deploy ulang.
     |
     */
     'teams_sync' => [
@@ -108,10 +108,10 @@ return [
         //
         // Kenapa tanpa batas jadi default: gambar lampiran ikut ditampilkan
         // langsung di dalam pesan grup. Tautan yang kedaluwarsa tidak sekadar
-        // "tidak bisa diklik" — gambarnya PECAH permanen di riwayat chat, dan
+        // "tidak bisa diklik" - gambarnya PECAH permanen di riwayat chat, dan
         // riwayat itu yang dibaca orang saat menelusuri tiket lama.
         //
-        // Yang dibayar: tanda tangan URL adalah kapabilitas, bukan izin — siapa
+        // Yang dibayar: tanda tangan URL adalah kapabilitas, bukan izin - siapa
         // pun yang memegang tautannya bisa membuka lampirannya tanpa akun
         // EcoSystem. Diisi angka > 0 kalau suatu saat itu dianggap terlalu
         // longgar; tidak perlu ubah kode, cukup `.env` + `optimize:clear`.
@@ -142,7 +142,7 @@ return [
         //
         //  1. WAJIB jadi anggota tiap group chat buatan Graph. Waktu konektor
         //     Teams yang membuat grup, Teams menambahkan pemilik koneksi sendiri
-        //     — itu sebabnya alamat ini justru ditaruh di _EXCLUDE_MEMBERS dulu
+        //     - itu sebabnya alamat ini justru ditaruh di _EXCLUDE_MEMBERS dulu
         //     (kalau ikut lagi, jadi "Duplicate chat members"). Graph TIDAK
         //     menambahkan siapa pun otomatis, jadi tanpa baris ini flow 5 dan
         //     flow 7 gagal memposting: akun koneksinya bukan anggota grup.
@@ -155,7 +155,7 @@ return [
         // Konsekuensi yang diterima: kalau ada MANUSIA yang mengetik di group
         // chat tiket memakai akun ini, pesannya tidak ikut tersinkron. Akun ini
         // akun layanan, jadi itu pertukaran yang wajar.
-        // `?:` bukan argumen default env() — lihat catatan di microsoft_graph_teams:
+        // `?:` bukan argumen default env() - lihat catatan di microsoft_graph_teams:
         // variabel yang ada tapi kosong mengembalikan '' dan membuat nilai
         // cadangannya tidak pernah terpakai.
         'connection_email' => env('POWER_AUTOMATE_TEAMS_CONNECTION_OWNER') ?: env('MS_SENDER_EMAIL'),
@@ -192,7 +192,7 @@ return [
 
         // Tujuan setelah guest menerima undangan. WAJIB menyebut tenant: guest
         // Email OTP (Gmail tanpa akun Microsoft) tidak dikenali halaman login
-        // umum teams.microsoft.com — ia ditolak "We couldn't find an account"
+        // umum teams.microsoft.com - ia ditolak "We couldn't find an account"
         // atau "You don't have the required permissions to access this org"
         // (terbukti 22 Okt 2026). Tautan yang sama juga yang dipakai guest
         // untuk masuk lagi di kemudian hari.
@@ -217,7 +217,7 @@ return [
 
         // Pesan customer yang ditulis LANGSUNG ke DB oleh JARVIES (tanpa lewat
         // EcoSystem) diantre oleh sapuan di teams:flush-outbox. Hanya pesan
-        // sebaru ini yang disapu — mencegah banjir pesan lama saat fitur
+        // sebaru ini yang disapu - mencegah banjir pesan lama saat fitur
         // pertama kali dinyalakan.
         'customer_sweep_minutes' => (int) env('TEAMS_SYNC_CUSTOMER_SWEEP_MINUTES', 120),
     ],
@@ -235,16 +235,16 @@ return [
     'anthropic' => [
         'api_key' => env('ANTHROPIC_API_KEY'),
         // Skill ID Agent Skills custom "sap-ticket-analyzer" (dibuat di Anthropic
-        // Console) — dipakai AiTicketAnalyzerService untuk fitur Analisa AI di
+        // Console) - dipakai AiTicketAnalyzerService untuk fitur Analisa AI di
         // validasi Staging Ticket.
         'ticket_analyzer_skill_id' => env('ANTHROPIC_TICKET_ANALYZER_SKILL_ID'),
 
-        // Skill ID Agent Skills custom "laravel-word-report-generator" — di-upload
+        // Skill ID Agent Skills custom "laravel-word-report-generator" - di-upload
         // lewat `php artisan claude:upload-skill` (lihat .claude/skills/laravel-word-report-generator/SKILL.md).
         // Dipakai ClaudeReportService untuk fitur generate laporan .docx/.pdf dari template.
         'word_report_skill_id' => env('ANTHROPIC_WORD_REPORT_SKILL_ID'),
 
-        // Model dipakai ClaudeReportService — bisa dioverride tanpa deploy kalau perlu.
+        // Model dipakai ClaudeReportService - bisa dioverride tanpa deploy kalau perlu.
         'word_report_model' => env('ANTHROPIC_WORD_REPORT_MODEL', 'claude-opus-5'),
     ],
 
@@ -276,7 +276,7 @@ return [
     | Setiap request membawa header X-EcoSystem-Secret berisi POWER_AUTOMATE_SECRET
     | supaya flow bisa menolak panggilan dari pihak lain. URL trigger Power Automate
     | memang sudah mengandung tanda tangan SAS, tetapi siapa pun yang pernah melihat
-    | URL itu bisa memanggilnya lagi — secret ini lapis kedua.
+    | URL itu bisa memanggilnya lagi - secret ini lapis kedua.
     |
     | Flow yang URL-nya dikosongkan otomatis dilewati (fitur mati untuk flow itu
     | saja), sehingga integrasi bisa dinyalakan bertahap tanpa ubah kode.
@@ -288,7 +288,7 @@ return [
         'timeout' => (int) env('POWER_AUTOMATE_TIMEOUT', 10),
 
         // PAGAR STAGING. Email pelapor yang boleh memicu Power Automate (pisah
-        // koma). KOSONG = tanpa batas, dan itu keadaan PRODUKSI — default-nya
+        // koma). KOSONG = tanpa batas, dan itu keadaan PRODUKSI - default-nya
         // sengaja longgar supaya lupa mengisi tidak pernah membisukan notifikasi
         // customer sungguhan.
         //
@@ -323,7 +323,7 @@ return [
         // Ikutkan tim Delivery Support tiket (Delivery Owner, Support Manager,
         // CO PM, Support Admin) sebagai peserta group chat. Orangnya diambil
         // dari delivery support yang dipilih helpdesk saat validasi, jadi
-        // berbeda per tiket — tidak seperti teams_member_role_ids di atas.
+        // berbeda per tiket - tidak seperti teams_member_role_ids di atas.
         'teams_include_support_team' => (bool) env('POWER_AUTOMATE_TEAMS_INCLUDE_SUPPORT_TEAM', true),
 
         // Batas peserta satu group chat (batas konektor Teams = 20). Kelebihan
@@ -360,14 +360,14 @@ return [
             // Jarak minimum antar reminder UNTUK TIKET YANG SAMA, dalam menit.
             // Default 60 (bukan 1): scheduler memanggil command ini tiap menit,
             // jadi nilai 1 berarti tiap tiket open mengirim kartu Teams setiap
-            // menit — banjir notifikasi yang membuat orang mematikan seluruh
+            // menit - banjir notifikasi yang membuat orang mematikan seluruh
             // integrasinya. Diturunkan hanya untuk pengujian.
             'interval_minutes'   => (int) env('POWER_AUTOMATE_REMINDER_INTERVAL_MINUTES', 60),
 
             // Batas jumlah reminder per tiket. 0 = tanpa batas (kirim terus selama open).
             'max_count'          => (int) env('POWER_AUTOMATE_REMINDER_MAX_COUNT', 0),
 
-            // Banyak tiket yang diproses per satu kali scheduler jalan — pagar ledakan
+            // Banyak tiket yang diproses per satu kali scheduler jalan - pagar ledakan
             // supaya backlog tiket open lama tidak mengirim ratusan pesan Teams
             // sekaligus pada menit pertama fitur dinyalakan.
             'batch_limit'        => (int) env('POWER_AUTOMATE_REMINDER_BATCH_LIMIT', 50),

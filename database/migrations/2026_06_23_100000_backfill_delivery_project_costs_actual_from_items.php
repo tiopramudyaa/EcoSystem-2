@@ -37,6 +37,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Data reconciliation only — nothing to roll back.
+        // Data reconciliation only - nothing to roll back.
     }
 };

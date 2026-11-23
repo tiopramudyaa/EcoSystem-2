@@ -1,5 +1,5 @@
 {{-- ══════════════════════════════════════════════════════════════════════════
-     MODAL — EDIT DELIVERY INFORMATION (Sales Data)
+     MODAL - EDIT DELIVERY INFORMATION (Sales Data)
      Field-nya dipindah apa adanya dari section inline lama; id, name, dan
      data-* dipertahankan supaya seluruh JS terkait (custom-dd, flatpickr,
      kalkulasi finansial, attachSectionForm) tetap terikat tanpa perubahan.

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Validator;
 /**
  * Settings-side 2FA management (enable/confirm/disable/regenerate). Kept
  * separate from AuthController, which stays focused on the login-time
- * challenge — see app/Services/TwoFactorAuthService.php for the primitives
+ * challenge - see app/Services/TwoFactorAuthService.php for the primitives
  * both controllers share.
  */
 class TwoFactorController extends Controller
@@ -36,7 +36,7 @@ class TwoFactorController extends Controller
 
     /**
      * Generates a new (unconfirmed) secret and returns the QR code + manual
-     * entry key. Confirmed 2FA is untouched until /confirm succeeds — this
+     * entry key. Confirmed 2FA is untouched until /confirm succeeds - this
      * can be called again to restart enrollment (e.g. lost the QR) without
      * side effects on an already-active setup, since confirmed_at only gets
      * cleared by /disable.
@@ -62,7 +62,7 @@ class TwoFactorController extends Controller
             'two_factor_last_used_at'   => null,
         ]);
 
-        // A new secret is being enrolled — any device-trust cookie issued
+        // A new secret is being enrolled - any device-trust cookie issued
         // against the old secret's verification must not carry over.
         TwoFactorAuthService::clearTrust($authUser->id);
 
@@ -92,7 +92,7 @@ class TwoFactorController extends Controller
     /**
      * Confirms enrollment with a code from the authenticator app. On
      * success, generates recovery codes and returns them in plaintext once
-     * — they are never retrievable again after this response.
+     * - they are never retrievable again after this response.
      */
     public function confirm(Request $request)
     {
@@ -113,7 +113,7 @@ class TwoFactorController extends Controller
 
         $secret = TwoFactorAuthService::decryptSecret($authUser->two_factor_secret);
         if (!$secret) {
-            return response()->json(['success' => false, 'message' => 'Enrollment data is invalid — please start again.'], 422);
+            return response()->json(['success' => false, 'message' => 'Enrollment data is invalid - please start again.'], 422);
         }
 
         $result = TwoFactorAuthService::verifyCode($secret, trim($request->input('code')), $authUser->two_factor_last_used_at);
@@ -150,7 +150,7 @@ class TwoFactorController extends Controller
         ]);
     }
 
-    /** Requires the account's current password — clears all 2FA columns. */
+    /** Requires the account's current password - clears all 2FA columns. */
     public function disable(Request $request)
     {
         $authUser = $this->currentAuthUser();
@@ -191,7 +191,7 @@ class TwoFactorController extends Controller
         return response()->json(['success' => true, 'message' => 'Two-factor authentication disabled.']);
     }
 
-    /** Requires the account's current password — replaces the recovery code set. */
+    /** Requires the account's current password - replaces the recovery code set. */
     public function regenerateRecoveryCodes(Request $request)
     {
         $authUser = $this->currentAuthUser();

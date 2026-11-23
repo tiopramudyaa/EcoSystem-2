@@ -4,7 +4,7 @@ namespace App\Enums;
 
 /**
  * Employee Subgroup. Label murni, daftar pendek & stabil, sehingga cukup
- * enum PHP (bukan tabel) — sama pola dengan HomeBase.
+ * enum PHP (bukan tabel) - sama pola dengan HomeBase.
  *
  * Penggunaan:
  *   EmployeeSubgroup::options()   // ['PKWT', 'PKWTT', 'CONSULTANCY AGREEMENT']

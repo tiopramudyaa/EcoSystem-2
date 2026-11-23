@@ -148,8 +148,8 @@
 <div class="diagram-grid">
 
     <div class="diagram-card">
-        <h3>Chart 1 — Ticket Qty from Start to Current Period</h3>
-        <p class="diagram-desc">Line chart — ticket count per month, following the Customer &amp; Period filters above.</p>
+        <h3>Chart 1 - Ticket Qty from Start to Current Period</h3>
+        <p class="diagram-desc">Line chart - ticket count per month, following the Customer &amp; Period filters above.</p>
         <div class="diagram-canvas-wrap-lg">
             <canvas id="chartTicketQty"></canvas>
             <div id="ticketQtyEmptyState" class="absolute inset-0 flex items-center justify-center text-center px-6">
@@ -162,8 +162,8 @@
     </div>
 
     <div class="diagram-card">
-        <h3>Chart 2 — Tickets per Module</h3>
-        <p class="diagram-desc">Grouped bar chart — ticket count per module (Incident/Error, Request/Konsultasi, Request/CR, Other), following the Customer &amp; Period filters above.</p>
+        <h3>Chart 2 - Tickets per Module</h3>
+        <p class="diagram-desc">Grouped bar chart - ticket count per module (Incident/Error, Request/Konsultasi, Request/CR, Other), following the Customer &amp; Period filters above.</p>
         <div class="diagram-canvas-wrap-lg" style="overflow-x:auto; overflow-y:hidden;">
             <div id="ticketByModuleCanvasInner" style="position:relative; height:100%; min-width:100%;">
                 <canvas id="chartTicketByModule"></canvas>
@@ -178,7 +178,7 @@
     </div>
 
     <div class="diagram-card">
-        <h3>Chart 3 — Ticket Type per Month</h3>
+        <h3>Chart 3 - Ticket Type per Month</h3>
         <p class="diagram-desc">Table of ticket count per Ticket Type per month, following the Customer &amp; Period filters above.</p>
         <div class="diagram-table-wrap" style="position:relative; overflow:auto; flex:1;">
             <table id="ticketTypeByMonthTable" class="diagram-table">
@@ -199,8 +199,8 @@
     </div>
 
     <div class="diagram-card">
-        <h3>Chart 4 — Ticket Type per Module</h3>
-        <p class="diagram-desc">Grouped bar chart — ticket count per module (Incident/Error, Request/Konsultasi, Request/CR), following the Customer &amp; Period filters above.</p>
+        <h3>Chart 4 - Ticket Type per Module</h3>
+        <p class="diagram-desc">Grouped bar chart - ticket count per module (Incident/Error, Request/Konsultasi, Request/CR), following the Customer &amp; Period filters above.</p>
         <div class="diagram-canvas-wrap-lg" style="overflow-x:auto; overflow-y:hidden;">
             <div id="ticketByModuleTypeCanvasInner" style="position:relative; height:100%; min-width:100%;">
                 <canvas id="chartTicketByModuleType"></canvas>
@@ -215,7 +215,7 @@
     </div>
 
     <div class="diagram-card">
-        <h3>Chart 5 — Ticket Type x Module</h3>
+        <h3>Chart 5 - Ticket Type x Module</h3>
         <p class="diagram-desc">Table of ticket count per Ticket Type per module, with a Total Tickets column, following the Customer &amp; Period filters above.</p>
         <div class="diagram-table-wrap" style="position:relative; overflow:auto; flex:1;">
             <table id="ticketTypeByModuleTable" class="diagram-table">
@@ -236,8 +236,8 @@
     </div>
 
     <div class="diagram-card">
-        <h3>Chart 6 — Ticket Count per Module</h3>
-        <p class="diagram-desc">Bar chart — ticket count per module, following the Customer &amp; Period filters above.</p>
+        <h3>Chart 6 - Ticket Count per Module</h3>
+        <p class="diagram-desc">Bar chart - ticket count per module, following the Customer &amp; Period filters above.</p>
         <div class="diagram-canvas-wrap"><canvas id="chartTicketByModuleCurrentPeriod"></canvas>
             <div id="ticketByModuleCurrentPeriodEmptyState" class="absolute inset-0 flex items-center justify-center text-center px-6">
                 <p class="text-sm text-gray-400">
@@ -249,8 +249,8 @@
     </div>
 
     <div class="diagram-card">
-        <h3>Chart 7 — Ticket Count by Type</h3>
-        <p class="diagram-desc">Bar chart — ticket count per Ticket Type, following the Customer &amp; Period filters above.</p>
+        <h3>Chart 7 - Ticket Count by Type</h3>
+        <p class="diagram-desc">Bar chart - ticket count per Ticket Type, following the Customer &amp; Period filters above.</p>
         <div class="diagram-canvas-wrap"><canvas id="chartTicketByType"></canvas>
             <div id="ticketByTypeEmptyState" class="absolute inset-0 flex items-center justify-center text-center px-6">
                 <p class="text-sm text-gray-400">
@@ -262,8 +262,8 @@
     </div>
 
     <div class="diagram-card">
-        <h3>Chart 8 — CR vs Non-CR by Status</h3>
-        <p class="diagram-desc">Grouped bar chart — Non CR vs Request CR, split by Close (closed, cancelled) and Open (inprocess, waiting on customer, waiting for confirmation, hold, waiting on 3rd party) status, following the Customer &amp; Period filters above.</p>
+        <h3>Chart 8 - CR vs Non-CR by Status</h3>
+        <p class="diagram-desc">Grouped bar chart - Non CR vs Request CR, split by Close (closed, cancelled) and Open (inprocess, waiting on customer, waiting for confirmation, hold, waiting on 3rd party) status, following the Customer &amp; Period filters above.</p>
         <div class="diagram-canvas-wrap"><canvas id="chartTicketByCrStatus"></canvas>
             <div id="ticketByCrStatusEmptyState" class="absolute inset-0 flex items-center justify-center text-center px-6">
                 <p class="text-sm text-gray-400">
@@ -275,8 +275,8 @@
     </div>
 
     <div class="diagram-card">
-        <h3>Chart 9 — CR &amp; Non CR from Start to Current Period</h3>
-        <p class="diagram-desc">Grouped bar chart — Non CR vs Request / CR ticket count per month, following the Customer &amp; Period filters above.</p>
+        <h3>Chart 9 - CR &amp; Non CR from Start to Current Period</h3>
+        <p class="diagram-desc">Grouped bar chart - Non CR vs Request / CR ticket count per month, following the Customer &amp; Period filters above.</p>
         <div class="diagram-canvas-wrap-lg" style="overflow-x:auto; overflow-y:hidden;">
             <div id="ticketByCrPerMonthCanvasInner" style="position:relative; height:100%; min-width:100%;">
                 <canvas id="chartTicketByCrPerMonth"></canvas>
@@ -291,8 +291,8 @@
     </div>
 
     <div class="diagram-card">
-        <h3>Chart 10 — Closed Tickets by Month</h3>
-        <p class="diagram-desc">Bar chart — ticket count with status Closed per month, following the Customer &amp; Period filters above.</p>
+        <h3>Chart 10 - Closed Tickets by Month</h3>
+        <p class="diagram-desc">Bar chart - ticket count with status Closed per month, following the Customer &amp; Period filters above.</p>
         <div class="diagram-canvas-wrap-lg" style="overflow-x:auto; overflow-y:hidden;">
             <div id="ticketClosedPerMonthCanvasInner" style="position:relative; height:100%; min-width:100%;">
                 <canvas id="chartTicketClosedPerMonth"></canvas>
@@ -442,7 +442,7 @@ window.addEventListener('resize', () => document.getElementById('dateFilterPanel
 </script>
 <script>
 (function () {
-    // Validated categorical palette (fixed order — see dataviz skill references/palette.md)
+    // Validated categorical palette (fixed order - see dataviz skill references/palette.md)
     const PALETTE = {
         blue:    '#2a78d6',
         orange:  '#eb6834',
@@ -465,7 +465,7 @@ window.addEventListener('resize', () => document.getElementById('dateFilterPanel
     const gridOpts = { color: GRID_COLOR, drawTicks: false };
     const tickOpts = { color: TEXT_MUTED };
 
-    // Draws the value above each data point — replicates the Excel chart look
+    // Draws the value above each data point - replicates the Excel chart look
     // that "Chart 1" is based on.
     const pointValueLabelPlugin = {
         id: 'pointValueLabel',
@@ -491,7 +491,7 @@ window.addEventListener('resize', () => document.getElementById('dateFilterPanel
 
     // ── Chart 1: Ticket Qty from Start to Current Period ───────────────────
     // Data comes from the API, following the Customer & Period (Start/End Date)
-    // filters above. Period must be filled in first — see loadTicketQtyChart().
+    // filters above. Period must be filled in first - see loadTicketQtyChart().
     const ticketQtyChart = new Chart(document.getElementById('chartTicketQty'), {
         type: 'line',
         data: {

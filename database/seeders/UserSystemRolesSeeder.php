@@ -17,7 +17,7 @@ class UserSystemRolesSeeder extends Seeder
         $roleEcAdmin = 1;
         $roleEcUser  = 3;
 
-        // "User System Registered" tidak punya ID tetap (auto-increment) — lookup by name
+        // "User System Registered" tidak punya ID tetap (auto-increment) - lookup by name
         $roleUsrReg = DB::table('employee_role')->where('name', 'User System Registered')->value('id');
 
         if (!$roleUsrReg) {
@@ -37,7 +37,7 @@ class UserSystemRolesSeeder extends Seeder
             ]);
             $this->command->line("  [ECI_ADMIN] EC Administrator role assigned (employee_id={$admin->employee_id}).");
         } else {
-            $this->command->warn('Employee ECI_ADMIN not found — skipping EC Administrator assignment.');
+            $this->command->warn('Employee ECI_ADMIN not found - skipping EC Administrator assignment.');
         }
 
         // ── 3. All employees → auth_users + User System Registered + EC User ──

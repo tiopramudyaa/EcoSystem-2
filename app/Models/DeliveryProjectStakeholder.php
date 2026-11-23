@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Traits\Auditable;
 
 /**
- * Stakeholder Register — satu baris per stakeholder Delivery Project.
+ * Stakeholder Register - satu baris per stakeholder Delivery Project.
  *
  * Dipetakan dari sheet "Stakeholder Register" pada template Excel
  * PMP/PMBOK aligned. Kolom "Kuadran Power-Interest" tidak disimpan: nilainya

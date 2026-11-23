@@ -13,12 +13,12 @@ use Symfony\Component\HttpFoundation\Response;
  * TERSEBUT, ATAU bila ia terdaftar sebagai Project Owner pada project yang
  * sedang diakses.
  *
- * Latar: "Project Owner" bukan role yang menempel di tabel employee — ia hanya
+ * Latar: "Project Owner" bukan role yang menempel di tabel employee - ia hanya
  * sebuah kolom pada masing-masing project. Karena itu izinnya tidak bisa
  * diwakili slug menu (yang selalu lintas project); grant dari kepemilikan ini
  * berlaku HANYA pada project tempat ia jadi owner.
  *
- * Slug menu yang sudah ada tetap berlaku seperti biasa — middleware ini tidak
+ * Slug menu yang sudah ada tetap berlaku seperti biasa - middleware ini tidak
  * pernah mencabut akses, hanya menambah.
  *
  * Pemakaian: ->middleware('menu.owner:delivery-project.risk.manage')
@@ -39,12 +39,12 @@ class CheckMenuOrProjectOwner
         $employee = Employee::find($user['id'] ?? null);
 
         if ($employee) {
-            // Jalur 1 — izin berbasis role (perilaku lama, lintas project).
+            // Jalur 1 - izin berbasis role (perilaku lama, lintas project).
             if ($employee->canAccessMenu($menuSlug)) {
                 return $next($request);
             }
 
-            // Jalur 2 — Project Owner pada project ini saja.
+            // Jalur 2 - Project Owner pada project ini saja.
             $project = $this->resolveProject($request);
             if ($project && $project->isOwnedByEmployee($employee->employee_id)) {
                 return $next($request);

@@ -5,7 +5,7 @@ order: 115
 title: Timesheets
 summary: Log your working hours on a project, a ticket or office work, send them for approval and ask for late access.
 requires: [calendar.timesheets]
-updated: 2026-11-11
+updated: 2026-11-21
 ---
 `Calendar` › `Timesheets` is where you log working hours and send them for approval.
 
@@ -72,14 +72,14 @@ These rules are checked when you save or submit. If one is broken, nothing is sa
 - Moving an existing entry to another date checks the period limits again for the new date.
 - The end time must be later than the start time, and the activity description is required.
 - If your role belongs to the Project or Support domain, you can only log time in the current period or the previous period, and only while that period is open. A period is open when RPMO has opened it and the Head of your domain has opened your domain. If it is closed, ask for late access. Roles that belong to no domain are not held to these period limits.
-- You can edit your own entries while they are `Draft` or `Rejected`. Only the EC Administrator, the RPMO Head and the Heads can also change other people's entries. A `Submitted` or `Approved` entry can be neither edited nor deleted. Only a `Draft` can be deleted.
+- You can edit your own entries while they are `Draft` or `Rejected`. Only the EC Administrator, the RPMO Head and the Heads can also change other people's entries. A `Submitted` or `Approved` entry cannot be edited.
 
 ### Support entries (with a ticket)
 
 - Choose the ticket you worked on and fill the `Activity Date`.
 - The `Ticket` list shows tickets where you are the lead, a member or a Co-PM (plus the tickets of Delivery Support you manage), but only if Head has approved days for you and quota remains. A draft you edit keeps its own ticket selectable.
 - `MD Consumed` cannot be more than your remaining quota on that ticket. The quota is the days Head approved for you, including additional days. It stays valid while the proposal is revised. Your drafts, submitted and approved entries all count against it. If you need more, ask your Head to raise the quota.
-- You can save a draft before days are approved, but cannot submit it: EcoSystem says Head has approved no days for you on the ticket. For a Change Request the Customer Mandays must be approved first.
+- You can save a draft before days are approved, but cannot submit it: EcoSystem says Head has approved no days for you on the ticket.
 - If your personnel subarea is `Project`, one support entry can use at most 1 MD. Split bigger work into several entries.
 
 ### Project entries
@@ -105,7 +105,8 @@ These rules are checked when you save or submit. If one is broken, nothing is sa
 - You can submit only your own `Draft` entries. Submitting notifies everyone whose role may approve that type (see the next point).
 - Approving and rejecting is set per type in `Menu Access`, under `Timesheets`: `Approve or Reject Project Timesheet`, and the same for Non Project, Support and Office. One function covers both, and you only see and act on the types you hold. By default the Head of Project holds Project and Non Project, the Head of Support holds Support, the RPMO Head holds Office and the EC Administrator all four. Only `Submitted` entries can be approved or rejected, one by one or in bulk. Approving a support entry is refused if `MD Consumed` no longer fits the quota.
 - A rejection needs a written reason. The employee sees it, can correct the entry (it goes back to `Draft`) and submit it again.
-- An approved entry is final: it cannot be reopened, edited or deleted.
+- An approved entry is final: it cannot be reopened or edited.
+- Only a `Draft` can be deleted, unless you hold `Delete Timesheet in Any Status` (by default only the EC Administrator).
 
 ## What happens next
 
@@ -119,4 +120,4 @@ A rejected entry shows the reason: correct it (back to `Draft`) and submit again
 
 **Why are `Quota MD` and `Remaining` empty?** They fill in once you choose a ticket.
 
-<!-- sources: routes/web.php, app/Http/Controllers/CalendarController.php, app/Http/Controllers/TimesheetController.php, resources/views/calendar/timesheets.blade.php -->
+<!-- sources: routes/web.php, app/Http/Controllers/CalendarController.php, app/Http/Controllers/TimesheetController.php, resources/views/calendar/timesheets.blade.php, resources/views/calendar/partials/timesheet-detail-panel.blade.php -->

@@ -1,5 +1,5 @@
 {{-- ====================================================================
-     Project Planning — Delete All (reset) Modal
+     Project Planning - Delete All (reset) Modal
      Wipes Phase → Group → Activity for this project. Guarded by a typed
      confirmation because nothing here is recoverable from the UI.
      ==================================================================== --}}
@@ -32,10 +32,10 @@
             <div class="px-6 py-5 space-y-4">
                 <p class="text-sm text-gray-600">
                     Menghapus <strong>seluruh struktur planning</strong> project
-                    <strong>{{ $project->name }}</strong> sampai bersih — termasuk
+                    <strong>{{ $project->name }}</strong> sampai bersih - termasuk
                     <strong>fase</strong> beserta bobotnya. Project akan kembali kosong
                     seperti sebelum planning pernah dibuat. Tindakan ini
-                    <strong class="text-red-700">tidak dapat dibatalkan</strong> — tidak ada undo.
+                    <strong class="text-red-700">tidak dapat dibatalkan</strong> - tidak ada undo.
                 </p>
 
                 {{-- What will be removed (filled by the preview endpoint) --}}
@@ -79,7 +79,7 @@
 </div>
 
 <script>
-    // True once the wipe succeeded — closing then reloads the page.
+    // True once the wipe succeeded - closing then reloads the page.
     let planningResetDone = false;
 
     function openPlanningResetModal() {
@@ -124,7 +124,7 @@
                 const phases = c.phases || 0;
 
                 if (!activities && !groups && !phases) {
-                    box.innerHTML = '<p class="text-sm text-red-700">Planning project ini sudah kosong — tidak ada yang dihapus.</p>';
+                    box.innerHTML = '<p class="text-sm text-red-700">Planning project ini sudah kosong - tidak ada yang dihapus.</p>';
                     return;
                 }
 
@@ -182,7 +182,7 @@
                     window.showToast(data.message, 'success', 5000);
                 }
 
-                // Nothing left to act on — send the user back to a fresh page.
+                // Nothing left to act on - send the user back to a fresh page.
                 setTimeout(function () { window.location.reload(); }, 1200);
             })
             .catch(function (error) {

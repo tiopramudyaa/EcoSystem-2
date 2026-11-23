@@ -31,8 +31,8 @@ class RenameSupportDeliverableFolders extends Command
         $root    = config('services.microsoft_graph.customer_deliverable_path', 'DELIVERY SUPPORT/CUSTOMER DELIVERABLE');
 
         $this->line($execute
-            ? '<fg=yellow;options=bold>EXECUTE mode — folders WILL be renamed.</>'
-            : '<fg=cyan;options=bold>DRY-RUN mode — no changes. Re-run with --execute to apply.</>');
+            ? '<fg=yellow;options=bold>EXECUTE mode - folders WILL be renamed.</>'
+            : '<fg=cyan;options=bold>DRY-RUN mode - no changes. Re-run with --execute to apply.</>');
 
         $query = DeliverySupport::whereNotNull('onedrive_deliverable_folder_id');
         if ($id = $this->option('support')) {
@@ -76,7 +76,7 @@ class RenameSupportDeliverableFolders extends Command
             }
 
             if ($current['name'] === $desired) {
-                $this->line("  [{$tag}] already '{$desired}' — ok.");
+                $this->line("  [{$tag}] already '{$desired}' - ok.");
                 $ok++;
                 continue;
             }

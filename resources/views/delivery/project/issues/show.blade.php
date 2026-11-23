@@ -40,7 +40,7 @@
                         <div class="flex justify-between items-start">
                             <div>
                                 <p class="text-xs font-mono text-gray-500">{{ $issue->issue_id_label }}</p>
-                                <p class="text-xs text-gray-500 mt-1">Identified: {{ optional($issue->date_identified)->format('d M Y') ?? '—' }}</p>
+                                <p class="text-xs text-gray-500 mt-1">Identified: {{ optional($issue->date_identified)->format('d M Y') ?? '-' }}</p>
                             </div>
                             <div class="flex gap-2">
                                 {{-- Priority Badge --}}
@@ -80,23 +80,23 @@
                         <div class="pt-3 border-t border-gray-200 grid grid-cols-2 gap-3 text-sm">
                             <div>
                                 <span class="text-xs text-gray-500">Module:</span>
-                                <span class="ml-1 font-medium text-gray-900">{{ $issue->module ?? '—' }}</span>
+                                <span class="ml-1 font-medium text-gray-900">{{ $issue->module ?? '-' }}</span>
                             </div>
                             <div>
                                 <span class="text-xs text-gray-500">Risk ID:</span>
-                                <span class="ml-1 font-mono text-gray-900">{{ $issue->risk?->risk_id_label ?? '—' }}</span>
+                                <span class="ml-1 font-mono text-gray-900">{{ $issue->risk?->risk_id_label ?? '-' }}</span>
                             </div>
                             <div>
                                 <span class="text-xs text-gray-500">Owner:</span>
-                                <span class="ml-1 font-medium text-gray-900">{{ $issue->owner ?? '—' }}</span>
+                                <span class="ml-1 font-medium text-gray-900">{{ $issue->owner ?? '-' }}</span>
                             </div>
                             <div>
                                 <span class="text-xs text-gray-500">Originator:</span>
-                                <span class="ml-1 font-medium text-gray-900">{{ $issue->originator ?? '—' }}</span>
+                                <span class="ml-1 font-medium text-gray-900">{{ $issue->originator ?? '-' }}</span>
                             </div>
                             <div>
                                 <span class="text-xs text-gray-500">Est. Closed:</span>
-                                <span class="ml-1 font-medium text-gray-900">{{ optional($issue->estimated_closed)->format('d M Y') ?? '—' }}</span>
+                                <span class="ml-1 font-medium text-gray-900">{{ optional($issue->estimated_closed)->format('d M Y') ?? '-' }}</span>
                             </div>
                             <div>
                                 <span class="text-xs text-gray-500">Escalation:</span>
@@ -144,7 +144,7 @@
                         <td class="px-4 py-4 text-sm text-gray-700">
                             <div class="max-w-sm wrap-break-word leading-5">{{ $issue->issue_description }}</div>
                         </td>
-                        <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">{{ $issue->module ?? '—' }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">{{ $issue->module ?? '-' }}</td>
                         <td class="px-4 py-4 whitespace-nowrap">
                             <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
                                 {{ $issue->priority === 'High' ? 'bg-red-100 text-red-800' :
@@ -160,11 +160,11 @@
                                 {{ $issue->status }}
                             </span>
                         </td>
-                        <td class="px-4 py-4 text-xs font-mono text-gray-500 whitespace-nowrap">{{ $issue->risk?->risk_id_label ?? '—' }}</td>
-                        <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">{{ $issue->owner ?? '—' }}</td>
-                        <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">{{ optional($issue->date_identified)->format('d M Y') ?? '—' }}</td>
-                        <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">{{ optional($issue->estimated_closed)->format('d M Y') ?? '—' }}</td>
-                        <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">{{ optional($issue->closed_date)->format('d M Y') ?? '—' }}</td>
+                        <td class="px-4 py-4 text-xs font-mono text-gray-500 whitespace-nowrap">{{ $issue->risk?->risk_id_label ?? '-' }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">{{ $issue->owner ?? '-' }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">{{ optional($issue->date_identified)->format('d M Y') ?? '-' }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">{{ optional($issue->estimated_closed)->format('d M Y') ?? '-' }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">{{ optional($issue->closed_date)->format('d M Y') ?? '-' }}</td>
                         <td class="px-4 py-4 text-center text-sm text-gray-500 whitespace-nowrap">{{ $issue->escalation_needed ? 'Y' : 'N' }}</td>
                     </tr>
                 @empty

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
  * Menu AI Assistant (root, sejajar Home / Calendar / Reporting).
  *
  * MenuRegistrar::register() hanya bisa membuat menu di bawah parent, jadi baris
- * menu-nya ditulis di sini — tapi grant-nya tetap lewat MenuRegistrar supaya
+ * menu-nya ditulis di sini - tapi grant-nya tetap lewat MenuRegistrar supaya
  * aturan baku berlaku: menu BARU aktif HANYA untuk EC Administrator, mati untuk
  * seluruh role lain. Role lain menyusul lewat Control Center → Menu Access.
  */

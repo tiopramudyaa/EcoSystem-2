@@ -46,7 +46,7 @@
                 </div>
             </div>
 
-            <!-- Country (dropdown — data-driven dari dropdown_configs, fallback Indonesia) -->
+            <!-- Country (dropdown - data-driven dari dropdown_configs, fallback Indonesia) -->
             <div class="col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Country</label>
                 <select id="country" onchange="addrOnCountryChange()" class="addr-select w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent bg-white">
@@ -372,7 +372,7 @@
     /* ─────────────────────────────────────────────────────────────────────
        CASCADING DROPDOWN WILAYAH
        Country → Region → City → District → Rural/Urban Village.
-       Port 1:1 dari master/employee/sections/address.blade.php — sumber:
+       Port 1:1 dari master/employee/sections/address.blade.php - sumber:
        /api/regions/children (tabel `wilayah`, Kepmendagri 2025). Nilai yang
        DISIMPAN tetap NAMA (kolom region/city/district/rural_urban_village).
        Kode wilayah dibawa di data-code tiap <option> untuk menautkan ke
@@ -478,7 +478,7 @@
        COUNTRY-DEPENDENT MODE: Indonesia pakai dropdown wilayah cascading di
        atas; negara lain (mis. Singapura) pakai input manual karena tabel
        `wilayah` memang data resmi Indonesia-only. Kolom yang disimpan tetap
-       region/city/district/rural_urban_village (string bebas — backend
+       region/city/district/rural_urban_village (string bebas - backend
        sudah menerima teks apa pun), jadi tidak ada perubahan payload/API.
        ───────────────────────────────────────────────────────────────────── */
     const ADDR_WILAYAH_COUNTRY = 'Indonesia';
@@ -505,7 +505,7 @@
     }
 
     // Set value Country secara programatic (load/reset), lalu dispatch 'change'
-    // supaya label tombol select-enhance ikut ter-refresh — widget kustom itu
+    // supaya label tombol select-enhance ikut ter-refresh - widget kustom itu
     // hanya dengar event 'change'/mutasi DOM, TIDAK dengar assignment `.value =`
     // langsung. Guard flag mencegah addrOnCountryChange() (listener kita sendiri,
     // bukan punya select-enhance) ikut jalan dan salah reset field lokasi yang

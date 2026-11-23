@@ -13,7 +13,7 @@ use App\Services\Ai\Drivers\Contracts\ChatDriver;
 use Closure;
 
 /**
- * Claude side of AiChatService's turn — this is exactly the logic that used
+ * Claude side of AiChatService's turn - this is exactly the logic that used
  * to live directly in AiChatService before GPT became a second provider.
  * Messages/tools arrive already in Anthropic's own shape, so no translation
  * is needed here (compare OpenAiChatDriver, which does the translating).
@@ -41,7 +41,7 @@ class AnthropicChatDriver implements ChatDriver
             // Cache breakpoint: pemanggil (AiTicketQaService, AiChatService) merakit
             // ulang system prompt yang sama persis di setiap giliran chat SELAMA
             // state yang dirujuknya (mis. ai_analysis staging ticket) belum berubah
-            // — tanpa breakpoint ini, giliran ke-2/3/dst dalam satu sesi tanya-jawab
+            // - tanpa breakpoint ini, giliran ke-2/3/dst dalam satu sesi tanya-jawab
             // memproses ulang konteks yang identik dari nol setiap kali.
             system: [TextBlockParam::with(text: $systemPrompt, cacheControl: CacheControlEphemeral::with())],
             thinking: $effort ? ['type' => 'adaptive'] : null,

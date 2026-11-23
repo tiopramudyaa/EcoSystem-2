@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  *  - GPS device location captured when the timesheet is created (latitude/longitude/
  *    accuracy/captured_at) + the reverse-geocoded address shown on the approval side.
  *    `location` stays the user's free-text location.
- *  - `is_without_activity` — project timesheet logged on a weekend / public holiday,
+ *  - `is_without_activity` - project timesheet logged on a weekend / public holiday,
  *    where no activity runs; the detail is written manually in `description`.
  *  - `activity_type` becomes nullable: project timesheets no longer ask for it.
  */

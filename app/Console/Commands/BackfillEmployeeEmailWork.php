@@ -32,7 +32,7 @@ class BackfillEmployeeEmailWork extends Command
         $overwrite = (bool) $this->option('overwrite');
 
         if ($dryRun) {
-            $this->warn('Mode DRY-RUN — tidak ada perubahan yang disimpan.');
+            $this->warn('Mode DRY-RUN - tidak ada perubahan yang disimpan.');
         }
 
         // Akun employee dengan email login terisi (customer dilewati).
@@ -92,7 +92,7 @@ class BackfillEmployeeEmailWork extends Command
                     continue;
                 }
                 if (!$overwrite) {
-                    $this->line("  [skip]   emp #{$au->employee_id}: email_work sudah terisi ('{$existing}') — pakai --overwrite untuk menimpa");
+                    $this->line("  [skip]   emp #{$au->employee_id}: email_work sudah terisi ('{$existing}') - pakai --overwrite untuk menimpa");
                     $skipped++;
                     continue;
                 }
@@ -121,7 +121,7 @@ class BackfillEmployeeEmailWork extends Command
 
         if ($dryRun) {
             $this->newLine();
-            $this->warn('DRY-RUN selesai — jalankan tanpa --dry-run untuk menyimpan.');
+            $this->warn('DRY-RUN selesai - jalankan tanpa --dry-run untuk menyimpan.');
         } else {
             $this->newLine();
             $this->info('Backfill selesai.');

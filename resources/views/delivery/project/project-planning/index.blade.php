@@ -53,7 +53,7 @@
                 </div>
             </div>
         </div>
-        {{-- Search Bar — selaras dengan style index lain --}}
+        {{-- Search Bar - selaras dengan style index lain --}}
         <div class="p-4">
             <input type="search" id="searchInput"
                    placeholder="Search project, client, or description..."
@@ -462,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-    // Status filter — custom-dd memanggil onProjectStatusFilterChange via
+    // Status filter - custom-dd memanggil onProjectStatusFilterChange via
     // data-onchange. Expose filterProjects ke window biar bisa dipanggil
     // handler global di luar scope DOMContentLoaded ini.
     window._filterProjects = function (searchTerm, selectedStatus) {

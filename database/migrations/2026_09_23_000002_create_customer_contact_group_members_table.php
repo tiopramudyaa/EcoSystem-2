@@ -14,7 +14,7 @@ return new class extends Migration
             $table->unsignedBigInteger('contact_id');
             $table->timestamps();
 
-            // A contact can belong to at most one group at a time — keeps the
+            // A contact can belong to at most one group at a time - keeps the
             // shared-visibility model easy to reason about (no overlapping groups).
             $table->unique('contact_id', 'contact_group_members_contact_unique');
 

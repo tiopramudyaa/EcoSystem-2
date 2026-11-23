@@ -5,7 +5,7 @@ order: 130
 title: User Guide Editor
 summary: Edit the topics employees read in the User Guide, add new ones, and restore the original text.
 requires: [control-center.user-guide]
-updated: 2026-10-28
+updated: 2026-11-16
 ---
 The User Guide Editor lets an administrator change the manual without a deployment. The topics that ship with EcoSystem stay as the original, so you can always go back.
 
@@ -51,7 +51,7 @@ Administrators, and any role given the `Control Center` › `User Guide Editor` 
 
 ### Restore the original
 
-On an edited topic, select `Restore default` and confirm. Your edit is removed and the original text returns. On a custom topic the same button reads `Delete topic`.
+On an edited topic, select `Restore default`, then `OK` in the confirmation window. Your edit is removed and the original text returns. On a custom topic the same button reads `Delete topic`.
 
 ## What happens next
 

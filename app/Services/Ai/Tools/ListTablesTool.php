@@ -6,7 +6,7 @@ use App\Models\Employee;
 
 /**
  * Lets the model discover the exact table name to pass to query_data,
- * instead of guessing — table names don't always match the obvious English
+ * instead of guessing - table names don't always match the obvious English
  * word (e.g. tickets live in "ticket", not "tickets"; SLA policies in
  * "sla_policies").
  */

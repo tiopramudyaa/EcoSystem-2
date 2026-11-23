@@ -36,7 +36,7 @@ return [
         'tickets-deliverable-reminders' => [
             'label'               => 'Ticket Deliverable Document Reminders',
             'command'             => 'tickets:deliverable-reminders',
-            'frequency_label'     => 'Hourly (sends 09:00–17:00, once/day per ticket)',
+            'frequency_label'     => 'Hourly (sends 09:00-17:00, once/day per ticket)',
             'stale_after_minutes' => 90,
         ],
         'activities-recompute-status' => [

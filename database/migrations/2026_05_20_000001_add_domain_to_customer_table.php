@@ -9,13 +9,13 @@ use Illuminate\Support\Facades\Schema;
  *
  * Purpose: filter incoming emails for ticket validation by company email
  * domain. Customer contact persons may include hundreds of employees with
- * different addresses — registering each as a contact is impractical.
+ * different addresses - registering each as a contact is impractical.
  * Storing the company domain (e.g., "@apta.co.id") allows the inbox
  * processor to recognize ANY sender under that domain as belonging to
  * the customer, routing the email into the staging-ticket validation flow.
  *
  * Stored normalized: lowercase, trimmed, always prefixed with "@".
- * Nullable + NOT unique by design — subsidiaries may share the parent's
+ * Nullable + NOT unique by design - subsidiaries may share the parent's
  * domain (e.g., parent "AptaWorks" + subsidiary "Apta Indonesia" both
  * @apta.co.id). Match logic picks the first active customer in order.
  */

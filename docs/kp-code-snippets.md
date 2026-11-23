@@ -1,13 +1,13 @@
-# Potongan Kode Laporan KP — Gambar 5 & Gambar 6
+# Potongan Kode Laporan KP - Gambar 5 & Gambar 6
 
 Kode di bawah ini adalah representasi implementasi yang dibangun selama Kerja Praktik
-(28 Januari – 31 Maret 2026). Disesuaikan untuk laporan akademik.
+(28 Januari - 31 Maret 2026). Disesuaikan untuk laporan akademik.
 
 ---
 
 ## ✂️ VERSI RINGKAS (untuk Carbon / screenshot laporan)
 
-### Gambar 5 — `EcosystemUserProvider.php` (inti)
+### Gambar 5 - `EcosystemUserProvider.php` (inti)
 
 ```php
 <?php
@@ -47,7 +47,7 @@ class EcosystemUserProvider extends EloquentUserProvider
 }
 ```
 
-### Gambar 5 — `config/auth.php` (tiga guard)
+### Gambar 5 - `config/auth.php` (tiga guard)
 
 ```php
 'guards' => [
@@ -79,7 +79,7 @@ class EcosystemUserProvider extends EloquentUserProvider
 
 ---
 
-### Gambar 6 — `TicketObserver.php` (inti)
+### Gambar 6 - `TicketObserver.php` (inti)
 
 ```php
 <?php
@@ -117,7 +117,7 @@ class TicketObserver
 
 ---
 
-## Gambar 5 — Multi-Guard Authentication & Custom UserProvider
+## Gambar 5 - Multi-Guard Authentication & Custom UserProvider
 
 ### `app/Auth/EcosystemUserProvider.php`
 
@@ -204,7 +204,7 @@ class EcosystemUserProvider extends EloquentUserProvider
 
 ---
 
-### `app/Providers/AppServiceProvider.php` — Registrasi Custom Driver
+### `app/Providers/AppServiceProvider.php` - Registrasi Custom Driver
 
 ```php
 public function boot(): void
@@ -217,7 +217,7 @@ public function boot(): void
 
 ---
 
-### `config/auth.php` — Konfigurasi Tiga Guard
+### `config/auth.php` - Konfigurasi Tiga Guard
 
 ```php
 'defaults' => [
@@ -257,7 +257,7 @@ public function boot(): void
 
 ---
 
-## Gambar 6 — TicketObserver untuk Audit Trail
+## Gambar 6 - TicketObserver untuk Audit Trail
 
 ### `app/Observers/TicketObserver.php`
 
@@ -304,7 +304,7 @@ class TicketObserver
 
 ---
 
-### `app/Providers/AppServiceProvider.php` — Registrasi Observer
+### `app/Providers/AppServiceProvider.php` - Registrasi Observer
 
 ```php
 use App\Models\Ticket;
@@ -318,7 +318,7 @@ public function boot(): void
 
 ---
 
-### `app/Models/TicketHistory.php` — Model Pendukung
+### `app/Models/TicketHistory.php` - Model Pendukung
 
 ```php
 <?php

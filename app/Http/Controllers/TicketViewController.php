@@ -59,7 +59,7 @@ class TicketViewController extends Controller
         $modules = Module::active()->orderBy('name')->get(['id', 'name'])->toArray();
 
         // Tab "Ticket Modul" hanya relevan untuk employee yang jadi lead di
-        // minimal satu module — dicek di sini (bukan lewat menu permission)
+        // minimal satu module - dicek di sini (bukan lewat menu permission)
         // karena ini murni data, bukan keputusan role.
         $isModuleLead = $employee
             ? \App\Models\ModuleLead::where('employee_id', $employee->employee_id)->exists()
@@ -171,7 +171,7 @@ class TicketViewController extends Controller
             ->toArray();
 
         // Bisakah user kelola tim tiket ini lewat jalur "team lead" (Ticket Lead
-        // tiket ini / Module Lead di module mana pun) — murni data-driven, bukan menu.
+        // tiket ini / Module Lead di module mana pun) - murni data-driven, bukan menu.
         $canAssignPic        = (bool) ($employee?->hasPermission('ticket.assign-pic'));
         $canManageTicketTeam = TicketTeamAccess::canManageAsLead((int) $user->id, $ticket);
 
@@ -183,7 +183,7 @@ class TicketViewController extends Controller
             $employees = TicketTeamAccess::candidatesForTicket($ticket, 'ticket.eligible-ticket-member');
         } else {
             // Get employees eligible for the member dropdown (role-based, configurable via
-            // Management > Permissions — see ticket.eligible-ticket-member)
+            // Management > Permissions - see ticket.eligible-ticket-member)
             $employees = Employee::withMenuPermission('ticket.eligible-ticket-member')
                 ->eligibleForTicketTeam()
                 ->with('basicData:employee_id,first_name,last_name')
@@ -198,7 +198,7 @@ class TicketViewController extends Controller
                 ->toArray();
         }
 
-        // Approved customer mandays total (for Properties panel) — sum of every
+        // Approved customer mandays total (for Properties panel) - sum of every
         // approved version, same logic as the "Customer Mandays" column in the
         // ticket list (a ticket can have several independently-approved versions,
         // e.g. an addendum proposed after the first one was already approved).

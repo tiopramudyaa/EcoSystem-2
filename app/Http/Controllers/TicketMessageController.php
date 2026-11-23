@@ -14,6 +14,7 @@ use App\Models\TicketMessage;
 use App\Models\SecurityEvent;
 use App\Services\AttachmentSecurityScanner;
 use App\Services\LoginSecurityService;
+use App\Services\MentionTextGuard;
 use App\Services\MessageHtmlSanitizerService;
 use App\Services\SlaService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -64,7 +65,7 @@ class TicketMessageController extends Controller
                 ->orderBy('created_at', 'asc');
 
             $messages = $query->get()->map(function ($message) use ($ticket) {
-                // To recipients untuk pesan KELUAR (employee via email) — ditampilkan
+                // To recipients untuk pesan KELUAR (employee via email) - ditampilkan
                 // seperti From/CC pada pesan masuk. Diturunkan dari email_recipients
                 // (semua To+CC) dikurangi alamat CC; fallback ke ticket.to_emails untuk
                 // pesan lama yang belum menyimpan email_recipients.
@@ -227,7 +228,7 @@ class TicketMessageController extends Controller
             }
 
             // Tambahkan tanda tangan "-NickName" di akhir pesan untuk employee
-            // Sanitasi HTML dulu sebelum disimpan/dirender/dikirim ke email customer —
+            // Sanitasi HTML dulu sebelum disimpan/dirender/dikirim ke email customer -
             // ini satu-satunya titik masuk message_html untuk reply & internal note.
             $messageBody = MessageHtmlSanitizerService::sanitize($request->message_body ?? '');
             if ($nickName && $request->message_type !== 'internal_note') {
@@ -241,7 +242,7 @@ class TicketMessageController extends Controller
             //   1. graph_message_id = Sent Items ID (valid untuk proxy attachment)
             //   2. email_message_id selalu terisi (untuk reply-chain selanjutnya)
             //   3. channel = 'email' sejak awal (tidak perlu update setelah kirim)
-            // Parse CC dari request — jika dikirim, override ticket.cc_emails
+            // Parse CC dari request - jika dikirim, override ticket.cc_emails
             $requestCcRaw = $request->input('cc_emails');
             $requestCc    = null;
             if ($requestCcRaw !== null) {
@@ -253,10 +254,10 @@ class TicketMessageController extends Controller
                 }
             }
 
-            // Parse TO dari request — list email primary recipient.
+            // Parse TO dari request - list email primary recipient.
             // Pertama dipakai sebagai $toEmail utama, sisanya jadi additional toRecipients.
             // Dipersist ke ticket.to_emails (untuk reply) agar recipient tambahan
-            // bertahan antar reply/reload — mirror perilaku cc_emails.
+            // bertahan antar reply/reload - mirror perilaku cc_emails.
             $requestToRaw = $request->input('to_emails');
             $requestTo    = null;
             if ($requestToRaw !== null) {
@@ -275,7 +276,7 @@ class TicketMessageController extends Controller
             $uploadedFiles = $request->hasFile('attachments') ? $request->file('attachments') : [];
             $message       = null;
 
-            // Security Center: flag suspicious attachments for review — never
+            // Security Center: flag suspicious attachments for review - never
             // blocks the upload (a ticket can legitimately carry a .sh/.log
             // file as troubleshooting evidence).
             foreach ($uploadedFiles as $uploadedFile) {
@@ -298,7 +299,7 @@ class TicketMessageController extends Controller
 
                 // Resolve primary TO.
                 // - Jika frontend mengirim daftar to_emails (walau kosong), HORMATI apa
-                //   adanya — JANGAN fallback ke company email. To kosong = tak ada primary
+                //   adanya - JANGAN fallback ke company email. To kosong = tak ada primary
                 //   recipient; email tetap terkirim bila ada CC (kasus EWA).
                 // - resolveCustomerEmail hanya untuk caller legacy yang tidak mengirim to_emails.
                 $requestToProvided = $requestTo !== null;
@@ -322,7 +323,7 @@ class TicketMessageController extends Controller
                 if (!$message) {
                     // Fallback: tidak ada email customer, atau email GAGAL dikirim.
                     // $this->lastEmailError terisi hanya bila email dicoba tapi ditolak
-                    // (mis. alamat tujuan tidak valid) — bukan saat memang tak ada penerima.
+                    // (mis. alamat tujuan tidak valid) - bukan saat memang tak ada penerima.
                     // Simpan pesan + tandai status 'failed' + alasan agar tampil di bubble.
                     $failedReason = $this->lastEmailError;
                     $message = TicketMessage::create([
@@ -389,9 +390,14 @@ class TicketMessageController extends Controller
                 }
 
             } else {
-                // Internal note — tidak pernah dikirim ke email
-                $mentionedEmployeeIds = $request->input('mentioned_employee_ids', []);
-                $mentionedRoleIds     = $request->input('mentioned_role_ids', []);
+                // Internal note - tidak pernah dikirim ke email
+                // Hanya mention yang "@Nama"-nya benar-benar ada di teks note
+                // (id basi dari chip yang sudah dihapus di editor dibuang).
+                [$mentionedEmployeeIds, $mentionedRoleIds] = MentionTextGuard::filter(
+                    $messageBody,
+                    (array) $request->input('mentioned_employee_ids', []),
+                    (array) $request->input('mentioned_role_ids', [])
+                );
                 $replyToId            = $request->input('reply_to_id');
 
                 $message = TicketMessage::create([
@@ -419,7 +425,7 @@ class TicketMessageController extends Controller
                 // tersimpan karena teks yang dikirim menyebut jumlah lampiran.
                 //
                 // try/catch sendiri: gagal mengantre berarti note tetap tersimpan
-                // dan tetap terlihat di tiket, hanya tidak sampai ke Teams —
+                // dan tetap terlihat di tiket, hanya tidak sampai ke Teams -
                 // itu jauh lebih baik daripada menggagalkan penyimpanan note.
                 try {
                     app(\App\Services\Teams\TeamsOutboxService::class)->queue($message);
@@ -467,7 +473,7 @@ class TicketMessageController extends Controller
                 );
             }
 
-            // Trigger SLA event (non-fatal) — status sudah diupdate di atas bersama last_agent_reply_at
+            // Trigger SLA event (non-fatal) - status sudah diupdate di atas bersama last_agent_reply_at
             if ($message && !$isInternalNote) {
                 try {
                     $ticket->refresh();
@@ -501,7 +507,7 @@ class TicketMessageController extends Controller
                     'created_at'  => $message->created_at,
                 ],
                 // Flag peringatan (bukan sukses) saat email GAGAL total ATAU hanya
-                // sebagian terkirim (partial) — keduanya perlu toast peringatan + alasan.
+                // sebagian terkirim (partial) - keduanya perlu toast peringatan + alasan.
                 'email_failed'  => in_array($message->email_status, ['failed', 'partial'], true),
                 'email_status'  => $message->email_status,
                 'email_error'   => $message->email_error,
@@ -575,7 +581,7 @@ class TicketMessageController extends Controller
             $channel        = $request->input('channel', 'web');
             $emailMessageId = $request->input('email_message_id');
 
-            // Normalize cc_emails request — support array objects, array strings, or JSON string.
+            // Normalize cc_emails request - support array objects, array strings, or JSON string.
             $rawCc = $request->input('cc_emails');
             if (is_string($rawCc) && $rawCc !== '') {
                 $decoded = json_decode($rawCc, true);
@@ -640,7 +646,7 @@ class TicketMessageController extends Controller
             // Salinan di memori dengan message_html = body asli Jarvies: kolom
             // message_html sengaja NULL untuk jalur ini, dan kolom `message`
             // (strip_tags mentah) menggabungkan paragraf "<p>a</p><p>b</p>"
-            // jadi "ab". Tidak disimpan ke DB — hanya bahan teks untuk Teams.
+            // jadi "ab". Tidak disimpan ke DB - hanya bahan teks untuk Teams.
             try {
                 $forTeams = clone $message;
                 $forTeams->message_html = $messageBody;
@@ -654,7 +660,7 @@ class TicketMessageController extends Controller
                 ]);
             }
 
-            // Notifikasi ke PIC + member aktif — bunyi chat + entri biru di bell
+            // Notifikasi ke PIC + member aktif - bunyi chat + entri biru di bell
             $replyPreview = mb_substr(strip_tags($messageBody), 0, 80);
             $this->notifyTicketParticipants(
                 $ticket, $message, 0, $senderName,
@@ -1009,7 +1015,7 @@ class TicketMessageController extends Controller
                 'ticket_id' => $ticket->ticket_id,
                 'error'     => $e->getMessage(),
             ]);
-            // Non-fatal — pesan sudah tersimpan di DB meski relay email gagal
+            // Non-fatal - pesan sudah tersimpan di DB meski relay email gagal
         }
     }
 
@@ -1059,7 +1065,7 @@ class TicketMessageController extends Controller
         array  $additionalToEmails = [],
         bool   $noCompanyFallback = false
     ): ?TicketMessage {
-        // Reset penanda error di awal — nilai lama tidak boleh bocor ke percobaan ini.
+        // Reset penanda error di awal - nilai lama tidak boleh bocor ke percobaan ini.
         $this->lastEmailError = null;
         $this->lastEmailFailedRecipients = [];
         try {
@@ -1114,10 +1120,10 @@ class TicketMessageController extends Controller
                 $inReplyTo,
                 $files,
                 $ccList,
-                true,                       // noRePrefix — subject langsung "Ticket #XXXX: desc" tanpa "Re: "
+                true,                       // noRePrefix - subject langsung "Ticket #XXXX: desc" tanpa "Re: "
                 $ticket->email_thread_id,   // conversationId fallback jika inReplyTo tidak ditemukan
-                false,                      // forceNewDraft — biarkan default
-                [],                         // rawAttachments — tidak ada forwarded attachment di reply biasa
+                false,                      // forceNewDraft - biarkan default
+                [],                         // rawAttachments - tidak ada forwarded attachment di reply biasa
                 $additionalToEmails         // additional toRecipients selain primary
             );
 
@@ -1216,7 +1222,7 @@ class TicketMessageController extends Controller
         <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#374151;line-height:1.7;max-width:600px;">
             {$body}
             <p style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;">
-                Sent by <strong style="color:#6b7280;">{$agent}</strong> &mdash; PT Eclectic Consulting<br>
+                Sent by <strong style="color:#6b7280;">{$agent}</strong> - PT Eclectic Consulting<br>
                 Ticket: <strong style="color:#6b7280;">#{$ticketNum}</strong>
             </p>
         </div>
@@ -1225,9 +1231,9 @@ class TicketMessageController extends Controller
 
     /**
      * Resolve email customer dari berbagai sumber (urutan prioritas):
-     * 1. staging_tickets.submitted_by_email  — email login customer yang dikirim Jarvies
-     * 2. ticket_message.sender_email pertama — email yang disimpan saat first message dibuat
-     * 3. customer.email                       — email perusahaan (fallback terakhir)
+     * 1. staging_tickets.submitted_by_email  - email login customer yang dikirim Jarvies
+     * 2. ticket_message.sender_email pertama - email yang disimpan saat first message dibuat
+     * 3. customer.email                       - email perusahaan (fallback terakhir)
      *
      * @return string|null
      */
@@ -1266,7 +1272,7 @@ class TicketMessageController extends Controller
     }
 
     /**
-     * Kirim reply dari Lite API (mobile) — alur email-first sama dengan store() versi
+     * Kirim reply dari Lite API (mobile) - alur email-first sama dengan store() versi
      * web: kirim ke customer (To/CC dari ticket, atau override dari $ccOverride/$toList
      * bila dikirim) via M365 Graph, fallback tersimpan sebagai pesan 'web' bila email
      * gagal/tidak ada penerima, lalu update status tiket, notifikasi PIC/member, dan
@@ -1304,8 +1310,8 @@ class TicketMessageController extends Controller
 
         $ticket->loadMissing('members');
 
-        // Simpan CC/TO baru ke ticket (persist) agar reply berikutnya — dari web
-        // maupun mobile — ikut memakai daftar yang sama, sama seperti store() web.
+        // Simpan CC/TO baru ke ticket (persist) agar reply berikutnya - dari web
+        // maupun mobile - ikut memakai daftar yang sama, sama seperti store() web.
         if ($ccOverride !== null) {
             $ticket->update(['cc_emails' => $ccOverride]);
             $ticket->refresh();
@@ -1402,7 +1408,7 @@ class TicketMessageController extends Controller
 
     /**
      * Kirim email sistem (mis. meeting invitation) ke customer menggunakan infrastruktur
-     * yang SAMA dengan sendEmailThenSave — threading, resolve email, logging semuanya
+     * yang SAMA dengan sendEmailThenSave - threading, resolve email, logging semuanya
      * seragam dengan reply biasa. Setelah TicketMessage tersimpan, message_type diupdate.
      *
      * @return TicketMessage|null  null jika tidak ada customer email atau email gagal dikirim
@@ -1614,13 +1620,17 @@ class TicketMessageController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        // Mentions yang sudah ada di note sebelum diedit — dipakai untuk diff
+        // Mentions yang sudah ada di note sebelum diedit - dipakai untuk diff
         // (union ke kolom, dan supaya orang yang sudah pernah di-mention tidak
         // dinotifikasi ulang tiap kali note ini diedit).
         $originalEmployeeIds = $message->mentioned_employee_ids ?? [];
         $originalRoleIds     = $message->mentioned_role_ids ?? [];
-        $incomingEmployeeIds = array_map('intval', $request->input('mentioned_employee_ids', []));
-        $incomingRoleIds     = array_map('intval', $request->input('mentioned_role_ids', []));
+        // Mention baru hanya diterima bila "@Nama"-nya ada di teks hasil edit.
+        [$incomingEmployeeIds, $incomingRoleIds] = MentionTextGuard::filter(
+            MessageHtmlSanitizerService::sanitize($request->input('message_html', '')),
+            (array) $request->input('mentioned_employee_ids', []),
+            (array) $request->input('mentioned_role_ids', [])
+        );
         $newEmployeeIds      = array_values(array_diff($incomingEmployeeIds, $originalEmployeeIds));
         $newRoleIds          = array_values(array_diff($incomingRoleIds, $originalRoleIds));
 
@@ -1799,7 +1809,7 @@ class TicketMessageController extends Controller
             }
 
             $agentName = 'Helpdesk Support';
-            // Anchor subject thread — format seragam "[JARVIES] #XXXX : desc" agar konsisten
+            // Anchor subject thread - format seragam "[JARVIES] #XXXX : desc" agar konsisten
             // dengan email approval & reply, sehingga semua email tetap satu thread.
             $subject   = '[JARVIES] #' . $ticket->ticket_number . ' : ' . mb_substr($ticket->description ?? '', 0, 80);
 
@@ -1830,8 +1840,8 @@ class TicketMessageController extends Controller
                 <tr>
                     <td style="background-color:#f9fafb;padding:14px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 6px 6px;">
                         <p style="color:#9ca3af;font-size:11px;margin:0;line-height:1.6;">
-                            Sent by <strong style="color:#6b7280;">Helpdesk Support</strong> &mdash; PT Eclectic Consulting<br>
-                            Ticket: <strong style="color:#6b7280;">#{$safeNum}</strong> &mdash; {$safeDesc}
+                            Sent by <strong style="color:#6b7280;">Helpdesk Support</strong> - PT Eclectic Consulting<br>
+                            Ticket: <strong style="color:#6b7280;">#{$safeNum}</strong> - {$safeDesc}
                         </p>
                     </td>
                 </tr>
@@ -1980,7 +1990,7 @@ class TicketMessageController extends Controller
             }
         }
 
-        // Balasan employee tidak menyimpan sender_email — email ke customer
+        // Balasan employee tidak menyimpan sender_email - email ke customer
         // dikirim dari shared mailbox M365, jadi itu alamat yang tampil.
         $helpdeskEmail = config('services.microsoft_graph.sender_email');
 
@@ -1991,14 +2001,14 @@ class TicketMessageController extends Controller
             ->orderBy('created_at', 'asc')
             ->get()
             ->map(fn (TicketMessage $m) => [
-                'sender_name'  => $m->sender_name ?: ($m->sender_type === 'employee' ? 'Helpdesk Support' : '—'),
+                'sender_name'  => $m->sender_name ?: ($m->sender_type === 'employee' ? 'Helpdesk Support' : '-'),
                 'sender_email' => $m->sender_email ?: ($m->sender_type === 'employee' ? $helpdeskEmail : null),
                 'is_customer'  => $m->sender_type === 'customer',
                 'sent_at'      => $m->created_at,
                 'html'         => $this->pdfMessageHtml($m),
             ]);
 
-        $moduleName = $ticket->modules->pluck('name')->implode(', ') ?: ($ticket->module ?: '—');
+        $moduleName = $ticket->modules->pluck('name')->implode(', ') ?: ($ticket->module ?: '-');
 
         $pdf = Pdf::loadView('ticket.chat-export-pdf', compact('ticket', 'messages', 'moduleName'));
         $pdf->setPaper('A4', 'portrait');
@@ -2034,7 +2044,7 @@ class TicketMessageController extends Controller
             $path = parse_url($src, PHP_URL_PATH) ?? '';
             if (str_starts_with($path, '/storage/')) {
                 $relative = ltrim(substr($path, strlen('/storage/')), '/');
-                // Tolak path traversal — hanya file di dalam public disk.
+                // Tolak path traversal - hanya file di dalam public disk.
                 if (!str_contains($relative, '..') && Storage::disk('public')->exists($relative)) {
                     $binary = Storage::disk('public')->get($relative);
                     $mime   = Storage::disk('public')->mimeType($relative) ?: 'image/png';

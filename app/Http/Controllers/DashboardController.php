@@ -157,7 +157,7 @@ class DashboardController extends Controller
                 }
             }
 
-            // ── EC User dashboard data (all tickets — same scope as ticket list) ─
+            // ── EC User dashboard data (all tickets - same scope as ticket list) ─
             if (($user['type'] ?? '') === 'employee' && ($user['role']['id'] ?? 0) === RoleId::EC_USER->value) {
                 $base = DB::table('ticket')->whereNull('deleted_at')->whereNull('is_hidden');
 
@@ -251,7 +251,7 @@ class DashboardController extends Controller
                 }
                 $dashboardData['ticket_chart'] = ['labels' => $chartLabels, 'data' => $chartData];
 
-                // Recent 8 tickets (all) — includes priority for dashboard display
+                // Recent 8 tickets (all) - includes priority for dashboard display
                 $dashboardData['recent_tickets'] = DB::table('ticket as t')
                     ->whereNull('t.deleted_at')->whereNull('t.is_hidden')
                     ->leftJoin('customer as c', 't.customer_id', '=', 'c.customer_id')
@@ -695,7 +695,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Batasi query ticket_sla hanya ke tiket yang visible — belum di-soft-delete
+     * Batasi query ticket_sla hanya ke tiket yang visible - belum di-soft-delete
      * dan belum di-hide. Dipakai agar kartu SLA Compliance konsisten dengan kartu
      * jumlah tiket yang sudah mengecualikan tiket hidden.
      */

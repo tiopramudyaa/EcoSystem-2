@@ -24,7 +24,7 @@ class DropdownConfig extends Model
     }
 
     /**
-     * Active values (in display order) for a given config code — the list
+     * Active values (in display order) for a given config code - the list
      * used to render a dropdown. Returns [] if the config doesn't exist or
      * is itself inactive.
      *
@@ -51,7 +51,7 @@ class DropdownConfig extends Model
     }
 
     /**
-     * [code => is_active] for the given codes — used to decide whether to
+     * [code => is_active] for the given codes - used to decide whether to
      * render a field's block at all on the Employee form (not just whether
      * it has options). A code with no matching row is treated as active
      * (fail open, so a not-yet-seeded/renamed config never silently hides

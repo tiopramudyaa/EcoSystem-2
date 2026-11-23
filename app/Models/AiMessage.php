@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * angkanya hanya untuk menjelaskan transkrip lama ("ada 1 gambar di sini").
  *
  * 'sender_employee_id' cuma relevan untuk room BERSAMA (AiConversation dengan
- * ticket_id terisi) — atribusi "siapa yang tanya" saat lebih dari satu
+ * ticket_id terisi) - atribusi "siapa yang tanya" saat lebih dari satu
  * employee menulis ke conversation yang sama. NULL untuk role 'assistant',
  * untuk pesan seed sistem (hasil AI Analyzer yang di-seed otomatis saat
  * approve), dan untuk semua pesan di room privat (pengirimnya sudah pasti

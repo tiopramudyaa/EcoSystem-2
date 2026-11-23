@@ -80,7 +80,7 @@ class DeliveryProjectRiskController extends Controller
     }
 
     // ──────────────────────────────────────────────────────────────
-    // Shared validation — all fields mandatory.
+    // Shared validation - all fields mandatory.
     // response_strategy options depend on risk_type (Opportunity has no
     // "Exploit"); actual_end_date is required only when status = Closed.
     // ──────────────────────────────────────────────────────────────

@@ -29,7 +29,7 @@ class CustomerCredential extends Model
     }
 
     /**
-     * Catatan credential customer, siap ditempel sebagai konteks prompt AI —
+     * Catatan credential customer, siap ditempel sebagai konteks prompt AI -
      * atau null kalau $actor tidak punya izin, atau tidak ada catatan sama
      * sekali. SATU-SATUNYA titik yang menggerbangi akses ini dari kode AI
      * (dipakai AiTicketAnalyzerService & AiTicketQaService): memakai slug
@@ -39,7 +39,7 @@ class CustomerCredential extends Model
      * ini tidak bisa diam-diam melenceng satu sama lain kalau suatu saat
      * slug atau aturannya berubah.
      *
-     * @param array<int, int|null> $customerIds boleh memuat null/duplikat — dibuang sebelum query
+     * @param array<int, int|null> $customerIds boleh memuat null/duplikat - dibuang sebelum query
      */
     public static function contextNotesFor(array $customerIds, ?Employee $actor): ?string
     {

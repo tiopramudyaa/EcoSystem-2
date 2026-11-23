@@ -52,14 +52,14 @@ class SlaService
     /**
      * Calculate elapsed hours between two timestamps.
      * is24h = true  → full calendar hours (7×24)
-     * is24h = false → business hours only (Mon–Fri 08:00–17:00), excluding Saturday, Sunday,
-     *   and Indonesian national holidays (via HolidayService — same source used by
+     * is24h = false → business hours only (Mon-Fri 08:00-17:00), excluding Saturday, Sunday,
+     *   and Indonesian national holidays (via HolidayService - same source used by
      *   resolveSlaStartAt/addWorkingHours for due-date math, so elapsed-duration figures like
      *   Resolution Duration stay consistent with the due dates they're compared against).
      *   If $policy has a configured break window (break_start_time/break_end_time), that
-     *   window is also excluded each day (e.g. a 08:00–17:00 window with a 12:00–13:00 break
-     *   nets 8 hours/day). No policy or no break configured → full 08:00–17:00 window (9h/day).
-     * Result is never negative — $from at/after $to returns 0.0.
+     *   window is also excluded each day (e.g. a 08:00-17:00 window with a 12:00-13:00 break
+     *   nets 8 hours/day). No policy or no break configured → full 08:00-17:00 window (9h/day).
+     * Result is never negative - $from at/after $to returns 0.0.
      */
     public function calcHours(Carbon $from, Carbon $to, bool $is24h, ?SlaPolicy $policy = null): float
     {
@@ -77,7 +77,7 @@ class SlaService
             [$brkEndH, $brkEndM]     = array_map('intval', explode(':', $policy->break_end_time));
         }
 
-        // Business hours: Mon–Fri 08:00–17:00, skipping non-working days and (if configured) breaks
+        // Business hours: Mon-Fri 08:00-17:00, skipping non-working days and (if configured) breaks
         $total   = 0.0;
         $current = $from->copy();
 
@@ -176,7 +176,7 @@ class SlaService
     /**
      * Add a duration of SLA response hours to a starting timestamp, counting only
      * minutes that fall inside the policy's working window (skipping breaks, non-working
-     * days/holidays, and out-of-window time) — mirrors resolveSlaStartAt's working-hours
+     * days/holidays, and out-of-window time) - mirrors resolveSlaStartAt's working-hours
      * rules so "Response Due On" stays consistent with "Start SLA Response".
      *
      * No policy, a 24/7 policy, or a policy without a configured work window → plain
@@ -275,7 +275,7 @@ class SlaService
 
     /**
      * Resolution-start timestamp for display ("Date & Time Start SLA Resolution"): copied
-     * from first_responded_at ("Date & Time Responded"), except —
+     * from first_responded_at ("Date & Time Responded"), except -
      * - Very High priority: copied as-is, no working-hours rollover (resolution starts
      *   immediately regardless of office hours).
      * - Any other priority: rolled forward to the next working day/hour if
@@ -297,7 +297,7 @@ class SlaService
 
     /**
      * Resolution-due timestamp for display ("SLA Resolution Due On"), computed live from
-     * resolutionStartAt() + the currently attached policy's resolution_hours —
+     * resolutionStartAt() + the currently attached policy's resolution_hours -
      * - Very High priority: plain calendar addHours (resolution SLA runs 24/7 for Very High,
      *   matching resolutionStartAt()'s bypass).
      * - Any other priority: working-hours-aware (addWorkingHours), consistent with the
@@ -319,7 +319,7 @@ class SlaService
 
     /**
      * "First Resolved Date" for display: the timestamp of the first reply (from the ticket's
-     * chat/message history) that set the ticket status to waiting_on_customer — i.e. when the
+     * chat/message history) that set the ticket status to waiting_on_customer - i.e. when the
      * agent first considered it resolved and handed it back to the customer for confirmation.
      * Sourced from TicketSlaEvent (one row per agent reply, event_at = message->created_at),
      * not TicketSlaPause, since pauses only record the first reply of a burst and would miss
@@ -341,7 +341,7 @@ class SlaService
 
     /**
      * "Date of sending Resolution doc./mail" for display: the timestamp of the first time
-     * Helpdesk sent a deliverable (resolution document) to the customer — i.e. the earliest
+     * Helpdesk sent a deliverable (resolution document) to the customer - i.e. the earliest
      * TicketDeliverable row for this ticket whose status is 'Sent'. A deliverable's status
      * only ever transitions No Send → Sent once (edit/delete are blocked after sending, see
      * TicketDeliverableController::send()), so updated_at at that point is the send timestamp.
@@ -358,13 +358,32 @@ class SlaService
             ->value('updated_at');
     }
 
+    /**
+     * "First Resolution" for display: when the first IR or RCA deliverable was sent to the
+     * customer from the ticket chat room (TicketDeliverable::FIRST_RESOLUTION_DOC_TYPES).
+     * Uses sent_at, which is written once on the first send and never moves afterwards.
+     */
+    public function firstResolutionDocAt(TicketSla $sla): ?Carbon
+    {
+        if (!$sla->ticket_id) {
+            return null;
+        }
+
+        $at = \App\Models\TicketDeliverable::where('ticket_id', $sla->ticket_id)
+            ->whereIn('doc_type', \App\Models\TicketDeliverable::FIRST_RESOLUTION_DOC_TYPES)
+            ->whereNotNull('sent_at')
+            ->min('sent_at');
+
+        return $at ? Carbon::parse($at) : null;
+    }
+
     // ── 1b. Live duration recompute (self-heals historical data, no backfill needed) ──────
 
     /**
      * Response Duration for display, computed live from sla_start_at → first_responded_at
      * with the current calcHours() formula. Unlike the stored validation_duration_hours
      * column (frozen at response time, in whatever calcHours() looked like back then), this
-     * self-corrects automatically the moment calcHours()'s formula changes — no backfill
+     * self-corrects automatically the moment calcHours()'s formula changes - no backfill
      * needed for historical tickets after a deploy.
      */
     public function responseDurationHours(TicketSla $sla): ?float
@@ -379,7 +398,7 @@ class SlaService
     }
 
     /**
-     * Live response verdict — 'pending' until responded or until a policy is known (mirrors
+     * Live response verdict - 'pending' until responded or until a policy is known (mirrors
      * attachToTicket()'s deferred-verdict behaviour), then 'met'/'breached' against the
      * current policy's response_hours target.
      */
@@ -396,8 +415,8 @@ class SlaService
     /**
      * Live total waiting hours, recomputed from the ticket's ticket_sla_pauses rows instead
      * of the stored total_waiting_hours column. The raw started_at/ended_at timestamps on
-     * each pause are unaffected by the calcHours() formula fix — only the duration derived
-     * from them was wrong — so summing them fresh with the current formula self-corrects
+     * each pause are unaffected by the calcHours() formula fix - only the duration derived
+     * from them was wrong - so summing them fresh with the current formula self-corrects
      * historical tickets without a backfill. Pass $pauses (all pause rows for the ticket) to
      * batch-fetch across a report page instead of querying per row.
      */
@@ -420,16 +439,16 @@ class SlaService
     }
 
     /**
-     * Live Resolution Duration (net hours) + verdict, for CLOSED tickets only — recomputed
+     * Live Resolution Duration (net hours) + verdict, for CLOSED tickets only - recomputed
      * from resolved_at/first_responded_at/sla_start_at (raw timestamps, unaffected by the
      * calcHours fix) minus the live-recomputed total waiting hours, instead of trusting the
      * stored net_resolution_hours/resolution_status (frozen with the old formula at close
      * time). Still-open tickets keep their stored ball-state-driven status (pending/paused)
-     * — that state was never wrong, since it's driven by ticket status transitions, not by
+     * - that state was never wrong, since it's driven by ticket status transitions, not by
      * calcHours().
      *
      * @param bool $includeOngoing When true and the ticket isn't closed yet, compute the
-     *     running net hours so far (up to now()) instead of returning null — used by the
+     *     running net hours so far (up to now()) instead of returning null - used by the
      *     admin SLA report's "Resolution Duration" column so it shows progress on
      *     still-open tickets, tagged via the `is_final` flag, rather than staying blank
      *     until the ticket closes. Defaults to false so every other caller (ticket list,
@@ -440,8 +459,8 @@ class SlaService
     {
         // Finality is normally driven by the SLA record's own resolution_status (met/breached),
         // set by closeTicketSla() when the ticket transitions to closed/cancelled. That
-        // transition can occasionally get stuck — e.g. handleStatusChange() is called from a
-        // non-fatal try/catch in TicketController::updateTicketStatus() — leaving
+        // transition can occasionally get stuck - e.g. handleStatusChange() is called from a
+        // non-fatal try/catch in TicketController::updateTicketStatus() - leaving
         // resolution_status frozen at pending/paused and resolved_at null even though the
         // ticket itself is already closed. Treat the ticket's own status as authoritative too,
         // so those tickets don't show a blank verdict forever (consistent with this report's
@@ -483,7 +502,7 @@ class SlaService
     /**
      * Buat SLA record saat staging ticket pertama kali masuk (sebelum divalidasi).
      * SLA clock dimulai sejak email/web submission tiba.
-     * Idempotent — skip jika sudah ada.
+     * Idempotent - skip jika sudah ada.
      */
     public function attachToStaging(StagingTicket $staging): void
     {
@@ -512,7 +531,7 @@ class SlaService
             'event_type'        => 'email_received',
             'event_at'          => $slaStart,
             'triggered_by_type' => 'system',
-            'notes'             => 'SLA clock started — awaiting helpdesk validation',
+            'notes'             => 'SLA clock started - awaiting helpdesk validation',
         ]);
 
         Log::info('SlaService@attachToStaging: staging SLA record created', [
@@ -554,12 +573,12 @@ class SlaService
      * Jika ticket_type valid → update record staging yang sudah ada dengan
      * ticket_id, policy, dan semua kalkulasi waktu.
      *
-     * Idempotent — skip jika ticket sudah punya SLA record.
+     * Idempotent - skip jika ticket sudah punya SLA record.
      */
     public function attachToTicket(Ticket $ticket, ?StagingTicket $staging = null): void
     {
         if (!$ticket->ticket_type) {
-            Log::info('SlaService@attachToTicket: skipped — ticket_type not set', [
+            Log::info('SlaService@attachToTicket: skipped - ticket_type not set', [
                 'ticket_id' => $ticket->ticket_id,
             ]);
             return;
@@ -575,7 +594,7 @@ class SlaService
             if ($staging) {
                 $this->detachFromStaging($staging);
             }
-            Log::info('SlaService@attachToTicket: ticket_type not SLA-eligible — staging record removed', [
+            Log::info('SlaService@attachToTicket: ticket_type not SLA-eligible - staging record removed', [
                 'ticket_id'   => $ticket->ticket_id,
                 'ticket_type' => $ticket->ticket_type,
             ]);
@@ -634,7 +653,7 @@ class SlaService
                           ->whereNull('ticket_id')
                           ->update(['ticket_id' => $ticket->ticket_id]);
         } else {
-            // Tidak ada staging record — buat dari awal (fallback / ticket langsung)
+            // Tidak ada staging record - buat dari awal (fallback / ticket langsung)
             TicketSla::create([
                 'staging_ticket_id'         => $staging?->id,
                 'ticket_id'                 => $ticket->ticket_id,
@@ -665,7 +684,7 @@ class SlaService
         // Event: ticket_validated
         $notesText = $policy
             ? 'Response SLA: ' . $validationHours . ' hrs (' . $responseStatus . ')'
-            : 'SLA clock running — policy will be applied when delivery support is assigned';
+            : 'SLA clock running - policy will be applied when delivery support is assigned';
 
         TicketSlaEvent::create([
             'ticket_id'         => $ticket->ticket_id,
@@ -695,7 +714,7 @@ class SlaService
      * but whose delivery support was not yet known at validation time.
      *
      * Safe to call multiple times; skips if the SLA is already finalised (met/breached).
-     * $force = true bypasses that skip — used when the ticket's priority/scale/type is
+     * $force = true bypasses that skip - used when the ticket's priority/scale/type is
      * edited, so the attached policy follows the ticket's current classification.
      */
     public function syncPolicy(
@@ -709,12 +728,12 @@ class SlaService
         $sla = $preloadedSla ?? TicketSla::where('ticket_id', $ticket->ticket_id)->first();
 
         if (!$sla) {
-            // SLA record never created — try attaching now (delivery support is now known)
+            // SLA record never created - try attaching now (delivery support is now known)
             $this->attachToTicket($ticket);
             return;
         }
 
-        // Already has a resolved response status — don't regress
+        // Already has a resolved response status - don't regress
         if (!$force && in_array($sla->response_status, ['met', 'breached'], true) && $sla->sla_policy_id) {
             return;
         }
@@ -742,7 +761,7 @@ class SlaService
         }
 
         // Recompute from the true original received time (ticket/staging created_at),
-        // never from $sla->sla_start_at — that column gets overwritten with the resolved
+        // never from $sla->sla_start_at - that column gets overwritten with the resolved
         // (already rolled-forward) value once a policy is applied, so re-running this after
         // the policy's work-hour window changes must not use it as the "received" input again.
         $staging    = $sla->stagingTicket;
@@ -771,7 +790,7 @@ class SlaService
             ->where('event_type', 'ticket_validated')
             ->update([
                 'response_hours' => $validationHours,
-                'notes'          => 'Response SLA: ' . $validationHours . ' hrs (' . $responseStatus . ') — policy applied after delivery support assigned',
+                'notes'          => 'Response SLA: ' . $validationHours . ' hrs (' . $responseStatus . ') - policy applied after delivery support assigned',
             ]);
 
         Log::info('SlaService@syncPolicy: policy applied retroactively', [
@@ -817,7 +836,7 @@ class SlaService
 
     /**
      * Called when ticket.status changes WITHOUT an accompanying message.
-     * Updates ball_holder / sla_paused_at state only — no event is inserted.
+     * Updates ball_holder / sla_paused_at state only - no event is inserted.
      */
     public function handleStatusChange(Ticket $ticket, string $newStatus): void
     {
@@ -848,7 +867,7 @@ class SlaService
     {
         $total = (float) $sla->total_waiting_hours;
 
-        // Ticket sudah closed — tidak ada penambahan waktu live
+        // Ticket sudah closed - tidak ada penambahan waktu live
         if ($sla->isClosed()) {
             return round($total, 2);
         }
@@ -924,7 +943,7 @@ class SlaService
 
     /**
      * Auto-sync: ensures all eligible tickets have an SLA record.
-     * Safe to call repeatedly — idempotent.
+     * Safe to call repeatedly - idempotent.
      */
     public function ensureTicketsHaveSla(): void
     {
@@ -1030,7 +1049,7 @@ class SlaService
      * A ticket's SLA record can be left with sla_policy_id = null when its delivery
      * support had no matching SlaPolicy at the time it was assigned. If that policy
      * gets configured later (SLA Config is often filled in after tickets already
-     * exist), nothing re-triggers the match — so this re-attempts it on every report
+     * exist), nothing re-triggers the match - so this re-attempts it on every report
      * load. Safe to call repeatedly; syncPolicy() itself is a no-op when still no match.
      */
     private function syncMissingPolicies(): void
@@ -1043,7 +1062,7 @@ class SlaService
         // Batch-load delivery_support_id for tickets that unambiguously have
         // exactly one delivery_support_activities row, so syncPolicy() (which
         // already accepts a pre-resolved $deliverySupportId) can skip its own
-        // per-ticket lookup below — this was the dominant query cost here,
+        // per-ticket lookup below - this was the dominant query cost here,
         // since every SLA report load re-scans every ticket still without a
         // policy. Tickets with zero or more than one row are left out of the
         // map entirely so syncPolicy() falls back to its own lookup for them,
@@ -1141,7 +1160,7 @@ class SlaService
         $waitingH = null;
 
         if (in_array($sla->ball_holder, ['customer', 'sap']) && $sla->sla_paused_at) {
-            // Meeting hold tidak boleh diputus oleh chat — hold berlaku sampai meeting selesai
+            // Meeting hold tidak boleh diputus oleh chat - hold berlaku sampai meeting selesai
             if (!$this->hasMeetingHold($ticket->ticket_id)) {
                 $waitingH = $this->calcHours($sla->sla_paused_at, $message->created_at, $is24h, $sla->policy);
 
@@ -1196,7 +1215,7 @@ class SlaService
             $isCancelled = in_array($ticketStatus, self::CANCELLED_STATUSES);
             $this->closeTicketSla($sla, $ticket, $message, $message->created_at, $resolutionH, $isCancelled);
         } else {
-            // Unknown status — log the event without changing state
+            // Unknown status - log the event without changing state
             TicketSlaEvent::create([
                 'ticket_id'         => $ticket->ticket_id,
                 'message_id'        => $message->id,
@@ -1223,7 +1242,7 @@ class SlaService
         $newBallHolder = self::BALL_HOLDER_MAP[$ticketStatus] ?? 'customer';
 
         if ($sla->ball_holder === 'helpdesk') {
-            // First stop in this burst — start the waiting clock
+            // First stop in this burst - start the waiting clock
             $sla->ball_holder       = $newBallHolder;
             $sla->sla_paused_at     = $message->created_at;
             $sla->resolution_status = 'paused';
@@ -1237,13 +1256,13 @@ class SlaService
                 'started_by_message_id' => $message->id,
             ]);
         } else {
-            // Already paused — apply burst coalescing.
+            // Already paused - apply burst coalescing.
             // Meeting hold mengambil prioritas: jangan sentuh pause baseline saat meeting aktif,
             // karena overwrite sla_paused_at akan memotong window waiting yang sudah berjalan.
             if (!$this->hasMeetingHold($ticket->ticket_id)) {
                 $lastStatus = $this->lastAgentStatus($ticket->ticket_id);
                 if ($lastStatus !== $ticketStatus) {
-                    // Status changed — reset the pause baseline
+                    // Status changed - reset the pause baseline
                     $sla->ball_holder   = $newBallHolder;
                     $sla->sla_paused_at = $message->created_at;
                     $sla->save();
@@ -1260,9 +1279,9 @@ class SlaService
                         'started_by_message_id' => $message->id,
                     ]);
                 }
-                // Same status as before — no baseline reset (burst coalescing)
+                // Same status as before - no baseline reset (burst coalescing)
             }
-            // Meeting hold aktif — tidak ada perubahan state
+            // Meeting hold aktif - tidak ada perubahan state
         }
 
         TicketSlaEvent::create([
@@ -1291,7 +1310,7 @@ class SlaService
         $waitingH = null;
 
         if ($sla->ball_holder !== 'helpdesk' && $sla->sla_paused_at) {
-            // Meeting hold tidak boleh diputus oleh agent reply — hold berlaku sampai meeting selesai
+            // Meeting hold tidak boleh diputus oleh agent reply - hold berlaku sampai meeting selesai
             if (!$this->hasMeetingHold($ticket->ticket_id)) {
                 $waitingH = $this->calcHours($sla->sla_paused_at, $message->created_at, $is24h, $sla->policy);
                 $sla->total_waiting_hours = (float) $sla->total_waiting_hours + $waitingH;
@@ -1337,7 +1356,7 @@ class SlaService
             $sla->sla_paused_at     = now();
             $sla->resolution_status = 'paused';
         } elseif ($sla->ball_holder !== $newBallHolder) {
-            // Ball holder changed — update without resetting total waiting
+            // Ball holder changed - update without resetting total waiting
             $sla->ball_holder   = $newBallHolder;
             $sla->sla_paused_at = now();
         }
@@ -1431,7 +1450,7 @@ class SlaService
     // ── 10. startMeeting ─────────────────────────────────────────────────────
 
     /**
-     * Pause SLA clock saat jadwal meeting dibuat — ball berpindah ke customer.
+     * Pause SLA clock saat jadwal meeting dibuat - ball berpindah ke customer.
      *
      * $pauseAt       = waktu SLA mulai di-hold (saat jadwal dibuat, untuk kalkulasi)
      * $scheduledAt   = waktu meeting dijadwalkan (untuk tampilan di event log)
@@ -1457,11 +1476,11 @@ class SlaService
             ->first();
 
         if ($existingMeetingPause) {
-            // Meeting lain sudah aktif — update scheduled_end_at-nya dengan waktu meeting baru.
+            // Meeting lain sudah aktif - update scheduled_end_at-nya dengan waktu meeting baru.
             // Ini terjadi ketika user membuat jadwal meeting kedua sebelum meeting pertama auto-end.
             $existingMeetingPause->update(['scheduled_end_at' => $scheduledEndAt]);
         } elseif ($sla->ball_holder === 'helpdesk') {
-            // Ball was with helpdesk — meeting moves it to customer
+            // Ball was with helpdesk - meeting moves it to customer
             $sla->ball_holder       = 'customer';
             $sla->sla_paused_at     = $at;
             $sla->resolution_status = 'paused';
@@ -1475,7 +1494,7 @@ class SlaService
                 'scheduled_end_at'    => $scheduledEndAt,
             ]);
         } else {
-            // Ball is already with customer/SAP (e.g. waiting_on_customer) — create meeting guard
+            // Ball is already with customer/SAP (e.g. waiting_on_customer) - create meeting guard
             // without changing SLA state. This prevents customer replies from restarting the
             // SLA clock during the meeting window, and zeroes out resolution hours in the event log.
             TicketSlaPause::create([
@@ -1492,14 +1511,14 @@ class SlaService
             'event_type'        => 'meeting_started',
             'event_at'          => $eventAt,
             'triggered_by_type' => 'employee',
-            'notes'             => 'Meeting started — SLA clock paused',
+            'notes'             => 'Meeting started - SLA clock paused',
         ]);
     }
 
     // ── 11. endMeeting ───────────────────────────────────────────────────────
 
     /**
-     * Resume SLA clock saat meeting selesai — ball kembali ke helpdesk.
+     * Resume SLA clock saat meeting selesai - ball kembali ke helpdesk.
      * Durasi meeting dihitung sebagai waiting hours dan diakumulasi ke total.
      */
     public function endMeeting(Ticket $ticket, ?Carbon $endAt = null): void
@@ -1529,13 +1548,13 @@ class SlaService
         if ($sla->ball_holder !== 'helpdesk' && $sla->sla_paused_at) {
             // Did the SLA get paused before the meeting was scheduled?
             // If sla_paused_at < meetingPause.started_at, a prior customer/SAP wait was
-            // already in progress — the meeting was just a guard on top of it.
+            // already in progress - the meeting was just a guard on top of it.
             $priorPause = (bool) ($meetingPause && $sla->sla_paused_at->lt($meetingPause->started_at));
 
             if ($priorPause) {
                 // Meeting was overlaid on a pre-existing customer wait.
                 // Close the meeting guard record; leave the customer wait pause open.
-                // The ball stays with the customer — they still need to reply to restart the SLA.
+                // The ball stays with the customer - they still need to reply to restart the SLA.
                 // $waitingH is set so the meeting_ended event shows the meeting duration in the
                 // WAITING column, but it is NOT added to total_waiting_hours (the full customer
                 // wait window already includes this period, so adding it would double-count).
@@ -1568,7 +1587,7 @@ class SlaService
         }
 
         $notes = $waitingH !== null
-            ? 'Meeting ended — ' . round($waitingH, 2) . ' hrs' . ($priorPause ? ' (meeting duration)' : ' counted as waiting')
+            ? 'Meeting ended - ' . round($waitingH, 2) . ' hrs' . ($priorPause ? ' (meeting duration)' : ' counted as waiting')
             : 'Meeting ended';
 
         TicketSlaEvent::create([

@@ -8,17 +8,17 @@ use Illuminate\Database\Migrations\Migration;
  * tiket (lihat ticket/show.blade.php, AiResearchController::openForTicket()).
  *
  * Sesuai aturan baku proyek, slug baru lahir aktif HANYA untuk EC Administrator
- * dan mati untuk seluruh role lain — pemilik sistem yang memutuskan role mana
+ * dan mati untuk seluruh role lain - pemilik sistem yang memutuskan role mana
  * lagi boleh memakainya lewat Control Center > Menu Access. Tombol ini memicu
  * panggilan AI berbayar (AI Research), jadi justru tidak boleh menyebar
- * diam-diam — sama alasannya dengan ui.ticket.btn-ai-summarize.
+ * diam-diam - sama alasannya dengan ui.ticket.btn-ai-summarize.
  *
  * Slug ini BUKAN pengganti gerbang TicketTeamAccess::isLeadOrMember() yang
  * sudah ada di AiResearchController::openForTicket() dan ticket/show.blade.php
- * — keduanya jalan BERLAPIS: slug ini menentukan role mana yang BOLEH memakai
+ * - keduanya jalan BERLAPIS: slug ini menentukan role mana yang BOLEH memakai
  * fitur ini sama sekali (kontrol biaya/governance, diatur admin), sedangkan
  * isLeadOrMember() tetap membatasi KE TIKET MANA (cuma tiket yang orang itu
- * benar-benar tangani sebagai lead/member — atau EC Administrator, yang selalu
+ * benar-benar tangani sebagai lead/member - atau EC Administrator, yang selalu
  * lolos kedua gerbang berkat grant admin-only di atas).
  */
 return new class extends Migration
