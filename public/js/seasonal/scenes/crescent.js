@@ -1,53 +1,87 @@
-// Ramadan: bulan sabit sungguhan (bola berfase), langit biru tua ke hijau-biru, masjid berkubah dan menara
-// terpantul di air tenang, lentera fanous berlubang bergoyang di depan, untaian lampu hangat. Geometri prosedural.
+// Ramadan: senja menjelang malam di kolam pantul. Masjid berkubah besar dengan empat setengah kubah dan empat menara,
+// hilal tipis berfase asli dengan satu bintang kejora, bintang, palem siluet, lentera fanous menyala yang bergoyang pelan,
+// pantulan di air tenang. Semua geometri prosedural, tanpa shadow map. Modul pembantu: _r-mosque, _r-palms, _r-lantern, _r-tex.
 import { pal, rng, glowTexture, canvasTex, paintedSky, starField, cloudTexture, moonTexture, phasedMoon, mergeParts, skyDir, easeInOut, lerp, smooth, seg } from '../common.js';
+import { buildMosque } from './_r-mosque.js';
+import { buildPalmGeometry } from './_r-palms.js';
+import { buildLanterns } from './_r-lantern.js';
+import { palmTexture } from './_r-tex.js';
 
 export function create(THREE, ctx) {
   const { scene, camera, palette, duration } = ctx;
+  const low = ctx.quality === 'low';
   const P = pal(THREE, palette);
   const rnd = rng(1445);
   const tex = glowTexture(THREE);
   const cloudTex = cloudTexture(THREE, rnd);
   const own = [];
+  const K = (h) => new THREE.Color(h);
   const gold = P.accent.clone();
 
-  scene.fog = new THREE.FogExp2(new THREE.Color('#0c2e3a'), 0.0042);
+  scene.fog = new THREE.FogExp2(K('#0c2a3e'), 0.0036);
   const sky = paintedSky(THREE, rnd, {
-    stops: [[0, new THREE.Color('#1b6b73')], [0.1, new THREE.Color('#12506a')], [0.32, new THREE.Color('#0b2a58')], [0.7, new THREE.Color('#070f35')], [1, new THREE.Color('#030719')]],
-    milky: { az0: 0.1, el0: 0.35, az1: 0.9, el1: 0.95, width: 70, alpha: 0.05, color: '200,225,255' },
+    stops: [[0, K('#3d7488')], [0.05, K('#1f5170')], [0.22, K('#0f2f5e')], [0.6, K('#09154a')], [1, K('#030719')]],
+    milky: { az0: 0.1, el0: 0.35, az1: 0.9, el1: 0.95, width: 70, alpha: 0.045, color: '200,225,255' },
+    paint: (g, m) => {
+      // sisa cahaya senja: pita hangat tipis di horizon sisi kiri bulan
+      const x = m.x(-0.55), y = m.y(0.0), r = 380;
+      const rg = g.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, 'rgba(255,170,90,0.34)'); rg.addColorStop(0.35, 'rgba(240,120,90,0.14)'); rg.addColorStop(1, 'rgba(200,100,120,0)');
+      g.save(); g.scale(1, 0.34); g.translate(0, y * (1 / 0.34 - 1)); g.fillStyle = rg; g.fillRect(x - r, y - r, r * 2, r * 2); g.restore();
+    },
   });
   scene.add(sky);
   const mirror = new THREE.Group(); mirror.scale.y = -1; scene.add(mirror);
   const skyM = new THREE.Mesh(sky.geometry, sky.material); skyM.renderOrder = -10; skyM.frustumCulled = false; mirror.add(skyM);
-  const sf = starField(THREE, rnd, 1000, { tex, minEl: 0.05, size: 1.7, color: '#fff6e0' });
+  const sf = starField(THREE, rnd, low ? 600 : 1100, { tex, minEl: 0.05, size: 1.6, color: '#fff6e0' });
   scene.add(sf.group);
-  sf.group.children.forEach((c) => { const m = new THREE.Points(c.geometry, c.material.clone()); m.material.opacity = 0.35; m.frustumCulled = false; mirror.add(m); });
+  sf.group.children.forEach((c) => { const m = new THREE.Points(c.geometry, c.material.clone()); m.material.opacity = 0.3; m.frustumCulled = false; mirror.add(m); });
 
-  // bulan sabit: bola berfase dengan terminator, bercahaya di tepi bawah
+  // ---- hilal: bola berfase dengan terminator lembut; bintang kejora di dekatnya ----
   const moonTex = moonTexture(THREE, rnd, { base: '#e2d8bd' });
-  const moonPos = skyDir(THREE, -0.44, 0.26, 440);
-  const moon = phasedMoon(THREE, moonTex, { radius: 34, sunDir: new THREE.Vector3(0.32, -0.42, -1.35), tint: '#ffe7b0', earth: 0.07, gain: 2.6 });
+  const MAZ = -0.4, MEL = 0.38;
+  const moonPos = skyDir(THREE, MAZ, MEL, 440);
+  const moon = phasedMoon(THREE, moonTex, { radius: 24, sunDir: new THREE.Vector3(0.3, -0.52, -1.3), tint: '#ffe6ad', earth: 0.012, gain: 2.8 });
   moon.position.copy(moonPos); scene.add(moon);
-  const sprite = (c, s, o, p, k = 1) => { const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: c, transparent: true, opacity: o, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); m.scale.set(s, s * k, 1); m.position.copy(p); scene.add(m); return m; };
-  const halo = sprite('#ffd58a', 210, 0.55, moonPos.clone().multiplyScalar(1.012));
-  sprite('#5fa6c8', 440, 0.14, moonPos.clone().multiplyScalar(1.03));
-  const streak = sprite('#ffd58a', 70, 0.3, new THREE.Vector3(moonPos.x, -moonPos.y, moonPos.z), 3.2);
+  const sprite = (map, c, s, o, p, k = 1) => { const m = new THREE.Sprite(new THREE.SpriteMaterial({ map, color: c, transparent: true, opacity: o, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); m.scale.set(s, s * k, 1); m.position.copy(p); scene.add(m); return m; };
+  const halo = sprite(tex, '#ffd58a', 150, 0.4, moonPos.clone().multiplyScalar(1.012));
+  sprite(tex, '#5fa6c8', 400, 0.1, moonPos.clone().multiplyScalar(1.03));
+  const starTex = canvasTex(THREE, 128, 128, (g, w, h) => {
+    const rg = g.createRadialGradient(64, 64, 0, 64, 64, 64); rg.addColorStop(0, 'rgba(255,255,255,1)'); rg.addColorStop(0.08, 'rgba(255,248,225,0.95)'); rg.addColorStop(0.3, 'rgba(255,225,170,0.25)'); rg.addColorStop(1, 'rgba(255,225,170,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, w, h);
+    g.globalCompositeOperation = 'lighter';
+    for (const [dx, dy, L] of [[1, 0, 62], [0, 1, 62], [0.7, 0.7, 24], [0.7, -0.7, 24]]) {
+      const lg = g.createLinearGradient(64 - dx * L, 64 - dy * L, 64 + dx * L, 64 + dy * L); lg.addColorStop(0, 'rgba(255,240,200,0)'); lg.addColorStop(0.5, 'rgba(255,245,215,0.85)'); lg.addColorStop(1, 'rgba(255,240,200,0)');
+      g.strokeStyle = lg; g.lineWidth = L > 30 ? 1.6 : 1; g.beginPath(); g.moveTo(64 - dx * L, 64 - dy * L); g.lineTo(64 + dx * L, 64 + dy * L); g.stroke();
+    }
+  });
+  const kejora = sprite(starTex, '#fff3d6', 34, 0.95, skyDir(THREE, MAZ + 0.145, MEL + 0.055, 438));
+  const streak = sprite(tex, '#ffd58a', 60, 0.22, new THREE.Vector3(moonPos.x, -moonPos.y * 0.98, moonPos.z), 3.4);
   const clouds = [];
   for (let i = 0; i < 6; i++) {
-    const az = -0.9 + rnd() * 1.8, el = 0.1 + rnd() * 0.5, r = 400 + rnd() * 25, w = r * (0.25 + rnd() * 0.3), near = Math.max(0, 1 - Math.hypot(az + 0.44, el - 0.26) / 0.5);
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTex, color: new THREE.Color('#5a86a8').lerp(new THREE.Color('#ffe9c0'), near * 0.6), transparent: true, opacity: 0.2 + near * 0.2, depthWrite: false, fog: false }));
-    sp.scale.set(w, w * 0.28, 1); skyDir(THREE, az, el, r, sp.position); scene.add(sp); clouds.push({ sp, az, el, r, v: (rnd() - 0.3) * 0.01 });
+    const az = -0.9 + rnd() * 1.8, el = 0.08 + rnd() * 0.5, r = 400 + rnd() * 25, w = r * (0.25 + rnd() * 0.3), near = Math.max(0, 1 - Math.hypot(az - MAZ, el - MEL) / 0.5);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTex, color: K('#4d7aa0').lerp(K('#ffe0b0'), near * 0.5), transparent: true, opacity: 0.18 + near * 0.18, depthWrite: false, fog: false }));
+    sp.scale.set(w, w * 0.26, 1); skyDir(THREE, az, el, r, sp.position); scene.add(sp); clouds.push({ sp, az, el, r, v: (rnd() - 0.3) * 0.01 });
   }
 
-  // cahaya
-  scene.add(new THREE.HemisphereLight(new THREE.Color('#5d7fb8'), new THREE.Color('#0a2a33'), 0.42));
-  const moonL = new THREE.DirectionalLight('#a9c4ff', 0.9); moonL.position.set(-40, 50, -30); scene.add(moonL);
-  const fillL = new THREE.DirectionalLight('#8ea8d8', 0.4); fillL.position.set(10, 8, 40); scene.add(fillL);
-  const warm = [-14, 16].map((x) => { const l = new THREE.PointLight('#ffb561', 300, 70, 1.5); l.position.set(x + 6, 6, -40); scene.add(l); return l; });
+  // ---- cahaya ----
+  scene.add(new THREE.HemisphereLight(K('#6d8cc4'), K('#0a2a33'), 0.5));
+  const moonL = new THREE.DirectionalLight('#b0c8ff', 0.95); moonL.position.set(-40, 55, 35); scene.add(moonL);
+  const fillL = new THREE.DirectionalLight('#8ea8d8', 0.35); fillL.position.set(20, 10, 60); scene.add(fillL);
+  const warm = [0].map((x) => { const l = new THREE.PointLight('#ffb561', 300, 80, 1.6); l.position.set(x, 4.5, 34); scene.add(l); return l; });
+  const lanL = [new THREE.PointLight('#ffa845', 110, 36, 1.6)];
+  lanL.forEach((l) => scene.add(l));
 
   // ---- air tenang ----
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(1600, 700), new THREE.MeshStandardMaterial({ color: '#04202a', roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.58 }));
-  water.rotation.x = -Math.PI / 2; water.position.set(0, 0, -250); scene.add(water);
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(1600, 700), new THREE.MeshBasicMaterial({ color: '#06283a', transparent: true, opacity: 0.62, fog: false }));
+  water.rotation.x = -Math.PI / 2; water.position.set(0, 0, -250); scene.add(water); own.push(water.geometry, water.material);
+  // riak halus: bidang aditif bergulir pelan
+  const rippleTex = canvasTex(THREE, 256, 256, (g, w, h) => {
+    g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 70; i++) { const y = rnd() * h, x = rnd() * w, L = 14 + rnd() * 50; g.strokeStyle = `rgba(150,190,230,${0.12 + rnd() * 0.25})`; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + L / 2, y + (rnd() - 0.5) * 3, x + L, y); g.stroke(); }
+  });
+  rippleTex.wrapS = rippleTex.wrapT = THREE.RepeatWrapping; rippleTex.repeat.set(30, 16); own.push(rippleTex);
+  const ripple = new THREE.Mesh(new THREE.PlaneGeometry(300, 160), new THREE.MeshBasicMaterial({ map: rippleTex, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, fog: true }));
+  ripple.rotation.x = -Math.PI / 2; ripple.position.set(0, 0.05, 60); ripple.renderOrder = 3; scene.add(ripple); own.push(ripple.geometry, ripple.material);
   // bukit jauh berlapis kabut
   const hp = [];
   for (let L = 0; L < 2; L++) for (let i = 0; i < 12; i++) {
@@ -55,148 +89,86 @@ export function create(THREE, ctx) {
     hp.push({ geo: g, m: new THREE.Matrix4().compose(new THREE.Vector3(-420 + i * 78 + rnd() * 30, -1, -250 - L * 70), new THREE.Quaternion(), new THREE.Vector3(1.4, 0.3 + rnd() * 0.25, 1)), color: L ? '#0d3441' : '#0a2e3a' });
   }
   const hillG = mergeParts(THREE, hp); hp.forEach((p) => p.geo.dispose()); own.push(hillG);
-  const hillMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 });
+  const hillMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }); own.push(hillMat);
   scene.add(new THREE.Mesh(hillG, hillMat));
   mirror.add(new THREE.Mesh(hillG, new THREE.MeshBasicMaterial({ vertexColors: true, color: '#8aa' })));
 
-  // ---- masjid: kubah utama + semi kubah + 4 menara berbalkon ----
-  const stone = [], gld = [], glow = [];
-  const M4 = (x, y, z, ry = 0, sx = 1, sy = 1, sz = 1) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0)), new THREE.Vector3(sx, sy, sz));
-  const put = (arr, geo, x, y, z, color, ry = 0, s = [1, 1, 1]) => arr.push({ geo, m: M4(x, y, z, ry, s[0], s[1], s[2]), color });
-  const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
-  const SC = '#98a2ba', SD = '#808ba6', LEAD = '#6b7d99';
-  put(stone, box(60, 1.6, 44), 0, 0.8, 0, '#7b839a');
-  put(stone, box(24, 11, 22), 0, 7.1, 0, SC);
-  put(stone, box(26, 0.7, 24), 0, 12.9, 0, SD);
-  put(stone, new THREE.CylinderGeometry(8, 8.4, 4.2, 32), 0, 15.3, 0, SC);
-  const dome = (r, x, y, z, color) => { const g = new THREE.SphereGeometry(r, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2); put(stone, g, x, y, z, color); };
-  dome(9.2, 0, 17.4, 0, LEAD);
-  put(stone, new THREE.CylinderGeometry(0.9, 1, 2.6, 12), 0, 27.7, 0, SD);
-  dome(1.3, 0, 29, 0, LEAD);
-  put(gld, new THREE.CylinderGeometry(0.08, 0.14, 4.2, 6), 0, 32.1, 0, '#e6c36a');
-  put(gld, new THREE.SphereGeometry(0.45, 10, 8), 0, 30.2, 0, '#e6c36a');
-  const cres = new THREE.TorusGeometry(0.55, 0.11, 6, 16, Math.PI * 1.5); put(gld, cres, 0, 33.2, 0, '#e6c36a');
-  [[0, 11, 9.5, 6.6], [0, 11, -9.5, 6.6], [10, 11, 0, 6.6], [-10, 11, 0, 6.6]].forEach(([x, y, z, r]) => { dome(r, x, y + 1.6, z, LEAD); put(gld, new THREE.CylinderGeometry(0.06, 0.1, 2.2, 6), x, y + 1.6 + r + 0.9, z, '#e6c36a'); });
-  [[-11.5, -10.4], [11.5, -10.4], [-11.5, 10.4], [11.5, 10.4]].forEach(([x, z]) => { put(stone, new THREE.CylinderGeometry(2.8, 3, 2.4, 14), x, 14.2, z, SC); dome(3.2, x, 15.4, z, LEAD); put(gld, new THREE.CylinderGeometry(0.05, 0.08, 1.8, 6), x, 19.4, z, '#e6c36a'); });
-  // menara
-  [[-19, 14], [19, 14], [-19, -14], [19, -14]].forEach(([x, z]) => {
-    put(stone, new THREE.CylinderGeometry(1.5, 2.1, 3, 8), x, 3.1, z, SD);
-    put(stone, new THREE.CylinderGeometry(0.85, 1.3, 33, 14), x, 19.6, z, SC);
-    [24, 33].forEach((y, i) => {
-      put(stone, new THREE.CylinderGeometry(2.1 - i * 0.2, 1.55, 0.8, 16), x, y, z, SD);
-      put(gld, new THREE.TorusGeometry(2.0 - i * 0.2, 0.07, 6, 22), x, y + 0.95, z, '#e6c36a'); // pagar balkon
-      gld[gld.length - 1].m = M4(x, y + 0.95, z).multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
-    });
-    put(stone, new THREE.CylinderGeometry(1.2, 1.4, 5, 14), x, 36.1, z, SC);
-    put(stone, new THREE.ConeGeometry(1.5, 8.4, 14), x, 42.8, z, LEAD);
-    put(gld, new THREE.SphereGeometry(0.32, 8, 6), x, 47.2, z, '#e6c36a');
-    put(gld, new THREE.CylinderGeometry(0.04, 0.07, 2.6, 5), x, 48.6, z, '#e6c36a');
-    [10, 17, 29].forEach((y) => put(glow, box(0.26, 1.5, 0.12), x, y, z + (z > 0 ? 1.18 : 1.18), '#ffb04d'));
-  });
-  // jendela dan gerbang berlengkung (menyala hangat)
-  const arch = (w, h) => { const s = new THREE.Shape(); s.moveTo(-w / 2, 0); s.lineTo(-w / 2, h - w / 2); s.absarc(0, h - w / 2, w / 2, Math.PI, 0, true); s.lineTo(w / 2, 0); s.closePath(); return new THREE.ShapeGeometry(s, 10); };
-  const win = (w, h, x, y, z, ry, c = '#ffb04d') => put(glow, arch(w, h), x, y, z, c, ry);
-  for (let i = -3; i <= 3; i++) if (Math.abs(i) > 0) win(2.2, 4.6, i * 3.3, 2.2, 11.06, 0);
-  for (let i = -2; i <= 2; i++) win(1.8, 3.6, i * 4.4, 7.4, 11.06, 0, '#ffc46b');
-  win(4.2, 9, 0, 2.2, 11.07, 0, '#ffa23a');
-  for (let i = -2; i <= 2; i++) { win(2, 4.2, 12.06, 2.4, i * 4.2, Math.PI / 2); win(1.6, 3.4, 12.06, 7.4, i * 4.2, Math.PI / 2, '#ffc46b'); }
-  for (let a = -75; a <= 75; a += 15) { const r = a * Math.PI / 180; win(1.1, 2.4, Math.sin(r) * 8.2, 14.1, Math.cos(r) * 8.2, r, '#ffd48a'); }
-  [-1, 1].forEach((s) => { for (let a = 0; a < 5; a++) win(0.9, 1.9, s * 10 + (a - 2) * 1.1, 13.1, 14.5 - Math.abs(a - 2) * 0.1, 0, '#ffd48a'); });
-  const mk = (parts) => { const g = mergeParts(THREE, parts); parts.forEach((p) => p.geo.dispose()); own.push(g); return g; };
-  const gS = mk(stone), gG = mk(gld), gW = mk(glow);
-  const mosque = new THREE.Group(), mosqueM = new THREE.Group();
-  mosque.position.set(6, 0, -54); mosqueM.position.copy(mosque.position); mirror.add(mosqueM); scene.add(mosque);
-  const winMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
-  mosque.add(new THREE.Mesh(gS, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.05 })));
-  mosque.add(new THREE.Mesh(gG, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.3, metalness: 0.85, emissive: gold, emissiveIntensity: 0.3 })));
-  mosque.add(new THREE.Mesh(gW, winMat));
-  const mirStone = new THREE.MeshBasicMaterial({ vertexColors: true, color: '#7a8aa8' }), mirGold = new THREE.MeshBasicMaterial({ vertexColors: true, color: '#8a7440' }), mirWin = new THREE.MeshBasicMaterial({ vertexColors: true, color: '#c89a60', side: THREE.DoubleSide });
-  mosqueM.add(new THREE.Mesh(gS, mirStone), new THREE.Mesh(gG, mirGold), new THREE.Mesh(gW, mirWin));
+  // ---- masjid ----
+  const mq = buildMosque(THREE, rnd, { detail: low ? 'far' : 'full', gold: '#e6c36a', mirror: true });
+  const MS = 0.8;
+  mq.group.scale.setScalar(MS); mq.group.position.set(0, 0, 0); scene.add(mq.group);
+  mq.mirror.scale.setScalar(MS); mirror.add(mq.mirror);
 
-  // ---- dermaga depan ----
-  const pier = new THREE.Mesh(new THREE.BoxGeometry(120, 1, 40), new THREE.MeshStandardMaterial({ color: '#0d1a22', roughness: 0.7, metalness: 0.2, transparent: true }));
-  pier.renderOrder = 10; pier.position.set(0, -0.1, 40); scene.add(pier);
-  const rail = new THREE.Mesh(new THREE.BoxGeometry(120, 0.12, 0.12), new THREE.MeshStandardMaterial({ color: '#1a1f28', metalness: 0.7, roughness: 0.4 })); rail.position.set(0, 1.5, 20.4); scene.add(rail);
+  // ---- palem siluet (di alas masjid) ----
+  const palmTex = palmTexture(THREE, rnd); own.push(palmTex);
+  const palmSpecs = [[-33.5, 1.2, 8, 19, -0.1], [-31, 1.2, -10, 24, -0.14], [33.5, 1.2, 6, 21, 0.1], [31, 1.2, -9, 26, 0.12], [-27, 1.2, 22, 15, -0.08], [28, 1.2, 21, 16, 0.08]]
+    .map(([x, y, z, h, lean], i) => ({ x, y, z, h, lean, rot: i * 1.3 }));
+  const palmG = buildPalmGeometry(THREE, rnd, palmSpecs, { fronds: low ? 9 : 13 }); own.push(palmG);
+  const palmMat = new THREE.MeshStandardMaterial({ map: palmTex, vertexColors: true, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1, metalness: 0 }); own.push(palmMat);
+  scene.add(new THREE.Mesh(palmG, palmMat));
+  const palmMir = new THREE.MeshBasicMaterial({ map: palmTex, color: '#0a1a28', alphaTest: 0.4, side: THREE.DoubleSide }); own.push(palmMir);
+  mirror.add(new THREE.Mesh(palmG, palmMir));
 
-  // ---- lentera fanous: badan oktagonal dengan pola berlubang (emissive) ----
-  const lanTex = canvasTex(THREE, 512, 256, (g, w, h) => {
-    g.fillStyle = '#140c05'; g.fillRect(0, 0, w, h);
-    for (let p = 0; p < 8; p++) {
-      const x0 = p * 64, cx = x0 + 32;
-      g.save(); g.beginPath(); g.moveTo(x0 + 9, 206); g.lineTo(x0 + 9, 104); g.arc(cx, 104, 23, Math.PI, 0); g.lineTo(x0 + 55, 206); g.closePath(); g.clip();
-      const gr = g.createLinearGradient(0, 70, 0, 206); gr.addColorStop(0, '#ffe08a'); gr.addColorStop(1, '#ff8f2e'); g.fillStyle = gr; g.fillRect(x0, 60, 64, 150);
-      g.strokeStyle = '#1c1008'; g.lineWidth = 2.2;
-      for (let k = -160; k < 160; k += 11) { g.beginPath(); g.moveTo(x0 + k, 60); g.lineTo(x0 + k + 150, 210); g.stroke(); g.beginPath(); g.moveTo(x0 + k + 150, 60); g.lineTo(x0 + k, 210); g.stroke(); }
-      g.restore();
-      g.fillStyle = '#ffd27a';
-      for (let k = 0; k < 6; k++) { g.beginPath(); g.arc(x0 + 10 + k * 8.8, 30, 2.6, 0, 6.3); g.fill(); g.beginPath(); g.arc(x0 + 10 + k * 8.8, 232, 2.6, 0, 6.3); g.fill(); }
-      g.beginPath(); for (let k = 0; k < 8; k++) { const a = k * 0.785, r = k % 2 ? 4 : 9; g.lineTo(cx + Math.cos(a) * r, 52 + Math.sin(a) * r); } g.closePath(); g.fill();
-    }
-  });
-  const prof = [];
-  for (let i = 0; i <= 14; i++) { const s = i / 14; prof.push(new THREE.Vector2(0.12 + 0.62 * Math.pow(Math.sin(Math.PI * (0.08 + s * 0.84)), 0.7), -1.25 + s * 2.5)); }
-  const bodyG = new THREE.LatheGeometry(prof, 8);
-  const capG = new THREE.LatheGeometry([[0.01, 1.2], [0.5, 1.24], [0.62, 1.34], [0.4, 1.5], [0.22, 1.72], [0.3, 1.9], [0.1, 2.15], [0.03, 2.5], [0.01, 2.55]].map(([x, y]) => new THREE.Vector2(x, y)), 14);
-  const baseG = new THREE.LatheGeometry([[0.01, -1.55], [0.2, -1.52], [0.3, -1.4], [0.55, -1.3], [0.45, -1.2], [0.01, -1.2]].map(([x, y]) => new THREE.Vector2(x, y)), 14);
-  const tasG = new THREE.ConeGeometry(0.12, 0.5, 8); tasG.translate(0, -1.8, 0);
-  own.push(bodyG, capG, baseG, tasG);
-  const brass = new THREE.MeshStandardMaterial({ color: '#7a5a2a', metalness: 0.9, roughness: 0.35, emissive: gold, emissiveIntensity: 0.15 });
-  const glass = new THREE.MeshStandardMaterial({ color: '#2a1a0a', metalness: 0.5, roughness: 0.5, emissive: '#ffffff', emissiveMap: lanTex, emissiveIntensity: 1.5, side: THREE.DoubleSide });
-  const lanterns = [];
-  [[-11.5, 19, 6, 1.5], [-6.5, 21, 10, 1.9], [4, 18, 3, 1.2], [11, 20.5, 8, 1.7], [17.5, 19, 12, 2.1], [-24, 17, -2, 1.0], [-1.5, 15.5, -6, 0.85]].forEach(([x, top, z, s], i) => {
-    const pivot = new THREE.Group(); pivot.position.set(x, top, z); scene.add(pivot);
-    const len = 12;
-    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.03 * s, 0.03 * s, len, 5), brass); cord.position.y = 2; pivot.add(cord); own.push(cord.geometry);
-    const lan = new THREE.Group(); lan.position.y = -3.5; lan.scale.setScalar(s); pivot.add(lan);
-    lan.add(new THREE.Mesh(bodyG, glass), new THREE.Mesh(capG, brass), new THREE.Mesh(baseG, brass), new THREE.Mesh(tasG, brass));
-    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: '#ffb561', transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
-    halo.scale.set(5.2 * s, 5.2 * s, 1); lan.add(halo);
-    let light = null;
-    if (i < 4) { light = new THREE.PointLight('#ffa845', 45 * s, 26, 1.6); light.position.y = 0; lan.add(light); }
-    lanterns.push({ pivot, ph: i * 1.7, halo, light, s });
-  });
+  // lampu kota jauh di tepi seberang
+  const NS = low ? 70 : 160, sp = new Float32Array(NS * 3), sc = new Float32Array(NS * 3);
+  for (let i = 0; i < NS; i++) { const cl = rnd() < 0.6 ? -1 : 1, x = cl * (60 + rnd() * rnd() * 520) + (rnd() - 0.5) * 30; sp[i * 3] = x; sp[i * 3 + 1] = 1.5 + rnd() * 5; sp[i * 3 + 2] = -205 - rnd() * 20; const k = 0.4 + rnd() * 0.6, w = rnd() < 0.25 ? K('#cfe6ff') : K('#ffc477'); sc[i * 3] = w.r * k; sc[i * 3 + 1] = w.g * k; sc[i * 3 + 2] = w.b * k; }
+  const shG = new THREE.BufferGeometry(); shG.setAttribute('position', new THREE.BufferAttribute(sp, 3)); shG.setAttribute('color', new THREE.BufferAttribute(sc, 3)); own.push(shG);
+  const shM = new THREE.PointsMaterial({ map: tex, vertexColors: true, size: 6, sizeAttenuation: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }); own.push(shM);
+  const shP = new THREE.Points(shG, shM); shP.frustumCulled = false; scene.add(shP);
+  const shMM = new THREE.PointsMaterial({ map: tex, vertexColors: true, size: 6, sizeAttenuation: true, transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }); own.push(shMM);
+  const shPM = new THREE.Points(shG, shMM); shPM.frustumCulled = false; mirror.add(shPM);
 
-  // ---- untaian lampu hangat ----
-  const NSTR = 2, NB = 40, sp = new Float32Array(NSTR * NB * 3), sc = new Float32Array(NSTR * NB * 3), sph = new Float32Array(NSTR * NB);
-  const strs = [[17.5, 4.5, 3], [15, 3.5, -14]];
-  const warmC = new THREE.Color('#ffc477');
-  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3)); sg.setAttribute('color', new THREE.BufferAttribute(sc, 3)); own.push(sg);
-  const sPts = new THREE.Points(sg, new THREE.PointsMaterial({ map: tex, vertexColors: true, size: 15, sizeAttenuation: false, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
-  sPts.frustumCulled = false; scene.add(sPts);
-  for (let i = 0; i < NSTR * NB; i++) sph[i] = rnd() * 6.28;
+  // ---- tali dan lentera fanous ----
+  const ropeCurve = new THREE.CatmullRomCurve3([-70, -35, 0, 35, 70].map((x) => new THREE.Vector3(x, 25 + 12 * Math.pow(x / 70, 2) * 1.0 + (Math.abs(x) < 36 ? 0 : 0), 36, 0)).map((v) => { v.z = 40; return v; }));
+  const ropeAt = (x) => 25.5 + 11.5 * Math.pow(x / 70, 2);
+  const ropePts = []; for (let i = 0; i <= 40; i++) { const x = -75 + i * 3.75; ropePts.push(new THREE.Vector3(x, ropeAt(x), 40)); }
+  const ropeG = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ropePts), 60, 0.07, 4); own.push(ropeG);
+  const ropeM = new THREE.MeshStandardMaterial({ color: '#4a3a20', roughness: 0.7, emissive: '#2a1c08', emissiveIntensity: 0.5 }); own.push(ropeM);
+  scene.add(new THREE.Mesh(ropeG, ropeM));
+  void ropeCurve;
+  const LN = [[-8.5, 5.8, 1.0, '#ffd9a0'], [-1.5, 4.0, 1.5, '#ffffff'], [7, 6.4, 0.95, '#ff9f8a'], [14.5, 3.4, 1.3, '#ffffff'], [22, 5.2, 1.1, '#ffe2a8'], [-26, 5.4, 1.05, '#ffe2a8'], [30, 3.2, 1.2, '#ffffff']]
+    .map(([x, len, s, tint], i) => ({ x, y: ropeAt(x), z: 40, len, s, tint, ph: i * 1.7 }));
+  LN.push({ x: -14.5, y: 30, z: 60, len: 12, s: 1.35, tint: '#ffffff', ph: 3.1 }, { x: 12, y: 30, z: 58, len: 12.5, s: 1.2, tint: '#ffe2a8', ph: 5.2 });
+  const lan = buildLanterns(THREE, LN, { glow: tex });
+  scene.add(lan.group); mirror.add(lan.mirrorHalo);
+  // bohlam kecil sepanjang tali
+  const NB = 70, bp = new Float32Array(NB * 3), bc = new Float32Array(NB * 3), bph = new Float32Array(NB);
+  for (let i = 0; i < NB; i++) { const x = -68 + i * (136 / (NB - 1)); bp[i * 3] = x; bp[i * 3 + 1] = ropeAt(x) - 0.25; bp[i * 3 + 2] = 40.1; bph[i] = rnd() * 6.28; }
+  const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.BufferAttribute(bp, 3)); bg.setAttribute('color', new THREE.BufferAttribute(bc, 3)); own.push(bg);
+  const bm = new THREE.PointsMaterial({ map: tex, vertexColors: true, size: 2.2, sizeAttenuation: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }); own.push(bm);
+  const bulbs = new THREE.Points(bg, bm); bulbs.frustumCulled = false; scene.add(bulbs);
+  const warmC = K('#ffc477');
+
+  // ---- kabut tipis di atas air ----
+  const hz = [[-60, 6, -20, 260, 0.1], [50, 7, -10, 300, 0.09], [0, 4, 20, 340, 0.07]].map(([x, y, z, s, o]) => { const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTex, color: '#6fa0c0', transparent: true, opacity: o, depthWrite: false, fog: false })); m.scale.set(s, s * 0.12, 1); m.position.set(x, y, z); scene.add(m); return m; });
 
   return {
     update(t, dt) {
       const T = t * duration / 1000, on = smooth(seg(t, 0.05, 0.55));
-      lanterns.forEach((l, i) => {
-        l.pivot.rotation.z = Math.sin(T * 1.7 + l.ph) * 0.07; l.pivot.rotation.x = Math.cos(T * 1.3 + l.ph) * 0.035;
-        const f = 0.92 + Math.sin(T * 6 + i * 2) * 0.08;
-        l.halo.material.opacity = 0.5 * f; if (l.light) l.light.intensity = 45 * l.s * f;
-      });
-      winMat.color.setScalar(0.35 + 0.65 * on);
-      warm.forEach((l, i) => { l.intensity = 300 * (0.4 + 0.6 * on) * (0.95 + Math.sin(T * 5 + i) * 0.05); });
-      for (let s = 0; s < NSTR; s++) {
-        const [yt, sag, z] = strs[s];
-        for (let i = 0; i < NB; i++) {
-          const u = i / (NB - 1), j = s * NB + i;
-          sp[j * 3] = lerp(-50, 50, u) + Math.sin(T * 0.8 + s) * 0.3; sp[j * 3 + 1] = yt - sag * 4 * u * (1 - u) + Math.sin(T * 1.6 + u * 6) * 0.12; sp[j * 3 + 2] = z;
-          const k = (0.55 + 0.45 * Math.sin(T * 4 + sph[j])) * on * (s ? 0.7 : 1);
-          sc[j * 3] = warmC.r * k; sc[j * 3 + 1] = warmC.g * k; sc[j * 3 + 2] = warmC.b * k;
-        }
-      }
-      sg.attributes.position.needsUpdate = true; sg.attributes.color.needsUpdate = true;
+      lan.update(T);
+      lan.glassMat.color.setScalar(0.6 + 0.4 * on);
+      const f0 = 0.94 + Math.sin(T * 5) * 0.05;
+      lanL[0].position.set(LN[1].x, LN[1].y - 6, 38); lanL[0].intensity = 110 * on * f0;
+      mq.mats.glass.color.setRGB(1, 0.8, 0.55).multiplyScalar(0.35 + 0.65 * on);
+      warm.forEach((l, i) => { l.intensity = 300 * (0.4 + 0.6 * on) * (0.96 + Math.sin(T * 5 + i) * 0.04); });
+      for (let i = 0; i < NB; i++) { const k = (0.5 + 0.5 * Math.sin(T * 3 + bph[i])) * on * 0.8; bc[i * 3] = warmC.r * k; bc[i * 3 + 1] = warmC.g * k; bc[i * 3 + 2] = warmC.b * k; }
+      bg.attributes.color.needsUpdate = true;
+      rippleTex.offset.set(T * 0.004, T * 0.01);
       clouds.forEach((c) => { c.az += c.v * dt; skyDir(THREE, c.az, c.el, c.r, c.sp.position); });
-      halo.material.opacity = 0.5 + Math.sin(T * 1.6) * 0.05;
-      streak.material.opacity = 0.26 + Math.sin(T * 2.1) * 0.05;
+      halo.material.opacity = 0.38 + Math.sin(T * 1.6) * 0.04;
+      streak.material.opacity = 0.2 + Math.sin(T * 2.1) * 0.04;
+      kejora.material.opacity = 0.88 + Math.sin(T * 3.1) * 0.08; kejora.material.rotation = Math.sin(T * 0.3) * 0.03;
       sf.update(T);
+      void hz;
       const k = easeInOut(t);
-      camera.position.set(lerp(-4, 3, k), 5.4 + k * 0.8, lerp(30, 25, k));
-      camera.lookAt(lerp(-3, 2, k), lerp(15, 17, k), -55);
+      const pf = Math.min(1, Math.max(0, (1 - camera.aspect) / 0.5)); // layar potret: lebih dekat, lensa lebih tinggi
+      camera.position.set(lerp(-6, 5, k), lerp(7, 9, k) + pf * 2, lerp(84, 76, k) - pf * 24);
+      camera.lookAt(lerp(-2, 2, k), lerp(17, 19, k) + pf * 6, 0);
     },
     dispose() {
-      [tex, cloudTex, moonTex, lanTex].forEach((x) => x.dispose());
+      [tex, cloudTex, moonTex, starTex].forEach((x) => x.dispose());
       own.forEach((g) => g.dispose());
-      [winMat, mirStone, mirGold, mirWin, hillMat].forEach((m) => m.dispose());
+      mq.dispose(); lan.dispose(); hillMat.dispose();
     },
   };
 }

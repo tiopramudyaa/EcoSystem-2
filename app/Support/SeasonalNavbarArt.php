@@ -133,9 +133,9 @@ class SeasonalNavbarArt
         }
         // pita merah di pangkal ranting
         $o .= '<path d="M7 31C4 27 1 28 2 31C3 34 6 33 7 31ZM7 31C10 27 13 28 12 31C11 34 8 33 7 31Z" fill="#c8102e" stroke="#8e0b1f" stroke-width=".4"/><circle cx="7" cy="31" r="1.4" fill="#d9162f"/>';
-        $o .= self::sway(80, self::bauble(80, 8, 3.1, '#c8102e', '#8e0b1f'), 4.2, .5, 4);
+        $o .= self::sway(80, self::bauble(80, 8, 2.6, '#c8102e', '#8e0b1f'), 4.2, .5, 4);
         $o .= self::sway(112, self::thread(112, 6) . '<g transform="translate(112 34)">' . self::star4(0, 0, 3.6, '#f2c14e') . '</g>', 3.4, 1.9, 6);
-        $o .= '<g class="sn-twinkle" style="transform-origin:140px 33px;--d:3s;--o:-.8s"><path d="M140 28V39" stroke="#cfe6f5" stroke-width="1.2" stroke-linecap="round"/><path d="M138.6 28H141.4L140 39Z" fill="#e7f3fb" stroke="#9cc4dc" stroke-width=".4"/></g>';
+        $o .= '<g class="sn-twinkle" style="transform-origin:140px 33px;--d:3s;--o:-.8s"><path d="M140 28V39" stroke="#cfe8dc" stroke-width="1.2" stroke-linecap="round"/><path d="M138.6 28H141.4L140 39Z" fill="#e6f5ed" stroke="#9cc9b4" stroke-width=".4"/></g>';
         $o .= self::sway(164, self::bauble(164, 6, 2.5, '#f2c14e', '#c99a2a'), 5, 2.6, 5);
 
         return self::svg($o);
@@ -164,7 +164,7 @@ class SeasonalNavbarArt
         $o .= self::sway(150, $bell(150, 3, 1.15), 3.6, .3, 7);
         $o .= self::sway(124, $bell(124, 2, .85), 4.4, 1.7, 6);
         // tongkat permen
-        $o .= self::sway(92, '<path d="M92 28V35Q92 38.6 89.4 38.6Q87.2 38.6 87.2 36.4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M92 29.5V31M92 33V34.6M90.6 38L89 38.6M88 37.4L87.2 36.4" stroke="#c8102e" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1.2 1.6"/>', 4.8, 2.2, 4);
+        $o .= self::sway(92, '<path d="M92 28V35Q92 38.6 89.4 38.6Q87.2 38.6 87.2 36.4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M92 29.5V31M92 33V34.6M90.6 38L89 38.6M88 37.4L87.2 36.4" stroke="#d4af37" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1.2 1.6"/>', 4.8, 2.2, 4);
         $o .= self::twinkle(66, 34, 2.6, '#fff', 2.8, .4);
 
         return self::svg($o);
@@ -181,8 +181,8 @@ class SeasonalNavbarArt
         $o .= self::twinkle(14, 11, 3.6, '#f6d36a', 2.6, .2) . self::twinkle(50, 28, 2.4, '#fff', 3.2, 1.4) . self::twinkle(24, 25, 1.9, '#f6d36a', 3.6, 2.2);
         $o .= self::twinkle(84, 33, 3, '#f6d36a', 3.4, .9);
         // pita konfeti bergelombang
-        $o .= self::sway(118, '<path d="M118 28C121 30.5 115 32.5 118 35C121 37.5 115 39 118 40" fill="none" stroke="#e0405a" stroke-width="1.3" stroke-linecap="round"/>', 3.2, 1.1, 7);
-        $o .= '<g class="sn-twinkle" style="transform-origin:150px 32px;--d:2.4s;--o:-1.6s"><circle cx="150" cy="32" r="1.4" fill="#f6d36a"/><circle cx="157" cy="35" r="1" fill="#cfd4de"/><circle cx="143" cy="35.5" r="1" fill="#e0405a"/></g>';
+        $o .= self::sway(118, '<path d="M118 28C121 30.5 115 32.5 118 35C121 37.5 115 39 118 40" fill="none" stroke="#e0b13a" stroke-width="1.3" stroke-linecap="round"/>', 3.2, 1.1, 7);
+        $o .= '<g class="sn-twinkle" style="transform-origin:150px 32px;--d:2.4s;--o:-1.6s"><circle cx="150" cy="32" r="1.4" fill="#f6d36a"/><circle cx="157" cy="35" r="1" fill="#cfd4de"/><circle cx="143" cy="35.5" r="1" fill="#f3dc8e"/></g>';
 
         return self::svg($o);
     }
@@ -206,7 +206,7 @@ class SeasonalNavbarArt
     private static function nyRight(): string
     {
         $o = self::burst(166, 14, 11, '#f6d36a', '#fff', 4.2, 0);
-        $o .= self::burst(142, 24, 6.5, '#e0405a', '#f6d36a', 3.6, 1.7);
+        $o .= self::burst(142, 24, 6.5, '#f3dc8e', '#cfd4de', 3.6, 1.7);
         $o .= self::burst(184, 28, 5, '#cfd4de', '#f6d36a', 3.9, 2.6);
         $o .= self::twinkle(70, 33, 2.6, '#fff', 3, .6);
         $o .= self::sway(104, self::thread(104, 5) . '<g transform="translate(104 35)">' . self::star4(0, 0, 3.4, '#f6d36a') . '</g>', 4, 1.3, 6);
@@ -319,7 +319,7 @@ class SeasonalNavbarArt
             $o .= '<g class="sn-twinkle" style="transform-origin:' . self::n($x) . 'px ' . self::n($y) . 'px;--d:' . (3.4 + $i * .7) . 's;--o:-' . ($i * 1.1) . 's">';
             for ($k = 0; $k < 5; $k++) {
                 $a = $k * 2 * M_PI / 5 - M_PI / 2;
-                $o .= '<circle cx="' . self::n($x + cos($a) * $r * .75) . '" cy="' . self::n($y + sin($a) * $r * .75) . '" r="' . self::n($r * .62) . '" fill="' . ($i % 2 ? '#f9d3dc' : '#f4a6b8') . '" stroke="#d96a86" stroke-width=".3"/>';
+                $o .= '<circle cx="' . self::n($x + cos($a) * $r * .75) . '" cy="' . self::n($y + sin($a) * $r * .75) . '" r="' . self::n($r * .62) . '" fill="' . ($i % 2 ? '#fbe6b8' : '#f2c86a') . '" stroke="#c9902a" stroke-width=".3"/>';
             }
             $o .= '<circle cx="' . self::n($x) . '" cy="' . self::n($y) . '" r="1" fill="#f6d36a"/></g>';
         }
@@ -338,15 +338,15 @@ class SeasonalNavbarArt
     {
         // lampion besar menggantung dari atas pojok, ayunan lambat
         $lan = '<path d="M16 0V4" stroke="#caa02a" stroke-width=".8"/><rect x="12.4" y="3.6" width="7.2" height="2.4" rx=".8" fill="#e8b93a" stroke="#b98a1e" stroke-width=".4"/>'
-            . '<ellipse cx="16" cy="14.6" rx="8.4" ry="8" fill="#d4202a" stroke="#8f1018" stroke-width=".6"/>'
-            . '<path d="M11.4 7Q8 14.6 11.4 22M20.6 7Q24 14.6 20.6 22M16 6.6V22.6" stroke="#9b111e" stroke-width=".7" fill="none"/>'
-            . '<path d="M9.6 9.6Q8.6 12.4 9.2 14.6" stroke="#f26a6f" stroke-width="1" fill="none" stroke-linecap="round"/>'
+            . '<ellipse cx="16" cy="14.6" rx="8.4" ry="8" fill="#c23a18" stroke="#8a2410" stroke-width=".6"/>'
+            . '<path d="M11.4 7Q8 14.6 11.4 22M20.6 7Q24 14.6 20.6 22M16 6.6V22.6" stroke="#8a2410" stroke-width=".7" fill="none"/>'
+            . '<path d="M9.6 9.6Q8.6 12.4 9.2 14.6" stroke="#e8805a" stroke-width="1" fill="none" stroke-linecap="round"/>'
             . '<rect x="12.4" y="22" width="7.2" height="2.2" rx=".8" fill="#e8b93a" stroke="#b98a1e" stroke-width=".4"/>'
             . '<path d="M14 24.2V31M16 24.2V32.4M18 24.2V31" stroke="#e8b93a" stroke-width="1.1" stroke-linecap="round"/><circle cx="16" cy="24.4" r="1.1" fill="#f6d36a"/>';
         $o = '<g class="sn-sway" style="transform-origin:16px 0;--d:5.6s;--o:-1s;--a:3deg">' . $lan . '</g>';
         $o .= self::plumBranch([22, 37, 34, 37, 46, 30, 56, 20], [.35, .62, .9]);
         $o .= self::sway(88, self::coin(88, 6), 4.4, .9, 5);
-        $o .= self::sway(120, self::thread(120, 4, '#c99a2a') . '<circle cx="120" cy="33" r="1.4" fill="#d4202a"/><path d="M118.4 34L117.6 39M120 34.4V39.6M121.6 34L122.4 39" stroke="#d4202a" stroke-width=".9" stroke-linecap="round"/>', 3.8, 2.2, 6.5);
+        $o .= self::sway(120, self::thread(120, 4, '#c99a2a') . '<circle cx="120" cy="33" r="1.4" fill="#a83416"/><path d="M118.4 34L117.6 39M120 34.4V39.6M121.6 34L122.4 39" stroke="#a83416" stroke-width=".9" stroke-linecap="round"/>', 3.8, 2.2, 6.5);
         $o .= self::sway(150, self::coin(150, 3), 5.2, 1.4, 4);
 
         return self::svg($o);
@@ -356,7 +356,7 @@ class SeasonalNavbarArt
     {
         $o = self::plumBranch([190, 37, 174, 37, 156, 29, 138, 14], [.3, .55, .8, .98]);
         $o .= '<path d="M184 12L185.4 15.6L189 16L186.2 18.4L187 22L184 20L181 22L181.8 18.4L179 16L182.6 15.6Z" fill="#f2c14e" opacity=".9"/>';
-        $o .= self::sway(100, self::thread(100, 3, '#caa02a') . '<ellipse cx="100" cy="34.4" rx="3.4" ry="3.2" fill="#d4202a" stroke="#8f1018" stroke-width=".4"/><path d="M99 38V40M101 38V40" stroke="#e8b93a" stroke-width=".8"/>', 4.8, .4, 6);
+        $o .= self::sway(100, self::thread(100, 3, '#caa02a') . '<ellipse cx="100" cy="34.4" rx="3.4" ry="3.2" fill="#c23a18" stroke="#8a2410" stroke-width=".4"/><path d="M99 38V40M101 38V40" stroke="#e8b93a" stroke-width=".8"/>', 4.8, .4, 6);
         $o .= self::sway(72, self::coin(72, 5), 3.9, 1.7, 5.5);
 
         return self::svg($o);
@@ -366,7 +366,7 @@ class SeasonalNavbarArt
 
     private static function flagPole(float $x0, float $y0, float $x1, float $y1, float $w, float $h, int $dir, float $dur, float $delay): string
     {
-        $o = '<path d="M' . self::n($x0) . ' ' . self::n($y0) . 'L' . self::n($x1) . ' ' . self::n($y1) . '" stroke="#b8a37a" stroke-width="1.2" stroke-linecap="round"/><circle cx="' . self::n($x1) . '" cy="' . self::n($y1 - 1) . '" r="1.5" fill="#f2c14e"/>';
+        $o = '<path d="M' . self::n($x0) . ' ' . self::n($y0) . 'L' . self::n($x1) . ' ' . self::n($y1) . '" stroke="#b8a37a" stroke-width="1.2" stroke-linecap="round"/><circle cx="' . self::n($x1) . '" cy="' . self::n($y1 - 1) . '" r="1.5" fill="#fff" stroke="#a80c24" stroke-width=".5"/>';
         $fx = $dir > 0 ? $x1 + .6 : $x1 - .6 - $w;
         $fy = $y1 + 1.4;
         $o .= '<g class="sn-wave" style="transform-origin:' . self::n($x1) . 'px ' . self::n($fy) . 'px;--d:' . $dur . 's;--o:-' . $delay . 's">'
@@ -396,7 +396,7 @@ class SeasonalNavbarArt
         $o = self::flagPole(8, 39, 30, 8, 17, 10, 1, 3.2, .4);
         $o .= self::flagPole(14, 39, 8, 5, 14, 8.4, 1, 3.8, 1.6);
         $o .= self::pennants(70, 124, 4);
-        $o .= self::sway(152, self::thread(152, 5, '#c9a02a') . '<g transform="translate(152 33.6)">' . self::star4(0, 0, 3.2, '#f2c14e') . '</g>', 4.2, 1.1, 6);
+        $o .= self::sway(152, self::thread(152, 5, '#b8a37a') . '<g transform="translate(152 33.6)">' . self::star4(0, 0, 3.2, '#a80c24') . '</g>', 4.2, 1.1, 6);
 
         return self::svg($o);
     }
@@ -406,7 +406,7 @@ class SeasonalNavbarArt
         $o = self::flagPole(184, 39, 170, 12, 13, 8, -1, 3.6, 1);
         $o .= self::flagPole(178, 39, 184, 4, 12, 7.6, -1, 3, 2.2);
         $o .= self::pennants(84, 122, 3);
-        $o .= self::twinkle(60, 33, 2.4, '#f2c14e', 3.4, .8);
+        $o .= self::twinkle(60, 33, 2.4, '#a80c24', 3.4, .8);
 
         return self::svg($o);
     }
@@ -449,7 +449,7 @@ class SeasonalNavbarArt
 
     private static function petal(float $x, float $y, float $rot, string $fill): string
     {
-        return '<path transform="translate(' . self::n($x) . ' ' . self::n($y) . ') rotate(' . self::n($rot) . ')" d="M0-2.6C2 -2.6 2.6 .2 0 2.6C-2.6 .2 -2 -2.6 0-2.6Z" fill="' . $fill . '" stroke="#d96a86" stroke-width=".3"/>';
+        return '<path transform="translate(' . self::n($x) . ' ' . self::n($y) . ') rotate(' . self::n($rot) . ')" d="M0-2.6C2 -2.6 2.6 .2 0 2.6C-2.6 .2 -2 -2.6 0-2.6Z" fill="' . $fill . '" stroke="#c9902a" stroke-width=".3"/>';
     }
 
     /** Lapisan ketiga: elemen kecil dan jarang di pojok luar, gerak sendiri-sendiri. Tanpa id. */
@@ -462,11 +462,11 @@ class SeasonalNavbarArt
                     ? [[60, 9, 3, 5.2, 0], [42, 22, 2.2, 6.6, 2.4]]
                     : [[10, 7, 3.4, 5.8, 0], [31, 19, 2.4, 6.4, 2.1]];
                 foreach ($f as [$x, $y, $r, $d, $dl]) {
-                    $o .= self::mv('sn-drift', $x, $y, $d, $dl, self::flake($x, $y, $r, '#8fb9d6'));
+                    $o .= self::mv('sn-drift', $x, $y, $d, $dl, self::flake($x, $y, $r, '#9ccdb6'));
                 }
                 $c = $right ? [[58, 33, 4.2, 3.4, .5], [28, 12, 3.4, 4.1, 1.6]] : [[48, 10, 4.6, 3.1, .7], [20, 33, 4, 3.8, 1.5]];
                 foreach ($c as [$x, $y, $h, $d, $dl]) {
-                    $o .= self::mv('sn-twinkle', $x, $y, $d, $dl, self::crystal($x, $y, $h, '#e7f3fb', '#9cc4dc'));
+                    $o .= self::mv('sn-twinkle', $x, $y, $d, $dl, self::crystal($x, $y, $h, '#e6f5ed', '#9cc9b4'));
                 }
                 break;
             case 'tahun_baru':
@@ -474,7 +474,7 @@ class SeasonalNavbarArt
                 for ($i = 0; $i < 5; $i++) {
                     $x = $right ? 64 - $i * 10.5 : 6 + $i * 11;
                     $y = 4 + $i * 4.8;
-                    $o .= self::mv('sn-twinkle', $x, $y, 2.6 + $i * .35, .3 * $i + ($right ? .5 : 0), self::star4($x, $y, 3 - $i * .45, $i % 2 ? '#fff' : '#f6d36a'));
+                    $o .= self::mv('sn-twinkle', $x, $y, 2.6 + $i * .35, .3 * $i + ($right ? .5 : 0), self::star4($x, $y, 3 - $i * .45, $i % 2 ? '#cfd4de' : '#f6d36a'));
                 }
                 break;
             case 'ramadan':
@@ -494,11 +494,11 @@ class SeasonalNavbarArt
             case 'imlek':
                 $p = $right ? [[56, 5, 20], [38, 14, -35], [18, 8, 60]] : [[14, 4, -20], [34, 12, 40], [52, 6, -60]];
                 foreach ($p as $i => [$x, $y, $rot]) {
-                    $o .= self::mv('sn-fall', $x, $y, 5.2 + $i * 1.1, $i * 1.9, self::petal($x, $y, $rot, $i % 2 ? '#f9d3dc' : '#f4a6b8'));
+                    $o .= self::mv('sn-fall', $x, $y, 5.2 + $i * 1.1, $i * 1.9, self::petal($x, $y, $rot, $i % 2 ? '#fbe6b8' : '#f2c86a'));
                 }
                 break;
             case 'hut_ri':
-                $s = $right ? [[62, 7, 3, '#d6202c'], [46, 13, 2.2, '#fff'], [56, 23, 2.4, '#f2c14e']] : [[9, 9, 3, '#d6202c'], [28, 5, 2.2, '#fff'], [47, 18, 2.4, '#f2c14e']];
+                $s = $right ? [[62, 7, 3, '#d6202c'], [46, 13, 2.2, '#fff'], [56, 23, 2.4, '#d6202c']] : [[9, 9, 3, '#d6202c'], [28, 5, 2.2, '#fff'], [47, 18, 2.4, '#d6202c']];
                 foreach ($s as $i => [$x, $y, $r, $c]) {
                     $o .= self::mv('sn-twinkle', $x, $y, 3 + $i * .5, $i * 1.2, self::star5($x, $y, $r, $c, $c === '#fff' ? '#d6202c' : 'none'));
                 }
@@ -530,7 +530,7 @@ class SeasonalNavbarArt
             $x += 5 + fmod(abs(sin($i * 39.346 + 2.1)) * 24634.6, 1) * 15;
             $i++;
         }
-        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' . $w . ' 6" width="' . $w . '" height="6"><path d="M0 .3H' . $w . '" stroke="#cfe6f5" stroke-width=".6"/><path d="' . $d . '" fill="#cfe6f5" stroke="#a9cfe6" stroke-width=".3"/></svg>';
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' . $w . ' 6" width="' . $w . '" height="6"><path d="M0 .3H' . $w . '" stroke="#cfe8dc" stroke-width=".6"/><path d="' . $d . '" fill="#cfe8dc" stroke="#a6d0bc" stroke-width=".3"/></svg>';
 
         return 'data:image/svg+xml,' . rawurlencode($svg);
     }

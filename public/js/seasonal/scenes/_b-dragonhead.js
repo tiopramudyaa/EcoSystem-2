@@ -1,55 +1,93 @@
-// Pahat kepala naga untuk lunar.js, dioptimalkan untuk siluet PROFIL samping: moncong panjang melengkung ke atas dengan tonjolan hidung,
-// alis berat, satu mata menonjol, rahang membuka tipis bertaring, tanduk rusa menyapu ke belakang dan atas, surai api, janggut.
+// Kepala naga Tiongkok (lóng), mengikuti referensi relief dan lukisan: moncong pendek dan dalam dengan hidung besar menonjol berlubang lebar,
+// bibir atas tebal melengkung di sudut mulut, alis sudut berat yang menyapu ke pangkal tanduk, mata kecil dan dalam, rahang bawah pendek berjanggut,
+// tanduk tipis menyapu ke belakang, jambul api di ubun-ubun, sirip telinga berbentuk daun.
 // Koordinat lokal: +x depan, +y atas, +z sisi yang menghadap kamera. Tidak ada yang berjalan saat import.
-import { merger } from './_b-geom.js';
+import { merger, tube, loft } from './_b-geom.js';
 
-export const EYE = [0.8, 0.44, 0.58, 0.2]; // x, y, z, radius mata
-export const JAW_PIVOT = [0.1, -0.3, 0];
+export const JAW_PIVOT = [0.0, -0.42, 0];
+export const EYE = [0.9, 0.5, 0.56, 0.17];
 
-export function sculptHead(THREE) {
+const UPPER = [ // x, y bawah, y atas, setengah lebar, eksponen
+  [-1.2, -0.45, 0.6, 0.5, 2.2], [-0.8, -0.55, 0.9, 0.66, 2.2], [-0.3, -0.5, 1.05, 0.74, 2.3], [0.2, -0.44, 1.08, 0.74, 2.3], [0.7, -0.36, 0.98, 0.7, 2.4],
+  [1.1, -0.3, 0.86, 0.64, 2.5], [1.6, -0.26, 0.9, 0.62, 2.6], [2.1, -0.2, 1.02, 0.66, 2.7], [2.6, -0.12, 1.2, 0.7, 2.6], [2.95, -0.02, 1.22, 0.64, 2.4],
+  [3.25, 0.12, 1.2, 0.52, 2.2], [3.5, 0.3, 1.15, 0.38, 2.1], [3.65, 0.5, 1.0, 0.22, 2.0], [3.72, 0.64, 0.86, 0.05, 2.0],
+];
+const LOWER = [
+  [-0.2, -0.98, -0.48, 0.55, 2.2], [0.4, -0.94, -0.46, 0.5, 2.2], [1.0, -0.84, -0.42, 0.44, 2.3], [1.6, -0.72, -0.36, 0.38, 2.4], [2.2, -0.58, -0.28, 0.32, 2.5],
+  [2.7, -0.44, -0.2, 0.24, 2.3], [3.0, -0.34, -0.16, 0.12, 2.0], [3.08, -0.3, -0.2, 0.02, 2.0],
+];
+const lerpRing = (T, x, k) => {
+  for (let i = 0; i < T.length - 1; i++) if (x <= T[i + 1][0]) { const u = (x - T[i][0]) / (T[i + 1][0] - T[i][0]); return T[i][k] + (T[i + 1][k] - T[i][k]) * Math.max(0, u); }
+  return T[T.length - 1][k];
+};
+
+export function sculptHead(THREE, low) {
   const K = (h) => new THREE.Color(h);
-  const red = K('#c01a22'), dark = K('#5a070d'), gold = K('#f4b83c'), iv = K('#f6eed6'), bone = K('#ecc66a'), flame = K('#ff7a1a'), blk = K('#14070a'), brown = K('#8a1a14');
-  const hm = merger(THREE), jm = merger(THREE);
-  const sph = (m, r, c, x, y, z, sx = 1, sy = 1, sz = 1) => m.add(new THREE.SphereGeometry(r, 14, 10), c, x, y, z, 0, 0, 0, sx, sy, sz);
-  const cone = (m, r, h, c, x, y, z, rx, ry, rz, seg = 6) => m.add(new THREE.ConeGeometry(r, h, seg), c, x, y, z, rx, ry, rz);
+  const iv = K('#f6eed6'), gold = K('#f0b73c'), dark = K('#2a0407');
+  const skin = merger(THREE), bone = merger(THREE), jawSkin = merger(THREE), jawBone = merger(THREE), eyes = merger(THREE);
+  const rad = low ? 10 : 18, ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const pal = K('#4a0a10'), mouthDark = K('#3a060a');
+  const rings = (T) => T.map((r) => ({ x: r[0], y0: r[1], y1: r[2], w: r[3], n: r[4] }));
+  skin.addM(loft(THREE, rings(UPPER), rad, (i, phi, c) => { const s = Math.sin(phi); c.setRGB(1, 1, 1).lerp(pal, ss(-0.4, -0.85, s)); }, 0.9, 1), null, new THREE.Matrix4());
+  const jm = new THREE.Matrix4().makeTranslation(-JAW_PIVOT[0], -JAW_PIVOT[1], -JAW_PIVOT[2]);
+  jawSkin.addM(loft(THREE, rings(LOWER), rad - 2, (i, phi, c) => { const s = Math.sin(phi); c.setRGB(1, 1, 1).lerp(mouthDark, ss(0.25, 0.75, s)); }, 0.9, 1), null, jm);
 
-  // tengkorak dan dahi
-  sph(hm, 1, red, -0.15, 0.2, 0, 1.2, 0.85, 0.9);
-  sph(hm, 0.7, red, 0.55, 0.38, 0, 1.0, 0.7, 0.85);
-  sph(hm, 0.55, brown, -0.9, 0.05, 0, 1, 0.8, 0.8);
-  // moncong panjang dengan ujung melengkung ke atas
-  hm.limb([0.4, 0.25, 0], [2.15, 0.12, 0], 0.62, 0.4, red, 12);
-  hm.limb([2.1, 0.12, 0], [3.0, 0.42, 0], 0.4, 0.3, red, 12);
-  sph(hm, 0.3, red, 2.6, 0.62, 0, 1.15, 0.9, 1.1); // tonjolan hidung
-  hm.limb([0.45, -0.2, 0], [2.9, -0.02, 0], 0.4, 0.26, dark, 10); // bibir atas
-  hm.limb([0.2, 0.84, 0], [2.65, 0.82, 0], 0.07, 0.05, gold); // garis emas di puncak moncong (rim emas)
-  hm.limb([0.7, 0.2, 0.5], [2.95, 0.3, 0.3], 0.05, 0.04, gold);
-  sph(hm, 0.13, blk, 2.88, 0.36, 0.27, 1, 0.7, 0.8); cone(hm, 0.17, 0.45, gold, 2.8, 0.5, 0.36, 0, 0, -1.1);
+  const tb = (m, pts, r, o, color) => m.addM(tube(THREE, pts, r, Object.assign({ radial: low ? 5 : 7 }, o)), color || null, new THREE.Matrix4());
+  const jt = (pts) => pts.map((p) => [p[0] - JAW_PIVOT[0], p[1] - JAW_PIVOT[1], p[2]]);
   [-1, 1].forEach((s) => {
-    // alis berat dan rongga mata
-    hm.limb([-0.1, 0.8, s * 0.42], [1.35, 0.66, s * 0.54], 0.27, 0.1, dark, 8);
-    hm.limb([0.0, 0.98, s * 0.4], [1.3, 0.8, s * 0.52], 0.06, 0.04, gold, 6);
-    sph(hm, 0.32, K('#2a0508'), 0.78, 0.4, s * 0.56, 1, 0.8, 0.7);
-    hm.add(new THREE.SphereGeometry(0.12, 8, 6), blk, EYE[0] + 0.05, EYE[1], s * (EYE[2] + 0.17), 0, 0, 0, 0.12, 1.3, 0.12);
+    const z = (a) => a.map((p) => [p[0], p[1], p[2] * s]);
+    // alis berat bersudut, menyapu ke belakang; garis emas di atasnya
+    tb(skin, z([[1.7, 0.82, 0.4], [1.25, 1.0, 0.54], [0.8, 1.14, 0.66], [0.25, 1.22, 0.72], [-0.3, 1.16, 0.66]]), [0.07, 0.15, 0.19, 0.16, 0.09], { seg: 12, uvk: 0.9 });
+    tb(bone, z([[1.65, 0.92, 0.4], [1.2, 1.08, 0.54], [0.75, 1.22, 0.66], [0.2, 1.3, 0.72], [-0.3, 1.22, 0.66]]), [0.025, 0.035, 0.04, 0.035, 0.02], { seg: 12, radial: 5 }, gold);
+    // bibir atas tebal, melengkung naik di sudut mulut; garis emas di bawahnya
+    tb(skin, z([[3.15, 0.04, 0.42], [2.5, -0.1, 0.62], [1.6, -0.2, 0.66], [0.7, -0.34, 0.74], [0.1, -0.38, 0.77], [-0.15, -0.15, 0.78]]), [0.07, 0.1, 0.11, 0.11, 0.1, 0.06], { seg: 16, radial: 7, uvk: 0.9 });
+    tb(bone, z([[3.1, -0.04, 0.5], [2.5, -0.2, 0.7], [1.6, -0.3, 0.74], [0.7, -0.44, 0.82], [0.1, -0.5, 0.84], [-0.2, -0.22, 0.84]]), [0.03, 0.04, 0.04, 0.04, 0.04, 0.025], { seg: 16, radial: 5 }, gold);
+    tb(skin, z([[3.3, 0.3, 0.3], [3.55, 0.45, 0.28], [3.7, 0.7, 0.2]]), [0.1, 0.08, 0.03], { seg: 8, radial: 6, uvk: 0.9 });
+    // cuping hidung besar dan lubang hidung
+    skin.add(new THREE.SphereGeometry(0.18, low ? 8 : 12, low ? 6 : 8), null, 2.9, 0.74, s * 0.5, 0, 0, 0.25, 1.4, 0.8, 0.85);
+    bone.add(new THREE.SphereGeometry(0.075, 8, 6), K('#120304'), 3.08, 0.74, s * 0.62, 0, 0, 0, 1.2, 1.1, 0.6);
+    // kelopak atas miring, mata kecil di dalam rongga
+    skin.add(new THREE.SphereGeometry(EYE[3] * 1.3, low ? 8 : 12, 8, 0, Math.PI * 2, 0, 1.2), null, EYE[0], EYE[1], s * (EYE[2] - 0.03), 0, 0, -0.65, 1.05, 1, 1);
+    eyes.add(new THREE.SphereGeometry(0.17, 10, 8), dark, EYE[0] - 0.03, EYE[1] - 0.01, s * (EYE[2] - 0.14), 0, 0, 0, 1, 0.88, 0.7);
+    eyes.add(new THREE.SphereGeometry(EYE[3], 14, 10), K('#ffb61e').multiplyScalar(1.5), EYE[0], EYE[1], s * (EYE[2] + 0.02), 0, 0, 0, 1, 1, 0.92);
+    eyes.add(new THREE.SphereGeometry(0.085, 8, 8), K('#0a0102'), EYE[0] + 0.08, EYE[1], s * (EYE[2] + 0.17), 0, 0, 0, 0.32, 1.45, 0.3);
+    eyes.add(new THREE.SphereGeometry(0.03, 6, 6), K('#fffbe8').multiplyScalar(1.6), EYE[0] - 0.02, EYE[1] + 0.08, s * (EYE[2] + 0.19));
+    // sirip pipi (duri emas) dan sirip telinga berbentuk daun
+    for (let k = 0; k < 3; k++) {
+      const L = 1.6 - k * 0.35, y0 = -0.05 - k * 0.2;
+      tb(bone, z([[-0.45, y0, 0.66], [-0.45 - L * 0.5, y0 - 0.05, 0.78 + k * 0.05], [-0.45 - L, y0 - 0.3 - k * 0.1, 0.84 + k * 0.05]]), [0.1, 0.065, 0.012], { seg: 8, radial: 5, c0: '#c8801c', c1: '#ffd46a' });
+    }
+    tb(bone, z([[-0.5, 0.75, 0.75], [-0.95, 1.0, 0.9], [-1.4, 1.1, 1.05]]), [0.04, 0.13, 0.0], { seg: 8, radial: 6, flat: 0.35, c0: '#d8401c', c1: '#ffb040' });
+    // tanduk rusa tipis, menyapu ke belakang dan sedikit ke atas, dua cabang
+    const A = z([[-0.15, 0.9, 0.4], [-0.75, 1.45, 0.5], [-1.45, 1.95, 0.62], [-2.25, 2.25, 0.78], [-3.0, 2.3, 0.9], [-3.65, 2.1, 0.95]]).map((p) => p.map((v) => v * 0.88));
+    tb(bone, A, [0.11, 0.09, 0.072, 0.052, 0.034, 0.01], { c0: '#5a3010', c1: '#f4dfae', seg: 20, radial: low ? 6 : 8 });
+    const br = (root, pts, r) => tb(bone, [root].concat(pts.map((p) => [p[0] * 0.88, p[1] * 0.88, p[2] * s * 0.88])), r, { seg: 8, radial: 5, c0: '#a46a28', c1: '#f4dfae' });
+    br(A[1], [[-0.95, 2.1, 0.58], [-0.9, 2.7, 0.6], [-0.65, 3.15, 0.62]], [0.07, 0.055, 0.035, 0.01]);
+    br(A[2], [[-1.75, 2.6, 0.72], [-1.6, 3.15, 0.76], [-1.3, 3.5, 0.8]], [0.065, 0.05, 0.03, 0.01]);
+    br(A[3], [[-2.8, 2.7, 0.9], [-3.1, 3.1, 0.95]], [0.055, 0.035, 0.01]);
     // taring atas dan deretan gigi
-    cone(hm, 0.14, 0.85, iv, 2.45, -0.38, s * 0.3, Math.PI, 0, 0); cone(hm, 0.1, 0.6, iv, 1.5, -0.42, s * 0.5, Math.PI, 0, 0);
-    for (let k = 0; k < 5; k++) cone(hm, 0.045, 0.24, iv, 0.9 + k * 0.32, -0.42, s * 0.58, Math.PI, 0, 0, 5);
-    // sirip pipi emas menyapu ke belakang
-    for (let k = 0; k < 4; k++) cone(hm, 0.15 - k * 0.025, 1.2 - k * 0.18, gold, -0.4 - k * 0.28, -0.1 - k * 0.2, s * (0.8 + k * 0.04), 0, s * 0.4, Math.PI / 2 + 0.3);
-    // tanduk rusa: menyapu ke belakang dan atas, bercabang anggun (z kecil agar siluet bersih)
-    const a = [[-0.15, 0.95, 0.32], [-0.85, 1.6, 0.4], [-1.75, 2.1, 0.46], [-2.8, 2.3, 0.5], [-3.9, 2.0, 0.5], [-4.7, 1.3, 0.5]].map((p) => [p[0] * 0.8, p[1] * 0.8, p[2] * s]);
-    const rr = [0.34, 0.3, 0.24, 0.17, 0.1, 0.03];
-    for (let k = 0; k < 5; k++) hm.limb(a[k], a[k + 1], rr[k], rr[k + 1], bone, 8);
-    [[1, [-0.45, 2.45]], [2, [-1.3, 3.1]], [2, [-0.9, 2.6]], [3, [-2.4, 3.2]], [3, [-1.9, 2.8]], [4, [-3.7, 2.9]]].forEach(([i, p]) => hm.limb(a[i], [p[0] * 0.8, p[1] * 0.8, a[i][2]], 0.17, 0.03, bone, 6));
+    bone.add(new THREE.ConeGeometry(0.1, 0.75, 6), iv, 2.2, -0.5, s * 0.34, Math.PI, 0, 0);
+    bone.add(new THREE.ConeGeometry(0.06, 0.34, 6), iv, 1.2, -0.46, s * 0.5, Math.PI, 0, 0);
+    for (let k = 0; k < 6; k++) {
+      const x = 0.7 + k * 0.38, w = lerpRing(UPPER, x, 3), y0 = lerpRing(UPPER, x, 1);
+      bone.add(new THREE.ConeGeometry(0.04, 0.17, 5), iv, x, y0 - 0.02, s * w * 0.6, Math.PI, 0, 0);
+    }
+    jawBone.addM(new THREE.ConeGeometry(0.07, 0.4, 6), iv, new THREE.Matrix4().makeTranslation(2.3 - JAW_PIVOT[0], -0.22 - JAW_PIVOT[1] + 0.1, s * 0.22));
+    for (let k = 0; k < 4; k++) jawBone.addM(new THREE.ConeGeometry(0.035, 0.14, 5), iv, new THREE.Matrix4().makeTranslation(1.0 + k * 0.42 - JAW_PIVOT[0], -0.4 - JAW_PIVOT[1] + 0.07, s * 0.34));
+    tb(jawBone, jt(z([[3.0, -0.2, 0.06], [2.5, -0.26, 0.24], [1.6, -0.36, 0.42], [0.6, -0.44, 0.52], [0.0, -0.48, 0.54]])), [0.04, 0.045, 0.045, 0.045, 0.04], { seg: 12, radial: 5 }, gold);
   });
-  // surai api dari tengkuk
-  for (let k = 0; k < 10; k++) cone(hm, 0.2 - k * 0.012, 1.3 - k * 0.06, k % 2 ? gold : flame, -0.5 - k * 0.3, 0.75 - k * 0.1, 0, 0, 0, Math.PI / 2 + 0.7);
+  // dahi berbenjol dan garis puncak emas berduri
+  skin.add(new THREE.SphereGeometry(0.38, low ? 8 : 12, 8), null, 0.45, 1.06, 0, 0, 0, 0, 1.0, 0.62, 0.95);
+  tb(bone, [[3.1, 1.18, 0], [2.6, 1.24, 0], [2.1, 1.05, 0], [1.5, 0.92, 0], [1.0, 0.9, 0], [0.4, 1.12, 0], [-0.4, 1.1, 0], [-1.2, 0.76, 0]], 0.04, { seg: 18, radial: 5 }, gold);
+  for (let k = 0; k < 4; k++) { const x = 1.6 - k * 0.55, y = 0.9 + 0.1 * k; bone.add(new THREE.ConeGeometry(0.07, 0.32, 5), gold, x, y + 0.12, 0, 0, 0, 0.55); }
+  // jambul api di ubun-ubun menyapu ke belakang
+  for (let k = 0; k < 7; k++) {
+    const sd = (k - 3) * 0.16, x0 = -0.3 - Math.abs(k - 3) * 0.1, L = 1.5 - Math.abs(k - 3) * 0.18;
+    tb(bone, [[x0, 1.0, sd], [x0 - L * 0.5, 1.25 - Math.abs(sd) * 0.3, sd * 1.5], [x0 - L, 1.15 - Math.abs(sd) * 0.6, sd * 2.2]], [0.1, 0.07, 0.0], { seg: 8, radial: 5, c0: '#ff7a1c', c1: '#ffd25a' });
+  }
+  // lidah api bercabang
+  tb(jawBone, jt([[0.5, -0.4, 0], [1.4, -0.34, 0], [2.2, -0.3, 0], [2.8, -0.2, 0.0], [3.3, -0.05, 0.05]]), [0.07, 0.07, 0.06, 0.05, 0.03], { seg: 14, radial: 6, flat: 2.0, c0: '#d8260f', c1: '#ff9a2a' });
+  [-1, 1].forEach((s) => tb(jawBone, jt([[3.25, -0.06, 0], [3.5, 0, s * 0.1], [3.75, 0.05, s * 0.22]]), [0.045, 0.03, 0.01], { seg: 6, radial: 4, c0: '#ff7a1c', c1: '#ffd060' }));
 
-  // rahang bawah (dipasang pada engsel animasi)
-  jm.limb([0.1, -0.05, 0], [2.5, 0.05, 0], 0.48, 0.28, K('#e8ae3c'), 10);
-  jm.limb([0.3, -0.35, 0], [2.3, -0.25, 0], 0.3, 0.18, K('#b8701c'), 8);
-  jm.add(new THREE.BoxGeometry(1.4, 0.07, 0.34), K('#e0405a'), 1.2, 0.22, 0, 0, 0, 0.04);
-  [-1, 1].forEach((s) => { cone(jm, 0.11, 0.7, iv, 2.25, 0.42, s * 0.24, 0, 0, 0); cone(jm, 0.07, 0.45, iv, 1.5, 0.34, s * 0.38, 0, 0, 0); for (let k = 0; k < 4; k++) cone(jm, 0.04, 0.2, iv, 0.9 + k * 0.3, 0.3, s * 0.42, 0, 0, 0, 5); });
-  for (let k = 0; k < 3; k++) cone(jm, 0.1, 0.9 - k * 0.2, gold, 2.2 - k * 0.5, -0.55, 0, Math.PI, 0, 0.35); // janggut di dagu
-  return { head: hm.build(), jaw: jm.build() };
+  return { skin: skin.build(), bone: bone.build(), jawSkin: jawSkin.build(), jawBone: jawBone.build(), eyes: eyes.build() };
 }

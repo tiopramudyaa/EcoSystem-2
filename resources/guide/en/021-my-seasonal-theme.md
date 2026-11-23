@@ -5,7 +5,7 @@ order: 21
 title: Seasonal theme
 summary: Follow the festive look the administrator sets, turn it off or pick another theme for yourself, and see what each theme decorates.
 requires: []
-updated: 2026-11-20
+updated: 2026-11-23
 ---
 Around a holiday, EcoSystem can show a festive look: decoration on the page, color accents in the sidebar and the header, and a themed loading screen after sign-in. The administrator chooses a default theme for everyone. In `Settings` you can follow it, turn it off, or pick another theme just for yourself.
 
@@ -43,7 +43,7 @@ Every user. The `Seasonal theme` section is in `Settings` › `Appearance`.
 
 - **Order of priority.** Your own choice comes first. If you chose `Default`, you get the administrator's theme. If you chose `Off` or a specific theme, that wins over the administrator for you only.
 - **Missing preferences.** People who have never saved their preferences follow `Default`, so they see the administrator's theme.
-- **Separate login theme.** The administrator can set a separate theme for the sign-in pages and the loading screen. When it is set for the loading screen, it replaces your own choice for that screen only. The dashboard, sidebar, navbar and music keep following your choice or the global theme.
+- **Separate login theme.** The administrator can set a separate theme for the sign-in pages and the loading screen. When it is set for the loading screen, it replaces your own choice for that screen only. The dashboard, sidebar, navbar and music keep following your choice or the global theme. While a theme is on, the sign-in page also shows an illustration of that theme.
 - **What a theme changes.** The decoration on the page, the colors of the sidebar, the header, buttons and links, and the loading screen after sign-in. Buttons that delete, reject or warn stay red so their meaning does not change.
 - **Accent color.** While a seasonal theme is active for you, the colors of the sidebar, buttons and links follow the theme. The `Accent color` chosen in `Settings` shows in the preview but comes back after the page reloads. To keep your own accent color, set `Seasonal theme` to `Off`.
 - **Background music.** Only the administrator chooses the track and the volume, and it applies to everyone. You cannot pick a track. You can only mute it on your own screen, and that choice is not saved for other users.

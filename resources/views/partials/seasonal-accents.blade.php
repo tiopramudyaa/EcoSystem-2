@@ -41,14 +41,14 @@
 @switch($acKey)
 @case('natal')
 @php
-    $iceLine = $acDark ? 'rgba(190, 225, 245, .24)' : 'rgba(150, 195, 222, .55)';
-    $iceGlow = $acDark ? 'rgba(190, 225, 245, .16)' : 'rgba(190, 225, 245, .5)';
-    $iceStroke = $acDark ? '%23d6ecf8' : '%238fb9d6';
+    $iceLine = $acDark ? 'rgba(190, 235, 215, .24)' : 'rgba(140, 195, 170, .55)';
+    $iceGlow = $acDark ? 'rgba(190, 235, 215, .16)' : 'rgba(200, 238, 222, .5)';
+    $iceStroke = $acDark ? '%23d6f2e4' : '%2389bfa4';
     $crystal = 'url("data:image/svg+xml,' . "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cg stroke='{$iceStroke}' stroke-width='.8' stroke-linecap='round' fill='none' opacity='.8'%3E%3Cpath d='M28 0L16 12M28 0L28 14M28 0L14 0M22 6L22 11M22 6L17 6M16 12L16 17M16 12L11 12M25 3L25 6M25 3L21 3'/%3E%3C/g%3E%3C/svg%3E" . '")';
-    $spk = $acDark ? 'rgba(255, 255, 255, .22)' : 'rgba(120, 170, 205, .34)';
+    $spk = $acDark ? 'rgba(255, 255, 255, .22)' : 'rgba(110, 165, 135, .34)';
     $spkSb = 'rgba(255, 255, 255, .2)';
 @endphp
-    /* Kartu ringkasan: garis tepi biru es dan sudut beku kecil di kanan atas. */
+    /* Kartu ringkasan: garis tepi hijau es dan sudut beku kecil di kanan atas. */
     {!! $cards !!} {
         border-color: {{ $iceLine }}{{ $imp }};
         background-image: {!! $crystal !!}, radial-gradient(circle at 100% 0, {{ $iceGlow }} 0, transparent 38px);
@@ -60,7 +60,7 @@
     /* Sidebar: garis rambut es di tepi kanan dan bintik salju halus di header sidebar. */
     {!! $S !!} #sidebar::after {
         content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 1px; z-index: 1; pointer-events: none;
-        background: linear-gradient(180deg, transparent, rgba(214, 236, 248, .55) 18%, rgba(214, 236, 248, .55) 82%, transparent);
+        background: linear-gradient(180deg, transparent, rgba(214, 242, 228, .55) 18%, rgba(214, 242, 228, .55) 82%, transparent);
     }
     {!! $sbh !!} {
         background-image: radial-gradient(circle at 18px 22px, {{ $spkSb }} 0 1px, transparent 1.7px), radial-gradient(circle at 74px 54px, {{ $spkSb }} 0 1.2px, transparent 1.9px), radial-gradient(circle at 128px 12px, {{ $spkSb }} 0 .9px, transparent 1.5px);
@@ -135,7 +135,7 @@
     }
     {!! $hdr !!}::after {
         content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1.5px; pointer-events: none; opacity: .85;
-        background: linear-gradient(90deg, transparent, #5f8f20 20%, #aed581 50%, #5f8f20 80%, transparent);
+        background: linear-gradient(90deg, transparent, #5f8f20 20%, #d4e157 50%, #5f8f20 80%, transparent);
     }
 @break
 @case('imlek')
@@ -159,7 +159,7 @@
     /* Header: garis 3px merah putih di sisi atas. */
     {!! $hdr !!}::after {
         content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; pointer-events: none;
-        background: linear-gradient(#d6202c 0 2px, #fff 2px);
+        background: linear-gradient(#a80c24 0 2px, #fff 2px);
     }
 @break
 @endswitch

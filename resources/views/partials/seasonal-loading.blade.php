@@ -84,7 +84,7 @@
         flex-direction: column;
         text-align: center;
         overflow: hidden;
-        background: linear-gradient(155deg, var(--st-login-from, #1a0000) 0%, rgb(var(--st-primary-dark-rgb, 107 0 0)) 55%, var(--st-login-to, #b91c1c) 100%);
+        background: linear-gradient(180deg, var(--st-login-from, #1a0000) 0%, var(--st-loading-bottom, #6b0000) 100%);
         font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
     .seasonal-loading.is-on { display: flex; }
@@ -170,6 +170,7 @@
             var t = THEMES[key], p = t.palette;
             el.style.setProperty('--st-login-from', p.login_from);
             el.style.setProperty('--st-login-to', p.login_to);
+            el.style.setProperty('--st-loading-bottom', p.loading_bottom || p.login_mid || p.login_to);
             el.style.setProperty('--st-primary-dark-rgb', p.primary_dark_rgb);
             el.style.setProperty('--st-accent', p.accent);
             el.querySelector('.seasonal-loading__title').textContent = t.title;

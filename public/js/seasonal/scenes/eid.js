@@ -1,251 +1,227 @@
-// Lebaran: halaman rumah saat senja, keluarga besar bersalaman, berpelukan, sungkem; masjid di latar, rangkaian ketupat dua warna.
-import { pal, rng, skyDome, glowTexture, glowSprite, canvasTex, particlePool, easeInOut, smooth, lerp } from '../common.js';
-import { peopleMaterial, createCrowd } from './_people.js';
+// Lebaran: serambi rumah kayu saat senja, keluarga besar bersalaman (cium tangan), berpelukan, nenek menyambut cucu; hidangan opor dan ketupat
+// dengan pelita, untaian ketupat anyaman dan janur, masjid dan kembang api jauh di langit senja berhilal.
+// Figur berkerangka (satu SkinnedMesh) dari _e-rig.js, panggung dari _e-set.js, masjid dari _r-mosque.js.
+import { pal, rng, glowTexture, canvasTex, paintedSky, starField, cloudTexture, moonTexture, phasedMoon, skyDir, particlePool, easeInOut, smooth, seg, lerp } from '../common.js';
+import { peopleMaterial } from './_people.js';
+import { createPeople } from './_e-rig.js';
+import { buildHouse, buildKetupat, pavingTexture } from './_e-set.js';
+import { buildMosque } from './_r-mosque.js';
+import { buildPalmGeometry } from './_r-palms.js';
+import { palmTexture } from './_r-tex.js';
 
 export function create(THREE, ctx) {
   const { scene, camera, palette, duration } = ctx;
+  const low = ctx.quality === 'low';
   const P = pal(THREE, palette);
   const rnd = rng(1446);
   const tex = glowTexture(THREE);
   const K = (h) => new THREE.Color(h);
-  const gold = K('#e8b63c'), janur = P.accent.clone(), dkGreen = P.primary.clone(), deep = P.from.clone();
-  const owned = []; // geometri/material/texture yang dibuat di sini (selain material orang)
+  const gold = K('#e8b63c'), janur = P.accent.clone(), dkGreen = P.primary.clone();
+  const mid = palette.login_mid ? K(palette.login_mid) : P.from.clone().lerp(P.to, 0.5);
+  const own = [];
+  const cloudTex = cloudTexture(THREE, rnd);
 
-  scene.fog = new THREE.FogExp2(K('#c9a43a').lerp(dkGreen, 0.5).multiplyScalar(0.8), 0.011);
-  scene.add(skyDome(THREE, [
-    [0.46, K('#ffeeb0')], [0.52, K('#f4bd4a')], [0.57, K('#b9a73c')], [0.64, dkGreen.clone().lerp(K('#2f7d32'), 0.3)], [1, deep.clone().multiplyScalar(0.8)],
-  ]));
-  const sun = glowSprite(THREE, tex, K('#ffd978'), 110, 0.55); sun.position.set(-16, 9, -140); scene.add(sun);
-  const sun2 = glowSprite(THREE, tex, K('#ffcf6a'), 300, 0.08); sun2.position.copy(sun.position); scene.add(sun2);
-  // berkas cahaya tipis dari matahari
-  const rayTex = canvasTex(THREE, 16, 128, (g, w, h) => {
-    const r = g.createLinearGradient(0, 0, 0, h); r.addColorStop(0, 'rgba(255,230,150,0.0)'); r.addColorStop(0.35, 'rgba(255,230,150,0.5)'); r.addColorStop(1, 'rgba(255,230,150,0)');
-    g.fillStyle = r; g.fillRect(0, 0, w, h);
+  scene.fog = new THREE.FogExp2(K('#244f38').lerp(P.to, 0.15), 0.012);
+  // ---- langit senja: emas di cakrawala, hijau tua di atas ----
+  const sky = paintedSky(THREE, rnd, {
+    stops: [[0, K('#b8b868')], [0.04, K('#78883f')], [0.12, K('#28664c')], [0.26, P.to.clone().lerp(K('#14604f'), 0.55).multiplyScalar(0.8)], [0.5, mid.clone().lerp(K('#0d4a3c'), 0.4)], [1, P.from.clone().lerp(mid, 0.2)]],
+    span: 2.6, upTop: 1.1, below: 0.3,
+    paint: (g, m) => {
+      const x = m.x(0.28), y = m.y(0.01), r = 300;
+      const rg = g.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, 'rgba(236,228,150,0.5)'); rg.addColorStop(0.3, 'rgba(190,180,90,0.22)'); rg.addColorStop(0.65, 'rgba(110,190,120,0.14)'); rg.addColorStop(1, 'rgba(60,150,110,0)');
+      g.save(); g.scale(1, 0.5); g.translate(0, y * (1 / 0.5 - 1)); g.fillStyle = rg; g.fillRect(x - r, y - r, r * 2, r * 2); g.restore();
+    },
   });
-  const rays = [];
+  scene.add(sky);
+  const sf = starField(THREE, rnd, low ? 120 : 260, { tex, minEl: 0.42, size: 1.5, color: '#f2f6d0', span: 2.6, upTop: 1.1 });
+  scene.add(sf.group);
+  const clouds = [];
   for (let i = 0; i < 6; i++) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(7 + rnd() * 6, 150), new THREE.MeshBasicMaterial({ map: rayTex, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide }));
-    m.position.set(-16, 14, -138); m.rotation.z = -0.9 + i * 0.32; m.geometry.translate(0, -75, 0); scene.add(m); rays.push(m);
+    const az = -0.9 + rnd() * 1.8, el = 0.06 + rnd() * 0.45, r = 400 + rnd() * 20, w = r * (0.3 + rnd() * 0.3), nr = Math.max(0, 1 - Math.hypot(az - 0.28, el - 0.03) / 0.7);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTex, color: K('#2c6a54').lerp(K('#d6cc78'), nr), transparent: true, opacity: 0.3 + nr * 0.25, depthWrite: false, fog: false }));
+    sp.scale.set(w, w * 0.26, 1); skyDir(THREE, az, el, r, sp.position); scene.add(sp); clouds.push({ sp, az, el, r, v: (rnd() - 0.4) * 0.008 });
   }
+  const sunP = skyDir(THREE, 0.28, 0.02, 430);
+  const mkSpr = (c, s, o, p) => { const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: c, transparent: true, opacity: o, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); m.scale.set(s, s, 1); m.position.copy(p); scene.add(m); return m; };
+  mkSpr('#e4dc88', 170, 0.55, sunP); const sunWide = mkSpr('#9cc468', 520, 0.3, sunP);
+  // hilal Syawal tipis di langit atas
+  const moonTex = moonTexture(THREE, rnd, { base: '#efe3bd' });
+  const moon = phasedMoon(THREE, moonTex, { radius: 12, sunDir: new THREE.Vector3(0.35, -0.5, -1.2), tint: '#ffe6a8', earth: 0.012, gain: 2.8 });
+  moon.position.copy(skyDir(THREE, -0.42, 0.52, 440)); scene.add(moon);
+  mkSpr('#ffd58a', 70, 0.35, moon.position.clone().multiplyScalar(1.01));
 
-  // cahaya: hemisphere + rim hangat dari belakang + isi lembut dari depan + titik pelita
-  scene.add(new THREE.HemisphereLight(K('#ffd98a'), K('#8a7436'), 0.45));
-  const rim = new THREE.DirectionalLight(K('#ffb24d'), 1.3); rim.position.set(-14, 7, -24); scene.add(rim);
-  const key = new THREE.DirectionalLight(K('#ffe8bd'), 0.6); key.position.set(5, 7, 14); scene.add(key);
-  const pl = [[-2.5, 3.6, 3.4, 10], [3.4, 3.2, 2.6, 10], [7.5, 2.6, 0.5, 6], [-7.5, 3.0, 1.5, 7], [0.5, 2.2, 5.5, 6]].map(([x, y, z, i]) => { const l = new THREE.PointLight(K('#ffbf5e'), i, 12, 2); l.position.set(x, y, z); scene.add(l); return l; });
+  // ---- cahaya ----
+  scene.add(new THREE.HemisphereLight(K('#c4e6b4'), K('#2f4a2a'), 0.62));
+  const key = new THREE.DirectionalLight(K('#f6f0c6'), 1.7); key.position.set(4, 5, 9); scene.add(key);
+  const rim = new THREE.DirectionalLight(K('#9ed88a'), 1.4); rim.position.set(9, 3, -14); scene.add(rim);
+  if (!low) { const fill = new THREE.DirectionalLight(K('#8ccbb0'), 0.4); fill.position.set(-8, 2, 6); scene.add(fill); }
+  const lampL = new THREE.PointLight(K('#ffb050'), 7, 8, 1.8); scene.add(lampL);
+  const porchL = new THREE.PointLight(K('#ffbf66'), 8, 9, 1.8); porchL.position.set(-3, 2.6, -1.2); scene.add(porchL);
 
-  // tanah dan teras
-  const tileTex = canvasTex(THREE, 256, 256, (g, w, h) => {
-    g.fillStyle = '#a88a58'; g.fillRect(0, 0, w, h); g.strokeStyle = '#8a7048'; g.lineWidth = 3;
-    for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(i * 64, 0); g.lineTo(i * 64, h); g.stroke(); g.beginPath(); g.moveTo(0, i * 64); g.lineTo(w, i * 64); g.stroke(); }
-    for (let i = 0; i < 500; i++) { g.fillStyle = `rgba(${rnd() < 0.5 ? '255,235,170' : '40,30,10'},0.06)`; g.fillRect(rnd() * w, rnd() * h, 6, 6); }
-  });
-  tileTex.wrapS = tileTex.wrapT = THREE.RepeatWrapping; tileTex.repeat.set(6, 3);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(500, 400), new THREE.MeshStandardMaterial({ color: dkGreen.clone().lerp(K('#c9a43a'), 0.25).multiplyScalar(0.5), roughness: 1 }));
-  ground.rotation.x = -Math.PI / 2; ground.position.set(0, -0.02, -120); scene.add(ground);
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(26, 0.3, 11), new THREE.MeshStandardMaterial({ map: tileTex, roughness: 0.8, emissive: K('#4a3512'), emissiveMap: tileTex, emissiveIntensity: 0.22 }));
-  deck.position.set(0, -0.15, 0.5); scene.add(deck);
-  const edge = new THREE.Mesh(new THREE.BoxGeometry(26.4, 0.12, 0.3), new THREE.MeshStandardMaterial({ color: '#cdb97a', roughness: 0.7 }));
-  edge.position.set(0, 0.04, 6.1); scene.add(edge);
+  // ---- tanah: paving halaman, rumput jauh ----
+  const payT = pavingTexture(THREE, rnd); payT.repeat.set(16, 11); own.push(payT);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 21), new THREE.MeshStandardMaterial({ map: payT, roughness: 0.9, color: '#9cb88a' }));
+  ground.rotation.x = -Math.PI / 2; ground.position.set(0, 0, 4.5); scene.add(ground); own.push(ground.geometry, ground.material);
+  const grass = new THREE.Mesh(new THREE.PlaneGeometry(500, 400), new THREE.MeshStandardMaterial({ color: dkGreen.clone().lerp(K('#7a7a30'), 0.3).multiplyScalar(0.5), roughness: 1 }));
+  grass.rotation.x = -Math.PI / 2; grass.position.set(0, -0.03, -120); scene.add(grass); own.push(grass.geometry, grass.material);
 
-  // masjid di latar
-  const wall = new THREE.MeshStandardMaterial({ color: '#cbbf8a', roughness: 0.85 });
-  const goldM = new THREE.MeshStandardMaterial({ color: gold, roughness: 0.3, metalness: 0.85 });
-  const domeM = new THREE.MeshStandardMaterial({ color: dkGreen.clone().multiplyScalar(0.8), roughness: 0.4, metalness: 0.3 });
-  const glassM = new THREE.MeshBasicMaterial({ color: K('#ffc85a').multiplyScalar(1.3) });
-  owned.push(wall, goldM, domeM, glassM);
-  const mq = new THREE.Group();
-  const madd = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); mq.add(m); owned.push(geo); return m; };
-  madd(new THREE.BoxGeometry(24, 9, 13), wall, 0, 4.5, 0);
-  madd(new THREE.CylinderGeometry(5.2, 5.5, 3, 24), wall, 0, 10.5, 0);
-  madd(new THREE.SphereGeometry(5.6, 28, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), domeM, 0, 12, 0);
-  madd(new THREE.CylinderGeometry(0.15, 0.15, 3, 6), goldM, 0, 18.1, 0);
-  [[-9, 3], [9, 3], [-9, -3], [9, -3]].forEach(([x, z]) => {
-    madd(new THREE.CylinderGeometry(1.4, 1.5, 2, 12), wall, x, 10, z);
-    madd(new THREE.SphereGeometry(1.7, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), domeM, x, 11, z);
-    madd(new THREE.ConeGeometry(0.12, 1.4, 6), goldM, x, 13.4, z);
-  });
-  [-17, 17].forEach((x) => {
-    madd(new THREE.CylinderGeometry(1.0, 1.25, 28, 12), wall, x, 14, 0);
-    for (let k = 0; k < 3; k++) madd(new THREE.TorusGeometry(1.1, 0.08, 6, 14), goldM, x, 8 + k * 6, 0).rotation.x = Math.PI / 2;
-    madd(new THREE.CylinderGeometry(1.9, 1.5, 0.9, 12), wall, x, 23, 0);
-    madd(new THREE.CylinderGeometry(1.0, 1.0, 2.2, 12), wall, x, 24.5, 0);
-    madd(new THREE.SphereGeometry(1.15, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.6), domeM, x, 25.6, 0);
-    madd(new THREE.ConeGeometry(0.12, 2.2, 6), goldM, x, 28.4, 0);
-  });
-  const winArch = new THREE.CircleGeometry(0.95, 12, 0, Math.PI), winBox = new THREE.PlaneGeometry(1.9, 3);
-  owned.push(winArch, winBox);
-  for (let i = -4; i <= 4; i++) { madd(winBox, glassM, i * 2.6, 3.4, 6.55); madd(winArch, glassM, i * 2.6, 4.9, 6.55); }
-  mq.position.set(0, 0, -62); mq.scale.setScalar(1.25); scene.add(mq);
+  // ---- rumah, masjid jauh, palem ----
+  const house = buildHouse(THREE, rnd, { low }); house.meshes.forEach((m) => scene.add(m));
+  const mq = buildMosque(THREE, rnd, { detail: 'far', gold: '#e6c36a', mirror: false, dome: '#7fd09a', stone: '#b4d4a4' });
+  mq.group.scale.setScalar(0.42); mq.group.position.set(13, 0, -48); mq.group.rotation.y = -0.25; scene.add(mq.group);
+  const palmTex = palmTexture(THREE, rnd); own.push(palmTex);
+  const palmG = buildPalmGeometry(THREE, rnd, [{ x: 7.4, y: 0, z: -7, h: 8.5, lean: 0.1, rot: 0.5 }, { x: 10.5, y: 0, z: -11, h: 11, lean: -0.08, rot: 2.2 }, { x: 13.5, y: 0, z: -6, h: 7, lean: 0.12, rot: 4 }, { x: 5.2, y: 0, z: -14, h: 12, lean: 0.06, rot: 1.1 }], { fronds: low ? 9 : 12 }); own.push(palmG);
+  const palmMat = new THREE.MeshStandardMaterial({ map: palmTex, vertexColors: true, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1 }); own.push(palmMat);
+  const palms = new THREE.Mesh(palmG, palmMat); palms.frustumCulled = false; scene.add(palms);
+  lampL.position.set(house.lamp[0], house.lamp[1] + 0.1, house.lamp[2] + 0.2);
 
-  // pohon kelapa siluet (batang dan pelepah instanced)
-  const trunkG = new THREE.CylinderGeometry(0.3, 0.5, 1, 6), frondG = new THREE.ConeGeometry(0.7, 6, 4);
-  frondG.rotateZ(Math.PI / 2); frondG.translate(3, 0, 0); frondG.scale(1, 0.22, 1);
-  const palmM = new THREE.MeshStandardMaterial({ color: '#17381a', roughness: 1 });
-  owned.push(trunkG, frondG, palmM);
-  const palms = [[-24, -26, 14], [-17, -40, 17], [22, -28, 15], [27, -44, 19]];
-  const trunks = new THREE.InstancedMesh(trunkG, palmM, palms.length), fronds = new THREE.InstancedMesh(frondG, palmM, palms.length * 7);
-  const dm = new THREE.Object3D();
-  palms.forEach(([x, z, h], i) => {
-    dm.position.set(x, h / 2, z); dm.rotation.set(0, 0, (x < 0 ? 1 : -1) * 0.06); dm.scale.set(1, h, 1); dm.updateMatrix(); trunks.setMatrixAt(i, dm.matrix);
-    for (let k = 0; k < 7; k++) {
-      dm.position.set(x + (x < 0 ? 1 : -1) * h * 0.06, h, z); dm.rotation.set(0, k * 0.9, -0.55 - (k % 2) * 0.35); dm.scale.set(1.0, 1.0, 1.0); dm.updateMatrix(); fronds.setMatrixAt(i * 7 + k, dm.matrix);
-    }
-  });
-  scene.add(trunks, fronds);
-
-  // tiang dan balok teras
-  const woodM = new THREE.MeshStandardMaterial({ color: '#8a5a2c', roughness: 0.8, emissive: '#2a1608', emissiveIntensity: 0.6 }); owned.push(woodM);
-  const postG = new THREE.CylinderGeometry(0.14, 0.17, 9, 8), beamG = new THREE.BoxGeometry(19.5, 0.4, 0.5); owned.push(postG, beamG);
-  [-9.4, 9.4].forEach((x) => { const p = new THREE.Mesh(postG, woodM); p.position.set(x, 4.5, -3.2); scene.add(p); });
-  const beam = new THREE.Mesh(beamG, woodM); beam.position.set(0, 8.9, -3.2); scene.add(beam);
-
-  // ketupat dua warna: hijau tua dan janur
-  const wv = canvasTex(THREE, 128, 128, (g, w, h) => {
-    g.fillStyle = '#' + dkGreen.clone().multiplyScalar(0.8).getHexString(); g.fillRect(0, 0, w, h);
-    const lt = '#' + janur.clone().lerp(K('#9fb83a'), 0.25).getHexString(), dk = '#' + dkGreen.clone().multiplyScalar(0.95).getHexString();
-    g.lineWidth = 11;
-    for (let k = -h; k < w + h; k += 32) { g.strokeStyle = dk; g.beginPath(); g.moveTo(k, 0); g.lineTo(k + h, h); g.stroke(); }
-    for (let k = -h, i = 0; k < w + h; k += 32, i++) for (let y = 0; y < h; y += 32) {
-      if (((y / 32) + i) % 2) continue;
-      g.strokeStyle = lt; g.beginPath(); g.moveTo(k + h - y - 20, y - 4 + 20); g.lineTo(k + h - y + 20, y + 28 - 20); g.stroke();
-    }
-    g.lineWidth = 2; g.strokeStyle = 'rgba(10,40,12,0.5)';
-    for (let k = 0; k < w; k += 16) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + h, h); g.stroke(); }
-  });
-  wv.wrapS = wv.wrapT = THREE.RepeatWrapping; wv.anisotropy = 2;
-  const kGeo = new THREE.BoxGeometry(0.62, 0.62, 0.42), kMat = new THREE.MeshStandardMaterial({ map: wv, roughness: 0.65 });
-  const strandG = new THREE.CylinderGeometry(0.014, 0.014, 1, 4), tasG = new THREE.ConeGeometry(0.07, 0.5, 6);
-  const goldB = new THREE.MeshStandardMaterial({ color: gold, emissive: gold, emissiveIntensity: 0.35, roughness: 0.35, metalness: 0.8 });
-  owned.push(wv, kGeo, kMat, strandG, tasG, goldB);
-  const rope = new THREE.CatmullRomCurve3([[-9.4, 8.7, -3.2], [-4.7, 7.7, -3.2], [0, 7.3, -3.2], [4.7, 7.7, -3.2], [9.4, 8.7, -3.2]].map((a) => new THREE.Vector3(...a)));
-  const ropeG = new THREE.TubeGeometry(rope, 40, 0.035, 5); owned.push(ropeG);
-  scene.add(new THREE.Mesh(ropeG, goldB));
-  const hang = []; // ketupat bergantung: {x,y,z,L,ph,amp,yaw}
-  const NG = 13;
-  for (let i = 0; i < NG; i++) { const p = rope.getPoint((i + 0.5) / NG); hang.push({ x: p.x, y: p.y, z: -3.2, L: 0.7 + (i % 3) * 0.45, ph: i * 0.9, amp: 0.07 }); }
-  [[-6.6, 1.6], [6.9, 1.2]].forEach(([x, z], s) => { for (let j = 0; j < 3; j++) hang.push({ x, y: 7.4 - j * 1.55, z, L: 0.35, ph: s * 2 + j * 1.1, amp: 0.05 }); });
-  const kInst = new THREE.InstancedMesh(kGeo, kMat, hang.length), sInst = new THREE.InstancedMesh(strandG, goldB, hang.length), tInst = new THREE.InstancedMesh(tasG, goldB, hang.length);
-  const tint = new THREE.Color();
-  hang.forEach((h, i) => { kInst.setColorAt(i, tint.set(i % 2 ? '#ffffff' : '#e4ff9a')); });
-  scene.add(kInst, sInst, tInst);
-  // pita janur melengkung
-  const ribM = new THREE.MeshStandardMaterial({ color: janur.clone().lerp(K('#9bc24a'), 0.2), side: THREE.DoubleSide, roughness: 0.6, emissive: janur, emissiveIntensity: 0.12 }); owned.push(ribM);
+  // ---- ketupat anyaman dan janur ----
+  const KS = [];
+  for (let i = 0, x = -7.2; x < 5.2; i++, x += 0.78 + (i % 3) * 0.12) KS.push({ x, y: 3.06, z: -2.02, L: 0.3 + ((i * 7) % 5) * 0.16, s: 0.95 + ((i * 3) % 4) * 0.06, ph: i * 0.9, tint: i % 3 === 1 ? '#e6f6a0' : i % 3 === 2 ? '#bfe07a' : '#ffffff' });
+  const kt = buildKetupat(THREE, KS, { low }); kt.meshes.forEach((m) => scene.add(m));
+  const ribM = new THREE.MeshStandardMaterial({ color: K('#a6c94c'), side: THREE.DoubleSide, roughness: 0.6, emissive: K('#4a6a14'), emissiveIntensity: 0.2 }); own.push(ribM);
   const ribs = [];
-  for (let i = 0; i < 6; i++) {
-    const p = rope.getPoint((i + 0.5) / 6 + 0.04), g = new THREE.PlaneGeometry(0.2, 2.1, 1, 10); owned.push(g);
-    const m = new THREE.Mesh(g, ribM); m.position.set(p.x, p.y, -3.1); scene.add(m);
-    ribs.push({ g, base: new Float32Array(g.attributes.position.array), ph: i * 1.3 });
+  for (let i = 0; i < 7; i++) {
+    const g = new THREE.PlaneGeometry(0.17, 1.5 + (i % 3) * 0.35, 1, 10); own.push(g);
+    const m = new THREE.Mesh(g, ribM); m.position.set(-6.4 + i * 1.65, 3.05, -1.96); scene.add(m);
+    ribs.push({ g, base: new Float32Array(g.attributes.position.array), ph: i * 1.3, h: 1.5 + (i % 3) * 0.35 });
+  }
+  // untaian lampu kecil di balok
+  const NB = 40, bp = new Float32Array(NB * 3), bc = new Float32Array(NB * 3), bph = new Float32Array(NB);
+  for (let i = 0; i < NB; i++) { const x = -8.5 + i * (13.4 / (NB - 1)); bp[i * 3] = x; bp[i * 3 + 1] = 3.0 - 0.1 * Math.sin(i / (NB - 1) * Math.PI * 6) ** 2; bp[i * 3 + 2] = -1.9; bph[i] = rnd() * 6.28; }
+  const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.BufferAttribute(bp, 3)); bg.setAttribute('color', new THREE.BufferAttribute(bc, 3)); own.push(bg);
+  const bm = new THREE.PointsMaterial({ map: tex, vertexColors: true, size: 0.3, sizeAttenuation: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }); own.push(bm);
+  const bulbs = new THREE.Points(bg, bm); bulbs.frustumCulled = false; scene.add(bulbs);
+  const warmC = K('#ffc060');
+  // kilau hangat pelita dan jendela
+  const gl = [house.lamp[0], house.lamp[1], house.lamp[2]];
+  const gGeo = new THREE.BufferGeometry(); gGeo.setAttribute('position', new THREE.Float32BufferAttribute(gl.concat([-3.3, 1.8, -5.2, -9.6, 1.8, -5.2, -6.6, 2.0, -5.2, -0.6, 2.0, -5.2, 2.6, 2.0, -5.2]), 3)); own.push(gGeo);
+  const gMat = new THREE.PointsMaterial({ map: tex, color: K('#ffb347'), size: 2.8, sizeAttenuation: true, transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }); own.push(gMat);
+  const glowP = new THREE.Points(gGeo, gMat); glowP.frustumCulled = false; scene.add(glowP);
+  // genangan cahaya hangat di tanah (aditif, instanced)
+  const poolG = new THREE.PlaneGeometry(1, 1); poolG.rotateX(-Math.PI / 2); own.push(poolG);
+  const poolM = new THREE.MeshBasicMaterial({ map: tex, color: K('#e8b050'), transparent: true, opacity: 0.26, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }); own.push(poolM);
+  const pools = [[house.table[0] + 0.3, house.table[1] + 0.2, 4.6, 3.4], [-3.3, -0.9, 4.2, 2.4], [-9, -0.9, 4, 2.4], [0.8, -0.9, 4, 2.4]];
+  const poolI = new THREE.InstancedMesh(poolG, poolM, pools.length);
+  const dm = new THREE.Object3D();
+  pools.forEach(([x, z, w, d], i) => { dm.position.set(x, 0.36 < 0 ? 0 : 0.02, z); dm.rotation.set(0, 0, 0); dm.scale.set(w, 1, d); dm.updateMatrix(); poolI.setMatrixAt(i, dm.matrix); });
+  poolI.frustumCulled = false; scene.add(poolI);
+
+  // ---- keluarga ----
+  const mat = peopleMaterial(THREE, { rim: '#ffb860', power: 2.4, strength: 0.32, fill: 0.3, roughness: 0.8 });
+  const KOKO = '#efe4c4', GRN = '#2d7a3a', BAT = '#8a5428';
+  const sk = ['#b98258', '#a8734a', '#c99468', '#9c6a44', '#d1a27a'];
+  const toward = (x) => (x < 0 ? 1 : -1);
+  const specs = [
+    { x: -2.3, z: 0.15, yaw: 1.12, build: 'man', height: 1.0, elder: true, skin: sk[1], top: KOKO, topStyle: 'koko', lower: 'sarong', bottom: '#7a4a28', motif: true, hat: 'peci', hatColor: '#15110e', hair: '#8c8a86', accent: '#d9b64d' },
+    { x: -1.45, z: 0.3, yaw: -1.08, build: 'man', height: 0.98, skin: sk[0], top: GRN, topStyle: 'koko', lower: 'pants', bottom: '#2c2824', hat: 'peci', hatColor: '#15110e', collar: '#e6dcb8' },
+    { x: -0.19, z: 0.4, yaw: 1.3, build: 'woman', height: 0.94, skin: sk[2], top: '#2e7a3a', topStyle: 'kebaya', lower: 'batik', bottom: BAT, motif: true, hat: 'hijab', hatColor: '#efe5c4', accent: '#e0b84a' },
+    { x: 0.19, z: 0.42, yaw: -1.3, build: 'woman', height: 0.92, skin: sk[3], top: '#f1e8cf', topStyle: 'kebaya', lower: 'batik', bottom: '#7a4422', motif: true, hat: 'hijab', hatColor: '#b9d04c', accent: '#c9a04a' },
+    { x: 1.8, z: 0.25, yaw: -1.12, build: 'woman', height: 0.9, elder: true, skin: sk[1], top: '#ebe7dc', topStyle: 'kebaya', lower: 'batik', bottom: '#6a4a2e', motif: true, hat: 'hijab', hatColor: '#e9e3d2', accent: '#cfc9b0' },
+    { x: 1.0, z: 0.4, yaw: 1.1, build: 'child', height: 1.12, skin: sk[4], top: '#cfe36a', topStyle: 'kebaya', lower: 'skirt', bottom: '#2f7d3a', hat: 'hijab', hatColor: '#f1e8cf', accent: '#e0b84a' },
+    { x: -1.05, z: -1.45, yaw: 0.2, build: 'man', height: 1.03, skin: sk[3], top: '#1f6130', topStyle: 'koko', lower: 'sarong', bottom: '#5a1f1f', hat: 'peci', hatColor: '#15110e', accent: '#d9b64d' },
+    { x: 0.55, z: -0.7, yaw: -0.2, build: 'child', height: 1.04, skin: sk[0], top: '#eae4c4', topStyle: 'koko', lower: 'pants', bottom: '#2a2724', hat: 'peci', hatColor: '#15110e' },
+    { x: 2.85, z: -2.45, yaw: -0.12, build: 'woman', height: 0.95, skin: sk[2], top: '#1e6a2e', topStyle: 'kebaya', lower: 'batik', bottom: '#7a4a22', motif: true, hat: 'hijab', hatColor: '#d9ab3a', accent: '#e0b84a', tray: ['#cfe05a', '#a9c64c', '#e0a84a', '#f1e3c0'] },
+  ];
+  const rig = createPeople(THREE, specs, { material: mat, low });
+  scene.add(rig.group);
+  const [elder, young, w1, w2, nenek, girl, dad, boy, mom] = rig.people;
+  void toward;
+  // pose dasar
+  young.tilt = 0.62; young.hPitch = 0.5; young.hYaw = -0.15; young.sway = 0.6;
+  elder.tilt = 0.03; elder.hYaw = 0.2; elder.hPitch = 0.12; elder.nod = 0.03;
+  w1.tilt = 0.13; w1.hYaw = -0.62; w1.hRoll = -0.14; w2.tilt = 0.13; w2.hYaw = 0.62; w2.hRoll = 0.14; w1.sway = w2.sway = 0.5;
+  nenek.tilt = 0.14; nenek.hYaw = -0.1; nenek.hPitch = 0.3; nenek.nod = 0.025; nenek.lean = 0.02;
+  girl.tilt = 0.5; girl.hPitch = 0.45; girl.hYaw = 0.1;
+  dad.hYaw = -0.2; dad.hRoll = 0.05; boy.hYaw = 0.3; boy.hPitch = -0.05; mom.hYaw = -0.1; mom.sway = 0.4; mom.tilt = -0.03;
+  [elder, young, w1, w2, nenek, girl].forEach((p) => { p.arm[1].pole.set(0.7, -1, -0.1); p.arm[-1].pole.set(-0.7, -1, -0.1); });
+  const C1 = new THREE.Vector3(), C2 = new THREE.Vector3(), tv = new THREE.Vector3(), tv2 = new THREE.Vector3();
+  const back = (P, side, lx, ly) => { const A = P.arm[side]; A.on = true; return A.tw; };
+  void back;
+  function poses(T) {
+    // salaman bapak - anak muda: bapak mengulurkan tangan kanan, anak muda menyambut dengan kedua tangan (cium tangan)
+    elder.arm[-1].tl.set(-0.15, 0.1 + 0.012 * Math.sin(T * 3), 0.43); elder.arm[-1].pole.set(-0.6, -1, 0);
+    elder.arm[1].tl.set(0.2, 0.0, 0.2);
+    tv.copy(elder.arm[-1].tl); elder.root.localToWorld(tv); C1.copy(tv);
+    young.arm[-1].on = young.arm[1].on = true;
+    young.arm[-1].tw.copy(C1).add(tv2.set(0, 0.015 * Math.sin(T * 3), 0));
+    young.arm[1].tw.copy(C1).add(tv2.set(0, 0.035, 0.03));
+    young.arm[-1].pole.set(-0.8, -0.6, -0.2); young.arm[1].pole.set(0.8, -0.6, -0.2);
+    // pelukan: tangan masing-masing ke punggung lawan
+    for (const [a, b] of [[w1, w2], [w2, w1]]) {
+      const ch = b.bones.chest;
+      a.arm[1].on = a.arm[-1].on = true;
+      a.arm[1].tw.set(0.08, 0.06, -0.15); ch.localToWorld(a.arm[1].tw);
+      a.arm[-1].tw.set(-0.1, -0.06, -0.15); ch.localToWorld(a.arm[-1].tw);
+      a.arm[1].pole.set(0.6, -0.3, 0.8); a.arm[-1].pole.set(-0.6, -0.3, 0.8);
+    }
+    // nenek menyambut cucu: tangan kanan terulur, kiri mengusap kepala
+    nenek.arm[-1].tl.set(-0.15, 0.06, 0.4 + 0.01 * Math.sin(T * 2.6)); nenek.arm[-1].pole.set(-0.6, -1, 0);
+    tv.copy(nenek.arm[-1].tl); nenek.root.localToWorld(tv); C2.copy(tv);
+    girl.arm[-1].on = girl.arm[1].on = true;
+    girl.arm[-1].tw.copy(C2); girl.arm[1].tw.copy(C2).add(tv2.set(0, 0.03, 0.02));
+    girl.arm[-1].pole.set(-0.8, -0.6, -0.2); girl.arm[1].pole.set(0.8, -0.6, -0.2);
+    nenek.arm[1].on = true; tv2.set(0.02, 0.16, 0.0); girl.bones.head.localToWorld(tv2); nenek.arm[1].tw.copy(tv2).add(tv.set(0, 0.012 * Math.sin(T * 2.4), 0)); nenek.arm[1].pole.set(0.7, -0.4, -0.3);
+    // ayah melambai, anak dan ibu menyajikan
+    dad.arm[-1].tl.set(-0.3, 0.66 + 0.035 * Math.sin(T * 6), 0.18); dad.arm[-1].pole.set(-0.7, -1, 0.2);
+    dad.arm[-1].hand.set(0, 0, 0.2 * Math.sin(T * 6));
+    boy.arm[1].tl.set(0.06, 0.02, 0.24); boy.arm[-1].tl.set(-0.06, 0.02, 0.24); boy.arm[1].pole.set(0.8, -0.8, -0.1); boy.arm[-1].pole.set(-0.8, -0.8, -0.1);
+    mom.arm[1].tl.set(0.23, 0.07, 0.33); mom.arm[-1].tl.set(-0.23, 0.07, 0.33); mom.arm[1].pole.set(0.9, -0.5, -0.3); mom.arm[-1].pole.set(-0.9, -0.5, -0.3);
   }
 
-  // pelita: lentera gantung dan lampu minyak di tepi teras
-  const lanG = new THREE.CylinderGeometry(0.26, 0.2, 0.62, 6), capG = new THREE.CylinderGeometry(0.2, 0.28, 0.1, 6);
-  const lanM = new THREE.MeshBasicMaterial({ color: K('#ffb347').multiplyScalar(1.5) }); owned.push(lanG, capG, lanM);
-  const lans = [[-7.2, 6.5, -2.8], [-3.2, 6.0, -2.9], [3.0, 6.0, -2.9], [7.4, 6.4, -2.8], [-8.6, 4.3, 0.6], [8.8, 4.0, 0.2]];
-  const lanI = new THREE.InstancedMesh(lanG, lanM, lans.length), capI = new THREE.InstancedMesh(capG, goldB, lans.length * 2);
-  const lamps = []; for (let i = 0; i < 10; i++) lamps.push([-9 + i * 2, 0.14, 5.5]);
-  const lampG = new THREE.SphereGeometry(0.09, 8, 6); owned.push(lampG);
-  const lampI = new THREE.InstancedMesh(lampG, lanM, lamps.length);
-  lamps.forEach(([x, y, z], i) => { dm.position.set(x, y, z); dm.rotation.set(0, 0, 0); dm.scale.set(1, 0.8, 1); dm.updateMatrix(); lampI.setMatrixAt(i, dm.matrix); });
-  scene.add(lanI, capI, lampI);
-  const glowPts = [];
-  lans.forEach((l) => glowPts.push(l[0], l[1], l[2], 6.5));
-  lamps.forEach((l) => glowPts.push(l[0], l[1] + 0.2, l[2], 2.2));
-  [[-6, 3.2, -24], [8, 4.2, -30], [20, 3.5, -40], [-22, 3, -36]].forEach((l) => glowPts.push(l[0], l[1], l[2], 4));
-  const gGeo = new THREE.BufferGeometry(); gGeo.setAttribute('position', new THREE.Float32BufferAttribute(glowPts.filter((_, i) => i % 4 < 3), 3));
-  const gMat = new THREE.PointsMaterial({ map: tex, color: K('#ffb347'), size: 2.6, sizeAttenuation: true, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
-  owned.push(gGeo, gMat);
-  const glowP = new THREE.Points(gGeo, gMat); glowP.frustumCulled = false; scene.add(glowP);
+  // bayangan kontak di bawah tiap orang (satu draw call)
+  const shT = canvasTex(THREE, 64, 64, (g, w, h) => { const r = g.createRadialGradient(32, 32, 2, 32, 32, 32); r.addColorStop(0, 'rgba(0,0,0,0.75)'); r.addColorStop(0.6, 'rgba(0,0,0,0.3)'); r.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); });
+  const shG = new THREE.PlaneGeometry(1, 1); shG.rotateX(-Math.PI / 2);
+  const shM = new THREE.MeshBasicMaterial({ map: shT, transparent: true, depthWrite: false, fog: false, opacity: 0.8 });
+  own.push(shT, shG, shM);
+  const shI = new THREE.InstancedMesh(shG, shM, specs.length + 1);
+  specs.forEach((s, i) => { const k = s.height * (s.build === 'child' ? 0.64 : 1); dm.position.set(s.x, 0.025, s.z); dm.rotation.set(0, 0, 0); dm.scale.set(1.5 * k + 0.3, 1, 1.2 * k + 0.3); dm.updateMatrix(); shI.setMatrixAt(i, dm.matrix); });
+  dm.position.set(house.table[0], 0.025, house.table[1]); dm.scale.set(3, 1, 1.6); dm.updateMatrix(); shI.setMatrixAt(specs.length, dm.matrix);
+  shI.frustumCulled = false; scene.add(shI);
 
-  // genangan cahaya hangat di lantai (aditif, satu draw call)
-  const poolG = new THREE.PlaneGeometry(1, 1); poolG.rotateX(-Math.PI / 2);
-  const poolM = (new THREE.MeshBasicMaterial({ map: tex, color: K('#ffa040'), transparent: true, opacity: 0.28, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); owned.push(poolG, poolM);
-  const pools = [...lamps.map((l) => [l[0], l[2], 3.6]), [7.4, -2.4, 6], [-8.6, 0.6, 5], [8.8, 0.2, 5], [0, 1, 11], [-3, 2.5, 7], [3.5, 2, 7]];
-  const poolI = new THREE.InstancedMesh(poolG, poolM, pools.length);
-  pools.forEach(([x, z, sz], i) => { dm.position.set(x, 0.03, z); dm.rotation.set(0, 0, 0); dm.scale.set(sz * 1.3, 1, sz); dm.updateMatrix(); poolI.setMatrixAt(i, dm.matrix); });
-  scene.add(poolI);
+  // kembang api jauh
+  const fw = particlePool(THREE, low ? 500 : 900, { tex, size: 1.6, gravity: -3.5, drag: 0.7 }); scene.add(fw.points); fw.points.geometry.attributes.position.array.fill(-1e5); // partikel mati diparkir di luar layar
+  const fwCols = [K('#ffd36a'), K('#ff8a5a'), K('#b7ff8a'), K('#ffe9b0')];
+  let nextFw = 0, fwIdx = 0;
+  // kilau emas melayang
+  const sp = particlePool(THREE, low ? 200 : 420, { tex, size: 0.09, gravity: 0.15, drag: 0.5 }); scene.add(sp.points); sp.points.geometry.attributes.position.array.fill(-1e5);
+  const gc = gold.clone().multiplyScalar(1.3);
 
-  // meja: ketupat, opor, kue
-  const table = new THREE.Group(); table.position.set(7.4, 0, -2.4); scene.add(table);
-  const clothM = new THREE.MeshStandardMaterial({ color: dkGreen.clone().multiplyScalar(1.15), roughness: 0.8 }), trimM = new THREE.MeshStandardMaterial({ color: gold, roughness: 0.5, metalness: 0.5 });
-  const tG = new THREE.BoxGeometry(2.6, 0.92, 1.2), trimG = new THREE.BoxGeometry(2.64, 0.07, 1.24); owned.push(clothM, trimM, tG, trimG);
-  const tb = new THREE.Mesh(tG, clothM); tb.position.y = 0.46; table.add(tb);
-  const tr = new THREE.Mesh(trimG, trimM); tr.position.y = 0.93; table.add(tr);
-  const bowl = new THREE.LatheGeometry([[0, 0], [0.2, 0.02], [0.36, 0.2], [0.4, 0.26], [0.36, 0.26], [0.3, 0.18], [0, 0.1]].map(([x, y]) => new THREE.Vector2(x, y)), 14);
-  const bowlM = new THREE.MeshStandardMaterial({ color: '#efe4c4', roughness: 0.4, side: THREE.DoubleSide }), oporG = new THREE.CircleGeometry(0.31, 14), oporM = new THREE.MeshStandardMaterial({ color: '#d98a2b', roughness: 0.5, emissive: '#6a3a05', emissiveIntensity: 0.4 });
-  owned.push(bowl, bowlM, oporG, oporM);
-  const b1 = new THREE.Mesh(bowl, bowlM); b1.position.set(-0.7, 0.96, 0); table.add(b1);
-  const o1 = new THREE.Mesh(oporG, oporM); o1.rotation.x = -Math.PI / 2; o1.position.set(-0.7, 1.2, 0); table.add(o1);
-  const smallK = new THREE.InstancedMesh(kGeo, kMat, 5);
-  [[0.05, 0.1], [0.4, -0.1], [0.75, 0.15], [0.25, 0.25], [0.6, -0.25]].forEach(([x, z], i) => { dm.position.set(x, 1.2 + (i > 2 ? 0.2 : 0), z); dm.rotation.set(0.1, i, Math.PI / 4); dm.scale.setScalar(0.55); dm.updateMatrix(); smallK.setMatrixAt(i, dm.matrix); });
-  table.add(smallK);
-  const swG = new THREE.SphereGeometry(0.1, 8, 6), swM = new THREE.MeshStandardMaterial({ roughness: 0.6 }); owned.push(swG, swM);
-  const sweets = new THREE.InstancedMesh(swG, swM, 12);
-  for (let i = 0; i < 12; i++) { dm.position.set(0.95 + (i % 4) * 0.2 - 0.3, 1.04 + (i > 7 ? 0.14 : 0), -0.25 + Math.floor(i / 4) * 0.22); dm.rotation.set(0, 0, 0); dm.scale.setScalar(1); dm.updateMatrix(); sweets.setMatrixAt(i, dm.matrix); sweets.setColorAt(i, tint.set(['#e0a84a', '#f1e3c0', '#9b5a2b', '#d4e157'][i % 4])); }
-  table.add(sweets);
-
-  // keluarga
-  const sil = peopleMaterial(THREE, { rim: '#ffb455', power: 2.0, strength: 1.5, fill: 0.3 });
-  const lit = peopleMaterial(THREE, { rim: '#ffd590', power: 2.6, strength: 0.8, fill: 0.48 });
-  const CREAM = '#efe4c2', JAN = '#c9dd55', DKG = '#2c7d36', BATIK = '#6a3d1a', MAR = '#5b1e1e', HIJ = '#f1e8cc';
-  const sk = ['#b87a4f', '#c98f62', '#d9a577', '#a86e45'];
-  const spec = (mat, o) => Object.assign({ material: mat, hair: '#1b1411', lively: 1.5, look: -(o.yaw || 0) * 0.45 }, o);
-  const crowd = createCrowd(THREE, [
-    spec(sil, { x: -4.1, z: -0.9, yaw: 1.2, pose: 'handshake', top: CREAM, lower: 'sarung', bottom: MAR, hat: 'peci', skin: sk[0], height: 1.1, accent: '#caa24a' }),
-    spec(sil, { x: -3.1, z: -0.9, yaw: -1.2, pose: 'handshake', top: DKG, lower: 'sarung', bottom: '#3d2a1a', hat: 'peci', skin: sk[1], height: 1.14, accent: '#caa24a' }),
-    spec(lit, { x: -0.25, z: 0.7, yaw: 1.25, pose: 'bow', top: JAN, bottom: CREAM, hat: 'peci', skin: sk[2], child: true, height: 1.15 }),
-    spec(lit, { x: 0.5, z: 0.7, yaw: -1.0, pose: 'handshake', top: '#1e5d2a', lower: 'skirt', bottom: BATIK, hat: 'hijab', hatColor: HIJ, skin: sk[3], height: 1.0, accent: '#caa24a' }),
-    spec(lit, { x: 2.85, z: 0.1, yaw: 1.35, pose: 'hug', top: JAN, lower: 'skirt', bottom: BATIK, hat: 'hijab', hatColor: HIJ, skin: sk[0], height: 1.07 }),
-    spec(lit, { x: 3.4, z: 0.1, yaw: -1.35, pose: 'hug', top: DKG, lower: 'skirt', bottom: BATIK, hat: 'hijab', hatColor: '#e0bf5a', skin: sk[1], height: 0.97 }),
-    spec(lit, { x: -1.0, z: 2.3, yaw: 0.22, pose: 'carry', top: '#256b2f', lower: 'sarung', bottom: MAR, hat: 'peci', skin: sk[2], height: 1.12, accent: '#caa24a', tray: ['#2e7d32', '#cfe05a', '#2e7d32', '#e0a84a'] }),
-    spec(lit, { x: 1.9, z: 2.3, yaw: -0.28, pose: 'carry', top: '#f1e5be', lower: 'skirt', bottom: BATIK, hat: 'hijab', hatColor: '#d9b44a', skin: sk[3], height: 1.04, tray: ['#e0a84a', '#f1e3c0', '#9b5a2b', '#d4e157'] }),
-    spec(sil, { x: 5.2, z: -0.5, yaw: -0.15, pose: 'wave', mirror: true, top: DKG, bottom: '#1c1c1c', hat: 'peci', skin: sk[0], height: 1.1 }),
-    spec(sil, { x: -5.3, z: 0.8, yaw: 0.2, pose: 'stand', top: JAN, lower: 'skirt', bottom: '#245f2d', hat: 'hijab', hatColor: HIJ, skin: sk[2], child: true, height: 1.12 }),
-  ], sil);
-  scene.add(crowd.group);
-
-  // kilau emas
-  const sp = particlePool(THREE, 900, { tex, size: 0.2, gravity: 0.4, drag: 0.5 }); scene.add(sp.points);
-  const gc = gold.clone().multiplyScalar(1.5), jc = janur.clone().multiplyScalar(1.1);
-
-  const ribRef = ribs[0].g.attributes.position;
-  void ribRef;
   return {
     update(t, dt) {
-      const T = t * duration / 1000, e = easeInOut(t), ramp = smooth(t / 0.3);
-      for (let i = 0; i < hang.length; i++) {
-        const h = hang[i], th = Math.sin(T * 1.9 + h.ph) * h.amp, s = Math.sin(th), c = Math.cos(th), L = h.L;
-        dm.position.set(h.x + s * L * 0.5, h.y - c * L * 0.5, h.z); dm.rotation.set(0, 0, th); dm.scale.set(1, L, 1); dm.updateMatrix(); sInst.setMatrixAt(i, dm.matrix);
-        dm.position.set(h.x + s * (L + 0.43), h.y - c * (L + 0.43), h.z); dm.rotation.set(0, Math.sin(T * 1.1 + h.ph) * 0.35, th + Math.PI / 4); dm.scale.set(1, 1, 1); dm.updateMatrix(); kInst.setMatrixAt(i, dm.matrix);
-        dm.position.set(h.x + s * (L + 0.96), h.y - c * (L + 0.96), h.z); dm.rotation.set(Math.PI, 0, th); dm.updateMatrix(); tInst.setMatrixAt(i, dm.matrix);
-      }
-      kInst.instanceMatrix.needsUpdate = sInst.instanceMatrix.needsUpdate = tInst.instanceMatrix.needsUpdate = true;
+      const T = t * duration / 1000, e = easeInOut(t), ramp = smooth(seg(t, 0, 0.35));
+      poses(T);
+      rig.update(T);
+      kt.update(T);
       ribs.forEach((r) => {
-        const p = r.g.attributes.position;
+        const p = r.g.attributes.position, hh = r.h;
         for (let i = 0; i < p.count; i++) {
-          const y0 = r.base[i * 3 + 1], u = (1.05 - y0) / 2.1; // 0 di atas, 1 di ujung
-          p.setX(i, r.base[i * 3] + Math.sin(T * 2.6 - u * 3 + r.ph) * 0.12 * u);
-          p.setY(i, y0 - u * 0.1 * Math.sin(T * 1.4 + r.ph));
-          p.setZ(i, Math.sin(T * 3.1 - u * 4 + r.ph) * 0.1 * u);
+          const y0 = r.base[i * 3 + 1], u = (hh / 2 - y0) / hh;
+          p.setX(i, r.base[i * 3] + Math.sin(T * 2.4 - u * 3 + r.ph) * 0.1 * u); p.setZ(i, Math.sin(T * 3 - u * 4 + r.ph) * 0.08 * u);
         }
         p.needsUpdate = true;
       });
-      for (let i = 0; i < lans.length; i++) {
-        const l = lans[i], th = Math.sin(T * 1.5 + i) * 0.06;
-        dm.position.set(l[0] + Math.sin(th) * 0.4, l[1] - 0.35, l[2]); dm.rotation.set(0, 0, th); dm.scale.set(1, 1, 1); dm.updateMatrix(); lanI.setMatrixAt(i, dm.matrix);
-        dm.position.y = l[1] - 0.35 + 0.36; capI.setMatrixAt(i * 2, dm.matrix);
-        dm.position.y = l[1] - 0.35 - 0.36; capI.setMatrixAt(i * 2 + 1, dm.matrix);
+      for (let i = 0; i < NB; i++) { const k = (0.55 + 0.45 * Math.sin(T * 3.4 + bph[i])) * ramp; bc[i * 3] = warmC.r * k; bc[i * 3 + 1] = warmC.g * k; bc[i * 3 + 2] = warmC.b * k; }
+      bg.attributes.color.needsUpdate = true;
+      lampL.intensity = 7 * ramp * (0.92 + 0.08 * Math.sin(T * 7)); porchL.intensity = 8 * ramp * (0.96 + 0.04 * Math.sin(T * 5 + 1));
+      gMat.opacity = 0.25 + 0.2 * ramp + 0.04 * Math.sin(T * 5);
+      house.glass.color.setScalar(0.4 + 0.6 * ramp);
+      clouds.forEach((c) => { c.az += c.v * dt; skyDir(THREE, c.az, c.el, c.r, c.sp.position); });
+      sunWide.material.opacity = 0.28 + 0.03 * Math.sin(T * 0.8);
+      sf.update(T);
+      if (dt > 0) {
+        if (T >= nextFw) { nextFw = T + 0.55 + rnd() * 0.6; const c = fwCols[fwIdx++ % fwCols.length]; fw.burst(6 + rnd() * 34, 11 + rnd() * 10, -70 - rnd() * 20, c.clone().multiplyScalar(1.6), low ? 40 : 70, 9, 1.7, rnd); }
+        for (let i = 0; i < 2; i++) sp.emit((rnd() - 0.5) * 9, 0.3 + rnd() * 2.6, -1 + rnd() * 4, (rnd() - 0.5) * 0.15, 0.1 + rnd() * 0.25, 0, gc, 2 + rnd() * 1.6);
       }
-      lanI.instanceMatrix.needsUpdate = capI.instanceMatrix.needsUpdate = true;
-      pl.forEach((l, i) => { l.intensity = ([7, 7, 4, 5, 4][i]) * ramp * (0.92 + 0.08 * Math.sin(T * 6 + i * 2)); });
-      gMat.opacity = 0.2 + 0.2 * ramp + 0.05 * Math.sin(T * 5);
-      rays.forEach((r, i) => { r.material.opacity = (0.03 + 0.02 * Math.sin(T * 0.9 + i)) * ramp; });
-      crowd.update(dt);
-      if (dt > 0) for (let i = 0; i < 6; i++) sp.emit((rnd() - 0.5) * 22, 0.4 + rnd() * 3.5, -2 + rnd() * 8, (rnd() - 0.5) * 0.3, 0.3 + rnd() * 0.6, 0, rnd() < 0.3 ? jc : gc, 1.8 + rnd() * 1.6);
-      sp.update(dt);
-      camera.position.set(lerp(-1.5, 1.4, e) + Math.sin(T * 0.7) * 0.12, 1.5 + Math.sin(T * 0.9) * 0.05, lerp(9.6, 8.3, e));
-      camera.lookAt(lerp(0.6, -0.2, e), 2.3, 0);
+      fw.update(dt); sp.update(dt);
+      const pf = Math.min(1, Math.max(0, (1 - camera.aspect) / 0.5));
+      camera.position.set(lerp(-0.5, 0.35, e) + Math.sin(T * 0.6) * 0.04 - pf * 0.4, lerp(1.38, 1.3, e) + pf * 0.15, lerp(4.6, 4.0, e) + pf * 1.5);
+      camera.lookAt(lerp(-0.2, 0.0, e) - pf * 0.4, 1.12 - pf * 0.05, 0);
     },
-    dispose() { tex.dispose(); rayTex.dispose(); tileTex.dispose(); owned.forEach((o) => o.dispose && o.dispose()); crowd.dispose(); sil.dispose(); lit.dispose(); [kInst, sInst, tInst, lanI, capI, lampI, trunks, fronds, smallK, sweets, poolI].forEach((m) => m.dispose()); rays.forEach((r) => { r.geometry.dispose(); r.material.dispose(); }); },
+    dispose() {
+      [tex, cloudTex, moonTex].forEach((x) => x.dispose());
+      own.forEach((o) => o.dispose()); house.dispose(); mq.dispose(); kt.dispose(); rig.dispose(); mat.dispose();
+      shI.dispose(); poolI.dispose();
+    },
   };
 }

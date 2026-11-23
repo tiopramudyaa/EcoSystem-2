@@ -221,7 +221,7 @@
             transition:background-color 9999s ease-in-out 0s;
         }
         .fl-inp:focus {
-            border-color:var(--st-login-to, #A00000);
+            border-color:var(--st-link, var(--st-button, var(--st-login-to, #A00000)));
             box-shadow:0 0 0 3px rgba(160,0,0,.1);
         }
         .fl-inp.is-error {
@@ -243,7 +243,7 @@
         .fl-inp:not(:placeholder-shown) ~ .fl-label {
             top:.625rem; transform:none;
             font-size:.6875rem; font-weight:600;
-            color:var(--st-login-to, #A00000); letter-spacing:.02em;
+            color:var(--st-link, var(--st-button, var(--st-login-to, #A00000))); letter-spacing:.02em;
         }
         .fl-inp.is-error ~ .fl-label { color:#DC2626; }
 
@@ -255,7 +255,7 @@
             display:flex; align-items:center;
             transition:color .2s ease;
         }
-        .fl-wrap:focus-within .fl-r-icon { color:var(--st-login-to, #A00000); }
+        .fl-wrap:focus-within .fl-r-icon { color:var(--st-link, var(--st-button, var(--st-login-to, #A00000))); }
 
         /* Error message */
         .l-err { font-size:.6875rem; color:#DC2626; display:none; margin-top:.3rem; padding-left:.25rem; }
@@ -263,7 +263,7 @@
         /* Submit button */
         .fp-btn {
             width:100%; padding:.9375rem 1rem;
-            background:var(--st-login-to, #A00000);
+            background:var(--st-link, var(--st-button, var(--st-login-to, #A00000)));
             color:#fff; font-family:'Plus Jakarta Sans',sans-serif;
             font-size:.9375rem; font-weight:600;
             border:none; border-radius:8px; cursor:pointer;
@@ -351,7 +351,7 @@
      style="position:relative; overflow:hidden; flex-direction:column;
             align-items:flex-start; justify-content:center; padding:0 4.75rem;
             height:100vh;
-            background:linear-gradient(155deg, var(--st-login-from, #1A0000) 0%, rgb(var(--st-primary-dark-rgb, 107 0 0)) 55%, var(--st-login-to, #B91C1C) 100%);">
+            background:linear-gradient(155deg, var(--st-login-from, #1A0000) 0%, var(--st-login-mid, rgb(var(--st-primary-dark-rgb, 107 0 0))) 55%, var(--st-login-to, #B91C1C) 100%);">
 
     {{-- Orbs --}}
     <div style="position:absolute;top:-80px;right:-60px;width:360px;height:360px;border-radius:50%;
@@ -624,9 +624,9 @@
                 <p style="text-align:center;font-size:.8125rem;color:#64748B;margin-top:.125rem;">
                     Remember your password?
                     <a href="{{ route('login') }}"
-                       style="color:var(--st-login-to, #A00000);font-weight:600;text-decoration:none;transition:color .15s;"
+                       style="color:var(--st-link, var(--st-button, var(--st-login-to, #A00000)));font-weight:600;text-decoration:none;transition:color .15s;"
                        onmouseover="this.style.color='var(--st-login-from, #6B0000)'"
-                       onmouseout="this.style.color='var(--st-login-to, #A00000)'">Back to Sign In</a>
+                       onmouseout="this.style.color='var(--st-link, var(--st-button, var(--st-login-to, #A00000)))'">Back to Sign In</a>
                 </p>
             </form>
         </div>

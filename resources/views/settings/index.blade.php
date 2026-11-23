@@ -964,6 +964,8 @@ function previewSeasonalTheme(theme) {
         '--st-accent': p && p.accent,
         '--st-login-from': p && p.login_from,
         '--st-login-to': p && p.login_to,
+        '--st-login-mid': p && (p.login_mid || p.login_to),
+        '--st-button': p && (p.button || p.login_to),
     };
     // Warna brand (--primary-*) ikut dipratinjau; format koma seperti :root layout.
     const comma = v => v && v.trim().split(/[\s,]+/).join(', ');

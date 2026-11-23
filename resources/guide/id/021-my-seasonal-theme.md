@@ -5,7 +5,7 @@ order: 21
 title: Seasonal theme
 summary: Ikuti tampilan perayaan dari administrator, matikan, atau pilih tema lain untuk diri sendiri, dan lihat apa yang didekorasi tiap tema.
 requires: []
-updated: 2026-11-20
+updated: 2026-11-23
 ---
 Menjelang hari besar, EcoSystem dapat menampilkan tampilan perayaan: dekorasi di halaman, aksen warna di sidebar dan header, serta layar loading bertema setelah masuk. Administrator memilih tema bawaan untuk semua orang. Di `Settings` Anda dapat mengikutinya, mematikannya, atau memilih tema lain hanya untuk diri sendiri.
 
@@ -43,7 +43,7 @@ Semua pengguna. Bagian `Seasonal theme` ada di `Settings` › `Appearance`.
 
 - **Urutan prioritas.** Pilihan pribadi Anda didahulukan. Jika memilih `Default`, Anda mendapat tema administrator. Jika memilih `Off` atau tema tertentu, pilihan itu menang atas administrator untuk Anda saja.
 - **Preferensi yang belum ada.** Orang yang belum pernah menyimpan preferensinya mengikuti `Default`, sehingga melihat tema administrator.
-- **Tema login terpisah.** Administrator dapat menetapkan tema terpisah untuk halaman masuk dan layar loading. Bila ditetapkan untuk layar loading, tema itu menggantikan pilihan pribadi Anda hanya untuk layar tersebut. Dashboard, sidebar, navbar, dan musik tetap mengikuti pilihan Anda atau tema global.
+- **Tema login terpisah.** Administrator dapat menetapkan tema terpisah untuk halaman masuk dan layar loading. Bila ditetapkan untuk layar loading, tema itu menggantikan pilihan pribadi Anda hanya untuk layar tersebut. Dashboard, sidebar, navbar, dan musik tetap mengikuti pilihan Anda atau tema global. Saat tema aktif, halaman masuk juga menampilkan ilustrasi tema itu.
 - **Yang diubah oleh tema.** Dekorasi di halaman, warna sidebar, header, tombol, dan tautan, serta layar loading setelah masuk. Tombol yang menghapus, menolak, atau memperingatkan tetap merah agar maknanya tidak berubah.
 - **Warna aksen.** Selama tema musiman aktif bagi Anda, warna sidebar, tombol, dan tautan mengikuti tema. `Accent color` yang dipilih di `Settings` tampil di pratinjau tetapi kembali ke warna tema setelah halaman dimuat ulang. Untuk mempertahankan warna aksen sendiri, atur `Seasonal theme` ke `Off`.
 - **Musik latar.** Hanya administrator yang memilih lagu dan volumenya, dan berlaku untuk semua orang. Anda tidak dapat memilih lagu. Anda hanya dapat membisukannya di layar sendiri, dan pilihan itu tidak tersimpan untuk pengguna lain.

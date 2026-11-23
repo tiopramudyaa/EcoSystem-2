@@ -56,12 +56,15 @@
         }
 
         :root[data-season] {
-            --brand:      var(--st-login-to);
+            --btn-bg:     var(--st-button, var(--st-login-to));
+            --btn-bg-h:   var(--st-button-hover, var(--brand-dark));
+            --btn-fg:     var(--st-button-text, #fff);
+            --brand:      var(--st-link, var(--st-button, var(--st-login-to)));
             --brand-dark: rgb(var(--st-primary-dark-rgb));
             --brand-rgb:  var(--st-primary-rgb);
             --deco-from:  var(--st-login-from);
             --deco-dark:  rgb(var(--st-primary-dark-rgb));
-            --deco-bg:    linear-gradient(155deg, var(--st-login-from) 0%, rgb(var(--st-primary-dark-rgb)) 55%, var(--st-login-to) 100%);
+            --deco-bg:    linear-gradient(155deg, var(--st-login-from) 0%, var(--st-login-mid, rgb(var(--st-primary-dark-rgb))) 55%, var(--st-login-to) 100%);
         }
 
         /* ── Reset ─────────────────────────────────────────────────── */
@@ -154,6 +157,7 @@
 
         /* ── Layout ────────────────────────────────────────────────── */
         #deco-panel  { display:none; }
+        .dp-ambient  { display:contents; }
         #login-panel { width:100%; }
 
         @media (min-width:768px) {
@@ -322,14 +326,14 @@
         /* Submit button */
         .lp-btn {
             width:100%; padding:.9375rem 1rem;
-            background:var(--brand);
-            color:#fff; font-family:'Plus Jakarta Sans',sans-serif;
+            background:var(--btn-bg, var(--brand));
+            color:var(--btn-fg, #fff); font-family:'Plus Jakarta Sans',sans-serif;
             font-size:.9375rem; font-weight:600;
             border:none; border-radius:8px; cursor:pointer;
             position:relative; overflow:hidden;
             transition:background .2s ease, transform .15s ease;
         }
-        .lp-btn:hover:not(:disabled) { background:var(--brand-dark); }
+        .lp-btn:hover:not(:disabled) { background:var(--btn-bg-h, var(--brand-dark)); }
         .lp-btn:active:not(:disabled) { transform:scale(.98); }
         .lp-btn:disabled { cursor:not-allowed; opacity:.85; }
         /* Report (Web Report): open to everyone, so it sits on the login page. A tertiary button - a small text link set apart
@@ -436,16 +440,14 @@
             background:var(--deco-bg);">
 
     {{-- Tema musiman: $loginSeasonalTheme sudah dihitung di paling atas <body>.
-         Dikurung di panel kiri saja, TIDAK PERNAH menyentuh form login di panel
-         kanan. --}}
+         Ilustrasi vektor (partials/login-art) dikurung di panel kiri saja, TIDAK PERNAH menyentuh form login
+         di panel kanan. Tanpa tema: tidak ada markup dan tidak ada permintaan gambar. --}}
     @if($loginSeasonalTheme !== 'none')
-        @include('partials.seasonal-theme', [
-            'themeKey' => $loginSeasonalTheme,
-            'showAnimations' => true,
-            'placement' => 'login-panel',
-        ])
+        @include('partials.login-art', ['themeKey' => $loginSeasonalTheme])
     @endif
 
+    {{-- Dekorasi polos bawaan: disembunyikan CSS saat tema musiman aktif. --}}
+    <div class="dp-ambient">
     {{-- Orbs --}}
     <div style="position:absolute;top:-80px;right:-60px;width:360px;height:360px;border-radius:50%;
                 background:radial-gradient(circle,rgba(204,34,0,.18) 0%,transparent 68%);
@@ -540,6 +542,8 @@
                     background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
                     bottom:186px;right:126px;
                     animation:pillDrift1 9s cubic-bezier(.45,.05,.55,.95) infinite;animation-delay:-5s;"></div>
+    </div>
+
     </div>
 
     {{-- ── Content ──────────────────────────────────────────────── --}}

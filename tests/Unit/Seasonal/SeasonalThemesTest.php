@@ -35,13 +35,9 @@ class SeasonalThemesTest extends TestCase
                 continue;
             }
 
-            $this->assertEqualsCanonicalizing(
-                ['primary_rgb', 'primary_dark_rgb', 'accent', 'login_from', 'login_to'],
-                array_keys($meta['palette']),
-                $key
-            );
-            foreach ($meta['palette'] as $name => $value) {
-                $this->assertNotSame('', $value, "$key.$name");
+            foreach (['primary_rgb', 'primary_dark_rgb', 'accent', 'login_from', 'login_mid', 'login_to', 'button', 'loading_bottom'] as $name) {
+                $this->assertArrayHasKey($name, $meta['palette'], "$key.$name");
+                $this->assertNotSame('', $meta['palette'][$name], "$key.$name");
             }
         }
     }

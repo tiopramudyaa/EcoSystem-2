@@ -51,7 +51,7 @@
     }
     @switch($navTrimKey)
         @case('natal')
-    .seasonal-navbar::before { background: linear-gradient(90deg, #c8102e 0 34%, #1f6b3a 34% 67%, #d9a21c 67%); }
+    .seasonal-navbar::before { background: linear-gradient(90deg, #14502a, #1f6b3a 30%, #d4af37 50%, #1f6b3a 70%, #14502a); }
     {{-- Es halus tidak beraturan di bawah tepi header, tinggi maksimal 6px, samar. --}}
     .seasonal-navbar::after {
         content: ''; position: absolute; left: 0; right: 0; bottom: calc(var(--sn-b) - 6px); height: 6px; opacity: .5;
@@ -59,10 +59,10 @@
     }
             @break
         @case('tahun_baru')
-    .seasonal-navbar::before { background: linear-gradient(90deg, #e0b13a, #f6d36a 50%, #e0b13a); }
+    .seasonal-navbar::before { background: linear-gradient(90deg, #2b2b36, #2b2b36 28%, #f3dc8e 50%, #2b2b36 72%, #2b2b36); }
             @break
         @case('ramadan')
-    .seasonal-navbar::before { background: linear-gradient(90deg, #d9a21c, #f5c542 50%, #d9a21c); }
+    .seasonal-navbar::before { background: linear-gradient(90deg, #1e407c, #1e407c 28%, #f5c542 50%, #1e407c 72%, #1e407c); }
     .seasonal-navbar::after {
         content: ''; position: absolute; left: 0; right: 0; bottom: calc(var(--sn-b) + 2px); height: 6px; opacity: .8;
         background: url("{!! \App\Support\SeasonalNavbarArt::edgeStarsTile() !!}") 0 0 / 96px 6px repeat-x;
@@ -71,13 +71,13 @@
     }
             @break
         @case('lebaran')
-    .seasonal-navbar::before { background: linear-gradient(90deg, #5f8f20, #aed581 50%, #5f8f20); }
+    .seasonal-navbar::before { background: linear-gradient(90deg, #1b5e20, #5f8f20 28%, #d4e157 46%, #f5c542 50%, #d4e157 54%, #5f8f20 72%, #1b5e20); }
             @break
         @case('imlek')
-    .seasonal-navbar::before { background: linear-gradient(90deg, #d4202a 0 40%, #f2c14e 40% 60%, #d4202a 60%); }
+    .seasonal-navbar::before { background: linear-gradient(90deg, #a83416 0 38%, #f5c542 38% 62%, #a83416 62%); }
             @break
         @case('hut_ri')
-    .seasonal-navbar::before { background: linear-gradient(#d6202c 0 1px, #dcdcdc 1px); }
+    .seasonal-navbar::before { background: linear-gradient(#a80c24, #a80c24); }
             @break
     @endswitch
     .seasonal-navbar--dark { filter: brightness(1.22) saturate(1.05); }

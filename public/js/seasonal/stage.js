@@ -9,7 +9,7 @@ let threePromise = null;
 const scenePromises = {};
 
 // Tier kualitas: perangkat lemah (memori atau core sedikit, Save-Data) memakai pixel ratio 1 dan
-// tanpa antialias. Jaga tambahan: bila 10 frame pertama rata-rata di atas 40 ms, pixel ratio turun ke 1.
+// tanpa antialias. Jaga tambahan: bila 10 frame pertama rata-rata di atas 40 ms, pixel ratio turun ke 1, dan bila sudah 1, skala render turun ke 0.75.
 function qualityTier() {
   try {
     const n = navigator;
@@ -110,7 +110,7 @@ export async function play(canvas, opts = {}) {
     onResize = () => { [width, height] = size(); fitAspect(); };
     window.addEventListener('resize', onResize);
 
-    let elapsed = 0, last = performance.now(), sampled = 0, sampleSum = 0, downgraded = tier === 'low';
+    let elapsed = 0, last = performance.now(), sampled = 0, sampleSum = 0, downgraded = false;
     const frame = (now) => {
       if (ended) return;
       raf = requestAnimationFrame(frame);
@@ -121,7 +121,8 @@ export async function play(canvas, opts = {}) {
         sampleSum += dtRaw; sampled++;
         if (sampled === 10 && sampleSum / 10 > 0.04) {
           downgraded = true;
-          renderer.setPixelRatio(1);
+          // Lambat: turun ke pixel ratio 1; bila sudah 1 (layar DPR 1 atau tier rendah), turunkan skala render ke 0.75.
+          renderer.setPixelRatio(renderer.getPixelRatio() > 1 ? 1 : 0.75);
           [width, height] = size();
         }
       }

@@ -97,7 +97,7 @@
 </style>
 
 @if($spStage)
-<script type="importmap">{{ \Illuminate\Support\Js::from(['imports' => $spImportMap]) }}</script>
+<script type="importmap">@json(['imports' => $spImportMap], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES)</script>
 @endif
 <script>
 (function () {

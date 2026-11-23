@@ -177,12 +177,11 @@
         <use href="#st-p-spark4" class="st-a" transform="translate(13 12) scale(.7)"/>
     </symbol>
 
-    <symbol id="st-orn-glass" viewBox="0 0 64 64">
-        <path class="st-c" d="M18 8 H46 C46 24 40 33 32 34 C24 33 18 24 18 8 Z"/>
-        <path class="st-a" d="M20 15 H44 C43 24 39 30 32 31 C25 30 21 24 20 15 Z" opacity=".85"/>
-        <rect class="st-c" x="30" y="34" width="4" height="16"/>
-        <path class="st-c" d="M20 58 C20 52 26 50 32 50 C38 50 44 52 44 58 Z"/>
-        <circle fill="#fff" opacity=".7" cx="29" cy="24" r="1.6"/><circle fill="#fff" opacity=".7" cx="35" cy="19" r="1.3"/><circle fill="#fff" opacity=".7" cx="34" cy="27" r="1"/>
+    <symbol id="st-orn-clock" viewBox="0 0 64 64">
+        <circle class="st-cs" stroke-width="4" cx="32" cy="32" r="24"/>
+        <path class="st-cs" stroke-width="3" stroke-linecap="round" d="M32 14 V32 M32 32 L42 38"/>
+        <circle class="st-a" cx="32" cy="32" r="3"/>
+        <path class="st-cs" stroke-width="2.4" stroke-linecap="round" d="M32 9 V12 M32 52 V55 M9 32 H12 M52 32 H55"/>
     </symbol>
 
     <symbol id="st-orn-crescent" viewBox="0 0 64 64">
