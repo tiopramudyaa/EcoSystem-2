@@ -5,7 +5,7 @@ order: 11
 title: SLA Report
 summary: Pantau respons dan penyelesaian setiap ticket terhadap SLA-nya, baca log jeda sebuah ticket, dan ekspor laporan.
 requires: [sla.report, ticket.sla-log]
-updated: 2026-11-02
+updated: 2026-11-23
 ---
 `SLA` â€º `SLA Report` (SLA Tracker) menampilkan untuk setiap ticket apakah sudah dijawab dan diselesaikan dalam waktu yang disepakati. Halaman ini menyegarkan diri setiap 60 detik.
 
@@ -32,7 +32,7 @@ Helpdesk, support manager dan head, serta role mana pun yang diberi menu `SLA` â
 *Tangkapan layar dengan data contoh.*
 
 3. `SLA RESPONSE` menampilkan target, kapan jam SLA mulai, kapan respons jatuh tempo, kapan ticket direspons, berapa lama, dan apakah target `Achieved`.
-4. `SLA RESOLUTION` menampilkan target dalam jam, waktu mulai dan jatuh tempo, tanggal pertama diselesaikan, tanggal dokumen atau email penyelesaian dikirim, durasi penyelesaian, target waktu dan statusnya, tanggal ditutup, dan catatan. Durasi dihitung stop-and-go: waktu menunggu customer atau pihak ketiga tidak dihitung.
+4. `SLA RESOLUTION` menampilkan target dalam jam, waktu mulai dan jatuh tempo, tanggal pertama diselesaikan, tanggal dokumen atau email penyelesaian dikirim, durasi penyelesaian, target waktu dan statusnya, `First Resolution`, tanggal ditutup, dan catatan. Durasi dihitung stop-and-go: waktu menunggu customer atau pihak ketiga tidak dihitung.
 5. Pilih `Export SLA` untuk mengunduh laporan sebagai spreadsheet.
 
 ![Jendela SLA Log sebuah ticket dengan respons, penyelesaian, waktu tunggu, dan ball holder](images/guide/sla-report-log.png)
@@ -47,6 +47,8 @@ Helpdesk, support manager dan head, serta role mana pun yang diberi menu `SLA` â
 - Saat customer membalas, ball kembali ke helpdesk dan jam berjalan lagi, kecuali penahanan meeting sedang aktif (lihat topik meeting ticket).
 - Jam dihitung sebagai jam kerja (Senin sampai Jumat, tidak termasuk hari libur nasional Indonesia, dan tidak termasuk istirahat pada policy) kecuali policy `24/7 Calendar Hours`.
 - `Closed` dan `Cancelled` menyelesaikan SLA. Ticket yang dibatalkan selalu dihitung terpenuhi.
+- Status penyelesaian (`Achieved` atau `Not Achieved`) ticket yang `Closed` membandingkan durasi penyelesaian akhir dengan target. Untuk ticket yang belum selesai, yang dibandingkan adalah waktu penyelesaian yang sedang berjalan sejauh ini, dan selnya berlatar kuning: hasilnya masih bisa berubah sampai ticket ditutup. Tipe layanan CR dikecualikan dari target penyelesaian dan selalu tampil `N/A`, begitu juga ticket yang `Cancelled`.
+- `First Resolution` hanya berlaku untuk ticket `Incident`. Ticket bertipe lain menampilkan `Not Incident` di kolom ini. Untuk Incident, nilainya adalah tanggal dan jam saat dokumen deliverable `IR` atau `RCA` pertama dikirim ke customer dari ruang chat ticket. Tipe dokumen lain tidak dihitung. Jamnya dicatat sekali pada pengiriman pertama dan tidak berubah sesudahnya. Kolom ini tetap `-` sampai IR atau RCA dikirim.
 - Target respons diperiksa pada balasan pertama. Waktu penyelesaian adalah waktu bersih: total waktu berjalan dikurangi seluruh waktu tunggu.
 
 ## Apa yang terjadi selanjutnya
