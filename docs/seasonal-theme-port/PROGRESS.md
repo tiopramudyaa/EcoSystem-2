@@ -21,10 +21,10 @@ Perbarui setelah setiap langkah selesai. Sumber: origin/aldy_merge. Tujuan akhir
 | 1b | Kait backend + cache AppConfig (keputusan pemilik: dipasang). Tes Seasonal 74, gagal 2 (menunggu kait login dan settings) | SELESAI | bf73d6b7 dan commit AppConfig |
 | 2 | Kait dashboard.blade.php (a sampai i). Partial tema: none = 0 byte, 6 tema = 0 query. Audit agent: lihat audit/step2-review.md | SELESAI, audit PASS 6 poin (risiko R1 sampai R5 di audit/step2-review.md) | lihat git log |
 | 3 | Kait login (brand vars, loading generik, login-art, dp-ambient, cabang sukses) + 4 halaman auth. Render 6 tema + none: 0 query, 5 halaman OK. Tes Seasonal 74 lulus, suite penuh 298 lulus. Tangkapan layar 4 viewport: lihat audit/step3-screens.md | SELESAI, QA visual 28 dari 28 PASS (7 kondisi x 4 viewport) | lihat git log |
-| 4 | Kait pemilih tema settings/index (blok pemilih, CSS .st-card, JS preview). /settings render OK 6 tema + pilihan sendiri, 2 query. Dialog Play dan konsol: menunggu QA browser langkah 6 | KAIT SELESAI | lihat git log |
+| 4 | Kait pemilih tema settings/index. /settings render OK, 2 query. Dialog Play, Esc, fokus, jaringan lazy, reduced motion: terverifikasi di QA UI (audit/step6-ui-function.md) | SELESAI | 3edab874 |
 | 5 | Panduan 021 dan 148 (en, id) sudah berpasangan, front matter dan requires sesuai MenuSeeder (control-center.seasonal-theme). Topik 020 navigasi, 030, 070 tidak ada di eco_new, jadi tidak diubah. guide-check: 0 galat dari tema, 2 galat bawaan di 062 (control-center.schedule-monitor, bukan bagian tema), 0 peringatan. Tes Guide 42 lulus | SELESAI | lihat git log |
-| 6 | QA: (a) query dan keamanan SELESAI, 7 butir PASS (audit/step6-security-query.md); (b) UI dan fungsi di browser BELUM; (c) performa GPU BELUM | SEBAGIAN | lihat git log |
-| 7 | Ringkasan port, bandingkan poster, cek git diff --stat origin/eco_new...aldy_eco | BELUM | |
+| 6 | QA: (a) query dan keamanan PASS 7 butir; (b) UI dan fungsi PASS 7 butir, B1 dan B2 diperbaiki; (c) performa: baseline dan sesudah perbaikan tercatat | SELESAI | lihat audit/*.md |
+| 7 | Ringkasan port, bandingkan poster, git diff --stat origin/eco_new...aldy_eco (lihat langkah G di bawah) | BELUM | |
 
 ## Catatan dan keputusan terbuka
 - /settings error "Undefined array key label" sampai langkah 4 selesai (versi lama settings/index memakai kunci katalog lama). Itu perilaku yang diharapkan di antara langkah 1 dan 4.
@@ -45,11 +45,11 @@ Perbarui setelah setiap langkah selesai. Sumber: origin/aldy_merge. Tujuan akhir
 | # | Langkah | Status |
 |---|---|---|
 | A | Ucapan per tema EN dan ID + logo EC beranimasi di loading screen dan pratinjau (CSS saja, sekali jalan, mati saat reduced motion). Lihat DEVIATIONS.md | SELESAI (commit 466930ca) |
-| B | Baseline performa 6 adegan: NVIDIA vs Intel vs SwiftShader, frame time, longtask, waktu frame pertama, kebocoran (agent, audit/step6-perf-baseline.md, harness perf\run.mjs label before/after) | BERJALAN |
-| C | Perbaikan tersendat di stage.js dan pratinjau berdasarkan data B. Kandidat: powerPreference high-performance (hybrid GPU memilih Intel), compileAsync sebelum jam animasi mulai, lewati frame awal pada deteksi downgrade, hindari membuat ulang renderer dan adegan saat loop pratinjau (pratinjau 1 kali lalu poster), hindari kerja sinkron besar di create() | MENUNGGU B |
-| D | Ukur ulang (label after) dan bandingkan dengan baseline, PASS atau FAIL terhadap anggaran: median kurang dari 20 ms, p95 kurang dari 33 ms di GPU nyata | MENUNGGU C |
+| B | Baseline performa 6 adegan (NVIDIA, Intel, SwiftShader): audit/step6-perf-baseline.md | SELESAI |
+| C | Perbaikan tersendat: compileAsync, unggah tekstur bertahap (warmTextures), renderer dipakai ulang di pratinjau, sampel downgrade tahan hitch. powerPreference TIDAK dipakai (Intel bukan penyebab) | SELESAI (69d00f68) |
+| D | Ukur ulang: NVIDIA dan Intel 1280, frame stabil median 16,7 ms p95 sekitar 17 ms; longtask turun (lunar 837 ke 53 ms, crescent 959 ke 247 ms, sleigh 728 ke 475 ms dingin); render pertama 686 ke 33 ms (sleigh); tidak ada downgrade palsu. Sisa: sleigh NVIDIA dingin 475 ms sebelum frame pertama | SELESAI |
 | E | QA UI dan fungsi (audit/step6-ui-function.md): 7 butir PASS, butir 8 menemukan B2 (tombol OK dialog danger berubah warna tema), DIPERBAIKI dengan kait data-danger di confirm-modal. B1 (kedip antar putaran pratinjau) DIPERBAIKI (canvas tidak dikosongkan dan tidak di-fade ulang), terverifikasi tangkapan layar berurutan. Kosmetik terbuka: K1 tinggi kartu pemilih tidak seragam, K2 kontras logo HUT RI 360 px, K3 HTML login none tidak byte identik (tampilan identik) | SELESAI |
-| F | Audit keamanan ulang untuk perubahan terbaru (mask logo, lang, stage.js, data-danger, sidebar ringkas) oleh agent penjaga: lihat audit/step-f-guardian.md | BERJALAN |
+| F | Audit keamanan ulang dan regresi sidebar oleh agent penjaga (audit/step-f-guardian.md): A 6 dari 6, B 7 dari 7, C lengkap PASS. Catatan: risiko 4 (klik grup saat ringkas menimpa pilihan tersimpan) diperbaiki menjadi pelebaran sementara | SELESAI |
 | G | Ringkasan port (langkah 7), perbandingan poster, git diff --stat origin/eco_new...aldy_eco, langkah deploy (npm run build disarankan, view:clear) | BELUM |
 
 - 24 Nov (arahan pemilik): ucapan di pratinjau dipindah ke tengah bawah (lebih besar, muncul bertahap logo lalu judul lalu doa), tombol Close ke kanan atas. Akhir tuntas: loading screen memudar 300 ms sebelum pindah halaman, pratinjau memudar lalu menutup sendiri (tidak menggantung di poster atau frame terakhir). Terverifikasi tangkapan layar.

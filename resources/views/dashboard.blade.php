@@ -2122,7 +2122,7 @@
             // Klik grup menu saat ringkas: sidebar melebar dulu (submenu butuh ruang), lalu handler grup berjalan seperti biasa.
             sb.addEventListener('click', function (e) {
                 if (document.documentElement.getAttribute('data-sb-rail') !== '1' || !isDesktopViewport()) return;
-                if (e.target.closest && e.target.closest('button.nav-link')) setSidebarRail(false);
+                if (e.target.closest && e.target.closest('button.nav-link')) setSidebarRail(false, false); // sementara: pilihan tersimpan tidak ditimpa
             }, true);
         })();
         // When resizing up to desktop, drop any mobile drawer state so the
