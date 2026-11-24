@@ -126,7 +126,7 @@
     var titleEl = document.getElementById('seasonalPreviewTitle'), noteEl = ov.querySelector('.sp-note');
     var closeBtn = ov.querySelector('.sp-close');
 
-    var token = 0, handle = null, timer = null, returnFocus = null, prevOverflow = '';
+    var token = 0, handle = null, timer = null, returnFocus = null, prevOverflow = '', stageMod = null;
 
     function selectedKey() {
         var card = document.querySelector(PICKER + ' .st-card.is-selected[data-season-choice]');
@@ -159,11 +159,17 @@
         canvas = fresh;
     }
 
+    // Renderer dipertahankan antar putaran (tanpa kompilasi shader ulang); dilepas di sini.
+    function releaseGL() {
+        if (stageMod && stageMod.release) { try { stageMod.release(canvas); } catch (e) {} }
+    }
+
     function close() {
         if (ov.hidden) return;
         token++;
         clearTimeout(timer); timer = null;
         if (handle) { try { handle.stop(); } catch (e) {} handle = null; }
+        releaseGL();
         ov.classList.remove('is-3d');
         ov.hidden = true;
         document.body.style.overflow = prevOverflow;
@@ -200,25 +206,29 @@
 
         if (!STAGE || lowPower()) { noteEl.textContent = STILL; return; }
         import(STAGE).then(function (m) {
+            stageMod = m;
             if (my !== token) return null;
             if (!m.supportsWebGL()) { noteEl.textContent = STILL; return null; }
             return playLoop(m, d, my, t0);
         }).catch(function () { if (my === token) noteEl.textContent = STILL; });
     }
 
-    // Memainkan adegan; bila sisa waktu cukup, sekali lagi sampai batas MAX_MS.
+    // Memainkan adegan; bila sisa waktu cukup, sekali lagi sampai batas MAX_MS. Canvas dan renderer
+    // dipakai ulang (reuseRenderer): pemutaran kedua tidak membuat konteks GL baru dan tidak mengompilasi
+    // ulang shader. Selama jeda antar putaran poster tampil, bukan layar kosong.
     function playLoop(m, d, my, t0) {
-        return m.play(canvas, { scene: d.scene, palette: d.palette, duration: SCENE_MS }).then(function (h) {
-            if (my !== token) { h.stop(); return; }
+        return m.play(canvas, { scene: d.scene, palette: d.palette, duration: SCENE_MS, reuseRenderer: true }).then(function (h) {
+            if (my !== token) { h.stop(); releaseGL(); return; }
             handle = h;
             ov.classList.add('is-3d');
             return h.done.then(function () {
                 if (my !== token) return;
                 handle = null;
                 if (Date.now() - t0 + SCENE_MS + 300 <= MAX_MS) {
-                    freshCanvas();
+                    ov.classList.remove('is-3d');
                     return playLoop(m, d, my, t0);
                 }
+                releaseGL();
                 ov.classList.remove('is-3d'); // poster sampai penutupan otomatis
             });
         });

@@ -10,3 +10,6 @@ Bila verify-port menandai berkas ini, itu diharapkan. Berkas lain harus tetap id
 | lang/en/ui.php, lang/id/ui.php | Teks seasonal.loading.* (judul = ucapan, subjudul = doa, kunci baru preparing) | Ucapan baru EN dan ID |
 
 Kait di berkas bersama (bukan salinan): dashboard.blade.php, auth/*.blade.php, settings/index.blade.php (tata letak memakai kelas yang ada di public/build), AuthController, SettingsController, CheckAuthToken, AppServiceProvider, AppConfig.php.
+
+| public/js/seasonal/stage.js | compileAsync, warmTextures (unggah tekstur bertahap), reuseRenderer dan release(), sampel downgrade lebih tahan hitch | Perbaikan tersendat (data di audit/step6-perf-baseline.md) |
+| resources/views/partials/seasonal-preview.blade.php | Loop pratinjau memakai ulang renderer dan canvas, poster tampil di jeda, renderer dilepas saat ditutup | Hitch loop kedua |

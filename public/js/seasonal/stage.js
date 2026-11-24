@@ -1,5 +1,8 @@
 // Panggung 3D untuk loading screen musiman. Tidak ada yang berjalan saat import.
-// API: supportsWebGL(), preload(scene), play(canvas, { scene, palette, duration })
+// API: supportsWebGL(), preload(scene), play(canvas, { scene, palette, duration, reuseRenderer }), release(canvas)
+//
+// reuseRenderer: renderer dan program shader dipertahankan per canvas supaya pemutaran berikutnya tidak
+// mengompilasi ulang (pratinjau memutar adegan berulang). Pemanggil wajib memanggil release(canvas) di akhir.
 
 const SCENES = ['sleigh', 'fireworks', 'crescent', 'eid', 'lunar', 'flag'];
 const THREE_URL = new URL('../../vendor/three/three.module.min.js', import.meta.url).href;
@@ -7,6 +10,15 @@ const THREE_URL = new URL('../../vendor/three/three.module.min.js', import.meta.
 let webglOk = null;
 let threePromise = null;
 const scenePromises = {};
+const keptRenderers = new WeakMap();
+
+// Lepas renderer yang dipertahankan lewat reuseRenderer (aman dipanggil berkali-kali).
+export function release(canvas) {
+  const r = keptRenderers.get(canvas);
+  if (!r) return;
+  keptRenderers.delete(canvas);
+  try { r.dispose(); r.forceContextLoss(); } catch (e) { /* abaikan */ }
+}
 
 // Tier kualitas: perangkat lemah (memori atau core sedikit, Save-Data) memakai pixel ratio 1 dan
 // tanpa antialias. Jaga tambahan: bila 10 frame pertama rata-rata di atas 40 ms, pixel ratio turun ke 1, dan bila sudah 1, skala render turun ke 0.75.
@@ -45,9 +57,35 @@ export function preload(scene) {
   } catch (e) { return Promise.resolve(); }
 }
 
+// Mengunggah semua tekstur adegan ke GPU secara bertahap (initTexture), agar draw pertama tidak
+// membeku. Jeda memakai rAF dengan batas waktu 50 ms supaya tab latar tidak menahan selamanya.
+async function warmTextures(renderer, scn, isEnded) {
+  if (!renderer.initTexture) return;
+  const texs = new Set();
+  const add = (v) => { if (v && v.isTexture) texs.add(v); };
+  add(scn.background); add(scn.environment);
+  scn.traverse((o) => {
+    const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+    ms.forEach((m) => {
+      for (const k in m) add(m[k]);
+      if (m.uniforms) for (const k in m.uniforms) add(m.uniforms[k] && m.uniforms[k].value);
+    });
+  });
+  let slice = performance.now();
+  for (const tx of texs) {
+    if (isEnded()) return;
+    try { renderer.initTexture(tx); } catch (e) { /* abaikan: diunggah saat draw */ }
+    if (performance.now() - slice > 12) {
+      await new Promise((r) => { const t = setTimeout(r, 50); requestAnimationFrame(() => { clearTimeout(t); r(); }); });
+      slice = performance.now();
+    }
+  }
+}
+
 export async function play(canvas, opts = {}) {
   const { scene: name, palette } = opts;
   const duration = Math.max(600, opts.duration || 2800);
+  const reuse = !!opts.reuseRenderer;
   if (!supportsWebGL()) throw new Error('WebGL unavailable');
   if (!SCENES.includes(name)) throw new Error('Unknown scene: ' + name);
   if (!palette) throw new Error('Palette required');
@@ -73,13 +111,15 @@ export async function play(canvas, opts = {}) {
         });
       });
     } catch (e) { /* abaikan */ }
-    try { if (renderer) { renderer.dispose(); renderer.forceContextLoss(); } } catch (e) { /* abaikan */ }
+    // Renderer yang dipertahankan dilepas oleh release(canvas), bukan di sini.
+    try { if (renderer && !reuse) { renderer.dispose(); renderer.forceContextLoss(); } } catch (e) { /* abaikan */ }
     resolveDone();
   };
 
   try {
     const tier = qualityTier();
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: tier === 'high', alpha: false });
+    renderer = (reuse && keptRenderers.get(canvas)) || new THREE.WebGLRenderer({ canvas, antialias: tier === 'high', alpha: false });
+    if (reuse) keptRenderers.set(canvas, renderer);
     renderer.setPixelRatio(tier === 'high' ? Math.min(window.devicePixelRatio || 1, 1.5) : 1);
     renderer.shadowMap.enabled = false;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -110,14 +150,16 @@ export async function play(canvas, opts = {}) {
     onResize = () => { [width, height] = size(); fitAspect(); };
     window.addEventListener('resize', onResize);
 
-    let elapsed = 0, last = performance.now(), sampled = 0, sampleSum = 0, downgraded = false;
+    let elapsed = 0, last = performance.now(), sampled = 0, sampleSum = 0, downgraded = false, skipped = 0;
     const frame = (now) => {
       if (ended) return;
       raf = requestAnimationFrame(frame);
       const dtRaw = (now - last) / 1000;
       last = now;
       if (document.visibilityState !== 'visible') return;
-      if (!downgraded && sampled < 10 && dtRaw > 0) {
+      // Frame awal dan hitch tunggal (>250 ms, mis. tab baru kembali) tidak dihitung: bukan tanda GPU lemah.
+      if (!downgraded && sampled < 10 && dtRaw > 0 && skipped < 3) skipped++;
+      else if (!downgraded && sampled < 10 && dtRaw > 0 && dtRaw < 0.25) {
         sampleSum += dtRaw; sampled++;
         if (sampled === 10 && sampleSum / 10 > 0.04) {
           downgraded = true;
@@ -138,9 +180,20 @@ export async function play(canvas, opts = {}) {
       if (t >= 1) cleanup();
     };
 
-    // render satu frame awal sehingga kegagalan terdeteksi sebelum play() resolve
+    // Kompilasi shader di luar jalur render: compileAsync memakai KHR_parallel_shader_compile (bila ada)
+    // sehingga thread utama tidak membeku 300 sampai 1000 ms pada render pertama. Dibatasi 2,5 detik;
+    // bila gagal atau tidak didukung, render pertama mengompilasi seperti biasa.
     impl.update(0, 0);
     canvas.style.opacity = '0';
+    if (renderer.compileAsync) {
+      try { await Promise.race([renderer.compileAsync(scn, camera), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* abaikan */ }
+    }
+    if (ended) return { done, stop: cleanup };
+    // Unggah tekstur bertahap: 20 sampai 30 tekstur adegan (canvas prosedural) bila diunggah sekaligus di
+    // draw pertama membeku 400 sampai 700 ms. Di sini dipecah per ~12 ms dengan jeda antar frame.
+    await warmTextures(renderer, scn, () => ended);
+    if (ended) return { done, stop: cleanup };
+    // render satu frame awal sehingga kegagalan terdeteksi sebelum play() resolve
     renderer.render(scn, camera);
     raf = requestAnimationFrame((now) => { last = now; frame(now); });
   } catch (e) {
