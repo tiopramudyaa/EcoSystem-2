@@ -22,7 +22,7 @@ Perbarui setelah setiap langkah selesai. Sumber: origin/aldy_merge. Tujuan akhir
 | 2 | Kait dashboard.blade.php (a sampai i). Partial tema: none = 0 byte, 6 tema = 0 query. Audit agent: lihat audit/step2-review.md | SELESAI, audit PASS 6 poin (risiko R1 sampai R5 di audit/step2-review.md) | lihat git log |
 | 3 | Kait login (brand vars, loading generik, login-art, dp-ambient, cabang sukses) + 4 halaman auth. Render 6 tema + none: 0 query, 5 halaman OK. Tes Seasonal 74 lulus, suite penuh 298 lulus. Tangkapan layar 4 viewport: lihat audit/step3-screens.md | KAIT SELESAI, tangkapan layar menyusul | lihat git log |
 | 4 | Kait pemilih tema settings/index (blok pemilih, CSS .st-card, JS preview). /settings render OK 6 tema + pilihan sendiri, 2 query. Dialog Play dan konsol: menunggu QA browser langkah 6 | KAIT SELESAI | lihat git log |
-| 5 | Panduan pengguna 021 dan 148 (en, id), guide-check, tes Guide | BELUM | |
+| 5 | Panduan 021 dan 148 (en, id) sudah berpasangan, front matter dan requires sesuai MenuSeeder (control-center.seasonal-theme). Topik 020 navigasi, 030, 070 tidak ada di eco_new, jadi tidak diubah. guide-check: 0 galat dari tema, 2 galat bawaan di 062 (control-center.schedule-monitor, bukan bagian tema), 0 peringatan. Tes Guide 42 lulus | SELESAI | lihat git log |
 | 6 | QA performa, query dan keamanan, UI dan fungsi (tiap gerbang oleh agent) | BELUM | |
 | 7 | Ringkasan port, bandingkan poster, cek git diff --stat origin/eco_new...aldy_eco | BELUM | |
 
