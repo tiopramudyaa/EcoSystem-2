@@ -298,27 +298,18 @@
             </table>
         </div>
 
-        <div id="noTemplateMatch" class="py-16 text-center hidden">
-            <div class="w-14 h-14 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3 text-xl">
-                <i class="fas fa-search"></i>
-            </div>
-            <p class="text-gray-700 text-sm font-bold">No matching KPI templates found</p>
-            <button type="button" onclick="resetHF()" class="mt-3.5 inline-flex items-center px-4 py-1.5 rounded-xl text-xs font-semibold bg-(--primary-color)/15 text-(--primary-color) hover:bg-(--primary-color)/25 transition-all">Reset filters</button>
-        </div>
+        <x-empty-state id="noTemplateMatch" icon="fa-search" title="No matching KPI templates found" :hidden="true">
+            <button type="button" onclick="resetHF()" class="inline-flex items-center px-4 py-1.5 rounded-xl text-xs font-semibold bg-(--primary-color)/15 text-(--primary-color) hover:bg-(--primary-color)/25 transition-all">Reset filters</button>
+        </x-empty-state>
         @else
-        <div class="py-16 text-center">
-            <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-layer-group text-gray-300 text-2xl"></i>
-            </div>
-            <p class="text-gray-500 font-medium">No templates yet</p>
-            <p class="text-sm text-gray-400 mt-1">Create your first KPI template to start evaluating employees.</p>
+        <x-empty-state icon="fa-layer-group" title="No templates yet" text="Create your first KPI template to start evaluating employees.">
             @if($canCreate)
             <a href="{{ route('general.kpi-evaluation.templates.create') }}"
-                class="mt-4 inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-xl shadow hover:opacity-90 transition-all">
+                class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-xl shadow hover:opacity-90 transition-all">
                 Create First Template
             </a>
             @endif
-        </div>
+        </x-empty-state>
         @endif
     </div>
 </div>
@@ -326,43 +317,8 @@
 <script>
 const TPL_BASE = "{{ url('/general/kpi-evaluation/templates') }}";
 
-// POST helper: never leaves the page silent. Network drops, expired sessions (419), validation (422)
-// and server errors all come back as {success:false, message} so the caller shows a toast.
-// Also ignores a second click on the same URL while the first request is still running.
-const _kpiBusy = new Set();
-async function kpiPost(url, body) {
-    if (_kpiBusy.has(url)) return { success: false, message: 'Please wait, the previous request is still running.', busy: true };
-    _kpiBusy.add(url);
-    try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-            body: body,
-        });
-        let data = null;
-        try { data = await res.json(); } catch (_) { data = null; }
-        if (!data) {
-            return { success: false, message: res.status === 419
-                ? 'Your session has expired. Reload the page and try again.'
-                : 'The server returned an unexpected response (' + res.status + '). Please try again.' };
-        }
-        if (!res.ok && data.success !== true) {
-            data.success = false;
-            if (!data.message) {
-                const first = data.errors ? Object.values(data.errors).flat()[0] : null;
-                data.message = first || ('Request failed (' + res.status + ').');
-            }
-        }
-        return data;
-    } catch (err) {
-        return { success: false, message: 'Network error. Check your connection and try again.' };
-    } finally {
-        _kpiBusy.delete(url);
-    }
-}
-
 async function toggleTemplate(id) {
-    const data = await kpiPost(`${TPL_BASE}/${id}/toggle`, null);
+    const data = await apiFetch(`${TPL_BASE}/${id}/toggle`, { body: null });
     if (data.busy) return;
     showToast(data.message, data.success ? 'success' : 'error');
     if (data.success) setTimeout(() => location.reload(), 800);
@@ -370,7 +326,7 @@ async function toggleTemplate(id) {
 
 async function deleteTemplate(id, name) {
     if (!await showConfirm(`Delete template "${name}"? This cannot be undone.`, 'Delete Template', 'danger', { okText: 'Delete' })) return;
-    const data = await kpiPost(`${TPL_BASE}/${id}/delete`, null);
+    const data = await apiFetch(`${TPL_BASE}/${id}/delete`, { body: null });
     if (data.busy) return;
     showToast(data.message, data.success ? 'success' : 'error');
     if (data.success) setTimeout(() => location.reload(), 800);

@@ -667,41 +667,6 @@ function hideKpiModal(id) {
 
 let _kpiReviewForm = null;
 
-// POST helper: never leaves the page silent. Network drops, expired sessions (419), validation (422)
-// and server errors all come back as {success:false, message} so the caller shows a toast.
-// Also ignores a second click on the same URL while the first request is still running.
-const _kpiBusy = new Set();
-async function kpiPost(url, body) {
-    if (_kpiBusy.has(url)) return { success: false, message: 'Please wait, the previous request is still running.', busy: true };
-    _kpiBusy.add(url);
-    try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-            body: body,
-        });
-        let data = null;
-        try { data = await res.json(); } catch (_) { data = null; }
-        if (!data) {
-            return { success: false, message: res.status === 419
-                ? 'Your session has expired. Reload the page and try again.'
-                : 'The server returned an unexpected response (' + res.status + '). Please try again.' };
-        }
-        if (!res.ok && data.success !== true) {
-            data.success = false;
-            if (!data.message) {
-                const first = data.errors ? Object.values(data.errors).flat()[0] : null;
-                data.message = first || ('Request failed (' + res.status + ').');
-            }
-        }
-        return data;
-    } catch (err) {
-        return { success: false, message: 'Network error. Check your connection and try again.' };
-    } finally {
-        _kpiBusy.delete(url);
-    }
-}
-
 function submitKpiReview(e) {
     e.preventDefault();
     _kpiReviewForm = e.target;
@@ -719,7 +684,7 @@ async function executeKpiReview() {
     const form = _kpiReviewForm || document.getElementById('kpiReviewForm');
     const fd = new FormData(form);
     fd.append('action', window._kpiReviewAction || 'draft');
-    const data = await kpiPost('{{ $leadMode ? route($ttype === 'peer' ? "general.my-kpi.peer-review.submit" : "general.my-kpi.lead-review.submit", $evaluation->id) : route("general.kpi-evaluation.review.submit", $evaluation->id) }}', fd);
+    const data = await apiFetch('{{ $leadMode ? route($ttype === 'peer' ? "general.my-kpi.peer-review.submit" : "general.my-kpi.lead-review.submit", $evaluation->id) : route("general.kpi-evaluation.review.submit", $evaluation->id) }}', { body: fd });
     if (data.busy) return;
     showToast(data.message, data.success ? 'success' : 'error');
     if (data.success) {
@@ -736,7 +701,7 @@ async function confirmRevise() {
     const notes = document.getElementById('reviseNotes').value.trim();
     if (notes.length < 5) { showToast('Please explain what needs to change (at least 5 characters).', 'error'); return; }
     const form = new FormData(); form.append('hr_notes', notes);
-    const data = await kpiPost('{{ route("general.kpi-evaluation.reject", $evaluation->id) }}', form);
+    const data = await apiFetch('{{ route("general.kpi-evaluation.reject", $evaluation->id) }}', { body: form });
     if (data.busy) return;
     hideKpiModal('reviseModal');
     showToast(data.message, data.success ? 'success' : 'error');
@@ -745,7 +710,7 @@ async function confirmRevise() {
 async function confirmApprove() {
     const notes = document.getElementById('approveNotes').value;
     const form  = new FormData(); form.append('hr_notes', notes);
-    const data = await kpiPost('{{ route("general.kpi-evaluation.approve", $evaluation->id) }}', form);
+    const data = await apiFetch('{{ route("general.kpi-evaluation.approve", $evaluation->id) }}', { body: form });
     if (data.busy) return;
     hideKpiModal('approveModal');
     showToast(data.message, data.success ? 'success' : 'error');
@@ -754,7 +719,7 @@ async function confirmApprove() {
 
 async function publishUpwardAverage() {
     if (!await showConfirm('Publish the average across all approved rater submissions? The supervisor will see only this average - never an individual rater\'s score.', 'Publish Average', 'primary')) return;
-    const data = await kpiPost('{{ route("general.kpi-evaluation.publish-upward", $evaluation->id) }}', null);
+    const data = await apiFetch('{{ route("general.kpi-evaluation.publish-upward", $evaluation->id) }}', { body: null });
     if (data.busy) return;
     showToast(data.message, data.success ? 'success' : 'error');
     if (data.success) setTimeout(() => location.reload(), 1000);

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LeavePermit\RejectApplicationRequest;
+use App\Http\Requests\LeavePermit\RequestRevisionRequest;
 use App\Models\Employee;
 use App\Models\LeavePermitApplication;
 use App\Models\LeavePermitLog;
@@ -885,14 +887,12 @@ class LeavePermitController extends Controller
     /**
      * API: Reject Application (HR Only)
      */
-    public function rejectApplication(Request $request, $id)
+    public function rejectApplication(RejectApplicationRequest $request, $id)
     {
         $user       = session('user');
         $currentEmp = $user['id'] ?? null;
 
-        $validated = $request->validate([
-            'rejection_reason' => 'required|string|max:1000',
-        ]);
+        $validated = $request->validated();
 
         [$application, $error] = $this->decide($id, 'rejected', 'rejected', $currentEmp, $validated['rejection_reason']);
         if ($error) return $error;
@@ -909,14 +909,12 @@ class LeavePermitController extends Controller
     /**
      * API: Request Revision (HR Only)
      */
-    public function requestRevision(Request $request, $id)
+    public function requestRevision(RequestRevisionRequest $request, $id)
     {
         $user       = session('user');
         $currentEmp = $user['id'] ?? null;
 
-        $validated = $request->validate([
-            'revision_notes' => 'required|string|max:1000',
-        ]);
+        $validated = $request->validated();
 
         [$application, $error] = $this->decide($id, 'revision', 'revision_requested', $currentEmp, $validated['revision_notes']);
         if ($error) return $error;

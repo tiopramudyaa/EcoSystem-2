@@ -3,6 +3,8 @@
 namespace Tests\Feature\LeavePermit;
 
 use App\Http\Controllers\HR\LeavePermitController;
+use App\Http\Requests\LeavePermit\RejectApplicationRequest;
+use App\Http\Requests\LeavePermit\RequestRevisionRequest;
 use App\Models\LeavePermitApplication;
 use App\Models\LeavePermitLog;
 use Illuminate\Database\Schema\Blueprint;
@@ -109,6 +111,16 @@ class LeavePermitApiTest extends TestCase
         return app(LeavePermitController::class);
     }
 
+    /** Builds a FormRequest the way the router would, and runs its validation (throws ValidationException on failure). */
+    private function form(string $class, array $data)
+    {
+        $request = $class::create('/x', 'POST', $data);
+        $request->setContainer(app())->setRedirector(app('redirect'));
+        $request->validateResolved();
+
+        return $request;
+    }
+
     private function route(string $uri, string $method = 'POST'): ?\Illuminate\Routing\Route
     {
         foreach (Route::getRoutes() as $route) {
@@ -174,7 +186,7 @@ class LeavePermitApiTest extends TestCase
 
         $this->controller()->approveApplication(Request::create('/x', 'POST'), $app->id);
 
-        $second = $this->controller()->rejectApplication(Request::create('/x', 'POST', ['rejection_reason' => 'Too late']), $app->id);
+        $second = $this->controller()->rejectApplication($this->form(RejectApplicationRequest::class, ['rejection_reason' => 'Too late']), $app->id);
         $third  = $this->controller()->approveApplication(Request::create('/x', 'POST'), $app->id);
 
         $this->assertSame(422, $second->getStatusCode());
@@ -200,14 +212,14 @@ class LeavePermitApiTest extends TestCase
         $this->signInAs(self::HR);
 
         try {
-            $this->controller()->rejectApplication(Request::create('/x', 'POST', ['rejection_reason' => '']), $app->id);
+            $this->controller()->rejectApplication($this->form(RejectApplicationRequest::class, ['rejection_reason' => '']), $app->id);
             $this->fail('reject without a reason must fail validation');
         } catch (ValidationException $e) {
             $this->assertArrayHasKey('rejection_reason', $e->errors());
         }
 
         try {
-            $this->controller()->requestRevision(Request::create('/x', 'POST', []), $app->id);
+            $this->controller()->requestRevision($this->form(RequestRevisionRequest::class, []), $app->id);
             $this->fail('revision without notes must fail validation');
         } catch (ValidationException $e) {
             $this->assertArrayHasKey('revision_notes', $e->errors());
@@ -221,12 +233,12 @@ class LeavePermitApiTest extends TestCase
         $this->signInAs(self::HR);
 
         $a = $this->application(self::ALICE);
-        $this->controller()->rejectApplication(Request::create('/x', 'POST', ['rejection_reason' => 'No cover']), $a->id);
+        $this->controller()->rejectApplication($this->form(RejectApplicationRequest::class, ['rejection_reason' => 'No cover']), $a->id);
         $this->assertSame('rejected', $a->fresh()->status);
         $this->assertSame('rejected', LeavePermitLog::where('application_id', $a->id)->value('action'));
 
         $b = $this->application(self::BOB);
-        $this->controller()->requestRevision(Request::create('/x', 'POST', ['revision_notes' => 'Add the date']), $b->id);
+        $this->controller()->requestRevision($this->form(RequestRevisionRequest::class, ['revision_notes' => 'Add the date']), $b->id);
         $this->assertSame('revision', $b->fresh()->status);
         $this->assertSame('revision_requested', LeavePermitLog::where('application_id', $b->id)->value('action'));
     }
