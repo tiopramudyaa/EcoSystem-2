@@ -175,25 +175,54 @@ class LetterService
         return $error;
     }
 
-    public function reject(LetterRequest $request, string $reason, int $byEmployeeId): void
+    /**
+     * Reject a letter request. Row-locked: two HR users rejecting (or one rejecting while another
+     * completes it) cannot both win. False = it was no longer open, nothing was changed.
+     */
+    public function reject(LetterRequest $request, string $reason, int $byEmployeeId): bool
     {
-        $request->forceFill([
-            'status' => LetterRequest::REJECTED, 'reject_reason' => $reason,
-            'handled_by' => $byEmployeeId, 'handled_at' => now(),
-        ])->save();
+        $done = DB::transaction(function () use ($request, $reason, $byEmployeeId) {
+            $fresh = LetterRequest::whereKey($request->getKey())->lockForUpdate()->first();
+            if (!$fresh || !$fresh->isOpen()) {
+                return false;
+            }
 
-        $this->notifyEmployee($request, 'rejected', "Your request for a {$request->typeLabel()} was rejected: {$reason}");
+            $request->forceFill([
+                'status' => LetterRequest::REJECTED, 'reject_reason' => $reason,
+                'handled_by' => $byEmployeeId, 'handled_at' => now(),
+            ])->save();
+
+            return true;
+        });
+
+        if ($done) {
+            $this->notifyEmployee($request, 'rejected', "Your request for a {$request->typeLabel()} was rejected: {$reason}");
+        }
+
+        return $done;
     }
 
-    /** A numbered letter is never deleted: it stays in the register, marked void with the reason. */
-    public function void(Letter $letter, string $reason, int $byEmployeeId): void
+    /**
+     * A numbered letter is never deleted: it stays in the register, marked void with the reason.
+     * Row-locked and idempotent: voiding twice keeps the first reason and voider. False = it was already void.
+     */
+    public function void(Letter $letter, string $reason, int $byEmployeeId): bool
     {
-        $letter->forceFill(['status' => 'void', 'void_reason' => $reason, 'voided_by' => $byEmployeeId, 'voided_at' => now()])->save();
+        return DB::transaction(function () use ($letter, $reason, $byEmployeeId) {
+            $fresh = Letter::whereKey($letter->getKey())->lockForUpdate()->first();
+            if (!$fresh || $fresh->status === 'void') {
+                return false;
+            }
 
-        // A request whose letter was voided goes back to HR: it needs a new letter.
-        if ($letter->request && $letter->request->isOpen()) {
-            $letter->request->forceFill(['status' => LetterRequest::PENDING, 'letter_id' => null])->save();
-        }
+            $letter->forceFill(['status' => 'void', 'void_reason' => $reason, 'voided_by' => $byEmployeeId, 'voided_at' => now()])->save();
+
+            // A request whose letter was voided goes back to HR: it needs a new letter.
+            if ($letter->request && $letter->request->isOpen()) {
+                $letter->request->forceFill(['status' => LetterRequest::PENDING, 'letter_id' => null])->save();
+            }
+
+            return true;
+        });
     }
 
     // ── Notifications ────────────────────────────────────────────────────────

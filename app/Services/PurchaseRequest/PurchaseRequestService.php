@@ -42,6 +42,8 @@ use Illuminate\Support\Facades\Log;
  */
 class PurchaseRequestService
 {
+    use \App\Services\Approval\LocksApprovalStep;
+
     public function __construct(private PurchaseRequestSummaryService $summary)
     {
     }
@@ -475,6 +477,10 @@ class PurchaseRequestService
         $approval = $gate['approval'];
 
         $completed = DB::transaction(function () use ($request, $approval, $actorId, $payload) {
+            if (!$this->lockStepStillWaiting($request, $approval)) {
+                return null;
+            }
+
             if ($actorId === (int) $request->employee_id) {
                 $this->addFlag($request, PurchaseRequest::FLAG_SELF_APPROVED);
             }
@@ -514,6 +520,10 @@ class PurchaseRequestService
             return true;
         });
 
+        if ($completed === null) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided. Reload the page to see the latest status.', 'completed' => false];
+        }
+
         $this->notify($request, $completed ? 'approved' : 'progressed', $payload['notes'] ?? null);
 
         if (!$completed) {
@@ -542,7 +552,11 @@ class PurchaseRequestService
         /** @var PurchaseRequestApproval $approval */
         $approval = $gate['approval'];
 
-        DB::transaction(function () use ($request, $approval, $actorId, $notes) {
+        $decided = DB::transaction(function () use ($request, $approval, $actorId, $notes) {
+            if (!$this->lockStepStillWaiting($request, $approval)) {
+                return false;
+            }
+
             $approval->update([
                 'status'   => PurchaseRequestApproval::STATUS_REJECTED,
                 'acted_by' => $actorId,
@@ -560,7 +574,13 @@ class PurchaseRequestService
                 'current_step_order' => null,
                 'completed_at'       => now(),
             ]);
+
+            return true;
         });
+
+        if (!$decided) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided. Reload the page to see the latest status.'];
+        }
 
         $this->notify($request, 'rejected', $notes);
 

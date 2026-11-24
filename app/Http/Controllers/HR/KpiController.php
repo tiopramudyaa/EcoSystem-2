@@ -682,7 +682,14 @@ return redirect()->back()->with('error', 'Failed to create evaluations.');
      */
     public function approveEvaluation(Request $request, int $id)
     {
-        $evaluation = KpiEvaluation::findOrFail($id);
+        // One transaction + row lock: an approve and a send-back clicked at the same time
+        // (two HR users) can no longer overwrite each other or both pass the status checks.
+        return \Illuminate\Support\Facades\DB::transaction(fn () => $this->approveEvaluationLocked($request, $id));
+    }
+
+    private function approveEvaluationLocked(Request $request, int $id)
+    {
+        $evaluation = KpiEvaluation::whereKey($id)->lockForUpdate()->firstOrFail();
         $user       = session('user');
 
         // A self-assessment is the employee's own view of themself - nothing for HR to approve.
@@ -724,7 +731,14 @@ return redirect()->back()->with('error', 'Failed to create evaluations.');
      */
     public function rejectEvaluation(Request $request, int $id)
     {
-        $evaluation = KpiEvaluation::findOrFail($id);
+        // One transaction + row lock: an approve and a send-back clicked at the same time
+        // (two HR users) can no longer overwrite each other or both pass the status checks.
+        return \Illuminate\Support\Facades\DB::transaction(fn () => $this->rejectEvaluationLocked($request, $id));
+    }
+
+    private function rejectEvaluationLocked(Request $request, int $id)
+    {
+        $evaluation = KpiEvaluation::whereKey($id)->lockForUpdate()->firstOrFail();
         $user       = session('user');
 
         $fail = function (string $msg, int $code = 422) use ($request) {

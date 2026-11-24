@@ -819,6 +819,50 @@ class LeavePermitController extends Controller
     }
 
     /**
+     * Shared decision step for approve / reject / revision.
+     *
+     * The status change and its audit log row are written in ONE transaction, on a row that is
+     * locked first. Two reviewers clicking at the same moment can therefore never both pass the
+     * "still pending" check, and a failure half way never leaves a decided application without its log.
+     * Notifications are sent after commit; they swallow their own errors.
+     *
+     * @return array{0:?LeavePermitApplication,1:?\Illuminate\Http\JsonResponse} [application, error response]
+     */
+    private function decide($id, string $status, string $logAction, ?int $currentEmp, ?string $notes): array
+    {
+        $application = DB::transaction(function () use ($id, $status, $logAction, $currentEmp, $notes) {
+            $application = LeavePermitApplication::whereKey($id)->lockForUpdate()->firstOrFail();
+
+            if ($application->status !== 'pending') {
+                return $application->status; // string = refused, nothing written
+            }
+
+            $application->status      = $status;
+            $application->reviewed_by = $currentEmp;
+            $application->reviewed_at = now();
+            $application->save();
+
+            LeavePermitLog::create([
+                'application_id' => $application->id,
+                'action'         => $logAction,
+                'performed_by'   => $currentEmp,
+                'notes'          => $notes,
+            ]);
+
+            return $application;
+        });
+
+        if (is_string($application)) {
+            return [null, response()->json([
+                'success' => false,
+                'message' => 'This application is already ' . $application . ' and can no longer be decided. Only pending applications can be approved, rejected or sent back for revision.',
+            ], 422)];
+        }
+
+        return [$application, null];
+    }
+
+    /**
      * API: Approve Application (HR Only)
      */
     public function approveApplication(Request $request, $id)
@@ -826,27 +870,8 @@ class LeavePermitController extends Controller
         $user       = session('user');
         $currentEmp = $user['id'] ?? null;
 
-        $application = LeavePermitApplication::findOrFail($id);
-
-        if ($application->status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'This application is already ' . $application->status . ' and can no longer be decided. Only pending applications can be approved, rejected or sent back for revision.',
-            ], 422);
-        }
-        $application->status = 'approved';
-        $application->reviewed_by = $currentEmp;
-        $application->reviewed_at = now();
-        $application->save();
-
-        $reviewNotes = $request->input('notes', 'Application approved by HR.');
-
-        LeavePermitLog::create([
-            'application_id' => $application->id,
-            'action'         => 'approved',
-            'performed_by'   => $currentEmp,
-            'notes'          => $reviewNotes,
-        ]);
+        [$application, $error] = $this->decide($id, 'approved', 'approved', $currentEmp, $request->input('notes', 'Application approved by HR.'));
+        if ($error) return $error;
 
         $this->notifyEmployeeOfDecision($application, 'approved', $currentEmp, $request->input('notes'));
 
@@ -869,25 +894,8 @@ class LeavePermitController extends Controller
             'rejection_reason' => 'required|string|max:1000',
         ]);
 
-        $application = LeavePermitApplication::findOrFail($id);
-
-        if ($application->status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'This application is already ' . $application->status . ' and can no longer be decided. Only pending applications can be approved, rejected or sent back for revision.',
-            ], 422);
-        }
-        $application->status = 'rejected';
-        $application->reviewed_by = $currentEmp;
-        $application->reviewed_at = now();
-        $application->save();
-
-        LeavePermitLog::create([
-            'application_id' => $application->id,
-            'action'         => 'rejected',
-            'performed_by'   => $currentEmp,
-            'notes'          => $validated['rejection_reason'],
-        ]);
+        [$application, $error] = $this->decide($id, 'rejected', 'rejected', $currentEmp, $validated['rejection_reason']);
+        if ($error) return $error;
 
         $this->notifyEmployeeOfDecision($application, 'rejected', $currentEmp, $validated['rejection_reason']);
 
@@ -910,25 +918,8 @@ class LeavePermitController extends Controller
             'revision_notes' => 'required|string|max:1000',
         ]);
 
-        $application = LeavePermitApplication::findOrFail($id);
-
-        if ($application->status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'This application is already ' . $application->status . ' and can no longer be decided. Only pending applications can be approved, rejected or sent back for revision.',
-            ], 422);
-        }
-        $application->status = 'revision';
-        $application->reviewed_by = $currentEmp;
-        $application->reviewed_at = now();
-        $application->save();
-
-        LeavePermitLog::create([
-            'application_id' => $application->id,
-            'action'         => 'revision_requested',
-            'performed_by'   => $currentEmp,
-            'notes'          => $validated['revision_notes'],
-        ]);
+        [$application, $error] = $this->decide($id, 'revision', 'revision_requested', $currentEmp, $validated['revision_notes']);
+        if ($error) return $error;
 
         $this->notifyEmployeeOfDecision($application, 'revision', $currentEmp, $validated['revision_notes']);
 

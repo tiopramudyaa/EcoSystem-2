@@ -173,6 +173,12 @@ abstract class StepWorkflowService
         $approval = $gate['approval'];
 
         $completed = DB::transaction(function () use ($document, $approval, $actorId, $notes) {
+            // Lock the step and re-check inside the transaction: the gate above ran before it, so two
+            // simultaneous clicks would otherwise both pass and decide the same step twice.
+            if (!$this->lockStepStillWaiting($document, $approval)) {
+                return null;
+            }
+
             $approval->update(['status' => 'approved', 'acted_by' => $actorId, 'acted_at' => now(), 'notes' => $notes]);
 
             $next = $document->approvals()
@@ -194,6 +200,10 @@ abstract class StepWorkflowService
 
             return true;
         });
+
+        if ($completed === null) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided.', 'completed' => false];
+        }
 
         $document->load('approvals');
         $this->notifyRequester($document, $completed ? 'approved' : 'progressed', $notes);
@@ -218,7 +228,11 @@ abstract class StepWorkflowService
 
         $approval = $gate['approval'];
 
-        DB::transaction(function () use ($document, $approval, $actorId, $notes) {
+        $decided = DB::transaction(function () use ($document, $approval, $actorId, $notes) {
+            if (!$this->lockStepStillWaiting($document, $approval)) {
+                return false;
+            }
+
             $approval->update(['status' => 'rejected', 'acted_by' => $actorId, 'acted_at' => now(), 'notes' => $notes]);
 
             $document->approvals()
@@ -229,11 +243,33 @@ abstract class StepWorkflowService
 
             $document->update(['status' => 'rejected', 'current_step_order' => null, 'completed_at' => now()]);
             $this->logTransition($document, 'in_review', 'rejected', $notes, $actorId);
+
+            return true;
         });
+
+        if (!$decided) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided.'];
+        }
 
         $this->notifyRequester($document, 'rejected', $notes);
 
         return ['allowed' => true, 'reason' => ''];
+    }
+
+    /**
+     * Inside a transaction: lock the document and the step row, and confirm the document is still
+     * under review and the step is still waiting. False means someone else decided it first.
+     */
+    protected function lockStepStillWaiting(Model $document, Model $approval): bool
+    {
+        $freshDoc = $document->newQuery()->whereKey($document->getKey())->lockForUpdate()->first();
+        if (!$freshDoc || !$freshDoc->isOpen()) {
+            return false;
+        }
+
+        $freshStep = $approval->newQuery()->whereKey($approval->getKey())->lockForUpdate()->first();
+
+        return $freshStep && $freshStep->status === 'waiting';
     }
 
     /** Tandai langkah yang belum dijalani sebagai `skipped` (dokumen dibatalkan). */

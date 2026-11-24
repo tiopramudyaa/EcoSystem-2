@@ -155,7 +155,10 @@ class NotificationController extends Controller
         // replies show up in the bell like any other notification.
         // Satu query (dulu dua COUNT) - endpoint ini dipanggil tiap 15 detik oleh setiap tab yang terbuka.
         $agg = Notification::where('employee_id', $employeeId)->where('is_read', false)
-            ->selectRaw('COUNT(*) as total, COALESCE(SUM(type IN (?, ?)), 0) as messages', $messageTypes)->first();
+            ->selectRaw(
+                'COUNT(*) as total, COALESCE(SUM(type IN (' . implode(', ', array_fill(0, count($messageTypes), '?')) . ')), 0) as messages',
+                $messageTypes
+            )->first();
         $count = (int) ($agg->total ?? 0);
 
         // Message-type subset of the count above - the frontend uses this to

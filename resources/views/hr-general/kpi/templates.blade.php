@@ -326,21 +326,52 @@
 <script>
 const TPL_BASE = "{{ url('/general/kpi-evaluation/templates') }}";
 
+// POST helper: never leaves the page silent. Network drops, expired sessions (419), validation (422)
+// and server errors all come back as {success:false, message} so the caller shows a toast.
+// Also ignores a second click on the same URL while the first request is still running.
+const _kpiBusy = new Set();
+async function kpiPost(url, body) {
+    if (_kpiBusy.has(url)) return { success: false, message: 'Please wait, the previous request is still running.', busy: true };
+    _kpiBusy.add(url);
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+            body: body,
+        });
+        let data = null;
+        try { data = await res.json(); } catch (_) { data = null; }
+        if (!data) {
+            return { success: false, message: res.status === 419
+                ? 'Your session has expired. Reload the page and try again.'
+                : 'The server returned an unexpected response (' + res.status + '). Please try again.' };
+        }
+        if (!res.ok && data.success !== true) {
+            data.success = false;
+            if (!data.message) {
+                const first = data.errors ? Object.values(data.errors).flat()[0] : null;
+                data.message = first || ('Request failed (' + res.status + ').');
+            }
+        }
+        return data;
+    } catch (err) {
+        return { success: false, message: 'Network error. Check your connection and try again.' };
+    } finally {
+        _kpiBusy.delete(url);
+    }
+}
+
 async function toggleTemplate(id) {
-    const res  = await fetch(`${TPL_BASE}/${id}/toggle`, {
-        method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-    });
-    const data = await res.json();
+    const data = await kpiPost(`${TPL_BASE}/${id}/toggle`, null);
+    if (data.busy) return;
     showToast(data.message, data.success ? 'success' : 'error');
     if (data.success) setTimeout(() => location.reload(), 800);
 }
 
 async function deleteTemplate(id, name) {
     if (!await showConfirm(`Delete template "${name}"? This cannot be undone.`, 'Delete Template', 'danger', { okText: 'Delete' })) return;
-    const res  = await fetch(`${TPL_BASE}/${id}/delete`, {
-        method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-    });
-    const data = await res.json();
+    const data = await kpiPost(`${TPL_BASE}/${id}/delete`, null);
+    if (data.busy) return;
     showToast(data.message, data.success ? 'success' : 'error');
     if (data.success) setTimeout(() => location.reload(), 800);
 }

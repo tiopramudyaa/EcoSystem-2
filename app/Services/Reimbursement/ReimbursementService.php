@@ -42,6 +42,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ReimbursementService
 {
+    use \App\Services\Approval\LocksApprovalStep;
+
     /** The largest amount one item may carry: 14 digits, so 255 items still fit the decimal(20,2) totals. */
     public const MAX_ITEM_AMOUNT = 99999999999999;
 
@@ -707,6 +709,10 @@ class ReimbursementService
             return ['allowed' => false, 'reason' => $e->getMessage(), 'completed' => false];
         }
 
+        if ($completed === null) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided. Reload the page to see the latest status.', 'completed' => false];
+        }
+
         $this->notify($request, $completed ? 'approved' : 'progressed', $payload['notes'] ?? null);
 
         if (!$completed) {
@@ -735,7 +741,11 @@ class ReimbursementService
         /** @var ReimbursementRequestApproval $approval */
         $approval = $gate['approval'];
 
-        DB::transaction(function () use ($request, $approval, $actorId, $notes) {
+        $decided = DB::transaction(function () use ($request, $approval, $actorId, $notes) {
+            if (!$this->lockStepStillWaiting($request, $approval)) {
+                return false;
+            }
+
             $approval->update([
                 'status'   => ReimbursementRequestApproval::STATUS_REJECTED,
                 'acted_by' => $actorId,
@@ -756,7 +766,13 @@ class ReimbursementService
                 'current_step_order' => null,
                 'completed_at'       => now(),
             ]);
+
+            return true;
         });
+
+        if (!$decided) {
+            return ['allowed' => false, 'reason' => 'This step has already been decided. Reload the page to see the latest status.'];
+        }
 
         $this->notify($request, 'rejected', $notes);
 

@@ -251,21 +251,34 @@ class RecruitmentOfferController extends Controller
         try {
             $joinDate = $data['joining_date'] ?? $offer->joining_date?->toDateString();
 
-            $employee = $hireService->hire([
-                'full_name' => $data['full_name'],
-                'eci'       => $data['eci'],
-                'email'     => $data['email'],
-                'password'  => $data['default_password'],
-                'position'  => $offer->position_title,
-                'home_base' => $data['home_base'],
-            ], $joinDate);
+            // One transaction + row lock on the offer: a double click (or two HR users) on "Accept" can no longer
+            // create two employee accounts; the second one finds the offer already decided and stops.
+            $employee = DB::transaction(function () use ($offer, $data, $joinDate, $hireService) {
+                $fresh = Offer::whereKey($offer->getKey())->lockForUpdate()->first();
+                if (!$fresh || !$fresh->isPending()) {
+                    throw new \DomainException('This offer has already been decided. Reload the page to see its current status.');
+                }
 
-            $offer->update(['decision' => Offer::DECISION_ACCEPTED, 'decided_at' => now(), 'hired_employee_id' => $employee->employee_id]);
+                $employee = $hireService->hire([
+                    'full_name' => $data['full_name'],
+                    'eci'       => $data['eci'],
+                    'email'     => $data['email'],
+                    'password'  => $data['default_password'],
+                    'position'  => $offer->position_title,
+                    'home_base' => $data['home_base'],
+                ], $joinDate);
 
-            if ($offer->candidate) {
-                $offer->candidate->update(['hired_employee_id' => $employee->employee_id]);
-                $offer->candidate->transitionTo(Candidate::STATUS_HIRED);
-            }
+                $offer->update(['decision' => Offer::DECISION_ACCEPTED, 'decided_at' => now(), 'hired_employee_id' => $employee->employee_id]);
+
+                if ($offer->candidate) {
+                    $offer->candidate->update(['hired_employee_id' => $employee->employee_id]);
+                    $offer->candidate->transitionTo(Candidate::STATUS_HIRED);
+                }
+
+                return $employee;
+            });
+        } catch (\DomainException $e) {
+            return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             Log::error('Recruitment: failed to create employee account', ['offer_id' => $offer->id, 'error' => $e->getMessage()]);
 
@@ -302,8 +315,21 @@ class RecruitmentOfferController extends Controller
     {
         abort_unless($offer->isPending(), 403);
 
-        $offer->update(['decision' => Offer::DECISION_REJECTED, 'decided_at' => now()]);
-        $offer->candidate?->transitionTo(Candidate::STATUS_REJECTED);
+        $decided = DB::transaction(function () use ($offer) {
+            $fresh = Offer::whereKey($offer->getKey())->lockForUpdate()->first();
+            if (!$fresh || !$fresh->isPending()) {
+                return false;
+            }
+
+            $offer->update(['decision' => Offer::DECISION_REJECTED, 'decided_at' => now()]);
+            $offer->candidate?->transitionTo(Candidate::STATUS_REJECTED);
+
+            return true;
+        });
+
+        if (!$decided) {
+            return back()->with('error', 'This offer has already been decided. Reload the page to see its current status.');
+        }
 
         return back()->with('success', 'Offer marked as rejected.');
     }
