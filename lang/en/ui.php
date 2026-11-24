@@ -32,35 +32,36 @@ return [
       ),
       'loading' => 
       array (
+        'preparing' => 'Preparing your EcoSystem workspace…',
         'natal' => 
         array (
-          'title' => 'Preparing your EcoSystem workspace…',
-          'subtitle' => 'Happy holidays from Eclectic Consulting',
+          'title' => 'Merry Christmas from Eclectic Consulting',
+          'subtitle' => 'Wishing you joy, peace, and a wonderful holiday season',
         ),
         'tahun_baru' => 
         array (
-          'title' => 'Preparing your EcoSystem workspace…',
-          'subtitle' => 'Happy New Year from Eclectic Consulting',
+          'title' => 'Happy New Year from Eclectic Consulting',
+          'subtitle' => 'Wishing you success and prosperity in the year ahead',
         ),
         'ramadan' => 
         array (
-          'title' => 'Preparing your EcoSystem workspace…',
-          'subtitle' => 'Wishing you a blessed Ramadan',
+          'title' => 'Ramadan Kareem from Eclectic Consulting',
+          'subtitle' => 'Wishing you a blessed and peaceful month of fasting',
         ),
         'lebaran' => 
         array (
-          'title' => 'Preparing your EcoSystem workspace…',
-          'subtitle' => 'Eid Mubarak from Eclectic Consulting',
+          'title' => 'Eid Mubarak from Eclectic Consulting',
+          'subtitle' => 'Wishing you and your family joy and forgiveness this Eid',
         ),
         'imlek' => 
         array (
-          'title' => 'Preparing your EcoSystem workspace…',
-          'subtitle' => 'Happy Lunar New Year from Eclectic Consulting',
+          'title' => 'Happy Lunar New Year from Eclectic Consulting',
+          'subtitle' => 'Wishing you good health, prosperity, and good fortune',
         ),
         'hut_ri' => 
         array (
-          'title' => 'Preparing your EcoSystem workspace…',
-          'subtitle' => 'Happy Independence Day, Indonesia',
+          'title' => 'Happy Independence Day, Indonesia',
+          'subtitle' => 'Eclectic Consulting celebrates together with you',
         ),
       ),
       'admin' => 

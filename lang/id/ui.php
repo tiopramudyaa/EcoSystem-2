@@ -32,35 +32,36 @@ return [
       ),
       'loading' => 
       array (
+        'preparing' => 'Menyiapkan ruang kerja EcoSystem Anda…',
         'natal' => 
         array (
-          'title' => 'Menyiapkan ruang kerja EcoSystem Anda…',
-          'subtitle' => 'Selamat Natal dari Eclectic Consulting',
+          'title' => 'Selamat Natal dari Eclectic Consulting',
+          'subtitle' => 'Semoga damai dan sukacita Natal menyertai Anda dan keluarga',
         ),
         'tahun_baru' => 
         array (
-          'title' => 'Menyiapkan ruang kerja EcoSystem Anda…',
-          'subtitle' => 'Selamat Tahun Baru dari Eclectic Consulting',
+          'title' => 'Selamat Tahun Baru dari Eclectic Consulting',
+          'subtitle' => 'Semoga tahun ini membawa kesuksesan dan kemakmuran bagi Anda',
         ),
         'ramadan' => 
         array (
-          'title' => 'Menyiapkan ruang kerja EcoSystem Anda…',
-          'subtitle' => 'Selamat menunaikan ibadah Ramadan',
+          'title' => 'Marhaban ya Ramadan dari Eclectic Consulting',
+          'subtitle' => 'Selamat menunaikan ibadah puasa, semoga penuh berkah',
         ),
         'lebaran' => 
         array (
-          'title' => 'Menyiapkan ruang kerja EcoSystem Anda…',
-          'subtitle' => 'Selamat Hari Raya Idulfitri, mohon maaf lahir dan batin',
+          'title' => 'Selamat Hari Raya Idulfitri dari Eclectic Consulting',
+          'subtitle' => 'Mohon maaf lahir dan batin',
         ),
         'imlek' => 
         array (
-          'title' => 'Menyiapkan ruang kerja EcoSystem Anda…',
-          'subtitle' => 'Selamat Tahun Baru Imlek dari Eclectic Consulting',
+          'title' => 'Selamat Tahun Baru Imlek dari Eclectic Consulting',
+          'subtitle' => 'Gong Xi Fa Cai, semoga sehat dan makmur selalu',
         ),
         'hut_ri' => 
         array (
-          'title' => 'Menyiapkan ruang kerja EcoSystem Anda…',
-          'subtitle' => 'Dirgahayu Republik Indonesia',
+          'title' => 'Dirgahayu Republik Indonesia',
+          'subtitle' => 'Eclectic Consulting turut merayakan bersama Anda',
         ),
       ),
       'admin' => 

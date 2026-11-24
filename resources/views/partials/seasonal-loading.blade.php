@@ -59,9 +59,12 @@
 <div id="{{ $slId }}" class="seasonal-loading" role="status" aria-live="polite">
     <canvas class="seasonal-loading__canvas" aria-hidden="true"></canvas>
     <div class="seasonal-loading__content">
+        {{-- Logo EC: animasi masuk sekali (CSS transform dan opacity), tanpa perulangan. --}}
+        <span class="seasonal-loading__logo"><img src="{{ asset('images/eclectic_logo_nobg.png') }}" alt="Eclectic Consulting" width="160" height="55" decoding="async"></span>
         <svg class="seasonal-loading__icon" aria-hidden="true" focusable="false"><use href=""></use></svg>
         <p class="seasonal-loading__title"></p>
         <p class="seasonal-loading__subtitle"></p>
+        <p class="seasonal-loading__status">{{ __('ui.seasonal.loading.preparing') }}</p>
     </div>
     <div class="seasonal-loading__bar" aria-hidden="true"><span></span></div>
     @if($slSound)
@@ -102,13 +105,29 @@
         background: linear-gradient(to top, rgba(0,0,0,.74) 0%, rgba(0,0,0,.46) 55%, rgba(0,0,0,0) 100%);
         text-shadow: 0 2px 12px rgba(0,0,0,.6);
     }
-    .seasonal-loading.is-3d .seasonal-loading__title { margin-top: 0; font-size: 1.375rem; }
-    .seasonal-loading.is-3d .seasonal-loading__subtitle { font-size: .9375rem; color: rgba(255,255,255,.9); }
+    .seasonal-loading.is-3d .seasonal-loading__title { margin-top: 0; font-size: 1.625rem; font-weight: 800; line-height: 1.2; }
+    .seasonal-loading.is-3d .seasonal-loading__subtitle { font-size: 1rem; color: rgba(255,255,255,.92); }
     .seasonal-loading__icon { width: 3.5rem; height: 3.5rem; color: var(--st-accent, #f2c14e); fill: currentColor; }
     .seasonal-loading.is-3d .seasonal-loading__icon { display: none; }
     .seasonal-loading__title { margin: 1rem 0 0; font-size: 1.0625rem; font-weight: 700; color: #fff; letter-spacing: .02em; }
     .seasonal-loading__subtitle { margin: .35rem 0 0; font-size: .8125rem; color: rgba(255,255,255,.82); }
     .seasonal-loading__subtitle:empty { display: none; }
+    .seasonal-loading__status { margin: .9rem 0 0; font-size: .6875rem; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.62); }
+
+    /* Logo EC: masuk sekali (opacity dan transform, jalur compositor). Kilau tunggal lewat
+       background-position pada area logo saja (mask), dimulai setelah adegan berjalan. Tanpa loop. */
+    .seasonal-loading__logo { position: relative; display: block; margin: 0 0 1rem; line-height: 0; }
+    .seasonal-loading__logo img { display: block; height: 3.25rem; width: auto; filter: drop-shadow(0 2px 10px rgba(0,0,0,.5)); }
+    .seasonal-loading.is-visible .seasonal-loading__logo { animation: seasonal-logo-in .7s cubic-bezier(.2,.8,.2,1) .12s both; }
+    .seasonal-loading__logo::after {
+        content: ''; position: absolute; inset: 0; opacity: 0; pointer-events: none;
+        background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.75) 50%, transparent 65%) -150% 0 / 250% 100% no-repeat;
+        -webkit-mask: url('{{ asset('images/eclectic_logo_nobg.png') }}') left center / contain no-repeat;
+        mask: url('{{ asset('images/eclectic_logo_nobg.png') }}') left center / contain no-repeat;
+    }
+    .seasonal-loading.is-visible .seasonal-loading__logo::after { animation: seasonal-logo-shine 1.1s ease-in-out .95s 1 both; }
+    @keyframes seasonal-logo-in { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
+    @keyframes seasonal-logo-shine { 0% { opacity: 1; background-position: -150% 0; } 100% { opacity: 1; background-position: 250% 0; } }
 
     /* Fallback statis: teks muncul perlahan dan bar progres pelan. */
     .seasonal-loading.is-static .seasonal-loading__content { animation: seasonal-loading-fade 1s ease both; }
@@ -128,6 +147,8 @@
     @media (prefers-reduced-motion: reduce) {
         .seasonal-loading { transition: none; }
         .seasonal-loading.is-static .seasonal-loading__content { animation: none; }
+        .seasonal-loading.is-visible .seasonal-loading__logo { animation: none; }
+        .seasonal-loading__logo::after { display: none; }
         .seasonal-loading.is-static.is-visible .seasonal-loading__bar span { animation: none; transform: scaleX(1); }
     }
 </style>

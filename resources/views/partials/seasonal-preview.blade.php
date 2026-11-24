@@ -32,6 +32,8 @@
             'poster' => is_file(public_path($spPoster)) ? asset($spPoster) . '?v=' . filemtime(public_path($spPoster)) : null,
             'alt' => __('ui.seasonal.preview.poster_alt', ['theme' => $spLabel]),
             'dialog' => __('ui.seasonal.preview.dialog_label', ['theme' => $spLabel]),
+            'greeting' => isset($spMeta['loading']['title_key']) ? __($spMeta['loading']['title_key']) : '',
+            'blessing' => isset($spMeta['loading']['subtitle_key']) ? __($spMeta['loading']['subtitle_key']) : '',
         ];
     }
 
@@ -61,11 +63,12 @@
     <p id="seasonalPreviewHint" class="mt-1.5 text-xs leading-relaxed text-gray-400" aria-live="polite">{{ __('ui.seasonal.preview.hint') }}</p>
 </div>
 
-<div id="seasonalPreviewOverlay" class="sp-overlay" role="dialog" aria-modal="true" aria-labelledby="seasonalPreviewTitle" hidden>
+<div id="seasonalPreviewOverlay" class="sp-overlay" role="dialog" aria-modal="true" hidden>
     <canvas class="sp-canvas" aria-hidden="true"></canvas>
     <img class="sp-poster" alt="" width="640" height="360">
     <div class="sp-bar">
         <div class="sp-text">
+            <span class="sp-logo"><img src="{{ asset('images/eclectic_logo_nobg.png') }}" alt="" width="160" height="55" decoding="async"></span>
             <p id="seasonalPreviewTitle" class="sp-title"></p>
             <p class="sp-note"></p>
         </div>
@@ -86,7 +89,12 @@
     .sp-overlay.is-3d .sp-poster { display: none; }
     .sp-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 3rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,0)); color: #fff; }
     .sp-text { min-width: 0; }
-    .sp-title { margin: 0; font-size: .9375rem; font-weight: 700; }
+    .sp-title { margin: 0; font-size: 1.25rem; font-weight: 800; line-height: 1.25; }
+    .sp-logo { display: block; margin: 0 0 .6rem; line-height: 0; }
+    .sp-logo img { display: block; height: 2.25rem; width: auto; filter: drop-shadow(0 2px 8px rgba(0,0,0,.5)); }
+    .sp-overlay:not([hidden]) .sp-logo { animation: sp-logo-in .7s cubic-bezier(.2,.8,.2,1) .1s both; }
+    @keyframes sp-logo-in { from { opacity: 0; transform: translateY(8px) scale(.96); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .sp-overlay:not([hidden]) .sp-logo { animation: none; } }
     .sp-note { margin: .25rem 0 0; font-size: .75rem; color: rgba(255,255,255,.85); }
     .sp-note:empty { display: none; }
     .sp-close { flex: none; display: inline-flex; align-items: center; gap: .4rem; border: 1px solid rgba(255,255,255,.6); background: rgba(0,0,0,.55); color: #fff; border-radius: .5rem; padding: .5rem .9rem; font-size: .8125rem; font-weight: 600; cursor: pointer; }
@@ -179,8 +187,8 @@
         prevOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         ov.setAttribute('aria-label', d.dialog);
-        titleEl.textContent = d.dialog;
-        noteEl.textContent = '';
+        titleEl.textContent = d.greeting || d.dialog;
+        noteEl.textContent = d.blessing || '';
         ov.classList.remove('is-3d');
         if (d.poster) { poster.src = d.poster; poster.alt = d.alt; poster.style.display = ''; }
         else { poster.removeAttribute('src'); poster.style.display = 'none'; }
