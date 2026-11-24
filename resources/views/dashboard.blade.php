@@ -176,6 +176,15 @@
         }
         html[data-season] #sidebar { --sb-accent: var(--st-accent, #f2c14e); }
 
+        /* Utilitas yang dipakai halaman admin Seasonal Theme tetapi belum ada di build Tailwind
+           (public/build). Aman bila nanti ikut terbentuk saat build ulang: nilainya sama. */
+        .basis-44 { flex-basis: 11rem; }
+        .accent-gray-700 { accent-color: #374151; }
+        @media (min-width: 40rem) {
+            .sm\:items-end { align-items: flex-end; }
+            .sm\:grid-cols-\[1fr_9\.5rem_9\.5rem_auto\] { grid-template-columns: 1fr 9.5rem 9.5rem auto; }
+        }
+
         /* Smooth scrollbar */
         ::-webkit-scrollbar {
             width: 4px;
