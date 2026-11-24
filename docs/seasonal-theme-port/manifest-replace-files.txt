@@ -1,0 +1,8 @@
+# Berkas tema yang SUDAH ADA di eco_new tetapi harus diganti versi aldy_merge (isinya murni tema, aman ditimpa penuh).
+#   git checkout aldy_merge -- <berkas>
+app/Http/Controllers/SeasonalThemeSettingsController.php
+app/Support/GlobalSeasonalTheme.php
+app/Support/SeasonalThemeResolver.php
+app/Support/SeasonalThemes.php
+resources/views/admin/seasonal-theme-settings.blade.php
+resources/views/partials/seasonal-theme.blade.php

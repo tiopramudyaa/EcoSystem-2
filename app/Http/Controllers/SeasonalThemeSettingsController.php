@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * Control Center → Seasonal Theme.
@@ -35,6 +36,10 @@ class SeasonalThemeSettingsController extends Controller
             'activeSound' => $settings['sound'],
             'activeVolume' => $settings['volume'],
             'catalog' => SeasonalThemes::catalog(),
+            // Semua setting tersimpan (theme, sound, volume, mode, schedule).
+            'current' => $settings,
+            // Tema yang benar-benar aktif HARI INI (memperhitungkan mode + jadwal).
+            'activeToday' => GlobalSeasonalTheme::active(),
             // Admin memilih dari file yang BENAR-BENAR ADA di public/sounds/,
             // bukan mengetik bebas - daftar ini juga yang jadi acuan whitelist
             // di GlobalSeasonalTheme::sanitizeSound(). Ini folder yang sama
@@ -50,25 +55,41 @@ class SeasonalThemeSettingsController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        // Input tidak valid ditolak di sini (redirect back + errors, tanpa flash
+        // sukses). Key tema harus ada di katalog; entri jadwal tidak boleh 'none'.
+        $scheduleThemes = array_values(array_diff(SeasonalThemes::keys(), [SeasonalThemes::NONE]));
+
         $request->validate([
-            'theme' => 'required|string',
+            'theme' => ['required', 'string', Rule::in(SeasonalThemes::keys())],
+            'mode' => ['required', Rule::in([GlobalSeasonalTheme::MODE_MANUAL, GlobalSeasonalTheme::MODE_AUTO])],
             'sound' => 'nullable|string',
             'volume' => 'nullable|numeric|min:0|max:100',
+            'schedule' => 'nullable|array|max:20',
+            'schedule.*.theme' => ['required', 'string', Rule::in($scheduleThemes)],
+            'schedule.*.start' => 'required|date_format:Y-m-d',
+            'schedule.*.end' => 'required|date_format:Y-m-d|after_or_equal:schedule.*.start',
+            'login' => 'nullable|array',
+            'login.theme' => ['nullable', 'string', Rule::in(array_merge([GlobalSeasonalTheme::LOGIN_INHERIT], SeasonalThemes::keys()))],
+            'login.scope' => ['nullable', Rule::in([GlobalSeasonalTheme::SCOPE_BOTH, GlobalSeasonalTheme::SCOPE_PAGE, GlobalSeasonalTheme::SCOPE_LOADING])],
         ]);
 
         $before = GlobalSeasonalTheme::all();
 
-        // Validasi sebenarnya (apakah key dikenal SeasonalThemes, apakah file
-        // sound benar-benar ada di public/sounds/, volume dalam rentang wajar)
-        // ada di GlobalSeasonalTheme::sanitize()/sanitizeSound()/sanitizeVolume(),
-        // bukan diduplikasi di sini - supaya cuma ada satu tempat yang
-        // menentukan apa yang "valid". SEMUA field DIKIRIM BERSAMA (lihat
-        // catatan di GlobalSeasonalTheme::save()) supaya tidak ada yang
-        // diam-diam ke-reset ke default.
+        // Validasi file sound dan volume tetap disanitasi ulang di
+        // GlobalSeasonalTheme::sanitize*() (satu tempat penentu "valid" untuk
+        // data tersimpan). SEMUA lima field DIKIRIM BERSAMA (lihat catatan di
+        // GlobalSeasonalTheme::save()) supaya tidak ada yang diam-diam
+        // ke-reset ke default.
         GlobalSeasonalTheme::save([
             'theme' => $request->input('theme'),
             'sound' => $request->input('sound'),
             'volume' => $request->input('volume'),
+            'mode' => $request->input('mode'),
+            'schedule' => array_values($request->input('schedule', [])),
+            'login' => [
+                'theme' => $request->input('login.theme', GlobalSeasonalTheme::LOGIN_INHERIT),
+                'scope' => $request->input('login.scope', GlobalSeasonalTheme::SCOPE_BOTH),
+            ],
         ]);
 
         $applied = GlobalSeasonalTheme::all();
@@ -93,7 +114,7 @@ class SeasonalThemeSettingsController extends Controller
 
         return redirect()
             ->route('admin.seasonal-theme')
-            ->with('success', 'Seasonal theme saved. Users on "Default" see it immediately; users who picked their own stay unaffected.');
+            ->with('success', __('ui.seasonal.admin.saved'));
     }
 
     /**
@@ -112,15 +133,19 @@ class SeasonalThemeSettingsController extends Controller
     public function uploadSound(Request $request): RedirectResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:wav,mp3,ogg,aac|max:3072',
+            // 'extensions' memeriksa ekstensi nama file yang benar-benar disimpan
+            // (mimes hanya memeriksa isi), sehingga nama seperti .pht atau .shtml
+            // berisi audio asli tetap ditolak dan tidak masuk ke public/sounds.
+            'file' => 'required|file|mimes:wav,mp3,ogg,aac|extensions:wav,mp3,ogg,aac|max:3072',
         ], [
-            'file.mimes' => 'Only WAV, MP3, OGG, and AAC files are allowed.',
-            'file.max'   => 'File size must not exceed 3 MB.',
+            'file.mimes'      => __('ui.seasonal.admin.upload_type'),
+            'file.extensions' => __('ui.seasonal.admin.upload_type'),
+            'file.max'        => __('ui.seasonal.admin.upload_size'),
         ]);
 
         $file     = $request->file('file');
         $slug     = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
-        $ext      = $file->getClientOriginalExtension();
+        $ext      = strtolower($file->getClientOriginalExtension());
         $filename = ($slug !== '' ? $slug : 'track') . '_' . time() . '.' . $ext;
 
         $file->move(public_path('sounds'), $filename);
@@ -132,6 +157,6 @@ class SeasonalThemeSettingsController extends Controller
 
         return redirect()
             ->route('admin.seasonal-theme')
-            ->with('success', "Uploaded \"{$filename}\" - select it below and save to make it active.");
+            ->with('success', __('ui.seasonal.admin.uploaded', ['file' => $filename]));
     }
 }
