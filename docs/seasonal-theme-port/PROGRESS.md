@@ -20,7 +20,7 @@ Perbarui setelah setiap langkah selesai. Sumber: origin/aldy_merge. Tujuan akhir
 | 1a | Salin 77 berkas baru, timpa 6 berkas tema, verify-port OK 83, lang minimal 87 kunci | SELESAI | 7627f493 |
 | 1b | Kait backend + cache AppConfig (keputusan pemilik: dipasang). Tes Seasonal 74, gagal 2 (menunggu kait login dan settings) | SELESAI | bf73d6b7 dan commit AppConfig |
 | 2 | Kait dashboard.blade.php (a sampai i). Partial tema: none = 0 byte, 6 tema = 0 query. Audit agent: lihat audit/step2-review.md | SELESAI, audit PASS 6 poin (risiko R1 sampai R5 di audit/step2-review.md) | lihat git log |
-| 3 | Kait login.blade.php dan 4 halaman auth, verifikasi 6 tema x 4 viewport | BELUM | |
+| 3 | Kait login (brand vars, loading generik, login-art, dp-ambient, cabang sukses) + 4 halaman auth. Render 6 tema + none: 0 query, 5 halaman OK. Tes Seasonal 74 lulus, suite penuh 298 lulus. Tangkapan layar 4 viewport: lihat audit/step3-screens.md | KAIT SELESAI, tangkapan layar menyusul | lihat git log |
 | 4 | Kait pemilih tema settings/index (blok pemilih, CSS .st-card, JS preview). /settings render OK 6 tema + pilihan sendiri, 2 query. Dialog Play dan konsol: menunggu QA browser langkah 6 | KAIT SELESAI | lihat git log |
 | 5 | Panduan pengguna 021 dan 148 (en, id), guide-check, tes Guide | BELUM | |
 | 6 | QA performa, query dan keamanan, UI dan fungsi (tiap gerbang oleh agent) | BELUM | |
@@ -34,3 +34,5 @@ Perbarui setelah setiap langkah selesai. Sumber: origin/aldy_merge. Tujuan akhir
 
 ## Hasil tes terakhir
 - Langkah 1b: Unit+Feature Seasonal = 74 tes, 933 assertion, 2 gagal (LoginArtTest, SeasonalAssetsTest: butuh kait login dan settings).
+- Langkah 3 dan 4: Unit+Feature Seasonal = 74 tes, 942 assertion, 0 gagal. Suite penuh (vendor/bin/phpunit dengan sqlite) = 298 tes, 3649 assertion, 0 gagal.
+- Catatan langkah 3: overlay Natal lama di login (kereta luncur, bingkai es, jingle-bells) digantikan seasonal-loading generik seperti referensi. Fitur non-tema di login aldy_merge (tombol Report, penanganan autofill, penjaga kirim ganda) TIDAK dibawa karena bukan bagian tema.
