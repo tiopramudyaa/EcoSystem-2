@@ -21,7 +21,7 @@ Perbarui setelah setiap langkah selesai. Sumber: origin/aldy_merge. Tujuan akhir
 | 1b | Kait backend + cache AppConfig (keputusan pemilik: dipasang). Tes Seasonal 74, gagal 2 (menunggu kait login dan settings) | SELESAI | bf73d6b7 dan commit AppConfig |
 | 2 | Kait dashboard.blade.php (a sampai i). Partial tema: none = 0 byte, 6 tema = 0 query. Audit agent: lihat audit/step2-review.md | SELESAI, audit PASS 6 poin (risiko R1 sampai R5 di audit/step2-review.md) | lihat git log |
 | 3 | Kait login.blade.php dan 4 halaman auth, verifikasi 6 tema x 4 viewport | BELUM | |
-| 4 | Kait pemilih tema settings/index.blade.php, cek halaman admin, pratinjau | BELUM | |
+| 4 | Kait pemilih tema settings/index (blok pemilih, CSS .st-card, JS preview). /settings render OK 6 tema + pilihan sendiri, 2 query. Dialog Play dan konsol: menunggu QA browser langkah 6 | KAIT SELESAI | lihat git log |
 | 5 | Panduan pengguna 021 dan 148 (en, id), guide-check, tes Guide | BELUM | |
 | 6 | QA performa, query dan keamanan, UI dan fungsi (tiap gerbang oleh agent) | BELUM | |
 | 7 | Ringkasan port, bandingkan poster, cek git diff --stat origin/eco_new...aldy_eco | BELUM | |

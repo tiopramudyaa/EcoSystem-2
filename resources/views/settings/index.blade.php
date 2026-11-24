@@ -139,51 +139,57 @@
 
                 {{-- Seasonal Theme --}}
                 @php
-                    // Dihitung di sini (bukan controller) supaya konsisten dengan pola yang
-                    // sudah dipakai dashboard.blade.php/login.blade.php untuk fitur ini.
-                    $currentGlobalSeasonal = \App\Support\GlobalSeasonalTheme::active();
-                    $currentGlobalSeasonalLabel = $currentGlobalSeasonal === 'none'
-                        ? 'Off (admin hasn\'t enabled anything)'
-                        : (\App\Support\SeasonalThemes::get($currentGlobalSeasonal)['label'] ?? 'Off');
+                    // Tema global admin saat ini (untuk label "Default" dan pratinjau). Layout belum
+                    // dirender saat konten ini dibangun, jadi dihitung langsung di sini.
+                    $stGlobalKey = \App\Support\GlobalSeasonalTheme::active();
+                    $stGlobalLabel = __(\App\Support\SeasonalThemes::get($stGlobalKey)['label_key'] ?? 'ui.seasonal.themes.none');
+                    $stCurrent = $preferences['seasonal_theme'] ?? 'default';
+                    $stPalettes = collect(\App\Support\SeasonalThemes::catalog())->map(fn ($m) => $m['palette'])->all();
                 @endphp
-                <div class="px-8 py-6">
-                    <div class="flex items-start justify-between gap-8">
-                        <div class="w-48 flex-shrink-0">
-                            <p class="text-sm font-medium text-gray-800">Seasonal theme</p>
-                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">Festive decoration on your dashboard</p>
+                <div class="px-4 sm:px-8 py-6">
+                    <div class="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-8">
+                        <div class="w-full sm:w-48 flex-shrink-0">
+                            <p class="text-sm font-medium text-gray-800">{{ __('ui.seasonal.title') }}</p>
+                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ __('ui.seasonal.subtitle') }}</p>
                             <p class="text-xs text-gray-400 mt-2 leading-relaxed">
-                                "Default" currently follows the admin's global setting:
-                                <span class="font-semibold text-gray-600">{{ $currentGlobalSeasonalLabel }}</span>.
-                                Pick "Off" here to opt out for yourself only.
+                                {{ __('ui.seasonal.follows_admin', ['theme' => $stGlobalLabel]) }}
+                                {{ __('ui.seasonal.opt_out') }}
                             </p>
                             @if($can('control-center.seasonal-theme'))
                                 <a href="{{ route('admin.seasonal-theme') }}"
                                    class="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 hover:text-red-800 hover:underline mt-2">
                                     <i class="fas fa-gear text-[10px]"></i>
-                                    Manage global default (Admin)
+                                    {{ __('ui.seasonal.manage') }}
                                 </a>
                             @endif
+                            @include('partials.seasonal-preview', ['picker' => '#seasonalPicker', 'globalKey' => $stGlobalKey])
                         </div>
-                        <div class="flex items-center gap-3">
-                            {{-- 'default' bukan bagian dari SeasonalThemes (itu katalog tema yang
-                                 bisa dirender) - ini murni pilihan "ikut admin" di level preferensi
-                                 user, lihat App\Support\SeasonalThemeResolver. --}}
-                            <button type="button" onclick="selectSeasonalTheme('default')"
-                                class="flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all hover:border-red-400
-                                       {{ ($preferences['seasonal_theme'] ?? 'default')==='default' ? 'border-red-600 bg-red-50/50' : 'border-gray-200' }}">
-                                <div class="w-full h-8 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                        <div class="flex flex-wrap items-center justify-start sm:justify-end gap-3" id="seasonalPicker">
+                    @include('partials.seasonal-icons')
+                            {{-- 'default' bukan bagian dari SeasonalThemes (katalog tema yang bisa
+                                 dirender): ini pilihan "ikut admin" di level preferensi user,
+                                 lihat App\Support\SeasonalThemeResolver. --}}
+                            <button type="button" data-season-choice="default" onclick="selectSeasonalTheme('default', this)"
+                                style="--st-card-accent:#6b7280"
+                                class="st-card flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all {{ $stCurrent === 'default' ? 'is-selected' : '' }}">
+                                <div class="st-tile w-full h-11 bg-gray-100">
                                     <i class="fas fa-wand-magic-sparkles text-gray-500"></i>
                                 </div>
-                                <span class="text-xs font-medium {{ ($preferences['seasonal_theme'] ?? 'default')==='default' ? 'text-red-700' : 'text-gray-500' }}">Default</span>
+                                <span class="st-card-label text-xs font-medium">{{ __('ui.seasonal.default') }}</span>
                             </button>
-                            @foreach(\App\Support\SeasonalThemes::catalog() as $sk=>$meta)
-                            <button type="button" onclick="selectSeasonalTheme('{{ $sk }}')"
-                                class="flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all hover:border-red-400
-                                       {{ ($preferences['seasonal_theme'] ?? 'default')===$sk ? 'border-red-600 bg-red-50/50' : 'border-gray-200' }}">
-                                <div class="w-full h-8 rounded-lg flex items-center justify-center overflow-hidden" style="background:{{ $meta['accent'] }}1a">
-                                    <i class="fas {{ $meta['icon'] }}" style="color:{{ $meta['accent'] }}"></i>
-                                </div>
-                                <span class="text-xs font-medium {{ ($preferences['seasonal_theme'] ?? 'default')===$sk ? 'text-red-700' : 'text-gray-500' }}">{{ $meta['label'] }}</span>
+                            @foreach(\App\Support\SeasonalThemes::catalog() as $sk => $meta)
+                            <button type="button" data-season-choice="{{ $sk }}" onclick="selectSeasonalTheme('{{ $sk }}', this)"
+                                style="--st-card-accent:{{ $meta['accent'] }}"
+                                class="st-card flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all {{ $stCurrent === $sk ? 'is-selected' : '' }}">
+                                @if($meta['palette'])
+                                    <div class="st-tile relative w-full h-11" style="background:linear-gradient(135deg, {{ $meta['palette']['login_from'] }} 55%, {{ $meta['palette']['login_to'] }} 170%)">
+                                        @include('partials.seasonal-icon', ['name' => 'icon-' . $sk, 'theme' => $sk, 'size' => 34])
+                                        @include('partials.seasonal-poster', ['theme' => $sk])
+                                    </div>
+                                @else
+                                    <div class="st-tile w-full h-11 bg-gray-100"><i class="fas {{ $meta['icon'] }} text-gray-400"></i></div>
+                                @endif
+                                <span class="st-card-label text-xs font-medium">{{ __($meta['label_key']) }}</span>
                             </button>
                             @endforeach
                         </div>
@@ -768,6 +774,12 @@
 </div>
 
 <style>
+.st-card { border-color:#e5e7eb; background:transparent; }
+.st-card:hover { border-color:var(--st-card-accent); }
+.st-card.is-selected { border-color:var(--st-card-accent); box-shadow:0 0 0 1px var(--st-card-accent); }
+/* Warna label mengikuti tema terang/gelap halaman (var(--text-color)), bukan hex tetap. */
+.st-card .st-card-label { color:var(--text-color, #111827); opacity:.68; }
+.st-card.is-selected .st-card-label { color:var(--text-color, #111827); opacity:1; }
 .se-btn { display:flex; align-items:center; }
 .se-label.is-placeholder { color:#9ca3af; }
 .se-wrap.is-open .se-arrow { transform:rotate(180deg); }
@@ -861,17 +873,46 @@ function selectFontSize(size) {
     el.classList.remove('border-gray-200');
     document.documentElement.style.fontSize = {small:'14px',medium:'16px',large:'18px'}[size];
 }
-function selectSeasonalTheme(theme) {
+// Pratinjau tema musiman: menerapkan palet ke halaman ini tanpa reload. Hanya sementara,
+// tersimpan setelah Save (sama seperti pilihan Appearance lainnya).
+const SEASONAL_PREVIEW = {
+    globalKey: @json($stGlobalKey),
+    palettes: @json($stPalettes),
+};
+function previewSeasonalTheme(theme) {
+    const root = document.documentElement;
+    const key = theme === 'default' ? SEASONAL_PREVIEW.globalKey : theme;
+    const p = SEASONAL_PREVIEW.palettes[key];
+    const vars = {
+        '--st-primary-rgb': p && p.primary_rgb,
+        '--st-primary-dark-rgb': p && p.primary_dark_rgb,
+        '--st-accent': p && p.accent,
+        '--st-login-from': p && p.login_from,
+        '--st-login-to': p && p.login_to,
+        '--st-login-mid': p && (p.login_mid || p.login_to),
+        '--st-button': p && (p.button || p.login_to),
+    };
+    // Warna brand (--primary-*) ikut dipratinjau; format koma seperti :root layout.
+    const comma = v => v && v.trim().split(/[\s,]+/).join(', ');
+    if (!p) {
+        root.removeAttribute('data-season');
+        Object.keys(vars).forEach(v => root.style.removeProperty(v));
+        ['--primary-rgb', '--primary-dark-rgb'].forEach(v => root.style.removeProperty(v));
+        // Kembalikan Accent color pilihan pengguna (inline-nya tadi dihapus).
+        if (S.primary_color) _applyColor(S.primary_color);
+        return;
+    }
+    root.setAttribute('data-season', key);
+    Object.keys(vars).forEach(v => root.style.setProperty(v, vars[v]));
+    root.style.setProperty('--primary-rgb', comma(p.primary_rgb));
+    root.style.setProperty('--primary-dark-rgb', comma(p.primary_dark_rgb));
+    root.style.setProperty('--primary-color', 'rgb(' + comma(p.primary_rgb) + ')');
+}
+function selectSeasonalTheme(theme, el) {
     S.seasonal_theme = theme;
-    document.querySelectorAll('[onclick^="selectSeasonalTheme"]').forEach(o => {
-        o.classList.remove('border-red-600','bg-red-50/50');
-        o.classList.add('border-gray-200');
-        o.querySelectorAll('span').forEach(s => { s.classList.replace('text-red-700','text-gray-500'); });
-    });
-    const el = event.currentTarget;
-    el.classList.add('border-red-600','bg-red-50/50');
-    el.classList.remove('border-gray-200');
-    el.querySelectorAll('span').forEach(s => { s.classList.replace('text-gray-500','text-red-700'); });
+    document.querySelectorAll('#seasonalPicker .st-card').forEach(o => o.classList.remove('is-selected'));
+    if (el) el.classList.add('is-selected');
+    previewSeasonalTheme(theme);
 }
 function _applyColor(hex) {
     document.documentElement.style.setProperty('--primary-color', hex);
