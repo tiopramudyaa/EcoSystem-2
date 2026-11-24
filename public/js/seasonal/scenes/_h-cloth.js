@@ -1,7 +1,7 @@
 // Kain bendera untuk adegan flag: tekstur tenun, material gelombang berjalan di GPU (normal lipatan analitik,
 // tembus cahaya dari belakang), dan material ayun untuk rumbai kecil. Tidak ada yang berjalan saat import.
 
-export const FLAG_RED = '#E70011'; // Merah resmi bendera RI (Pantone 186 C, setara sRGB E70011)
+export const FLAG_RED = '#E70011'; // Merah bendera RI untuk adegan ini. Tidak ada heks resmi (UU 24/2009 hanya menyebut merah putih 2:3); E70011 adalah konversi sRGB dari Pantone 186 C oleh pihak ketiga.
 export const FLAG_WHITE = '#FFFFFF';
 
 /** Tekstur kain 3:2 (lebar:tinggi): merah atas, putih bawah (2:3 bendera), serat tenun halus, jahitan tepi. */
