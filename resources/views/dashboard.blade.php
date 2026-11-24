@@ -1993,6 +1993,79 @@
             showToast(message, type);
         }
 
+        /**
+         * Shared request helper for every page that posts to the app (approve, reject, save, toggle, delete...).
+         *
+         *   const r = await apiFetch(url, { body: formData, button: btnElement });
+         *   if (r.busy) return;                       // same request already running: ignore the double click
+         *   showToast(r.message, r.success ? 'success' : 'error');
+         *
+         * Always resolves (never throws) with { success, message, status, data }:
+         *  - network drop, 401/419 (session expired), 403, 404, 422 (first validation message), 5xx, or a non-JSON
+         *    reply all come back as success:false with a readable message, so the page can never fail silently;
+         *  - while a request runs, `button` is disabled and a second call to the same method + URL returns { busy: true };
+         *  - opts.method (default POST), opts.body (FormData | plain object sent as JSON | null), opts.toast = true
+         *    shows the error toast for you.
+         */
+        window.apiFetch = (function () {
+            const running = new Set();
+            const fallback = function (status) {
+                if (status === 401 || status === 419) return 'Your session has expired. Reload the page and sign in again.';
+                if (status === 403) return 'You do not have permission to do this.';
+                if (status === 404) return 'This item no longer exists. Reload the page.';
+                if (status >= 500) return 'The server had a problem (' + status + '). Please try again in a moment.';
+                return 'The request failed (' + status + ').';
+            };
+            return async function (url, opts) {
+                opts = opts || {};
+                const method = (opts.method || 'POST').toUpperCase();
+                const key = method + ' ' + url;
+                if (running.has(key)) return { success: false, busy: true, status: 0, message: 'Please wait, the previous request is still running.' };
+                running.add(key);
+                const btn = opts.button || null;
+                const wasDisabled = btn ? btn.disabled : false;
+                if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
+                const done = function (result) {
+                    if (opts.toast && !result.success && typeof showToast === 'function') showToast(result.message, 'error');
+                    return result;
+                };
+                try {
+                    const headers = {
+                        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    };
+                    let body = opts.body || null;
+                    if (body && !(body instanceof FormData) && typeof body === 'object') {
+                        headers['Content-Type'] = 'application/json';
+                        body = JSON.stringify(body);
+                    }
+                    const res = await fetch(url, { method: method, headers: headers, body: method === 'GET' ? null : body, credentials: 'same-origin' });
+                    let data = null;
+                    try { data = await res.json(); } catch (e) { data = null; }
+                    if (!data || typeof data !== 'object') {
+                        return done({ success: res.ok, status: res.status, message: res.ok ? 'Done.' : fallback(res.status), data: null });
+                    }
+                    if (!res.ok && data.success !== true) {
+                        const first = data.errors ? Object.values(data.errors).flat()[0] : null;
+                        data.success = false;
+                        data.message = data.message || first || fallback(res.status);
+                        // Laravel's generic 422 text is less useful than the first field message.
+                        if (res.status === 422 && first && /given data was invalid/i.test(data.message)) data.message = first;
+                    }
+                    data.status = res.status;
+                    if (typeof data.success === 'undefined') data.success = res.ok;
+                    if (!data.message) data.message = data.success ? 'Done.' : fallback(res.status);
+                    return done(data);
+                } catch (err) {
+                    return done({ success: false, status: 0, message: 'Network error. Check your connection and try again.', data: null });
+                } finally {
+                    running.delete(key);
+                    if (btn) { btn.disabled = wasDisabled; btn.removeAttribute('aria-busy'); }
+                }
+            };
+        })();
+
         function showToastClose(btn) {
             const toast = btn.closest('.toast-close');
             if (toast) toast.click();
