@@ -269,8 +269,23 @@
                        font-size .18s ease, color .18s ease, font-weight .18s ease;
         }
         /* Floated state: input focused OR has content */
+        /* Chrome / Edge fill a saved login WITHOUT clearing :placeholder-shown, so the label stayed in the middle and
+           overlapped the saved value. :autofill (standard) and :-webkit-autofill (Chromium) float it; .has-value is the
+           script fallback for browsers that fill silently (see syncFilled below). Selectors are listed separately on
+           purpose: a browser that does not know one of them would drop the whole rule if they were combined. */
         .fl-inp:focus ~ .fl-label,
-        .fl-inp:not(:placeholder-shown) ~ .fl-label {
+        .fl-inp:not(:placeholder-shown) ~ .fl-label,
+        .fl-inp.has-value ~ .fl-label {
+            top:.625rem; transform:none;
+            font-size:.6875rem; font-weight:600;
+            color:var(--brand); letter-spacing:.02em;
+        }
+        .fl-inp:-webkit-autofill ~ .fl-label {
+            top:.625rem; transform:none;
+            font-size:.6875rem; font-weight:600;
+            color:var(--brand); letter-spacing:.02em;
+        }
+        .fl-inp:autofill ~ .fl-label {
             top:.625rem; transform:none;
             font-size:.6875rem; font-weight:600;
             color:var(--brand); letter-spacing:.02em;
@@ -966,6 +981,20 @@
             setLoading(false);
         }
     });
+
+    // Saved logins: the browser can fill the fields after the page loads (and Chrome hides the value from scripts
+    // until the first click), so mark a field that holds text with .has-value and re-check a few times. The label
+    // then floats above the value instead of sitting on top of it.
+    function syncFilled() {
+        [emailEl, passEl].forEach(el => {
+            const filled = el.value !== '' || (el.matches && (el.matches(':-webkit-autofill') || el.matches(':autofill')));
+            el.classList.toggle('has-value', !!filled);
+        });
+    }
+    ['input', 'change', 'blur', 'animationstart'].forEach(ev => [emailEl, passEl].forEach(el => el.addEventListener(ev, syncFilled)));
+    [0, 100, 400, 1000, 2500].forEach(ms => setTimeout(syncFilled, ms));
+    window.addEventListener('load', syncFilled);
+    window.addEventListener('pageshow', syncFilled);
 
     emailEl.addEventListener('keypress', e => { if (e.key==='Enter') { e.preventDefault(); passEl.focus(); } });
     passEl.addEventListener('keypress',  e => { if (e.key==='Enter') { e.preventDefault(); form.dispatchEvent(new Event('submit')); } });
