@@ -195,7 +195,7 @@ class TicketMigrationController extends Controller
             foreach ($tickets as $idx => $t) {
                 $ticketNum = $t['ticket_number'] ?? null;
                 if (!$ticketNum) {
-                    $errors[] = "Tiket #{$idx}: ticket_number kosong — dilewati";
+                    $errors[] = "Tiket #{$idx}: ticket_number kosong - dilewati";
                     $skipped++;
                     continue;
                 }
@@ -436,7 +436,7 @@ class TicketMigrationController extends Controller
             return response()->json(['success' => false, 'message' => 'URL pattern harus mengandung {ticket_number}'], 422);
         }
 
-        // Parse CSV — get list of ticket numbers
+        // Parse CSV - get list of ticket numbers
         $handle = fopen($request->file('file')->getRealPath(), 'r');
         $bom    = fread($handle, 3);
         if ($bom !== "\xEF\xBB\xBF") rewind($handle);

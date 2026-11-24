@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Adds `activity_date` — the actual date the work happened, separate from `date`
+ * Adds `activity_date` - the actual date the work happened, separate from `date`
  * (the submit date, gated by the open-period rules in PeriodService). Unlike
  * `date`, this column carries no period/window restriction.
  */

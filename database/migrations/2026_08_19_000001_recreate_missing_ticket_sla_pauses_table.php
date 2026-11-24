@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * ticket_sla_pauses was created by 2026_05_28_100000_create_sla_tables and later
- * altered by 2026_06_09_000001 / 2026_06_09_000003 / 2026_06_22_000001 — all of
+ * altered by 2026_06_09_000001 / 2026_06_09_000003 / 2026_06_22_000001 - all of
  * which are recorded as already run. On some environments the table itself is
  * missing (dropped outside of migrations) while the migrations table still says
  * those ran, so `php artisan migrate` won't recreate it. This recreates it with

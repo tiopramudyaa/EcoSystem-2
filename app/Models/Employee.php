@@ -65,6 +65,12 @@ class Employee extends Model
      */
     private ?array $memoizedRoleIdsCache = null;
 
+    /** @var array<string,bool> cache izin non-standar per instance, kunci "slug|permission" */
+    private array $menuPermissionCache = [];
+
+    /** @var array<string, array<string,bool>>|null peta izin menu per instance, lihat menuPermissionMap() */
+    private ?array $menuPermissionMapCache = null;
+
     private function memoizedRoleIds(): array
     {
         if ($this->memoizedRoleIdsCache === null) {
@@ -88,7 +94,7 @@ class Employee extends Model
 
     /**
      * Scope: filter employee yang salah satu role-nya diberi izin (can_view) atas menu slug
-     * tertentu — dipakai untuk eligibility dropdown (mis. siapa saja yang boleh muncul sebagai
+     * tertentu - dipakai untuk eligibility dropdown (mis. siapa saja yang boleh muncul sebagai
      * pilihan Ticket Lead / Ticket Member), bukan hardcode role_id.
      */
     public function scopeWithMenuPermission(\Illuminate\Database\Eloquent\Builder $query, string $slug): \Illuminate\Database\Eloquent\Builder
@@ -100,7 +106,7 @@ class Employee extends Model
 
     /**
      * Scope: employee aktif dan tidak diblokir/ditandai untuk dihapus di Basic
-     * Data — dipakai di semua daftar kandidat Ticket Lead / Ticket Member supaya
+     * Data - dipakai di semua daftar kandidat Ticket Lead / Ticket Member supaya
      * employee yang di-block atau kena deletion_flag tidak lagi bisa dipilih.
      * Employee tanpa basic data dianggap eligible (tidak ada alasan untuk
      * dikecualikan hanya karena basic data-nya belum diisi).
@@ -134,15 +140,7 @@ class Employee extends Model
     /** Cek apakah employee boleh akses menu berdasarkan slug */
     public function canAccessMenu(string $slug): bool
     {
-        $roleIds = $this->memoizedRoleIds();
-
-        return Menu::where('slug', $slug)
-            ->whereHas('roles', function ($q) use ($roleIds) {
-                $q->whereIn('employee_role.id', $roleIds)
-                  ->where('role_menu.can_view', true);
-            })
-            ->where('is_active', true)
-            ->exists();
+        return $this->hasMenuPermission($slug, 'can_view');
     }
 
     /**
@@ -151,15 +149,63 @@ class Employee extends Model
      */
     public function hasMenuPermission(string $slug, string $permission = 'can_view'): bool
     {
-        $roleIds = $this->memoizedRoleIds();
+        // Kolom izin yang dikenal dibaca dari peta yang dimuat SEKALI per instance
+        // (1 query untuk semua menu), bukan 1 query per pasangan slug+izin. Halaman
+        // dengan banyak gating (mis. section Customer/Employee) jadi tidak N+1.
+        if (in_array($permission, self::MENU_PERMISSION_COLUMNS, true)) {
+            return $this->menuPermissionMap()[$slug][$permission] ?? false;
+        }
 
-        return Menu::where('slug', $slug)
-            ->whereHas('roles', function ($q) use ($roleIds, $permission) {
-                $q->whereIn('employee_role.id', $roleIds)
-                  ->where("role_menu.{$permission}", true);
-            })
-            ->where('is_active', true)
-            ->exists();
+        // Nama izin di luar kolom standar: tetap pakai query langsung (perilaku lama).
+        $key = $slug . '|' . $permission;
+
+        if (!array_key_exists($key, $this->menuPermissionCache)) {
+            $roleIds = $this->memoizedRoleIds();
+
+            $this->menuPermissionCache[$key] = Menu::where('slug', $slug)
+                ->whereHas('roles', function ($q) use ($roleIds, $permission) {
+                    $q->whereIn('employee_role.id', $roleIds)
+                      ->where("role_menu.{$permission}", true);
+                })
+                ->where('is_active', true)
+                ->exists();
+        }
+
+        return $this->menuPermissionCache[$key];
+    }
+
+    private const MENU_PERMISSION_COLUMNS = ['can_view', 'can_create', 'can_edit', 'can_delete'];
+
+    /**
+     * Peta slug => [can_view, can_create, can_edit, can_delete] (union semua role karyawan,
+     * hanya menu aktif). Dimuat sekali per instance.
+     *
+     * @return array<string, array<string, bool>>
+     */
+    private function menuPermissionMap(): array
+    {
+        if ($this->menuPermissionMapCache === null) {
+            $roleIds = $this->memoizedRoleIds();
+            $map = [];
+
+            if ($roleIds !== []) {
+                $rows = \Illuminate\Support\Facades\DB::table('menu')
+                    ->join('role_menu', 'role_menu.menu_id', '=', 'menu.id')
+                    ->where('menu.is_active', true)
+                    ->whereIn('role_menu.role_id', $roleIds)
+                    ->get(['menu.slug', 'role_menu.can_view', 'role_menu.can_create', 'role_menu.can_edit', 'role_menu.can_delete']);
+
+                foreach ($rows as $row) {
+                    foreach (self::MENU_PERMISSION_COLUMNS as $col) {
+                        $map[$row->slug][$col] = ($map[$row->slug][$col] ?? false) || (bool) $row->{$col};
+                    }
+                }
+            }
+
+            $this->menuPermissionMapCache = $map;
+        }
+
+        return $this->menuPermissionMapCache;
     }
 
     /** Alias ringkas untuk can_view */

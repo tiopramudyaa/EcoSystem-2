@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('description')->nullable();
 
             // Target/actor: intentionally no FK constraint, same rationale as
-            // audit_logs.actor_id — high write volume, must survive employee
+            // audit_logs.actor_id - high write volume, must survive employee
             // deletion. Names/identifiers are denormalized.
             $table->unsignedBigInteger('target_employee_id')->nullable();
             $table->string('target_identifier', 150)->nullable(); // attempted email/username when no account exists

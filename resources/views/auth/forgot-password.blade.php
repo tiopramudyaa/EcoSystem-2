@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Reset Password — ECoSystem</title>
+    <title>Reset Password - ECoSystem</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
@@ -323,7 +323,7 @@
                 background:linear-gradient(135deg, #1A0000, #6B0000);
                 padding:1.25rem 1.5rem;
             }
-            /* The panel carries inline height:100vh/overflow:hidden — beat it with
+            /* The panel carries inline height:100vh/overflow:hidden - beat it with
                !important so the whole form (incl. submit) can scroll into view on
                short screens (phone landscape / on-screen keyboard). */
             #form-panel { width:100%; height:auto !important; min-height:calc(100vh - 62px); overflow:visible !important; }
@@ -428,7 +428,7 @@
         <div style="width:26px;height:1px;border-radius:9999px;background:rgba(255,255,255,.05);animation:shimmerLine 8s ease-in-out infinite;animation-delay:-1s;"></div>
     </div>
 
-    {{-- Glass pills — bottom-right cluster --}}
+    {{-- Glass pills - bottom-right cluster --}}
     <div style="position:absolute;bottom:-18px;right:-45px;pointer-events:none;">
         <div style="position:absolute;width:300px;height:74px;border-radius:9999px;
                     background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);
@@ -470,7 +470,7 @@
 
         {{-- Subheading --}}
         <p class="dp-sub">
-            No worries — it happens. We'll send you a secure reset link
+            No worries - it happens. We'll send you a secure reset link
             straight to your registered email address.
         </p>
 

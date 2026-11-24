@@ -22,13 +22,13 @@ use RuntimeException;
 /**
  * Generate laporan .docx/.pdf dari template Word yang diupload user.
  * Provider-agnostic orchestrator: bangun prompt + registry tool data (SAMA
- * PERSIS dengan AiChatService — lihat docblock properti $tools), lalu
+ * PERSIS dengan AiChatService - lihat docblock properti $tools), lalu
  * serahkan panggilan API sesungguhnya ke AnthropicReportDriver atau
  * OpenAiReportDriver (dipilih lewat AiModelSettings::WORD_REPORT, sama
  * seperti AiChatService/AiTicketAnalyzerService memilih provider mereka).
  *
  * Kelas ini sendiri TIDAK tahu apa pun soal Agent Skills / code_interpreter
- * / bentuk API provider — itu semua ada di driver masing-masing.
+ * / bentuk API provider - itu semua ada di driver masing-masing.
  *
  * DIPECAH JADI 3 FASE (lihat ReportGenerationDriver) -- Tahap 1/2/3-5 di
  * SKILL.md dulunya satu percakapan AI berkelanjutan sampai 12 iterasi
@@ -60,7 +60,7 @@ class ReportGeneratorService
 
     public function __construct(private AiDriverFactory $drivers, SlaService $slaService)
     {
-        // Registri tool SENGAJA sama dengan AiChatService — lihat docblock
+        // Registri tool SENGAJA sama dengan AiChatService - lihat docblock
         // kelas ini. Jangan tambah tool baru di sini; tambahkan di
         // AiChatService dulu supaya kedua fitur tetap konsisten.
         $this->tools = [
@@ -172,7 +172,7 @@ class ReportGeneratorService
     }
 
     /**
-     * AI berhenti untuk minta klarifikasi (SKILL.md Tahap 2 poin 5) — bukan
+     * AI berhenti untuk minta klarifikasi (SKILL.md Tahap 2 poin 5) - bukan
      * kegagalan. Simpan pertanyaannya, job TIDAK menandai failed (lihat
      * GenerateWordReportJob).
      */
@@ -220,11 +220,11 @@ class ReportGeneratorService
         $this->appendQaLog($lines, $report);
 
         $lines[] = 'Gunakan tool yang tersedia (get_tickets, get_sla_summary, get_delivery_projects, list_tables, '
-            . 'query_data, aggregate_data) untuk mengambil data nyata dari EcoSystem — jangan mengarang data apa pun.';
+            . 'query_data, aggregate_data) untuk mengambil data nyata dari EcoSystem - jangan mengarang data apa pun.';
         $lines[] = 'Tugas SEKARANG: kerjakan HANYA Tahap 2 (Kenali topik, lalu tarik semua data terkait) memakai '
             . 'peta struktur di atas. Jangan menulis atau mengedit dokumen apa pun di fase ini.';
         $lines[] = 'Jika topik atau periode laporan tidak jelas dari struktur dokumen maupun instruksi user, '
-            . 'tanyakan singkat (maks. 1 pertanyaan, dengan opsi jelas) SEBELUM menarik data — jangan menebak.';
+            . 'tanyakan singkat (maks. 1 pertanyaan, dengan opsi jelas) SEBELUM menarik data - jangan menebak.';
 
         return implode("\n\n", $lines);
     }
@@ -236,7 +236,7 @@ class ReportGeneratorService
         $lines[] = 'Peta struktur dokumen (hasil Tahap 1):';
         $lines[] = json_encode($report->structure_map, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
-        $lines[] = 'Data yang sudah ditarik dari EcoSystem (hasil Tahap 2 — SUDAH LENGKAP, jangan memanggil '
+        $lines[] = 'Data yang sudah ditarik dari EcoSystem (hasil Tahap 2 - SUDAH LENGKAP, jangan memanggil '
             . 'tool data apa pun lagi, jangan menarik ulang atau mengarang data tambahan):';
         $lines[] = json_encode($report->pulled_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 

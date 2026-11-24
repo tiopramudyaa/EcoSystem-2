@@ -53,7 +53,7 @@
                 </div>
             </div>
         </div>
-        {{-- Search Bar — selaras dengan style index lain --}}
+        {{-- Search Bar - selaras dengan style index lain --}}
         <div class="p-4">
             <input type="search" id="searchInput"
                    placeholder="Search project, client, or description..."
@@ -91,9 +91,7 @@
                         $groups = $project->plannings->where('is_group', true);
                         
                         // Ambil visible phases untuk project ini
-                        $visiblePhases = $project->phases()
-                            ->where('is_visible', true)
-                            ->get();
+                        $visiblePhases = $project->phases; // sudah di-eager-load (visible, urut order_sequence) oleh controller
                         
                         $totalPhaseWeight = 0;
                         $weightedPhaseProgress = 0;
@@ -298,9 +296,7 @@
                             $groups = $project->plannings->where('is_group', true);
                             
                             // Ambil visible phases untuk project ini
-                            $visiblePhases = $project->phases()
-                                ->where('is_visible', true)
-                                ->get();
+                            $visiblePhases = $project->phases; // sudah di-eager-load (visible, urut order_sequence) oleh controller
                             
                             $totalPhaseWeight = 0;
                             $weightedPhaseProgress = 0;
@@ -466,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-    // Status filter — custom-dd memanggil onProjectStatusFilterChange via
+    // Status filter - custom-dd memanggil onProjectStatusFilterChange via
     // data-onchange. Expose filterProjects ke window biar bisa dipanggil
     // handler global di luar scope DOMContentLoaded ini.
     window._filterProjects = function (searchTerm, selectedStatus) {

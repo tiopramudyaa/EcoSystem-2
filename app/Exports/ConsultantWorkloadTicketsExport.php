@@ -13,12 +13,12 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 /**
- * Export daftar tiket aktif milik SATU konsultan — isinya persis sub-tabel yang
+ * Export daftar tiket aktif milik SATU konsultan - isinya persis sub-tabel yang
  * muncul saat baris konsultan di halaman Consultant Workload di-expand
  * (kolom & angka sama supaya bisa dicocokkan langsung).
  *
  * Layout sheet:
- *   Baris 1        : judul "Consultant Workload — Tickets"
+ *   Baris 1        : judul "Consultant Workload - Tickets"
  *   Baris 2-5      : info konsultan (nama, ECI, modul, periode generate)
  *   Baris 6        : kosong
  *   Baris 7        : header tabel
@@ -73,18 +73,18 @@ class ConsultantWorkloadTicketsExport implements FromArray, WithEvents, WithTitl
         $loadScore = $c['load_score'] ?? 0;
 
         $rows = [
-            ['Consultant Workload — Tickets', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+            ['Consultant Workload - Tickets', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
             ['Consultant',         $c['name'] ?? '-'],
             ['ECI',                $c['eci'] ?: '-'],
             ['Personnel Sub Area', $c['personnel_subarea'] ?: '-'],
             ['Current Assignment', $c['current_assignment'] ?: '-'],
             ['Module',             $c['modules'] && $c['modules'] !== '-' ? $c['modules'] : '-'],
             ['Tickets (active)',   $nTicket],
-            ['Alloc Days',         number_format($allocDays, 2) . ' days'],
-            ['Add. Days',          number_format($addDays, 2) . ' days'],
-            ['Remain',             number_format($remain, 2) . ' days'],
-            ['Workload %',         $wPct . '%  (' . number_format($remain, 2) . ' / ' . number_format($effMd, 2) . ' md)'],
-            ['Load Score',         $loadScore . '  (' . number_format($remain, 2) . ' d × (1 + 0.1 × ' . $nTicket . '))'],
+            ['Alloc Days',         \App\Support\Md::format($allocDays) . ' days'],
+            ['Add. Days',          \App\Support\Md::format($addDays) . ' days'],
+            ['Remain',             \App\Support\Md::format($remain) . ' days'],
+            ['Workload %',         $wPct . '%  (' . \App\Support\Md::format($remain) . ' / ' . \App\Support\Md::format($effMd) . ' md)'],
+            ['Load Score',         $loadScore . '  (' . \App\Support\Md::format($remain) . ' d × (1 + 0.1 × ' . $nTicket . '))'],
             ['Generated',          now()->format('d M Y H:i')],
             [''],
             [

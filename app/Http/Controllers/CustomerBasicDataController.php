@@ -139,7 +139,7 @@ class CustomerBasicDataController extends Controller
         DB::beginTransaction();
 
         try {
-            // Check if customer exists — kept as the full row (not just exists()) since
+            // Check if customer exists - kept as the full row (not just exists()) since
             // it also doubles as the "before" snapshot for the audit log entry below.
             $oldCustomer = DB::table('customer')->where('customer_id', $customerId)->first();
             if (!$oldCustomer) {
@@ -157,7 +157,7 @@ class CustomerBasicDataController extends Controller
                     ->update(['customer_code' => strtoupper($request->customer_code)]);
             }
 
-            // Business Partner type (Customer / Vendor) — kolom di tabel `customer`.
+            // Business Partner type (Customer / Vendor) - kolom di tabel `customer`.
             if ($request->filled('type')) {
                 DB::table('customer')
                     ->where('customer_id', $customerId)
@@ -172,7 +172,7 @@ class CustomerBasicDataController extends Controller
                     ->update(['domain' => \App\Models\Customer::normalizeDomain($request->domain)]);
             }
 
-            // Company Email (customer.email) — pakai has() agar bisa dikosongkan juga.
+            // Company Email (customer.email) - pakai has() agar bisa dikosongkan juga.
             // Inilah satu-satunya tempat edit email perusahaan yang dibuat saat
             // create/import customer.
             if ($request->has('email')) {
@@ -181,14 +181,14 @@ class CustomerBasicDataController extends Controller
                     ->update(['email' => $request->email ?: null]);
             }
 
-            // Parent Customer — dapat ditambah/dihapus saat edit (string kosong = hapus)
+            // Parent Customer - dapat ditambah/dihapus saat edit (string kosong = hapus)
             if ($request->has('parent_customer_id')) {
                 DB::table('customer')
                     ->where('customer_id', $customerId)
                     ->update(['parent_customer_id' => $request->parent_customer_id ?: null]);
             }
 
-            // Customer Group struktural — resolve nama untuk di-mirror ke kolom teks lama.
+            // Customer Group struktural - resolve nama untuk di-mirror ke kolom teks lama.
             // Jika field group_id dikirim, ia jadi sumber kebenaran; kalau tidak, biarkan
             // nilai teks yang dikirim (backward compat).
             $hasGroupField = $request->has('customer_group_id');
@@ -355,7 +355,7 @@ class CustomerBasicDataController extends Controller
         DB::beginTransaction();
 
         try {
-            // Snapshot before delete — needed for the audit log entry below.
+            // Snapshot before delete - needed for the audit log entry below.
             $existingData = DB::table('customer_basic_data')->where('customer_id', $customerId)->first();
 
             $deleted = DB::table('customer_basic_data')

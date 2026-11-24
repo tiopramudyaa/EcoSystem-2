@@ -222,11 +222,15 @@ class DeliveryProjectPlanning extends Model
 
             if ($stages->isEmpty()) {
                 // ✅ FIX: check direct activities (Phase → Group → Activity, no stage)
-                $directActivities = self::where('parent_id', $this->id)
-                    ->where('is_group', false)
-                    ->whereNull('stage_id')
-                    ->with('activity')
-                    ->get();
+                // Pakai relasi directActivities bila sudah di-eager-load (filter sama),
+                // supaya tidak query per group.
+                $directActivities = $this->relationLoaded('directActivities')
+                    ? $this->directActivities
+                    : self::where('parent_id', $this->id)
+                        ->where('is_group', false)
+                        ->whereNull('stage_id')
+                        ->with('activity')
+                        ->get();
 
                 if ($directActivities->isNotEmpty()) {
                     $totalWeight     = 0;
@@ -246,7 +250,7 @@ class DeliveryProjectPlanning extends Model
                         return round($weightedProgress / $totalWeight, 2);
                     }
 
-                    // No weights set — simple average
+                    // No weights set - simple average
                     $avg = $directActivities->avg(function ($pa) {
                         return $pa->activity
                             ? (float) ($pa->activity->progress_percentage ?? 0)
@@ -317,7 +321,7 @@ class DeliveryProjectPlanning extends Model
     }
 
     // =========================================================================
-    // PLANNED PROGRESS (schedule-based — what progress SHOULD be by today)
+    // PLANNED PROGRESS (schedule-based - what progress SHOULD be by today)
     //
     // Mirrors getCalculatedProgressAttribute() exactly, but at every leaf the
     // ACTUAL progress is replaced by a date-driven planned completion fraction
@@ -332,7 +336,7 @@ class DeliveryProjectPlanning extends Model
      *   - today on/after end          → 100
      *   - today within the window     → (elapsed days / total days) × 100
      *
-     * Example: window 10–11 Jun (2 days), today 10 Jun → elapsed 1 / total 2 = 50%.
+     * Example: window 10-11 Jun (2 days), today 10 Jun → elapsed 1 / total 2 = 50%.
      */
     public static function plannedFraction($start, $end, ?Carbon $today = null): float
     {
@@ -377,11 +381,15 @@ class DeliveryProjectPlanning extends Model
 
             // ── Group with no stages → direct activities (Phase → Group → Activity)
             if ($stages->isEmpty()) {
-                $directActivities = self::where('parent_id', $this->id)
-                    ->where('is_group', false)
-                    ->whereNull('stage_id')
-                    ->with('activity')
-                    ->get();
+                // Pakai relasi directActivities bila sudah di-eager-load (filter sama),
+                // supaya tidak query per group.
+                $directActivities = $this->relationLoaded('directActivities')
+                    ? $this->directActivities
+                    : self::where('parent_id', $this->id)
+                        ->where('is_group', false)
+                        ->whereNull('stage_id')
+                        ->with('activity')
+                        ->get();
 
                 if ($directActivities->isNotEmpty()) {
                     $totalWeight = 0;
@@ -397,7 +405,7 @@ class DeliveryProjectPlanning extends Model
                         return round($weighted / $totalWeight, 2);
                     }
 
-                    // No weights set — simple average
+                    // No weights set - simple average
                     $avg = $directActivities->avg(fn ($pa) => $pa->planned_progress);
                     return round($avg ?? 0, 2);
                 }

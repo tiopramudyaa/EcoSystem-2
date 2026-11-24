@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Reminder berulang ke lead modul selama tiket masih berstatus `open`.
  *
- * Command ini TIDAK menyimpan daftar tiket yang perlu diingatkan di mana pun —
+ * Command ini TIDAK menyimpan daftar tiket yang perlu diingatkan di mana pun -
  * ia menghitung ulang tiap kali jalan dari status tiket saat ini. Karena itu
  * "berhenti kalau status bukan open lagi" tidak butuh kode pembatal: begitu
  * helpdesk memindahkan status, tiketnya hilang sendiri dari hasil query.
@@ -39,7 +39,7 @@ class SendOpenTicketReminders extends Command
         if (!$dryRun && !$powerAutomate->isFlowReady(PowerAutomateService::FLOW_TICKET_OPEN_REMINDER)) {
             // Bukan error: begini caranya fitur ini dimatikan (POWER_AUTOMATE_ENABLED=false
             // atau URL flow dikosongkan). Scheduler tetap jalan tiap menit tanpa efek.
-            $this->line('Flow ticket_open_reminder tidak aktif — tidak ada yang dikirim.');
+            $this->line('Flow ticket_open_reminder tidak aktif - tidak ada yang dikirim.');
             return self::SUCCESS;
         }
 
@@ -135,7 +135,7 @@ class SendOpenTicketReminders extends Command
      * Tiket open yang sudah waktunya diingatkan lagi.
      *
      * Belum pernah dikirimi reminder didahulukan, lalu yang paling lama tidak
-     * dikirimi — supaya batas batch memotong antrean secara adil, bukan selalu
+     * dikirimi - supaya batas batch memotong antrean secara adil, bukan selalu
      * mengunci tiket yang sama.
      */
     private function dueTickets(int $intervalMinutes, int $maxCount, int $batchLimit, ?Carbon $since, array $types)
@@ -209,7 +209,7 @@ class SendOpenTicketReminders extends Command
         try {
             return Carbon::parse($value);
         } catch (\Throwable $e) {
-            $this->warn("POWER_AUTOMATE_REMINDER_SINCE tidak valid ('{$value}') — batas waktu diabaikan.");
+            $this->warn("POWER_AUTOMATE_REMINDER_SINCE tidak valid ('{$value}') - batas waktu diabaikan.");
             return null;
         }
     }

@@ -38,8 +38,8 @@ class MigrateDeliverableFolderStructure extends Command
         $root          = config('services.microsoft_graph.customer_deliverable_path', 'DELIVERY SUPPORT/CUSTOMER DELIVERABLE');
 
         $this->line($this->execute
-            ? '<fg=yellow;options=bold>EXECUTE mode — changes WILL be applied to OneDrive.</>'
-            : '<fg=cyan;options=bold>DRY-RUN mode — no changes made. Re-run with --execute to apply.</>');
+            ? '<fg=yellow;options=bold>EXECUTE mode - changes WILL be applied to OneDrive.</>'
+            : '<fg=cyan;options=bold>DRY-RUN mode - no changes made. Re-run with --execute to apply.</>');
 
         $query = DeliverySupport::whereNotNull('onedrive_deliverable_folder_id');
         if ($id = $this->option('support')) {
@@ -90,7 +90,7 @@ class MigrateDeliverableFolderStructure extends Command
 
         // Already migrated → nothing to move.
         if ($oldSub && $supportFolderId && $oldSub === $supportFolderId) {
-            $this->line('    already points to the support folder — nothing to do.');
+            $this->line('    already points to the support folder - nothing to do.');
             return false;
         }
 
@@ -188,7 +188,7 @@ class MigrateDeliverableFolderStructure extends Command
         $conflict = collect($this->od->listSubFoldersByParentId($custTicketingId))
             ->first(fn ($c) => mb_strtolower($c['name']) === mb_strtolower($name));
         if ($conflict) {
-            $this->warn("    conflict: ticket '{$name}' already at customer TICKETING — left in place for manual review.");
+            $this->warn("    conflict: ticket '{$name}' already at customer TICKETING - left in place for manual review.");
             return;
         }
 

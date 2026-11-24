@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\Lite\LiteAuthController;
+use App\Http\Controllers\Lite\LiteCustomerMandaysController;
 use App\Http\Controllers\Lite\LiteDashboardController;
 use App\Http\Controllers\Lite\LiteEmployeeController;
 use App\Http\Controllers\Lite\LiteTicketController;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\Route;
 |
 | Autentikasi:
 |   - Public: POST /api/lite/auth/login
-|   - Protected: middleware 'lite.auth' — session cookie ATAU Bearer token
+|   - Protected: middleware 'lite.auth' - session cookie ATAU Bearer token
 |
 */
 
@@ -57,7 +58,15 @@ Route::middleware(['web'])->prefix('lite')->group(function () {
             Route::post('/{ticketId}/messages/{messageId}/internal-note',        [LiteTicketController::class, 'updateInternalNote'])->name('update-internal-note');
             Route::delete('/{ticketId}/messages/{messageId}/internal-note',      [LiteTicketController::class, 'destroyInternalNote'])->name('delete-internal-note');
             Route::post('/{ticketId}/messages/{messageId}/internal-note/delete', [LiteTicketController::class, 'destroyInternalNote'])->name('delete-internal-note-post');
+
+            // Customer Mandays: approval bertingkat (aturan di CustomerMandaysApprovalService)
+            Route::get('/{ticketId}/customer-mandays',          [LiteCustomerMandaysController::class, 'show'])->whereNumber('ticketId')->name('customer-mandays.show');
+            Route::post('/{ticketId}/customer-mandays/approve', [LiteCustomerMandaysController::class, 'approve'])->whereNumber('ticketId')->name('customer-mandays.approve');
+            Route::post('/{ticketId}/customer-mandays/reject',  [LiteCustomerMandaysController::class, 'reject'])->whereNumber('ticketId')->name('customer-mandays.reject');
         });
+
+        // Customer Mandays: daftar proposal yang menunggu giliran user ini
+        Route::get('/customer-mandays/approvals', [LiteCustomerMandaysController::class, 'approvals'])->name('lite.customer-mandays.approvals');
 
         // Employees (autocomplete @mention di internal note)
         Route::get('/employees/mentionable', [LiteEmployeeController::class, 'mentionable'])->name('lite.employees.mentionable');

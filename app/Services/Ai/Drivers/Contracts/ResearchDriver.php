@@ -9,13 +9,13 @@ use Closure;
  * is behind $model (see AiDriverFactory).
  *
  * Messages travel in the canonical (Anthropic-shaped) format AiResearchService
- * already caches/archives — text/image/document blocks only, since Research
+ * already caches/archives - text/image/document blocks only, since Research
  * has no local tool_use/tool_result (its tools are server-side web search/fetch).
  *
  * Provider-internal continuation rounds that have NO cross-provider analog
  * (Claude's stopReason 'pause_turn', which requires resending raw provider
  * turn content AiResearchService's canonical text-only cache format cannot
- * represent) are fully resolved INSIDE the driver — including emitting the
+ * represent) are fully resolved INSIDE the driver - including emitting the
  * 'notice' onEvent itself if the driver's own resume budget runs out. The
  * hard output-length ceiling is deliberately NOT retried in here:
  * AiResearchService's own MAX_LENGTH_RESUMES loop owns that, since it is a

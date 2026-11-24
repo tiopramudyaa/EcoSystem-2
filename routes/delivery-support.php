@@ -9,6 +9,7 @@ use App\Http\Controllers\Delivery\DeliverySupportStageController;
 use App\Http\Controllers\Delivery\DeliverySupportDataController;
 use App\Http\Controllers\Delivery\DeliverySupportReconsController;
 use App\Http\Controllers\DeliverySupportPaymentTermController;
+use App\Http\Controllers\DeliverySupportContractLineItemController;
 use App\Http\Controllers\DeliverySupportCostController;
 use App\Http\Middleware\CheckAuthToken;
 
@@ -38,6 +39,10 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
     // List all support items
     Route::get('/', [DeliverySupportController::class, 'index'])->name('index');
 
+    // Export daftar support ke Excel. Wajib sebelum `{support}` agar "export"
+    // tidak tertangkap sebagai ID. Izin function-nya sendiri (default: EC Admin).
+    Route::get('/export', [DeliverySupportController::class, 'export'])->name('export')->middleware('menu:delivery-support.export');
+
     // Planning list (all supports with planning progress)
     Route::get('/planning', [DeliverySupportController::class, 'planningList'])->name('planning-list');
 
@@ -57,7 +62,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         //   .view   → endpoint baca section (GET)
         //   .edit   → mengubah record yang sudah ada (PATCH/PUT)
         //   .manage → menambah & menghapus record (POST/DELETE)
-        // Mirror dari Delivery Project — lihat routes/web.php.
+        // Mirror dari Delivery Project - lihat routes/web.php.
         // ---------------------------------------------------------------------
 
         // View support details
@@ -71,7 +76,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
 
         // Update support (section-based via AJAX). Satu endpoint melayani beberapa
         // section (support-info / approval-info / team-info), jadi izinnya TIDAK
-        // bisa ditentukan di level route — dicek per `section` di updateField().
+        // bisa ditentukan di level route - dicek per `section` di updateField().
         Route::patch('/field', [DeliverySupportController::class, 'updateField'])->name('update-field');
 
         // Folder OneDrive & customer deliverable → section Documents
@@ -98,7 +103,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         // TICKET ASSIGNMENT
         // =====================================================================
         // Assign ticket to support - creates activity automatically
-        Route::post('/assign-ticket', [DeliverySupportController::class, 'assignTicket'])->name('assign-ticket');
+        Route::post('/assign-ticket', [DeliverySupportController::class, 'assignTicket'])->name('assign-ticket')->middleware('menu:ticket.assign-delivery-support');
 
         // =====================================================================
         // PLANNING
@@ -165,7 +170,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
                 Route::put('/{activity}/employees/{employeeId}', [DeliverySupportActivityController::class, 'updateAssignment'])->name('employees.update');
             });
 
-            // "Remove Ticket from DS" — gating-nya slug sendiri (bukan activities.edit)
+            // "Remove Ticket from DS" - gating-nya slug sendiri (bukan activities.edit)
             // supaya bisa diberi/dicabut lewat Control Center → Menu Access.
             Route::middleware('menu:delivery-support.remove-ticket')->group(function () {
                 Route::patch('/{activity}/remove-ticket', [DeliverySupportActivityController::class, 'removeTicketLink'])->name('remove-ticket');
@@ -207,7 +212,8 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         // =====================================================================
         // DATA ENDPOINTS (Table, Gantt, S-Curve)
         // =====================================================================
-        Route::prefix('data')->name('data.')->group(function () {
+        // Data jadwal/aktivitas support: izin yang sama dengan halaman planning-nya (activities.view).
+        Route::prefix('data')->name('data.')->middleware('menu:delivery-support.activities.view')->group(function () {
             Route::get('/table', [DeliverySupportDataController::class, 'getTableData'])->name('table');
             Route::get('/gantt', [DeliverySupportDataController::class, 'getGanttData'])->name('gantt');
             Route::get('/scurve', [DeliverySupportDataController::class, 'getSCurveData'])->name('scurve');
@@ -215,48 +221,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         });
 
         // =====================================================================
-        // DOCUMENTS
-        // =====================================================================
-        Route::prefix('documents')->name('documents.')->group(function () {
-            Route::get('/', [DeliverySupportController::class, 'getDocuments'])->name('index')->middleware('menu:delivery-support.documents.view');
-            Route::put('/{document}', [DeliverySupportController::class, 'updateDocument'])->name('update')->middleware('menu:delivery-support.documents.edit');
-
-            Route::middleware('menu:delivery-support.documents.manage')->group(function () {
-                Route::post('/', [DeliverySupportController::class, 'storeDocument'])->name('store');
-                Route::delete('/{document}', [DeliverySupportController::class, 'destroyDocument'])->name('destroy');
-                Route::post('/{document}/delete', [DeliverySupportController::class, 'destroyDocument'])->name('destroy-post');
-            });
-        });
-
-        // =====================================================================
-        // UPDATES/NOTES — bagian dari section Activities
-        // =====================================================================
-        Route::prefix('updates')->name('updates.')->group(function () {
-            Route::get('/', [DeliverySupportController::class, 'getUpdates'])->name('index')->middleware('menu:delivery-support.activities.view');
-            Route::put('/{update}', [DeliverySupportController::class, 'updateUpdate'])->name('update')->middleware('menu:delivery-support.activities.edit');
-
-            Route::middleware('menu:delivery-support.activities.manage')->group(function () {
-                Route::post('/', [DeliverySupportController::class, 'storeUpdate'])->name('store');
-                Route::delete('/{update}', [DeliverySupportController::class, 'destroyUpdate'])->name('destroy');
-                Route::post('/{update}/delete', [DeliverySupportController::class, 'destroyUpdate'])->name('destroy-post');
-            });
-        });
-
-        // =====================================================================
-        // TEAM MEMBERS — hanya tambah/hapus, tidak ada aksi edit
-        // =====================================================================
-        Route::prefix('team')->name('team.')->group(function () {
-            Route::get('/', [DeliverySupportController::class, 'getTeamMembers'])->name('index')->middleware('menu:delivery-support.team.view');
-
-            Route::middleware('menu:delivery-support.team.manage')->group(function () {
-                Route::post('/', [DeliverySupportController::class, 'addTeamMember'])->name('store');
-                Route::delete('/{employee}', [DeliverySupportController::class, 'removeTeamMember'])->name('destroy');
-                Route::post('/{employee}/delete', [DeliverySupportController::class, 'removeTeamMember'])->name('destroy-post');
-            });
-        });
-
-        // =====================================================================
-        // CUSTOMER PIC — sync menggantikan seluruh daftar sekaligus (= edit)
+        // CUSTOMER PIC - sync menggantikan seluruh daftar sekaligus (= edit)
         // =====================================================================
         Route::middleware('menu:delivery-support.customer-pic.view')->group(function () {
             Route::get('/client-contacts', [DeliverySupportController::class, 'getClientContacts'])->name('client-contacts');
@@ -270,15 +235,24 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         Route::patch('/financial-info', [DeliverySupportController::class, 'updateFinancialInfo'])->name('financial-info.update')->middleware('menu:delivery-support.financial.edit');
 
         // =====================================================================
-        // TERM OF PAYMENT (TOP) PLAN — tampil di dalam section Financial
+        // TERM OF PAYMENT (TOP) PLAN - tampil di dalam section Financial
         // =====================================================================
         Route::get('/payment-terms',        [DeliverySupportPaymentTermController::class, 'index'])->name('paymentTerms.index')->middleware('menu:delivery-support.financial.view');
-        Route::put('/payment-terms/{term}', [DeliverySupportPaymentTermController::class, 'update'])->name('paymentTerms.update')->middleware('menu:delivery-support.financial.edit');
+        Route::middleware('menu:delivery-support.financial.edit')->group(function () {
+            Route::put('/payment-terms/{term}', [DeliverySupportPaymentTermController::class, 'update'])->name('paymentTerms.update');
+            // Mode penagihan TOP (% dari Revenue ↔ Contract Line Item) & ubah Contract Line Item
+            Route::post('/top-mode', [DeliverySupportPaymentTermController::class, 'updateMode'])->name('topMode.update');
+            Route::post('/contract-line-items/{lineItem}', [DeliverySupportContractLineItemController::class, 'update'])->name('contractLineItems.update');
+        });
 
         Route::middleware('menu:delivery-support.financial.manage')->group(function () {
             Route::post('/payment-terms',               [DeliverySupportPaymentTermController::class, 'store'])->name('paymentTerms.store');
             Route::delete('/payment-terms/{term}',      [DeliverySupportPaymentTermController::class, 'destroy'])->name('paymentTerms.destroy');
             Route::post('/payment-terms/{term}/delete', [DeliverySupportPaymentTermController::class, 'destroy'])->name('paymentTerms.destroy-post');
+            // Contract Line Item (mode TOP Line Item) - tambah/hapus & generate termin berulang
+            Route::post('/contract-line-items',                             [DeliverySupportContractLineItemController::class, 'store'])->name('contractLineItems.store');
+            Route::post('/contract-line-items/{lineItem}/delete',           [DeliverySupportContractLineItemController::class, 'destroy'])->name('contractLineItems.destroy');
+            Route::post('/contract-line-items/{lineItem}/generate-schedule', [DeliverySupportContractLineItemController::class, 'generateSchedule'])->name('contractLineItems.generateSchedule');
         });
 
         // =====================================================================
@@ -287,11 +261,17 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
         Route::middleware('menu:delivery-support.plan-cost.view')->group(function () {
             Route::get('/costs',                          [DeliverySupportCostController::class, 'index'])->name('costs.index');
             Route::get('/costs/{cost}/items',             [DeliverySupportCostController::class, 'indexItems'])->name('costs.items.index');
+            // Export Excel (rekap, expense, monthly cost, release schedule) & report Monthly Cost vs TOP Invoiced
+            Route::get('/costs/export',                   [DeliverySupportCostController::class, 'export'])->name('costs.export');
+            Route::get('/costs/monthly',                  [DeliverySupportCostController::class, 'monthly'])->name('costs.monthly');
+            Route::get('/costs/{cost}/releases',          [DeliverySupportCostController::class, 'indexReleases'])->name('costs.releases.index');
         });
 
         Route::middleware('menu:delivery-support.plan-cost.edit')->group(function () {
             Route::put('/costs/{cost}',                   [DeliverySupportCostController::class, 'update'])->name('costs.update');
             Route::put('/costs/{cost}/items/{item}',      [DeliverySupportCostController::class, 'updateItem'])->name('costs.items.update');
+            // "Atur Release Cost" langkah 1: total release item
+            Route::put('/costs/{cost}/release',           [DeliverySupportCostController::class, 'updateRelease'])->name('costs.release.update');
         });
 
         // =====================================================================
@@ -310,7 +290,7 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
                 Route::get('/batches',          [DeliverySupportReconsController::class, 'batches'])->name('batches');
             });
 
-            // Membuat Recons baru (halaman + simpan) — izin manage.
+            // Membuat Recons baru (halaman + simpan) - izin manage.
             Route::middleware('menu:delivery-support.recons.manage')->group(function () {
                 Route::get('/create', [DeliverySupportReconsController::class, 'create'])->name('create');
                 Route::post('/save',  [DeliverySupportReconsController::class, 'store'])->name('store');
@@ -345,6 +325,10 @@ Route::prefix('delivery/support')->middleware(CheckAuthToken::class)->name('deli
             Route::post('/costs/{cost}/items',                [DeliverySupportCostController::class, 'storeItem'])->name('costs.items.store');
             Route::delete('/costs/{cost}/items/{item}',       [DeliverySupportCostController::class, 'destroyItem'])->name('costs.items.destroy');
             Route::post('/costs/{cost}/items/{item}/delete',  [DeliverySupportCostController::class, 'destroyItem'])->name('costs.items.destroy-post');
+            // "Atur Release Cost" langkah 2: jadwal release bulanan
+            Route::post('/costs/{cost}/releases',                       [DeliverySupportCostController::class, 'storeRelease'])->name('costs.releases.store');
+            Route::delete('/costs/{cost}/releases/{schedule}',          [DeliverySupportCostController::class, 'destroyRelease'])->name('costs.releases.destroy');
+            Route::post('/costs/{cost}/releases/{schedule}/delete',     [DeliverySupportCostController::class, 'destroyRelease'])->name('costs.releases.destroy-post');
         });
     });
 });
@@ -358,9 +342,6 @@ Route::prefix('api/delivery/support')->middleware(CheckAuthToken::class)->name('
 
     // Quick search/lookup
     Route::get('/search', [DeliverySupportController::class, 'search'])->name('search');
-
-    // Get support by ticket
-    Route::get('/ticket/{ticketId}', [DeliverySupportController::class, 'findByTicket'])->name('by-ticket');
 
     // Statistics
     Route::get('/statistics', [DeliverySupportController::class, 'getStatistics'])->name('statistics');

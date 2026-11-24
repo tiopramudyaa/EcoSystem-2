@@ -1,11 +1,11 @@
-# Jarvies — Notification System Integration
+# Jarvies - Notification System Integration
 
 ## Overview
 
 Jarvies (customer portal) menggunakan **database yang sama** dengan EcoSystem. Tabel `notifications` dan `notification_sounds` sudah ada; yang diperlukan adalah:
 
 1. Menambah kolom `customer_id` di tabel `notifications` agar notifikasi bisa dikirim ke user customer (Jarvies), bukan hanya employee (EcoSystem).
-2. Menambah kolom `notification_sound_id` di tabel `auth_users` agar setiap user — baik employee maupun customer — bisa menyimpan preferensi bunyi notifikasi mereka.
+2. Menambah kolom `notification_sound_id` di tabel `auth_users` agar setiap user - baik employee maupun customer - bisa menyimpan preferensi bunyi notifikasi mereka.
 3. Membuat controller Jarvies yang menggunakan `customer_id` dari sesi, bukan `employee_id`.
 4. Mendaftarkan route API Jarvies terpisah.
 
@@ -15,7 +15,7 @@ Jarvies (customer portal) menggunakan **database yang sama** dengan EcoSystem. T
 
 ## 1. Perubahan Database
 
-### 1.1 Migrasi — Tambah `customer_id` ke `notifications`
+### 1.1 Migrasi - Tambah `customer_id` ke `notifications`
 
 **File baru:** `database/migrations/2026_XX_XX_000001_add_customer_id_to_notifications_table.php`
 
@@ -31,7 +31,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('notifications', function (Blueprint $table) {
-            // nullable — baris employee lama tidak terpengaruh (customer_id = NULL)
+            // nullable - baris employee lama tidak terpengaruh (customer_id = NULL)
             $table->unsignedBigInteger('customer_id')->nullable()->after('employee_id');
             $table->index(['customer_id', 'is_read'], 'notif_customer_unread_idx');
         });
@@ -54,11 +54,11 @@ Setelah migrasi ini, tabel `notifications` memiliki dua FK opsional:
 | `employee_id` | Notifikasi untuk EcoSystem (employee) |
 | `customer_id` | Notifikasi untuk Jarvies (customer) |
 
-Keduanya nullable — setiap baris hanya mengisi satu.
+Keduanya nullable - setiap baris hanya mengisi satu.
 
 ---
 
-### 1.2 Migrasi — Tambah `notification_sound_id` ke `auth_users`
+### 1.2 Migrasi - Tambah `notification_sound_id` ke `auth_users`
 
 **File baru:** `database/migrations/2026_XX_XX_000002_add_notification_sound_id_to_auth_users.php`
 
@@ -163,7 +163,7 @@ use App\Models\Ticket;
 
 /**
  * Kirim notifikasi ke semua customer_id yang terhubung ke sebuah tiket.
- * Satu tiket bisa dimiliki oleh satu customer — ambil dari ticket->customer_id.
+ * Satu tiket bisa dimiliki oleh satu customer - ambil dari ticket->customer_id.
  */
 function notifyCustomer(Ticket $ticket, string $type, string $fromName, string $preview, string $link): void
 {
@@ -197,10 +197,10 @@ function notifyCustomer(Ticket $ticket, string $type, string $fromName, string $
 }
 ```
 
-### Contoh — Trigger saat helpdesk reply tiket
+### Contoh - Trigger saat helpdesk reply tiket
 
 ```php
-// Di TicketMessageController::store() — setelah pesan tersimpan
+// Di TicketMessageController::store() - setelah pesan tersimpan
 notifyCustomer(
     ticket: $ticket,
     type: 'ticket_reply',
@@ -210,7 +210,7 @@ notifyCustomer(
 );
 ```
 
-### Contoh — Trigger saat status tiket berubah
+### Contoh - Trigger saat status tiket berubah
 
 ```php
 // Di TicketController saat update status
@@ -229,7 +229,7 @@ notifyCustomer(
 
 **File baru:** `app/Http/Controllers/Jarvies/JarviesNotificationController.php`
 
-> Seluruh endpoint menggunakan sesi Jarvies — `session('jarvies_user')` atau middleware Jarvies yang sudah ada.
+> Seluruh endpoint menggunakan sesi Jarvies - `session('jarvies_user')` atau middleware Jarvies yang sudah ada.
 
 ```php
 <?php
@@ -416,7 +416,7 @@ class JarviesNotificationController extends Controller
 Tambahkan di `routes/api.php` (atau file route Jarvies yang sudah ada), di dalam middleware Jarvies auth:
 
 ```php
-// routes/api.php  — di dalam Route::middleware(['jarvies.auth'])->prefix('jarvies')->group(...)
+// routes/api.php  - di dalam Route::middleware(['jarvies.auth'])->prefix('jarvies')->group(...)
 
 Route::get('/notifications',             [JarviesNotificationController::class, 'index']);
 Route::get('/notifications/unread-count',[JarviesNotificationController::class, 'unreadCount']);
@@ -444,7 +444,7 @@ Route::put('/notification-sounds/preference',   [JarviesNotificationController::
 
 ---
 
-## 7. Frontend Jarvies — Panduan Implementasi
+## 7. Frontend Jarvies - Panduan Implementasi
 
 ### 7.1 Polling Badge
 
@@ -555,7 +555,7 @@ function previewSound(url) {
 
 | Kolom | Tipe | Keterangan |
 |---|---|---|
-| `id` | bigint PK | — |
+| `id` | bigint PK | - |
 | `employee_id` | bigint, nullable | Penerima EcoSystem |
 | `customer_id` | bigint, nullable | **Penerima Jarvies (baru)** |
 | `type` | string(50) | Kategori notifikasi |
@@ -572,7 +572,7 @@ function previewSound(url) {
 
 | Kolom | Tipe | Keterangan |
 |---|---|---|
-| `id` | bigint PK | — |
+| `id` | bigint PK | - |
 | `employee_id` | bigint, nullable | Link ke employee EcoSystem |
 | `customer_id` | bigint, nullable | Link ke customer Jarvies |
 | `notification_sound_id` | bigint, nullable | **Preferensi bunyi (baru)** |
@@ -582,8 +582,8 @@ function previewSound(url) {
 
 ## 9. Keamanan
 
-- Semua endpoint `/jarvies/api/notifications/*` wajib diproteksi middleware autentikasi Jarvies — pastikan `customer_id` diambil dari sesi server-side, **bukan** dari request body/query string.
-- Query `notifications` selalu difilter `WHERE customer_id = ?` — customer tidak bisa membaca notifikasi customer lain.
+- Semua endpoint `/jarvies/api/notifications/*` wajib diproteksi middleware autentikasi Jarvies - pastikan `customer_id` diambil dari sesi server-side, **bukan** dari request body/query string.
+- Query `notifications` selalu difilter `WHERE customer_id = ?` - customer tidak bisa membaca notifikasi customer lain.
 - Endpoint `saveSound` memvalidasi bahwa `sound_id` yang dikirim benar-benar ada di tabel `notification_sounds` sebelum disimpan.
 - Output `from_name` dan `preview` di frontend harus di-escape untuk mencegah XSS (gunakan `textContent` atau fungsi escapeHtml yang sudah ada di EcoSystem).
 

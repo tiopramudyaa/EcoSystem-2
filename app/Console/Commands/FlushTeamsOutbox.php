@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
  * lewat flow 7 Power Automate.
  *
  * Dijadwalkan tiap menit. Item yang gagal kembali ke `pending` sampai batas
- * percobaan habis, lalu BERHENTI di `failed` dengan `last_error` terisi — supaya
+ * percobaan habis, lalu BERHENTI di `failed` dengan `last_error` terisi - supaya
  * kegagalannya terlihat sebagai data di tabel, bukan hanya sebagai baris log
  * yang tidak ada yang membaca.
  *
@@ -41,9 +41,24 @@ class FlushTeamsOutbox extends Command
         if (!$outbox->isEnabled()) {
             // Bukan error: begini caranya arah keluar dimatikan
             // (TEAMS_SYNC_ENABLED / TEAMS_SYNC_OUTBOUND = false).
-            $this->line('Sinkron keluar Teams tidak aktif — dilewati.');
+            $this->line('Sinkron keluar Teams tidak aktif - dilewati.');
 
             return self::SUCCESS;
+        }
+
+        // Pesan customer yang masuk lewat JARVIES ditulis langsung ke DB bersama,
+        // jadi tidak pernah melewati hook queueCustomerMessage() di EcoSystem.
+        // Disapu di sini supaya ikut terkirim, apa pun jalur masuknya.
+        if (!$this->option('dry-run')) {
+            try {
+                if ($swept = $outbox->sweepCustomerMessages()) {
+                    $this->line("{$swept} pesan customer baru diantre.");
+                }
+            } catch (\Throwable $e) {
+                Log::warning('teams:flush-outbox: sapuan pesan customer gagal', [
+                    'error' => mb_substr($e->getMessage(), 0, 500),
+                ]);
+            }
         }
 
         $items = collect($outbox->due());

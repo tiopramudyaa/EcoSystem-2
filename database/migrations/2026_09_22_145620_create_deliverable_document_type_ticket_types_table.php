@@ -7,16 +7,16 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Config: which deliverable document types are mandatory/optional per ticket
- * type — a many-to-many between deliverable_document_types and the ticket
+ * type - a many-to-many between deliverable_document_types and the ticket
  * type enum (App\Support\TicketClassification::TYPES). `ticket_type` is a
  * plain string rather than a FK to a "ticket_types" table because that enum
  * has no table of its own anywhere in this codebase (ticket.ticket_type
- * itself is a plain string column) — adding one just for this join would be
+ * itself is a plain string column) - adding one just for this join would be
  * inconsistent with how the rest of the app models it.
  *
  * This is the LIVE, editable configuration (Management > Master Ticket
  * Settings > Document Type). It intentionally does NOT drive the checklist
- * on an individual ticket directly — see ticket_deliverable_requirements,
+ * on an individual ticket directly - see ticket_deliverable_requirements,
  * which snapshots this config per ticket so a later config change never
  * silently changes what an existing ticket is required to have.
  */

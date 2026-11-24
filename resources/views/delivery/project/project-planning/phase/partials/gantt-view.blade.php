@@ -1537,7 +1537,7 @@
     }
 
     /**
-     * Kolom latar timeline — satu kolom per minggu.
+     * Kolom latar timeline - satu kolom per minggu.
      */
     function buildGridContainer(allWeeks) {
         var gridContainer = document.createElement('div');
@@ -1585,7 +1585,7 @@
     /**
      * Tempelkan label progres pada bar. Bar yang terlalu sempit tidak muat
      * memuat teks di dalamnya (teksnya jadi menumpuk ke bawah), jadi labelnya
-     * dipindah ke samping bar — ke kiri kalau bar berada di ujung kanan
+     * dipindah ke samping bar - ke kiri kalau bar berada di ujung kanan
      * timeline supaya tidak terpotong.
      */
     function appendBarLabel(bar, text, geometry) {

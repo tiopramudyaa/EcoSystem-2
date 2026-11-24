@@ -18,7 +18,7 @@
    cascade and the element stays visible even though JS toggles `hidden`.
    This rule lives outside any `@layer`, so per the CSS cascade-layers spec
    it always outranks anything in `@layer utilities` regardless of source
-   order — without touching the (unaffected, still-working) responsive
+   order - without touching the (unaffected, still-working) responsive
    pattern `hidden md:flex` etc., since that uses different class names. */
 .hidden.inline,
 .hidden.inline-block,

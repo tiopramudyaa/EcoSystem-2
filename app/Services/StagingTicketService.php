@@ -45,8 +45,8 @@ class StagingTicketService
         // ── Dedup: cegah duplikat saat Jarvies Step 4a + Step 4b keduanya menulis ──
         //
         // Alur Jarvies:
-        //   Step 4a — Jarvies langsung tulis ke DB shared (channel=web, tanpa linkStagingToEmail)
-        //   Step 4b — Jarvies POST ke EcoSystem API → masuk sini lagi
+        //   Step 4a - Jarvies langsung tulis ke DB shared (channel=web, tanpa linkStagingToEmail)
+        //   Step 4b - Jarvies POST ke EcoSystem API → masuk sini lagi
         //
         // internet_message_id dari M365 Graph bersifat globally unique → pakai sebagai kunci dedup.
         // Jika sudah ada staging unvalidated dengan email_message_id yang sama, kembalikan yang
@@ -57,7 +57,7 @@ class StagingTicketService
                 ->first();
 
             if ($existing) {
-                Log::info('StagingTicketService@createFromWeb: dedup — returning existing staging', [
+                Log::info('StagingTicketService@createFromWeb: dedup - returning existing staging', [
                     'existing_id'      => $existing->id,
                     'email_message_id' => $data['internet_message_id'],
                     'customer_id'      => $customerId,
@@ -114,7 +114,7 @@ class StagingTicketService
     public function createFromEmail(array $emailData): StagingTicket
     {
         // Cegah duplikat: cek conversation_id dulu, fallback ke internet_message_id
-        // CATATAN: hanya dedup untuk staging yang UNVALIDATED — jangan kembalikan staging
+        // CATATAN: hanya dedup untuk staging yang UNVALIDATED - jangan kembalikan staging
         // yang sudah approved/rejected karena emailnya harus diproses sebagai TicketMessage.
         if (!empty($emailData['conversation_id'])) {
             $existing = StagingTicket::where('email_thread_id', $emailData['conversation_id'])
@@ -211,7 +211,7 @@ class StagingTicketService
         // sengaja DI SINI, bukan di trigger mailbox Power Automate, karena di sini
         // email yang lolos sudah tersaring: bukan balasan untuk tiket yang sudah
         // ada, bukan NDR/auto-reply, bukan duplikat, dan pengirimnya memang contact
-        // person customer terdaftar. Trigger mailbox akan menyapa semuanya —
+        // person customer terdaftar. Trigger mailbox akan menyapa semuanya -
         // termasuk balasan di tengah percakapan.
         //
         // graph_message_id ikut dikirim supaya flow bisa memakai action "Reply to
@@ -298,12 +298,12 @@ class StagingTicketService
             ]);
 
             // Modul dipilih VALIDATOR di modal approve (biasanya pre-filled dari
-            // saran AI, lihat AiTicketAnalyzerService) — $moduleIds ini SATU-
+            // saran AI, lihat AiTicketAnalyzerService) - $moduleIds ini SATU-
             // SATUNYA sumber untuk modul ticket hasil approve. staging_tickets.
             // module_id (kolom legacy singular) memang masih ditulis di
             // StagingTicketController::approve() dan dipakai buat pre-fill
             // dropdown modul saat modal dibuka (lihat staging/index.blade.php,
-            // setApproveModule(s.module_id, ...)) — tapi TIDAK dibaca lagi di
+            // setApproveModule(s.module_id, ...)) - tapi TIDAK dibaca lagi di
             // sini, jadi kalau validator mengubah pilihan modul sebelum submit,
             // staging_tickets.module_id bisa berbeda dari ticket.module_id hasil
             // akhir. Itu sudah cukup: kolom ini cuma untuk pre-fill UI, bukan
@@ -343,10 +343,10 @@ class StagingTicketService
                 ]);
 
             } elseif (!empty($staging->body)) {
-                // Web form (Jarvies) content — Quill body yang disimpan JARVIES saat submit.
+                // Web form (Jarvies) content - Quill body yang disimpan JARVIES saat submit.
                 // BUKAN hanya untuk channel==='web': JARVIES men-tag staging ini 'web' di
                 // awal, tapi linkStagingToEmail() (StagingTicketController) bisa
-                // menimpanya jadi 'email' begitu berhasil menemukan pesannya di Graph —
+                // menimpanya jadi 'email' begitu berhasil menemukan pesannya di Graph -
                 // meski fetch BODY-nya (panggilan Graph terpisah) gagal/timeout dan
                 // email_body_html tetap kosong. Tanpa fallback ini, kombinasi
                 // channel==='email' + email_body_html kosong bikin staging tidak pernah
@@ -491,7 +491,7 @@ class StagingTicketService
             'validated_at'      => now(),
         ]);
 
-        // Hapus SLA record staging — tiket yang ditolak tidak masuk SLA report
+        // Hapus SLA record staging - tiket yang ditolak tidak masuk SLA report
         try {
             $this->sla->detachFromStaging($staging);
         } catch (\Throwable $e) {
@@ -542,7 +542,7 @@ class StagingTicketService
         $descSection = !empty($staging->body)
             ? '<div style="margin-bottom:16px"><strong>Description:</strong>'
               . '<div style="margin-top:8px;padding:12px;background:#f9f9f9;border:1px solid #e0e0e0;border-radius:4px">'
-              . $staging->body   // HTML dari Quill — sudah trusted input dari Jarvies
+              . $staging->body   // HTML dari Quill - sudah trusted input dari Jarvies
               . '</div></div>'
             : '';
 

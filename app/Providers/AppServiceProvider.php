@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->app->singleton(\Anthropic\Client::class, function () {
-            // anthropic-ai/sdk's own `timeout` RequestOption is advisory-only — it is
+            // anthropic-ai/sdk's own `timeout` RequestOption is advisory-only - it is
             // never read by the SDK, enforcement is entirely up to whatever PSR-18
             // client gets auto-discovered (see vendor/anthropic-ai/sdk/src/RequestOptions.php).
             // That auto-discovery resolves to a bare `new GuzzleHttp\Client()`, whose
@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
             // indefinitely instead of failing. Pass an explicit Guzzle transporter with
             // real bounds so a stuck call fails with a catchable exception instead.
             // 600s matches the SDK's own documented "intended default" (see the
-            // RequestOptions docblock above) — restoring that intent rather than
+            // RequestOptions docblock above) - restoring that intent rather than
             // inventing a shorter arbitrary bound, so existing long-running streaming
             // turns (AiChatService/AiResearchService tool loops) keep the headroom
             // they always assumed they had.
@@ -67,6 +67,17 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Deteksi N+1 saat development: lazy-load relasi dicatat ke log (tidak melempar
+        // exception, jadi halaman tetap jalan). Hanya aktif di local.
+        if ($this->app->environment('local')) {
+            \Illuminate\Database\Eloquent\Model::preventLazyLoading();
+            \Illuminate\Database\Eloquent\Model::handleLazyLoadingViolationUsing(function ($model, $relation) {
+                \Illuminate\Support\Facades\Log::channel('single')->warning(
+                    'N+1 lazy load: ' . get_class($model) . '::' . $relation
+                );
+            });
+        }
+
         // Scheme URL dipaksa ke https HANYA bila APP_URL memang https (produksi).
         //
         // Mengandalkan trustProxies + header X-Forwarded-Proto saja tidak cukup:
@@ -92,11 +103,11 @@ class AppServiceProvider extends ServiceProvider
         // Position/Department/Division/Personnel Area/Personnel Subarea/Employee
         // Group/Employee Subgroup semuanya bersumber dari tabel generik
         // dropdown_configs/dropdown_config_values (lihat App\Models\DropdownConfig)
-        // — admin-editable lewat halaman Management > Employee > Dropdown Settings,
+        // - admin-editable lewat halaman Management > Employee > Dropdown Settings,
         // tanpa perlu migration/deploy tiap kali ada nilai baru. Home Base TETAP
         // enum PHP karena nilainya dipakai di logic kode (lihat
         // EmployeeBasicData::deriveEmployeeType()), bukan cuma label tampilan.
-        // Catatan: Grade TIDAK lagi dipakai di Basic Data — konsepnya pindah ke
+        // Catatan: Grade TIDAK lagi dipakai di Basic Data - konsepnya pindah ke
         // "Level" pada Employee Qualification (lihat composer di bawah).
         View::composer(
             ['master.employee.index', 'master.employee.sections.basicdata', 'master.employee.sections.address', 'master.customer.sections.address'],
@@ -111,21 +122,21 @@ class AppServiceProvider extends ServiceProvider
                 // Dropdown Settings sama seperti Position/dll, TAPI belum ada admin
                 // yang mengisi config "country" di banyak environment. Fallback ke
                 // ['Indonesia'] menjaga behavior lama (satu-satunya opsi hardcoded)
-                // sampai admin menambah datanya sendiri — dropdown tidak pernah kosong.
+                // sampai admin menambah datanya sendiri - dropdown tidak pernah kosong.
                 $countryOptions = $dd('country');
                 if (empty($countryOptions)) {
                     $countryOptions = ['Indonesia'];
                 }
 
                 // Config yang di-nonaktifkan (is_active=false) bukan cuma dikosongkan
-                // opsinya — seluruh blok field-nya disembunyikan dari form Employee
+                // opsinya - seluruh blok field-nya disembunyikan dari form Employee
                 // (lihat DropdownConfig::activeMap()). Field dengan config yang belum
                 // ada barisnya (mis. tabel belum ke-migrate) dianggap aktif (fail open).
                 $dropdownFieldActive = $hasDropdownTables
                     ? DropdownConfig::activeMap($dropdownCodes)
                     : array_fill_keys($dropdownCodes, true);
 
-                // "Current Assignment" — dropdown-nya diambil dari daftar Business
+                // "Current Assignment" - dropdown-nya diambil dari daftar Business
                 // Partner bertipe Customer (bukan free text lagi), sama sumbernya
                 // dengan dropdown customer di form Create Ticket.
                 $customerOptions = Schema::hasTable('customer')
@@ -154,7 +165,7 @@ class AppServiceProvider extends ServiceProvider
             }
         );
 
-        // Suntik opsi "Level" ke form Employee Qualification (tipe Certification) —
+        // Suntik opsi "Level" ke form Employee Qualification (tipe Certification) -
         // dari tabel `grades` yang sama dengan Home Base/Grade lama, tapi nama
         // di-strip suffix " Consultant" (Grade::levelOptions()).
         View::composer(

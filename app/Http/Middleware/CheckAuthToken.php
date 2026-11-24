@@ -22,7 +22,7 @@ class CheckAuthToken
             return $next($request);
         }
 
-        // ── 2. Session expired — coba restore via remember-me cookie ─────────
+        // ── 2. Session expired - coba restore via remember-me cookie ─────────
         $rememberCookie = $request->cookie(AuthController::REMEMBER_COOKIE);
 
         if ($rememberCookie) {
@@ -31,7 +31,7 @@ class CheckAuthToken
                 return $next($request);
             }
 
-            // Cookie ada tapi tidak valid — bersihkan
+            // Cookie ada tapi tidak valid - bersihkan
             $expired = cookie(AuthController::REMEMBER_COOKIE, '', -1);
         }
 
@@ -75,7 +75,7 @@ class CheckAuthToken
     /**
      * Muat preferensi user dari DB ke session sekali per session (bila belum ada).
      * Ini menjaga tema/warna/dll tetap konsisten setelah login baru atau restore
-     * remember-me — bukan hanya setelah membuka halaman Settings.
+     * remember-me - bukan hanya setelah membuka halaman Settings.
      *
      * Dibungkus try/catch: kegagalan load preferensi TIDAK boleh men-crash request;
      * cukup lewati dan biarkan view memakai default-nya.
@@ -115,7 +115,7 @@ class CheckAuthToken
      * Return true jika berhasil, false jika token tidak valid / user tidak aktif.
      *
      * PENTING: seluruh proses dibungkus try/catch. Kegagalan restore (mis. query
-     * error karena skema DB berbeda) TIDAK boleh melempar 500 — cukup anggap
+     * error karena skema DB berbeda) TIDAK boleh melempar 500 - cukup anggap
      * cookie tidak valid dan jatuh ke jalur "silakan login".
      */
     private function tryRestoreSession(Request $request, string $rawToken): bool
@@ -132,12 +132,12 @@ class CheckAuthToken
                 return false;
             }
 
-            // 2FA-enabled accounts never get restored via this cookie — a
+            // 2FA-enabled accounts never get restored via this cookie - a
             // stolen/replayed remember-me cookie must not grant a full
             // session for up to REMEMBER_DAYS with zero second-factor check.
             // (AuthController::finalizeEmployeeLogin() already refuses to
             // *issue* this cookie for a 2FA account in the first place; this
-            // is the defense-in-depth half — it also protects a cookie that
+            // is the defense-in-depth half - it also protects a cookie that
             // was issued before 2FA was enabled on the account.)
             if (TwoFactorAuthService::isEnabled($authUser)) {
                 return false;
@@ -147,6 +147,11 @@ class CheckAuthToken
             $sessionData = AuthController::buildEmployeeSessionData($authUser->employee_id);
 
             if (!$sessionData) {
+                return false;
+            }
+
+            // System lock: a remember-me cookie must not bring a non-admin back in.
+            if (\App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
                 return false;
             }
 
@@ -163,7 +168,7 @@ class CheckAuthToken
 
             return true;
         } catch (Throwable $e) {
-            // Restore gagal — jangan sampai men-crash request. Log lalu perlakukan
+            // Restore gagal - jangan sampai men-crash request. Log lalu perlakukan
             // sebagai cookie tidak valid.
             Log::warning('CheckAuthToken: remember-me restore gagal', [
                 'error' => $e->getMessage(),

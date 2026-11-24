@@ -8,6 +8,7 @@ use App\Http\Controllers\TicketMessageController;
 use App\Models\EmployeeBasicData;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
+use App\Services\LiteCustomerMandaysPresenter;
 use App\Services\SlaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Validator;
 class LiteTicketController extends Controller
 {
     /**
-     * Daftar tiket — role-based filtering, dengan pagination.
+     * Daftar tiket - role-based filtering, dengan pagination.
      * Adaptasi dari TicketController::index() untuk Lite API.
      *
      * GET /api/lite/tickets
@@ -50,7 +51,7 @@ class LiteTicketController extends Controller
                       ->orWhereHas('members', fn ($i) => $i->where('ticket_member.employee_id', $employeeId));
                 });
             } elseif ($roleId === RoleId::DELIVERY_SUPPORT_USER->value) {
-                // DS User: hanya tiket belum di-assign (unassigned) — sesuai aplikasi utama
+                // DS User: hanya tiket belum di-assign (unassigned) - sesuai aplikasi utama
                 $query->whereNull('ticket_lead_id');
             }
             // Admin, Head, Helpdesk, Manager: lihat semua tiket
@@ -122,9 +123,13 @@ class LiteTicketController extends Controller
                 return response()->json(['success' => false, 'message' => 'Ticket not found.'], 404);
             }
 
+            $data = $this->formatTicketDetail($ticket);
+            // Null bila user tidak berhak melihat Customer Mandays ticket ini (aturan sama dengan web).
+            $data['customer_mandays'] = app(LiteCustomerMandaysPresenter::class)->summary($ticket, (int) $user['id']);
+
             return response()->json([
                 'success' => true,
-                'data'    => $this->formatTicketDetail($ticket),
+                'data'    => $data,
             ]);
 
         } catch (\Exception $e) {
@@ -137,7 +142,7 @@ class LiteTicketController extends Controller
      * Daftar pesan untuk satu tiket.
      * Adaptasi dari TicketMessageController::index().
      *
-     * Query param `highlight_message_id` opsional — dipakai saat user membuka
+     * Query param `highlight_message_id` opsional - dipakai saat user membuka
      * tiket ini dari notifikasi (mis. di-tag di internal note). Frontend tidak
      * perlu mencari sendiri pesan mana yang harus di-scroll: backend menandai
      * pesan tsb dengan `is_highlighted: true` pada tiap item, dan menggemakan
@@ -157,6 +162,11 @@ class LiteTicketController extends Controller
 
             $ticket = Ticket::find($ticketId);
             if (!$ticket) {
+                return response()->json(['success' => false, 'message' => 'Ticket not found.'], 404);
+            }
+
+            // Sama dengan show(): ticket tersembunyi hanya untuk EC Administrator.
+            if ($ticket->is_hidden && (int) ($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
                 return response()->json(['success' => false, 'message' => 'Ticket not found.'], 404);
             }
 
@@ -195,7 +205,7 @@ class LiteTicketController extends Controller
 
     /**
      * Tambah pesan ke tiket (internal note atau reply).
-     * Reply dikirim email-first ke customer (via M365 Graph, sama seperti web) —
+     * Reply dikirim email-first ke customer (via M365 Graph, sama seperti web) -
      * lihat TicketMessageController::sendLiteReply(). Internal note tidak pernah
      * dikirim ke email. Lite API belum mendukung lampiran untuk chat.
      *
@@ -245,8 +255,12 @@ class LiteTicketController extends Controller
             $emailFailed = false;
 
             if ($isInternalNote) {
-                $mentionedEmployeeIds = $request->input('mentioned_employee_ids', []);
-                $mentionedRoleIds     = $request->input('mentioned_role_ids', []);
+                // Hanya mention yang "@Nama"-nya benar-benar ada di teks note.
+                [$mentionedEmployeeIds, $mentionedRoleIds] = \App\Services\MentionTextGuard::filter(
+                    (string) $request->message,
+                    (array) $request->input('mentioned_employee_ids', []),
+                    (array) $request->input('mentioned_role_ids', [])
+                );
 
                 $message = TicketMessage::create([
                     'ticket_id'              => $ticketId,
@@ -274,9 +288,10 @@ class LiteTicketController extends Controller
                     'last_internal_note_sender_id' => $user['id'],
                 ]);
 
-                // Notifikasi mention (non-fatal) — reuse logic yang sama dengan web.
+                // Notifikasi mention (non-fatal) - reuse logic yang sama dengan web.
+                $notifiedIds = [];
                 if (!empty($mentionedEmployeeIds) || !empty($mentionedRoleIds)) {
-                    app(TicketMessageController::class)->createMentionNotifications(
+                    $notifiedIds = app(TicketMessageController::class)->createMentionNotifications(
                         $message,
                         $ticket,
                         (int) $user['id'],
@@ -285,8 +300,17 @@ class LiteTicketController extends Controller
                         $mentionedRoleIds
                     );
                 }
+
+                // Reply ke note orang lain: penulis aslinya dinotifikasi tanpa perlu di-tag.
+                app(TicketMessageController::class)->createReplyToNotification(
+                    $message,
+                    $ticket,
+                    (int) $user['id'],
+                    $user['name'],
+                    $notifiedIds
+                );
             } else {
-                // Parse CC — array, atau JSON string berisi array. null = tidak dikirim
+                // Parse CC - array, atau JSON string berisi array. null = tidak dikirim
                 // (pakai CC tiket saat ini); [] eksplisit = hapus semua CC.
                 $requestCcRaw = $request->input('cc_emails');
                 $requestCc    = null;
@@ -294,7 +318,7 @@ class LiteTicketController extends Controller
                     $requestCc = is_array($requestCcRaw) ? $requestCcRaw : (json_decode($requestCcRaw, true) ?? []);
                 }
 
-                // Parse TO — item pertama jadi primary recipient, sisanya additional.
+                // Parse TO - item pertama jadi primary recipient, sisanya additional.
                 // null = tidak dikirim (fallback ke resolveCustomerEmail/legacy).
                 $requestToRaw = $request->input('to_emails');
                 $requestTo    = null;
@@ -306,7 +330,7 @@ class LiteTicketController extends Controller
                     )));
                 }
 
-                // Reply — email-first ke customer (To/CC dari request bila dikirim,
+                // Reply - email-first ke customer (To/CC dari request bila dikirim,
                 // fallback ke To/CC tiket), fallback tersimpan internal bila email
                 // gagal/tidak ada penerima.
                 $result = app(TicketMessageController::class)->sendLiteReply(
@@ -346,7 +370,7 @@ class LiteTicketController extends Controller
     }
 
     /**
-     * Edit internal note milik sendiri (dalam 10 menit sejak dibuat) — Lite API.
+     * Edit internal note milik sendiri (dalam 10 menit sejak dibuat) - Lite API.
      * Aturan identik dengan TicketMessageController::updateInternalNote() (web):
      * hanya sender sendiri, dalam window 10 menit, dan note belum dihapus.
      *
@@ -418,7 +442,7 @@ class LiteTicketController extends Controller
     }
 
     /**
-     * Soft-delete (unsend) internal note — Lite API.
+     * Soft-delete (unsend) internal note - Lite API.
      * Aturan identik dengan TicketMessageController::destroyInternalNote() (web):
      * sender sendiri dalam window 10 menit, atau admin (EC_ADMINISTRATOR) kapan saja.
      *
@@ -617,7 +641,7 @@ class LiteTicketController extends Controller
     }
 
     /**
-     * Statistik tiket — ringkasan per status.
+     * Statistik tiket - ringkasan per status.
      *
      * GET /api/lite/tickets/statistics
      */
@@ -733,7 +757,7 @@ class LiteTicketController extends Controller
             'last_agent_reply_at'      => $ticket->last_agent_reply_at,
             'end_customer_id'          => $ticket->end_customer_id,
             'end_customer_name'        => $ticket->endCustomer?->basicData?->name_1,
-            // Untuk pre-fill composer reply di mobile — nilai To/CC tersimpan
+            // Untuk pre-fill composer reply di mobile - nilai To/CC tersimpan
             // terakhir (hasil reply sebelumnya dari web/mobile). Kirim balik field
             // yang sama saat POST .../messages untuk mempertahankannya, atau kirim
             // daftar baru untuk override (lihat POST /tickets/{ticketId}/messages).
@@ -744,7 +768,7 @@ class LiteTicketController extends Controller
     }
 
     /**
-     * Live SLA summary for the ticket detail endpoint — same live-recompute methods as the
+     * Live SLA summary for the ticket detail endpoint - same live-recompute methods as the
      * admin SLA report (SlaService::responseDurationHours() etc.) instead of the stored
      * validation_duration_hours/net_resolution_hours/response_status/resolution_status
      * columns, which are frozen at write time and won't reflect a later calcHours() formula
@@ -775,7 +799,7 @@ class LiteTicketController extends Controller
         ];
     }
 
-    /** Resolve {employee_id: name} untuk sekumpulan id — dipakai untuk field `mentions` */
+    /** Resolve {employee_id: name} untuk sekumpulan id - dipakai untuk field `mentions` */
     private function resolveEmployeeNames(array $employeeIds): array
     {
         if (empty($employeeIds)) {

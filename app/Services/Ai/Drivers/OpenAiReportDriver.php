@@ -3,6 +3,7 @@
 namespace App\Services\Ai\Drivers;
 
 use App\Models\Employee;
+use App\Services\Ai\AiUsageRecorder;
 use App\Services\Ai\Drivers\Contracts\ReportGenerationDriver;
 use App\Services\Ai\Tools\AiTool;
 use OpenAI\Client;
@@ -29,7 +30,7 @@ use Throwable;
  * adalah panggilan Responses API biasa tanpa tool sandbox sama sekali,
  * supaya dua fase ringan itu tetap murah & cepat.
  *
- * $tools (AiTool registry) SAMA PERSIS dengan yang dipakai driver Claude —
+ * $tools (AiTool registry) SAMA PERSIS dengan yang dipakai driver Claude -
  * cuma diterjemahkan ke bentuk `function` tool milik Responses API di sini.
  */
 class OpenAiReportDriver implements ReportGenerationDriver
@@ -316,7 +317,11 @@ class OpenAiReportDriver implements ReportGenerationDriver
 
         while (true) {
             try {
-                return $this->client->responses()->create($parameters);
+                $response = $this->client->responses()->create($parameters);
+
+                AiUsageRecorder::recordOpenAi((string) ($parameters['model'] ?? ''), 'report', $response->usage ?? null);
+
+                return $response;
             } catch (RateLimitException $e) {
                 if (++$attempt > self::RATE_LIMIT_MAX_RETRIES) {
                     throw new RuntimeException($this->describeRateLimit($e), previous: $e);

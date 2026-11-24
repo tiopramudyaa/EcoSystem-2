@@ -20,15 +20,15 @@ use Illuminate\Support\Str;
  * DUA KOREKSI TERHADAP §7, ditemukan 17 Sep 2026 saat menulis kelas ini:
  *
  *  1. **`channel` TIDAK diisi `'teams'`.** Kolom itu `enum('email','web')` di
- *     `ticket_message` — tabel yang dibagi dengan repo Jarvies dan yang oleh §2
+ *     `ticket_message` - tabel yang dibagi dengan repo Jarvies dan yang oleh §2
  *     dilarang diubah strukturnya. Menambah nilai enum = ALTER pada tabel bersama.
  *     Jadi `channel` tetap `'web'`, dan penanda asal Teams ada di tabel pendamping
- *     `ticket_message_teams` — persis prinsip §2 "semua metadata Teams ditaruh di
+ *     `ticket_message_teams` - persis prinsip §2 "semua metadata Teams ditaruh di
  *     tabel pendamping".
  *  2. **`message_type` tetap `'internal_note'`.** UI tiket menentukan bentuk
  *     gelembung MURNI dari `message_type === 'internal_note'`
  *     (show.blade.php:4179, 4520). Mengisinya `'teams'` membuat internal note
- *     tampil sebagai balasan biasa ke customer — salah secara visual, dan justru
+ *     tampil sebagai balasan biasa ke customer - salah secara visual, dan justru
  *     pada pesan yang sifatnya internal.
  */
 class TeamsInboundService
@@ -66,7 +66,7 @@ class TeamsInboundService
      *
      * Tiket yang sudah Closed/Cancelled dilewati: diskusinya selesai, dan menarik
      * pesan baru ke tiket tertutup hanya menghidupkan kembali sesuatu yang sudah
-     * ditutup. Barisnya tidak dimatikan — tiket bisa dibuka lagi.
+     * ditutup. Barisnya tidak dimatikan - tiket bisa dibuka lagi.
      */
     public function dueChats(): iterable
     {
@@ -75,7 +75,7 @@ class TeamsInboundService
         return TicketTeamsChat::query()
             ->where('sync_enabled', true)
             ->whereIn('ticket_id', function ($q) use ($closed) {
-                $q->select('ticket_id')->from('ticket')->whereNotIn('status', $closed);
+                $q->select('ticket_id')->from('ticket')->whereNotIn('status', $closed)->whereNull('deleted_at');
             })
             ->orderByRaw('last_polled_at is null desc')
             ->orderBy('last_polled_at')
@@ -94,7 +94,7 @@ class TeamsInboundService
 
         if ($cursor === null) {
             // Kursor kosong berarti baris ini dibuat tanpa titik mulai. JANGAN
-            // tarik semua — itu akan menumpahkan seluruh riwayat chat ke thread
+            // tarik semua - itu akan menumpahkan seluruh riwayat chat ke thread
             // tiket. Tetapkan sekarang sebagai titik mulai dan tunggu putaran
             // berikutnya (design §7: riwayat lama sengaja tidak diimpor).
             $chat->markPolled(now());
@@ -113,7 +113,7 @@ class TeamsInboundService
             );
         } catch (TeamsGraphException $e) {
             if ($e->isThrottled()) {
-                // Dipanggil terlalu sering. Bukan kegagalan chat ini — jangan
+                // Dipanggil terlalu sering. Bukan kegagalan chat ini - jangan
                 // dihitung sebagai poll_failures, cukup coba lagi semenit lagi.
                 Log::info('TeamsInbound: Graph throttling, putaran ini dilewati', [
                     'ticket_id' => $chat->ticket_id,
@@ -213,7 +213,7 @@ class TeamsInboundService
      *
      * Syaratnya ditulis POSITIF (`=== 'message'`), bukan membuang yang
      * `!= 'message'`. Pesan sistem ternyata datang sebagai
-     * `messageType = 'unknownFutureValue'` — nama yang secara harfiah berarti
+     * `messageType = 'unknownFutureValue'` - nama yang secara harfiah berarti
      * Microsoft akan menambah jenis baru. Syarat negatif akan meloloskan jenis
      * baru itu jadi internal note; syarat positif tidak.
      */
@@ -232,7 +232,7 @@ class TeamsInboundService
                 return false;
             }
 
-            // Pesan tanpa penulis manusia — bot, aplikasi, atau konektor.
+            // Pesan tanpa penulis manusia - bot, aplikasi, atau konektor.
             //
             // Pagar KEDUA untuk gema arah keluar: kalau flow 7 kelak diubah jadi
             // "Post as: Flow bot", pesannya datang dengan `from.user` kosong dan
@@ -256,7 +256,7 @@ class TeamsInboundService
     }
 
     /**
-     * Pesan yang ditulis akun pemilik connection Power Automate — buang.
+     * Pesan yang ditulis akun pemilik connection Power Automate - buang.
      *
      * **Ini pagar anti-gema arah keluar, dan tanpa ia setiap internal note yang
      * kita kirim ke Teams akan tersimpan DOBEL di tiketnya.**
@@ -264,7 +264,7 @@ class TeamsInboundService
      * Alasannya: flow 7 memposting note kita ke Teams atas nama akun koneksi,
      * tapi TIDAK mengembalikan id pesan yang ia buat. Jadi kita tidak pernah tahu
      * id pesan kiriman kita sendiri, dan dedupe (`chat_id`,`teams_message_id`)
-     * — yang menangani semua kasus lain — tidak bisa mengenalinya saat pesan itu
+     * - yang menangani semua kasus lain - tidak bisa mengenalinya saat pesan itu
      * terbaca balik pada polling berikutnya.
      *
      * Aturan yang sama sekaligus membuang dua sumber derau lain yang juga
@@ -272,7 +272,7 @@ class TeamsInboundService
      * mention lead modulnya.
      *
      * Harga yang dibayar: manusia yang mengetik di group chat tiket memakai akun
-     * itu tidak ikut tersinkron. Akun layanan, jadi wajar — tapi sengaja dicatat
+     * itu tidak ikut tersinkron. Akun layanan, jadi wajar - tapi sengaja dicatat
      * di sini supaya tidak jadi misteri di kemudian hari.
      */
     private function isFromConnectionAccount(string $chatId, array $message): bool
@@ -315,13 +315,13 @@ class TeamsInboundService
     }
 
     /**
-     * Pesan yang isinya HANYA Adaptive Card — buang.
+     * Pesan yang isinya HANYA Adaptive Card - buang.
      *
      * Flow 5 memposting kartu "Tiket baru" ke grup tepat setelah grupnya dibuat,
      * dan kartu itu datang sebagai `messageType: 'message'` biasa dengan
      * `body.content` cuma `<attachment id="..."></attachment>`. Tanpa saringan
      * ini, SETIAP tiket baru langsung mendapat internal note kosong berisi
-     * "(pesan Teams tanpa teks)" — sampah yang muncul di setiap tiket, bukan
+     * "(pesan Teams tanpa teks)" - sampah yang muncul di setiap tiket, bukan
      * kasus pinggiran.
      *
      * Saringannya sempit dengan sengaja: hanya pesan yang teksnya kosong DAN
@@ -376,7 +376,7 @@ class TeamsInboundService
         $html = $this->persistInlineImages($html, $chat, $message, $pendingImages);
 
         // Lampiran berkas (bukan gambar inline) disimpan sebagai TAUTAN, bukan
-        // diunduh — lihat catatan di fileAttachments().
+        // diunduh - lihat catatan di fileAttachments().
         $fileLinks = $this->fileAttachments($message);
 
         $text = $this->toPlainText($html, $isHtml);
@@ -405,7 +405,7 @@ class TeamsInboundService
 
         // HTML disimpan hanya kalau memang ada yang perlu dipertahankan bentuknya
         // (gambar, atau format dari Teams). Pesan teks polos cukup kolom `message`
-        // — konsisten dengan internal note biasa yang ditulis di EcoSystem.
+        // - konsisten dengan internal note biasa yang ditulis di EcoSystem.
         $storedHtml = ($isHtml && trim(strip_tags($html, '<img>')) !== '')
             ? MessageHtmlSanitizerService::sanitize($html)
             : null;
@@ -437,7 +437,7 @@ class TeamsInboundService
                     'direction'         => TicketMessageTeams::DIRECTION_IN,
                 ]);
 
-                // Baris metadata gambar — byte-nya sudah di disk, DB hanya
+                // Baris metadata gambar - byte-nya sudah di disk, DB hanya
                 // menyimpan path. Ini invariant yang sama yang ditegakkan
                 // InlineImageService untuk gambar dari editor dan dari email.
                 foreach ($pendingImages as $img) {
@@ -482,7 +482,7 @@ class TeamsInboundService
             });
         } catch (\Throwable $e) {
             // Termasuk pelanggaran unique (chat_id, teams_message_id) kalau dua
-            // putaran berjalan bersamaan — itu justru pagar yang bekerja.
+            // putaran berjalan bersamaan - itu justru pagar yang bekerja.
             Log::warning('TeamsInbound: gagal menyimpan pesan Teams', [
                 'ticket_id'        => $chat->ticket_id,
                 'teams_message_id' => $message['id'] ?? null,
@@ -500,7 +500,7 @@ class TeamsInboundService
      *
      * TIDAK memakai `GET /users/{id}`: app registration ini tidak punya
      * `User.Read.All` dan panggilan itu dijawab 403 (spike 17 Sep 2026).
-     * Sumbernya roster chat, yang justru lebih sempit — hanya orang di chat
+     * Sumbernya roster chat, yang justru lebih sempit - hanya orang di chat
      * tiket ini, bukan seluruh direktori tenant.
      *
      * @return array{0: ?int, 1: ?string}
@@ -589,7 +589,7 @@ class TeamsInboundService
     /**
      * Unduh gambar Teams ke storage tiket dan arahkan ulang `<img src>`-nya.
      *
-     * Gambar inline TIDAK muncul di `attachments` (array itu tetap kosong) — ia
+     * Gambar inline TIDAK muncul di `attachments` (array itu tetap kosong) - ia
      * ada sebagai `<img src=".../hostedContents/{id}/$value">` di dalam body HTML.
      * Terbukti di spike 17 Sep 2026.
      *
@@ -640,7 +640,7 @@ class TeamsInboundService
                 }
 
                 $binary = $response->body();
-                // MIME HANYA ada di header respons — di daftar hostedContents,
+                // MIME HANYA ada di header respons - di daftar hostedContents,
                 // contentBytes dan contentType keduanya null (terbukti di spike).
                 $mime   = strtok((string) $response->header('Content-Type'), ';') ?: 'image/png';
 
@@ -681,7 +681,7 @@ class TeamsInboundService
             $this->failedImages = $failed;
         }
 
-        // preg_replace_callback mengembalikan null bila gagal internal — jangan
+        // preg_replace_callback mengembalikan null bila gagal internal - jangan
         // sampai isi pesannya hilang gara-gara itu.
         return $result ?? $html;
     }
@@ -722,7 +722,7 @@ class TeamsInboundService
      * **`attachments` TIDAK sama dengan "ada lampiran".** Data nyata dari grup
      * tiket (17 Sep 2026) memperlihatkan array itu justru paling sering berisi
      * `messageReference` (balasan yang mengutip pesan lain) dan
-     * `forwardedMessageReference` (pesan diteruskan) — keduanya bukan lampiran
+     * `forwardedMessageReference` (pesan diteruskan) - keduanya bukan lampiran
      * sama sekali. Menghitungnya sebagai lampiran membuat setiap balasan-mengutip
      * mendapat penanda "1 lampiran" yang menyesatkan.
      *
@@ -765,7 +765,7 @@ class TeamsInboundService
      * Penanda untuk hal-hal yang TIDAK ikut tersalin.
      *
      * Hanya menyebut yang benar-benar gagal dibawa. Gambar yang berhasil diunduh
-     * tidak disebut — ia sudah tampil di gelembungnya, dan penanda "1 lampiran"
+     * tidak disebut - ia sudah tampil di gelembungnya, dan penanda "1 lampiran"
      * di bawah gambar yang jelas-jelas terlihat hanya membingungkan.
      */
     private function attachmentNotice(array $images, array $files): ?string

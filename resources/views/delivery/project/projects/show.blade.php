@@ -1,11 +1,12 @@
 @extends('dashboard')
 @section('title', 'Project Detail')
 @section('page-title', 'Project Detail')
-@section('page-subtitle', e($project->name))
+{{-- Nilai inline @section sudah di-escape Blade; e() lagi membuat "&" tampil "&amp;". --}}
+@section('page-subtitle', $project->name)
 @php
     // Project Owner project ini boleh CRUD Risk Register meski role-nya tidak
     // punya slug risk.*. Grant hanya berlaku di project ini (bukan lintas
-    // project) — sisi server dijaga middleware `menu.owner:`.
+    // project) - sisi server dijaga middleware `menu.owner:`.
     $isProjectOwner = $isProjectOwner ?? false;
     $canRiskView    = $can('delivery-project.risk.view')   || $isProjectOwner;
     $canRiskEdit    = $can('delivery-project.risk.edit')   || $isProjectOwner;
@@ -61,7 +62,7 @@
         color: #991b1b;
     }
 
-    /* Indikator underline aktif — bar primary-color tebal sehingga mudah dilihat */
+    /* Indikator underline aktif - bar primary-color tebal sehingga mudah dilihat */
     .section-tab.active::after {
         content: '';
         position: absolute;
@@ -507,7 +508,7 @@
 </div>
 
 {{-- Banner peringatan share link OneDrive: muncul saat link tidak benar-benar publik
-     (scope internal, kedaluwarsa, atau yang tersimpan bukan share link) — inilah
+     (scope internal, kedaluwarsa, atau yang tersimpan bukan share link) - inilah
      kondisi yang membuat penerima kena "Request access". --}}
 <div id="odrLinkWarningBanner"
      class="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 flex items-start gap-3 {{ $project->onedrive_link_warning ? '' : 'hidden' }}">
@@ -536,7 +537,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
     </svg>
     <div>
-        <p class="text-sm font-semibold text-amber-800">This project is closed — read-only</p>
+        <p class="text-sm font-semibold text-amber-800">This project is closed - read-only</p>
         <p class="text-xs text-amber-700 mt-0.5">
             Closed{{ $project->closed_at ? ' on ' . $project->closed_at->format('d M Y, H:i') : '' }}@if($project->closedBy?->basicData?->full_name) by {{ $project->closedBy->basicData->full_name }}@endif.
             @if($can('delivery-project.close-project')) Use <span class="font-semibold">Reopen Project</span> above to make changes. @endif
@@ -566,19 +567,19 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Customer</label>
-                    <div class="display-box">{{ $project->client->basicData->name_1 ?? '—' }}</div>
+                    <div class="display-box">{{ $project->client->basicData->name_1 ?? '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Project Name</label>
-                    <div class="display-box font-semibold">{{ $project->name ?: '—' }}</div>
+                    <div class="display-box font-semibold">{{ $project->name ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Project Owner</label>
-                    <div class="display-box">{{ $project->project_owner ?: '—' }}</div>
+                    <div class="display-box">{{ $project->project_owner ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Project Type</label>
-                    <div class="display-box">{{ $project->project_type ?: '—' }}</div>
+                    <div class="display-box">{{ $project->project_type ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">High Level Risk</label>
@@ -591,13 +592,13 @@
                                 {{ $project->high_level_risk }}
                             </span>
                         @else
-                            <span class="text-gray-400">—</span>
+                            <span class="text-gray-400">-</span>
                         @endif
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">IO/Number Order</label>
-                    <div class="display-box">{{ $project->io_number ?: '—' }}</div>
+                    <div class="display-box">{{ $project->io_number ?: '-' }}</div>
                 </div>
                 {{-- Category (auto dari Project Planning) --}}
                 <div>
@@ -625,11 +626,11 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Contract Start Date</label>
-                    <div class="display-box">{{ $project->contract_start_date ? \Carbon\Carbon::parse($project->contract_start_date)->format('d M Y') : '—' }}</div>
+                    <div class="display-box">{{ $project->contract_start_date ? \Carbon\Carbon::parse($project->contract_start_date)->format('d M Y') : '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Contract End Date</label>
-                    <div class="display-box">{{ $project->contract_end_date ? \Carbon\Carbon::parse($project->contract_end_date)->format('d M Y') : '—' }}</div>
+                    <div class="display-box">{{ $project->contract_end_date ? \Carbon\Carbon::parse($project->contract_end_date)->format('d M Y') : '-' }}</div>
                 </div>
                 {{-- Go Live Estimated (auto dari activity Go-Live) --}}
                 <div>
@@ -639,7 +640,7 @@
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-900 mb-1">Description</label>
-                    <div class="display-box whitespace-pre-line min-h-[5rem]">{{ $project->description ?: '—' }}</div>
+                    <div class="display-box whitespace-pre-line min-h-[5rem]">{{ $project->description ?: '-' }}</div>
                 </div>
             </div>
         </div>
@@ -647,7 +648,7 @@
 </section>
 @endif
 
-{{-- Delivery Data — sengaja ditempatkan SEBELUM Delivery Information; keduanya
+{{-- Delivery Data - sengaja ditempatkan SEBELUM Delivery Information; keduanya
      berbagi tab "Delivery Info" dan izin `edit-delivery-info`. --}}
 @if($can('delivery-project.delivery-data.view'))
 <section id="delivery-data" class="mb-6 card-hover section-animate" data-perm-edit="{{ $can('delivery-project.delivery-data.edit') ? '1' : '0' }}">
@@ -670,15 +671,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Warranty Period <span class="text-gray-400 font-normal">(months)</span></label>
-                    <div class="display-box">{{ $project->warranty_period !== null && $project->warranty_period !== '' ? $project->warranty_period . ' months' : '—' }}</div>
+                    <div class="display-box">{{ $project->warranty_period !== null && $project->warranty_period !== '' ? $project->warranty_period . ' months' : '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Delivery Method</label>
-                    <div class="display-box">{{ $project->delivery_method ?: '—' }}</div>
+                    <div class="display-box">{{ $project->delivery_method ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Total Mandays</label>
-                    <div class="display-box">{{ $project->total_mandays !== null && $project->total_mandays !== '' ? $project->total_mandays . ' days' : '—' }}</div>
+                    <div class="display-box">{{ $project->total_mandays !== null && $project->total_mandays !== '' ? $project->total_mandays . ' days' : '-' }}</div>
                 </div>
             </div>
         </div>
@@ -721,19 +722,19 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Account Executive Type</label>
-                    <div class="display-box">{{ $project->ae_type ?: '—' }}</div>
+                    <div class="display-box">{{ $project->ae_type ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Account Executive Name</label>
-                    <div class="display-box">{{ $project->ae_name ?: '—' }}</div>
+                    <div class="display-box">{{ $project->ae_name ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">AE Phone</label>
-                    <div class="display-box">{{ $project->ae_phone ?: '—' }}</div>
+                    <div class="display-box">{{ $project->ae_phone ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">AE Email</label>
-                    <div class="display-box break-all">{{ $project->ae_email ?: '—' }}</div>
+                    <div class="display-box break-all">{{ $project->ae_email ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Revenue</label>
@@ -749,7 +750,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">% Gross Profit</label>
-                    <div class="display-box text-right">{{ $dispGpPct === null ? '—' : $pct($dispGpPct) }}</div>
+                    <div class="display-box text-right">{{ $dispGpPct === null ? '-' : $pct($dispGpPct) }}</div>
                 </div>
                 {{-- Baris Actual: lg:col-start-2 agar sejajar di bawah Plan Cost, sama
                      seperti tata letak form lamanya. --}}
@@ -769,39 +770,87 @@
 
             {{-- ── Term Of Payment (TOP) Plan ─────────────────────────── --}}
             <div class="mt-8 pt-6 border-t border-gray-200" data-project-id="{{ $project->id }}">
+                {{-- Type TOP: % dari revenue Sales Data, atau amount dari Contract Line Item --}}
+                <div class="flex items-center flex-wrap gap-x-4 gap-y-2 mb-5">
+                    <span class="text-sm font-semibold text-gray-900">TOP Type</span>
+                    <div class="inline-flex rounded-lg border border-gray-300 overflow-hidden" role="group" id="ptModeToggle">
+                        <button type="button" data-mode="percentage" data-perm-action="edit"
+                                onclick="PaymentTermPlan.switchMode('percentage')"
+                                class="pt-mode-btn px-4 py-2 text-sm font-medium transition">% of Revenue</button>
+                        <button type="button" data-mode="line_item" data-perm-action="edit"
+                                onclick="PaymentTermPlan.switchMode('line_item')"
+                                class="pt-mode-btn px-4 py-2 text-sm font-medium border-l border-gray-300 transition">Contract Line Item</button>
+                    </div>
+                    <p id="ptModeHint" class="text-xs text-gray-500 basis-full sm:basis-auto"></p>
+                </div>
+
+                {{-- Peringatan non-blocking (mis. total TOP melebihi revenue Sales Data) --}}
+                <div id="ptWarnings" class="hidden mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
+
+                {{-- Contract Line Items - hanya di mode Line Item --}}
+                <div id="ptLineItemSection" class="hidden mb-8">
+                    <div class="flex justify-between items-center flex-wrap gap-3 mb-4">
+                        <div>
+                            <h4 class="text-lg font-medium text-gray-900">Contract Line Items</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Add the contract line items first - every payment term takes its amount from one of them.</p>
+                        </div>
+                        <button type="button" onclick="PaymentTermPlan.openAddLineItem()"
+                                class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Add Line Item
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto rounded-lg border border-gray-200">
+                        <table class="min-w-full text-sm border-collapse">
+                            <thead>
+                                <tr class="bg-gray-700 text-white">
+                                    <th class="px-3 py-3 text-left font-semibold whitespace-nowrap min-w-[160px]">Line Item</th>
+                                    <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Type</th>
+                                    <th class="px-3 py-3 text-left font-semibold whitespace-nowrap min-w-[180px]">Schedule</th>
+                                    <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Nominal</th>
+                                    <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Total</th>
+                                    <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Billed in TOP</th>
+                                    <th class="px-3 py-3 text-center font-semibold whitespace-nowrap min-w-[220px]">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ptLineItemBody" class="divide-y divide-gray-100 bg-white"></tbody>
+                            {{-- Total nilai kontrak vs revenue Sales Data --}}
+                            <tfoot id="ptLineItemFoot" class="bg-gray-50 border-t-2 border-gray-200"></tfoot>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="flex justify-between items-center flex-wrap gap-3 mb-4">
                     <div>
                         <h4 class="text-lg font-medium text-gray-900">Term Of Payment Plan</h4>
                     </div>
-                    <button type="button" onclick="PaymentTermPlan.openAdd()"
-                            class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Add Payment Term
-                    </button>
+                    <div class="flex items-center gap-2">
+                        {{-- Hanya membaca → tetap tersedia walau project closed / read only.
+                             Pilihan scope (semua / invoiced) ada di modal. --}}
+                        <button type="button" data-lock-exempt data-perm-keep onclick="PaymentTermPlan.openExport()"
+                                class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-file-excel text-green-600"></i>
+                            Export Excel
+                        </button>
+                        <button type="button" onclick="PaymentTermPlan.openAdd()"
+                                class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Add Payment Term
+                        </button>
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto rounded-lg border border-gray-200">
                     <table class="min-w-full text-sm border-collapse" id="paymentTermTable">
-                        <thead>
-                            <tr class="bg-gray-700 text-white">
-                                <th class="px-3 py-3 text-center font-semibold whitespace-nowrap w-[50px]">No</th>
-                                <th class="px-3 py-3 text-left font-semibold whitespace-nowrap min-w-[160px]">Payment Term</th>
-                                <th class="px-3 py-3 text-center font-semibold whitespace-nowrap w-[110px]">Payment %</th>
-                                <th class="px-3 py-3 text-right font-semibold whitespace-nowrap min-w-[150px]">Amount</th>
-                                <th class="px-3 py-3 text-left font-semibold whitespace-nowrap min-w-[220px]">Payment Requirements / Evidence</th>
-                                <th class="px-3 py-3 text-left font-semibold whitespace-nowrap min-w-[130px]">Estimated Date</th>
-                                <th class="px-3 py-3 text-left font-semibold whitespace-nowrap min-w-[150px]">Submit Invoice Date</th>
-                                <th class="px-3 py-3 text-left font-semibold whitespace-nowrap min-w-[130px]">Invoice No</th>
-                                <th class="px-3 py-3 text-left font-semibold whitespace-nowrap min-w-[130px]">Paid Date</th>
-                                <th class="px-3 py-3 text-center font-semibold whitespace-nowrap w-[100px]">Status</th>
-                                <th class="px-3 py-3 text-center font-semibold whitespace-nowrap w-[80px]">Action</th>
-                            </tr>
-                        </thead>
+                        {{-- Kolom dirender JS: mode Line Item menambah kolom "Period" --}}
+                        <thead id="paymentTermHead"></thead>
                         <tbody id="paymentTermBody" class="divide-y divide-gray-100 bg-white">
                             <tr>
-                                <td colspan="11" class="text-center py-8">
+                                <td colspan="12" class="text-center py-8">
                                     <svg class="animate-spin h-5 w-5 primary-text mx-auto mb-2" fill="none" viewBox="0 0 24 24">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -810,14 +859,7 @@
                                 </td>
                             </tr>
                         </tbody>
-                        <tfoot class="bg-gray-50 border-t-2 border-gray-200">
-                            <tr id="paymentTermFooter" class="font-semibold text-gray-700">
-                                <td class="px-3 py-3 text-center" colspan="2">Total</td>
-                                <td class="px-3 py-3 text-center" id="ptTotalPct">0%</td>
-                                <td class="px-3 py-3 text-right" id="ptTotalAmount">Rp 0</td>
-                                <td class="px-3 py-3" colspan="7"></td>
-                            </tr>
-                        </tfoot>
+                        <tfoot id="paymentTermFoot" class="bg-gray-50 border-t-2 border-gray-200"></tfoot>
                     </table>
                 </div>
             </div>
@@ -838,7 +880,7 @@
     // $teamPivotRows & $employees dikirim controller, selalu tersedia.
     // ──────────────────────────────────────────────────────────────────
 
-    // Semua employee_id yang punya baris pivot — penentu FK-fallback di bawah.
+    // Semua employee_id yang punya baris pivot - penentu FK-fallback di bawah.
     $pivotEmpIds = $teamPivotRows->pluck('employee_id')->unique()->toArray();
 
     // FK-fallback rows: kolom FK PM/Co PM/PA lama hanya ditampilkan bila
@@ -873,7 +915,7 @@
         $teamPeople->push($fb['emp']->basicData->full_name ?? null);
     }
     foreach ($teamPivotRows as $tpRow) {
-        // Anggota vendor tidak ada di master employee — pakai nama di baris pivot.
+        // Anggota vendor tidak ada di master employee - pakai nama di baris pivot.
         $tpEmp = $tpRow->employee_id ? $employees->firstWhere('employee_id', $tpRow->employee_id) : null;
         $teamPeople->push($tpEmp?->basicData->full_name ?: $tpRow->member_name);
     }
@@ -884,7 +926,7 @@
     // Originator/Owner (Issue Log).
     //
     // Catatan kolom: `ae_name` dan `project_owner` menyimpan NAMA (string),
-    // bukan foreign key — jadi cukup digabung apa adanya, hanya di-trim.
+    // bukan foreign key - jadi cukup digabung apa adanya, hanya di-trim.
     $projectPeople = $teamPeople
         ->merge([$project->ae_name, $project->project_owner])
         ->map(fn ($n) => trim((string) $n))
@@ -914,7 +956,7 @@
                         </svg>
                         Stakeholder Register
                     </h2>
-                    <p class="text-xs text-gray-500 mt-1">Identifikasi &amp; strategi engagement stakeholder proyek (PMBOK — Identify / Plan / Manage / Monitor Stakeholder Engagement)</p>
+                    <p class="text-xs text-gray-500 mt-1">Identifikasi &amp; strategi engagement stakeholder proyek (PMBOK - Identify / Plan / Manage / Monitor Stakeholder Engagement)</p>
                 </div>
                 @if($can('delivery-project.stakeholder.manage'))
                 <button type="button" onclick="StakeholderRegister.openAdd()"
@@ -1000,7 +1042,7 @@
             <div>
             @if($hasAnyTeam)
                 @php
-                    // Badge role & employee type — dipakai kedua blok baris di bawah.
+                    // Badge role & employee type - dipakai kedua blok baris di bawah.
                     $teamRoleBadge = [
                         'Project Manager'    => 'bg-indigo-50 text-indigo-700 ring-indigo-200',
                         'Co Project Manager' => 'bg-sky-50 text-sky-700 ring-sky-200',
@@ -1056,13 +1098,13 @@
                                 </td>
                                 <td class="px-3 py-2 align-middle font-medium text-gray-900 whitespace-nowrap">{{ $fb['emp']->basicData->full_name ?? '-' }}</td>
                                 <td class="px-3 py-2 align-middle text-gray-500 whitespace-nowrap">{{ $fb['emp']->basicData->position ?? '-' }}</td>
-                                <td class="px-3 py-2 align-middle text-gray-400">—</td>
+                                <td class="px-3 py-2 align-middle text-gray-400">-</td>
                                 <td class="px-3 py-2 align-middle whitespace-nowrap">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ring-1 ring-inset {{ $teamRoleBadge[$fb['role']] ?? 'bg-gray-50 text-gray-600 ring-gray-200' }}">{{ $fb['role'] }}</span>
                                 </td>
-                                <td class="px-3 py-2 align-middle text-gray-400">—</td>
-                                <td class="px-3 py-2 align-middle text-gray-400">—</td>
-                                <td class="px-3 py-2 align-middle text-gray-400">—</td>
+                                <td class="px-3 py-2 align-middle text-gray-400">-</td>
+                                <td class="px-3 py-2 align-middle text-gray-400">-</td>
+                                <td class="px-3 py-2 align-middle text-gray-400">-</td>
                             </tr>
                             @endforeach
 
@@ -1075,7 +1117,7 @@
                                 $rowName     = $rEmp?->basicData->full_name ?: ($row->member_name ?: '-');
                                 $rowPosition = $rEmp?->basicData->position ?: ($row->member_position ?: '-');
                                 $rowKey = $row->id;
-                                // Module disimpan sebagai string ("FI, TR") — dipecah jadi chip biar terbaca.
+                                // Module disimpan sebagai string ("FI, TR") - dipecah jadi chip biar terbaca.
                                 $rowModules = collect(explode(',', (string) ($row->module ?? '')))
                                     ->map(fn ($m) => trim($m))
                                     ->filter()
@@ -1109,14 +1151,14 @@
                                             @endforeach
                                         </span>
                                     @else
-                                        <span class="text-gray-400">—</span>
+                                        <span class="text-gray-400">-</span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2 align-middle whitespace-nowrap">
                                     @if($row->role)
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ring-1 ring-inset {{ $teamRoleBadge[$row->role] ?? 'bg-gray-50 text-gray-600 ring-gray-200' }}">{{ $row->role }}</span>
                                     @else
-                                        <span class="text-gray-400">—</span>
+                                        <span class="text-gray-400">-</span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2 align-middle whitespace-nowrap">
@@ -1126,12 +1168,12 @@
                                             <span class="text-gray-400">{{ $row->vendor_name }}</span>
                                         @endif
                                     @else
-                                        <span class="text-gray-400">—</span>
+                                        <span class="text-gray-400">-</span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2 align-middle text-gray-500 whitespace-nowrap tabular-nums">
-                                    {{ $row->start_date ? \Carbon\Carbon::parse($row->start_date)->format('d M Y') : '—' }}
-                                    <span class="text-gray-300">–</span>
+                                    {{ $row->start_date ? \Carbon\Carbon::parse($row->start_date)->format('d M Y') : '-' }}
+                                    <span class="text-gray-300">-</span>
                                     @if($row->end_date)
                                         {{ \Carbon\Carbon::parse($row->end_date)->format('d M Y') }}
                                     @else
@@ -1142,7 +1184,7 @@
                                     @if($row->notes)
                                         <span class="block truncate" title="{{ $row->notes }}">{{ $row->notes }}</span>
                                     @else
-                                        <span class="text-gray-400">—</span>
+                                        <span class="text-gray-400">-</span>
                                     @endif
                                 </td>
                             </tr>
@@ -1399,7 +1441,7 @@
                     </tbody>
                 </table>
             </div>
-            <p class="text-xs text-gray-400 mt-2">P = Probability &nbsp;|&nbsp; I = Impact &nbsp;|&nbsp; Score = P × I &nbsp;|&nbsp; High ≥ 12 &nbsp;|&nbsp; Medium 5–11 &nbsp;|&nbsp; Low ≤ 4</p>
+            <p class="text-xs text-gray-400 mt-2">P = Probability &nbsp;|&nbsp; I = Impact &nbsp;|&nbsp; Score = P × I &nbsp;|&nbsp; High ≥ 12 &nbsp;|&nbsp; Medium 5-11 &nbsp;|&nbsp; Low ≤ 4</p>
         </div>
     </div>
 </section>
@@ -1454,11 +1496,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Location Name</label>
-                    <div class="display-box">{{ $project->location_name ?: '—' }}</div>
+                    <div class="display-box">{{ $project->location_name ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Type of Address</label>
-                    <div class="display-box">{{ $project->location_type ?: '—' }}</div>
+                    <div class="display-box">{{ $project->location_type ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Country</label>
@@ -1466,27 +1508,50 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Geographical</label>
-                    <div class="display-box">{{ $project->location_geographical ?: '—' }}</div>
+                    <div class="display-box">{{ $project->location_geographical ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Region / Province</label>
-                    <div class="display-box">{{ $project->location_region ?: '—' }}</div>
+                    <div class="display-box">{{ $project->location_region ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">City</label>
-                    <div class="display-box">{{ $project->location_city ?: '—' }}</div>
+                    <div class="display-box">{{ $project->location_city ?: '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Valid From</label>
-                    <div class="display-box">{{ $project->location_valid_from ? \Carbon\Carbon::parse($project->location_valid_from)->format('d M Y') : '—' }}</div>
+                    <div class="display-box">{{ $project->location_valid_from ? \Carbon\Carbon::parse($project->location_valid_from)->format('d M Y') : '-' }}</div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Valid To</label>
-                    <div class="display-box">{{ $project->location_valid_to ? \Carbon\Carbon::parse($project->location_valid_to)->format('d M Y') : '—' }}</div>
+                    <div class="display-box">{{ $project->location_valid_to ? \Carbon\Carbon::parse($project->location_valid_to)->format('d M Y') : '-' }}</div>
                 </div>
                 <div class="md:col-span-2 lg:col-span-3">
                     <label class="block text-sm font-medium text-gray-900 mb-1">Street Address</label>
-                    <div class="display-box whitespace-pre-line">{{ $project->location_street ?: '—' }}</div>
+                    <div class="display-box whitespace-pre-line">{{ $project->location_street ?: '-' }}</div>
+                </div>
+                @php
+                    $hasCoords = $project->location_latitude !== null && $project->location_longitude !== null;
+                    $fmtCoord  = fn ($v) => rtrim(rtrim(number_format((float) $v, 7, '.', ''), '0'), '.');
+                    $coordText = $hasCoords ? $fmtCoord($project->location_latitude) . ', ' . $fmtCoord($project->location_longitude) : null;
+                @endphp
+                <div class="md:col-span-2 lg:col-span-3">
+                    <label class="block text-sm font-medium text-gray-900 mb-1">Coordinates (Maps)</label>
+                    @if($hasCoords)
+                        <div class="display-box flex flex-wrap items-center justify-between gap-2">
+                            <span class="font-mono text-sm" id="projectLocationCoords">{{ $coordText }}</span>
+                            <a href="https://www.google.com/maps?q={{ $project->location_latitude }},{{ $project->location_longitude }}" target="_blank" rel="noopener"
+                               class="text-sm text-blue-600 hover:underline">Open in Google Maps</a>
+                        </div>
+                        <div class="mt-3 rounded-lg overflow-hidden border border-gray-200">
+                            <iframe title="Project location map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                                    class="w-full" style="height: 260px; border: 0;"
+                                    src="https://maps.google.com/maps?q={{ $project->location_latitude }},{{ $project->location_longitude }}&z=16&output=embed"></iframe>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Project timesheets show their distance from this point, so the GPS on a timesheet can be cross-checked.</p>
+                    @else
+                        <div class="display-box">-</div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -1494,7 +1559,7 @@
 </section>
 @endif
 
-{{-- Location Information — cascading Geographical → Region → City dropdowns.
+{{-- Location Information - cascading Geographical → Region → City dropdowns.
      Sumber data & pola identik dengan form create (projects/create.blade.php)
      supaya tampilan & perilaku seragam. --}}
 <script>
@@ -1791,7 +1856,7 @@
                         </svg>
                         WRICEF Log
                     </h2>
-                    <p class="text-xs text-gray-500 mt-1">Workflow, Report, Interface, Conversion, Enhancement &amp; Form objects — FSD → Development → Testing</p>
+                    <p class="text-xs text-gray-500 mt-1">Workflow, Report, Interface, Conversion, Enhancement &amp; Form objects - FSD → Development → Testing</p>
                 </div>
                 @if($can('delivery-project.wricef.manage'))
                 <button type="button" onclick="WricefLog.openAdd()"
@@ -1873,7 +1938,7 @@
                             </td>
                         </tr>
                     </tbody>
-                    {{-- Total Mandays — akumulasi kolom Effort (Mandays) seluruh baris,
+                    {{-- Total Mandays - akumulasi kolom Effort (Mandays) seluruh baris,
                          mengikuti pola footer Total pada Term Of Payment Plan.
                          colspan 10 + 1 kolom Effort + 19 kolom sisanya = 30 kolom. --}}
                     <tfoot class="sticky bottom-0 z-10 bg-gray-50 border-t-2 border-gray-300">
@@ -1906,21 +1971,46 @@
                         <svg class="w-5 h-5 mr-2 primary-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        Plan Cost
+                        <span id="pcViewTitle">Plan Cost</span>
                     </h2>
-                    <p class="text-xs text-gray-500 mt-1">Project cost recapitulation: Indirect Cost &amp; Direct Cost</p>
+                    <p class="text-xs text-gray-500 mt-1" id="pcViewSubtitle">Project cost recapitulation: Indirect Cost &amp; Direct Cost</p>
                 </div>
-                @if($can('delivery-project.plan-cost.manage'))
-                <button type="button" onclick="PlanCost.openAddParentModal()"
-                        class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    Add Cost Item
-                </button>
-                @endif
+                <div class="flex items-center gap-2 flex-wrap">
+                    {{-- Pindah tampilan: hanya membaca → tetap aktif walau read-only / closed. --}}
+                    <div data-lock-exempt class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+                        <button type="button" id="pcTabPlan" data-lock-exempt data-perm-keep
+                                onclick="PlanCost.switchView('plan')"
+                                class="px-3 py-1.5 text-xs font-semibold rounded-md transition primary-gradient text-white">
+                            Plan Cost
+                        </button>
+                        <button type="button" id="pcTabMonthly" data-lock-exempt data-perm-keep
+                                onclick="PlanCost.switchView('monthly')"
+                                class="px-3 py-1.5 text-xs font-semibold rounded-md transition text-gray-600 hover:bg-white">
+                            Monthly Cost vs TOP Invoiced
+                        </button>
+                    </div>
+                    {{-- Rekap, expense detail, monthly cost & release schedule (4 sheet).
+                         Hanya membaca, jadi tersedia untuk semua yang boleh melihat section ini. --}}
+                    <a href="{{ route('projects.costs.export', $project->id) }}"
+                       class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition">
+                        <i class="fas fa-file-excel text-green-600"></i>
+                        Export Excel
+                    </a>
+                    @if($can('delivery-project.plan-cost.manage'))
+                    <button type="button" id="pcAddCostBtn" onclick="PlanCost.openAddParentModal()"
+                            class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Cost Item
+                    </button>
+                    @endif
+                </div>
             </div>
         </div>
+
+        {{-- ══ View 1: Plan Cost (rekap per cost item) ═══════════════ --}}
+        <div id="pcViewPlan">
 
         {{-- ── Summary Cards ────────────────────────────────────────── --}}
         <div id="planCostSummaryCards" class="px-6 pt-5 pb-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -1942,10 +2032,22 @@
                             <th class="px-4 py-3 text-left font-semibold w-16">Code</th>
                             <th class="px-4 py-3 text-left font-semibold">Item Name</th>
                             <th class="px-4 py-3 text-right font-semibold w-36">Budget</th>
-                            <th class="px-4 py-3 text-right font-semibold w-36 bg-blue-700">Release</th>
-                            <th class="px-4 py-3 text-right font-semibold w-36 bg-orange-600">Actual</th>
-                            <th class="px-4 py-3 text-right font-semibold w-36 bg-green-700">Avail. Budget</th>
-                            <th class="px-4 py-3 text-right font-semibold w-36 bg-teal-700">Avail. Release</th>
+                            <th class="px-4 py-3 text-right font-semibold w-36 bg-blue-700">
+                                Release
+                                <span class="block text-[10px] font-normal opacity-80">Total set per item</span>
+                            </th>
+                            <th class="px-4 py-3 text-right font-semibold w-36 bg-orange-600">
+                                Actual
+                                <span class="block text-[10px] font-normal opacity-80">Total expense</span>
+                            </th>
+                            <th class="px-4 py-3 text-right font-semibold w-36 bg-green-700">
+                                Avail. Budget
+                                <span class="block text-[10px] font-normal opacity-80">Budget &minus; Release</span>
+                            </th>
+                            <th class="px-4 py-3 text-right font-semibold w-36 bg-teal-700">
+                                Avail. Release
+                                <span class="block text-[10px] font-normal opacity-80">Release &minus; Actual</span>
+                            </th>
                             <th class="px-4 py-3 text-center font-semibold w-28">Action</th>
                         </tr>
                     </thead>
@@ -1964,14 +2066,63 @@
             </div>
             <p class="text-xs text-gray-400 mt-2">
                 * Avail. Budget = Budget &minus; Release &nbsp;|&nbsp; Avail. Release = Release &minus; Actual
+                &nbsp;|&nbsp; Click a Release / Actual amount to set its monthly schedule / expenses.
             </p>
+        </div>
+
+        </div>{{-- /pcViewPlan --}}
+
+        {{-- ══ View 2: Monthly Cost vs TOP Invoiced ══════════════════ --}}
+        <div id="pcViewMonthly" class="hidden">
+            <div id="monthlyCostSummaryCards" class="px-6 pt-5 pb-2 grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+
+            <div class="px-6 pb-6">
+                <div class="overflow-x-auto rounded-lg border border-gray-200">
+                    <table class="min-w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-700 text-white">
+                                <th class="px-4 py-3 text-left font-semibold">Period</th>
+                                <th class="px-4 py-3 text-right font-semibold w-40">
+                                    Release Cost
+                                    <span class="block text-[10px] font-normal opacity-80">From monthly schedule</span>
+                                </th>
+                                <th class="px-4 py-3 text-right font-semibold w-40">
+                                    Actual Cost
+                                    <span class="block text-[10px] font-normal opacity-80">Dari Expense Details</span>
+                                </th>
+                                <th class="px-4 py-3 text-right font-semibold w-48">
+                                    TOP Invoiced
+                                    <span class="block text-[10px] font-normal opacity-80">Invoiced terms (by Submit Invoice month)</span>
+                                </th>
+                                <th class="px-4 py-3 text-right font-semibold w-40">
+                                    Monthly Difference
+                                    <span class="block text-[10px] font-normal opacity-80">TOP Invoiced &minus; Actual</span>
+                                </th>
+                                <th class="px-4 py-3 text-right font-semibold w-40">
+                                    Cumulative Difference
+                                    <span class="block text-[10px] font-normal opacity-80">Running total to date</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthlyCostTableBody" class="divide-y divide-gray-100">
+                            <tr><td colspan="6" class="text-center py-10 text-gray-400 text-xs">Loading monthly data…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+                    * Difference = TOP Invoiced &minus; Actual. Positive: more has been invoiced to the customer than spent;
+                negative (red): costs exceed what has been invoiced. TOP Invoiced covers all invoiced terms
+                (status Invoiced and Paid), grouped by Submit Invoice Date month. Unscheduled release and expenses without a
+                period are shown in the &ldquo;Unscheduled / no period&rdquo; row.
+                </p>
+            </div>
         </div>
     </div>
 </section>
 @endif
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- PLAN COST — MODALS                                            --}}
+{{-- PLAN COST - MODALS                                            --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 
 {{-- Add / Edit Cost Modal --}}
@@ -2047,7 +2198,7 @@
                 </div>
 
                 {{-- Budget / Release grid (disembunyikan untuk parent-with-children) --}}
-                {{-- Actual TIDAK diinput di sini — nilainya otomatis dari total expense detail --}}
+                {{-- Actual TIDAK diinput di sini - nilainya otomatis dari total expense detail --}}
                 <div id="costAmountsSection">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -2081,11 +2232,11 @@
                     <div class="mt-3 bg-gray-50 rounded-lg p-3 text-xs text-gray-600 grid grid-cols-2 gap-2">
                         <div>
                             <span class="font-medium text-green-700">Avail. Budget</span> (Budget − Release):
-                            <span id="previewAvailBudget" class="font-semibold ml-1 text-green-700">—</span>
+                            <span id="previewAvailBudget" class="font-semibold ml-1 text-green-700">-</span>
                         </div>
                         <div>
                             <span class="font-medium text-teal-700">Avail. Release</span> (Release − Actual):
-                            <span id="previewAvailRelease" class="font-semibold ml-1 text-teal-700">—</span>
+                            <span id="previewAvailRelease" class="font-semibold ml-1 text-teal-700">-</span>
                         </div>
                     </div>
                 </div>
@@ -2193,6 +2344,12 @@
                            placeholder="e.g. Transportation, Accommodation…">
                 </div>
                 <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Period <span class="text-red-500">*</span></label>
+                    <input type="date" id="aeDateInput"
+                           class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400">
+                    <p id="aeDateHint" class="hidden text-[11px] text-amber-600 mt-1">This expense has no exact date yet - pick the expense date.</p>
+                </div>
+                <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Amount (Rp) <span class="text-red-500">*</span></label>
                     <input type="text" id="aeAmountInput" inputmode="numeric"
                            class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
@@ -2269,7 +2426,7 @@
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-base font-semibold text-gray-900">Saved — please review planning</h3>
+                    <h3 class="text-base font-semibold text-gray-900">Saved - please review planning</h3>
                     <p class="text-xs text-gray-500 mt-0.5">The contract dates were saved successfully.</p>
                 </div>
             </div>
@@ -2287,7 +2444,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- PLAN COST — ACTUAL DETAIL MODAL                               --}}
+{{-- PLAN COST - ACTUAL DETAIL MODAL                               --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="actualDetailModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PlanCost.closeActualDetailModal()"></div>
@@ -2297,8 +2454,8 @@
             {{-- Header --}}
             <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
                 <div>
-                    <h3 class="text-base font-semibold text-gray-900">Actual Expense Details</h3>
-                    <p class="text-xs text-gray-500 mt-0.5" id="actualDetailSubtitle"></p>
+                    <h3 class="text-base font-semibold text-gray-900">Actual Expense Details: <span id="actualDetailSubtitle"></span></h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Actual is calculated automatically from the expense list. Period follows the expense date.</p>
                 </div>
                 <button type="button" onclick="PlanCost.closeActualDetailModal()" class="text-gray-400 hover:text-gray-600 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2310,18 +2467,57 @@
             {{-- Scrollable body --}}
             <div class="overflow-y-auto flex-1 p-6 space-y-5">
 
-                {{-- Summary bar: Actual = total of all expense details --}}
-                <div id="actualDetailSummary" class="flex justify-center">
-                    <div class="bg-orange-50 border border-orange-200 rounded-lg px-6 py-4 text-center w-full max-w-xs">
-                        <p class="text-xs text-orange-600 font-medium uppercase tracking-wide mb-1">Actual Amount</p>
-                        <p class="text-lg font-bold text-orange-700 font-mono" id="adTotalItems">Rp 0</p>
-                        <p class="text-xs text-orange-400 mt-0.5">Auto-calculated from the expense total below</p>
+                {{-- Kartu ringkasan: Actual = total seluruh expense detail di bawah --}}
+                <div id="actualDetailSummary" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Release</p>
+                        <p class="text-lg font-bold text-blue-700 font-mono" id="adReleaseCard">Rp 0</p>
                     </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Actual</p>
+                        <p class="text-lg font-bold text-orange-600 font-mono" id="adTotalItems">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Avail. Release</p>
+                        <p class="text-lg font-bold text-gray-800 font-mono" id="adAvailReleaseCard">Rp 0</p>
+                    </div>
+                </div>
+
+                {{-- Subtotal per bulan (semua expense, tidak ikut filter period) --}}
+                <div id="adMonthlyWrap" class="hidden">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">Monthly Subtotal</h4>
+                    <div id="adMonthlyList" class="divide-y divide-gray-100 border-y border-gray-100 text-sm"></div>
                 </div>
 
                 {{-- Table rincian pengeluaran --}}
                 <div>
-                    <h4 class="text-sm font-semibold text-gray-700 mb-2">Expense List</h4>
+                    <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                        <h4 class="text-sm font-semibold text-gray-700">Expense List</h4>
+                        {{-- Filter period (bulan / tahun, masing-masing opsional).
+                             data-lock-exempt: filter hanya membaca, jadi tetap
+                             aktif walau project sudah closed. --}}
+                        <div data-lock-exempt class="flex items-center gap-2">
+                            <span class="text-xs font-medium text-gray-500">Period</span>
+                            <div class="w-36">
+                                <select id="adFilterMonth" onchange="PlanCost.applyPeriodFilter()"
+                                        class="block w-full py-1.5 px-2 border border-gray-300 rounded-lg text-xs">
+                                    <option value="">All Months</option>
+                                    @foreach(range(1, 12) as $m)
+                                        <option value="{{ sprintf('%02d', $m) }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="w-28">
+                                {{-- Opsi tahun diisi JS dari period expense yang ada. --}}
+                                <select id="adFilterYear" onchange="PlanCost.applyPeriodFilter()"
+                                        class="block w-full py-1.5 px-2 border border-gray-300 rounded-lg text-xs">
+                                    <option value="">All Years</option>
+                                </select>
+                            </div>
+                            <button type="button" id="adFilterResetBtn" onclick="PlanCost.resetPeriodFilter()"
+                                    class="hidden text-xs font-medium text-red-500 hover:text-red-700">Reset</button>
+                        </div>
+                    </div>
                     {{-- table-fixed + colgroup: lebar kolom ditentukan di sini, bukan
                          oleh isi sel. Tanpa ini nama dokumen yang panjang (nowrap)
                          merebut hampir seluruh lebar tabel dan Expense Name terjepit
@@ -2331,6 +2527,7 @@
                             <colgroup>
                                 <col class="w-10">   {{-- #        --}}
                                 <col>                {{-- Expense Name: sisa lebar --}}
+                                <col class="w-24">   {{-- Period   --}}
                                 <col class="w-36">   {{-- Amount   --}}
                                 <col class="w-44">   {{-- Document --}}
                                 <col class="w-20">   {{-- Action   --}}
@@ -2339,6 +2536,16 @@
                                 <tr>
                                     <th class="px-4 py-2.5 text-left font-medium">#</th>
                                     <th class="px-4 py-2.5 text-left font-medium">Expense Name</th>
+                                    {{-- Klik: terbaru → terlama → kembali ke urutan input. --}}
+                                    <th class="px-4 py-2.5 text-center font-medium" data-lock-exempt>
+                                        <button type="button" id="adSortPeriodBtn" data-lock-exempt data-perm-keep
+                                                onclick="PlanCost.togglePeriodSort()"
+                                                title="Sort by period: newest first"
+                                                class="inline-flex items-center gap-1 font-medium hover:text-gray-900 transition">
+                                            Period
+                                            <span id="adSortPeriodIcon" class="text-[11px] leading-none text-gray-400">⇅</span>
+                                        </button>
+                                    </th>
                                     <th class="px-4 py-2.5 text-right font-medium">Amount</th>
                                     <th class="px-4 py-2.5 text-center font-medium">Document</th>
                                     <th class="px-4 py-2.5 text-center font-medium">Action</th>
@@ -2346,7 +2553,7 @@
                             </thead>
                             <tbody id="actualDetailTableBody" class="divide-y divide-gray-100">
                                 <tr>
-                                    <td colspan="5" class="text-center py-8 text-gray-400 text-sm">
+                                    <td colspan="6" class="text-center py-8 text-gray-400 text-sm">
                                         <svg class="animate-spin h-5 w-5 primary-text mx-auto mb-2" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -2357,7 +2564,7 @@
                             </tbody>
                             <tfoot id="actualDetailTableFoot" class="hidden bg-gray-50 border-t-2 border-gray-300">
                                 <tr>
-                                    <td colspan="2" class="px-4 py-2.5 text-sm font-bold text-gray-700 text-right">Total:</td>
+                                    <td colspan="3" class="px-4 py-2.5 text-sm font-bold text-gray-700 text-right" id="adFooterLabel">Total:</td>
                                     <td class="px-4 py-2.5 text-right font-bold text-blue-700 font-mono text-sm" id="adFooterTotal">Rp 0</td>
                                     <td colspan="2"></td>
                                 </tr>
@@ -2378,11 +2585,17 @@
                     </h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {{-- Expense name --}}
-                        <div>
+                        <div class="sm:col-span-2">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Expense Name <span class="text-red-500">*</span></label>
                             <input type="text" id="adDescInput" maxlength="200"
                                    class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
                                    placeholder="e.g. Transportation, Accommodation…">
+                        </div>
+                        {{-- Tanggal expense (kalender); yang ditampilkan hanya bulan + tahun --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Period <span class="text-red-500">*</span></label>
+                            <input type="date" id="adDateInput"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400">
                         </div>
                         {{-- Amount --}}
                         <div>
@@ -2439,10 +2652,125 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- RISK REGISTER — ADD / EDIT MODAL                              --}}
+{{-- PLAN COST - ATUR RELEASE COST MODAL                           --}}
+{{-- Langkah 1: total release per item. Langkah 2: jadwal bulanan.  --}}
+{{-- ══════════════════════════════════════════════════════════════ --}}
+<div id="releaseModal" class="fixed inset-0 z-50 hidden">
+    <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PlanCost.closeReleaseModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:90vh;">
+
+            {{-- Header --}}
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-900">Set Release Cost</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Step 1: set the item's total release. Step 2: split it into a monthly schedule.</p>
+                </div>
+                <button type="button" onclick="PlanCost.closeReleaseModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Scrollable body --}}
+            <div class="overflow-y-auto flex-1 p-6 space-y-5">
+
+                {{-- Cost item (hanya leaf). Pindah item = membaca → tetap aktif saat closed. --}}
+                <div data-lock-exempt>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Cost Item</label>
+                    <select id="rlCostSelect" onchange="PlanCost.openReleaseModal(Number(this.value))"
+                            class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm bg-gray-50"></select>
+                </div>
+
+                {{-- Kartu ringkasan --}}
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Total Release</p>
+                        <p class="text-lg font-bold text-blue-700 font-mono" id="rlTotalCard">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Scheduled</p>
+                        <p class="text-lg font-bold text-gray-800 font-mono" id="rlScheduledCard">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                        <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Unscheduled</p>
+                        <p class="text-lg font-bold text-red-600 font-mono" id="rlUnscheduledCard">Rp 0</p>
+                    </div>
+                </div>
+
+                {{-- Subtotal per bulan --}}
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">Monthly Subtotal</h4>
+                    <div id="rlMonthlyList" class="divide-y divide-gray-100 border-y border-gray-100 text-sm"></div>
+                </div>
+
+                {{-- 1. Total release --}}
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700">1. Item Total Release (Rp)</h4>
+                    <label class="block text-xs font-medium text-gray-600 mt-1 mb-1">Total Release</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="rlTotalInput" inputmode="numeric"
+                               class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                               placeholder="0">
+                        <button type="button" id="rlSaveTotalBtn" data-closed-hide data-perm-action="edit"
+                                onclick="PlanCost.saveReleaseTotal()"
+                                class="flex-shrink-0 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50">
+                            Save Total
+                        </button>
+                    </div>
+                </div>
+
+                {{-- 2. Jadwal bulanan --}}
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">2. Monthly Schedule</h4>
+                    <div id="rlScheduleList" class="divide-y divide-gray-100 border-y border-gray-100 text-sm"></div>
+
+                    <div id="rlAddForm" data-closed-hide class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end mt-3">
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                            <input type="date" id="rlDateInput"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Amount (Rp)</label>
+                            <input type="text" id="rlAmountInput" inputmode="numeric"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                                   placeholder="0">
+                        </div>
+                        <div class="sm:col-span-4">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                            <input type="text" id="rlNotesInput" maxlength="255"
+                                   class="block w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                                   placeholder="Optional">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button type="button" id="rlAddBtn" data-perm-action="manage"
+                                    onclick="PlanCost.addReleaseSchedule()"
+                                    class="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50">
+                                Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end flex-shrink-0">
+                <button type="button" onclick="PlanCost.closeReleaseModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════ --}}
+{{-- RISK REGISTER - ADD / EDIT MODAL                              --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TERM OF PAYMENT (TOP) PLAN — ADD / EDIT MODAL                  --}}
+{{-- TERM OF PAYMENT (TOP) PLAN - ADD / EDIT MODAL                  --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="paymentTermModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PaymentTermPlan.closeModal()"></div>
@@ -2464,6 +2792,36 @@
                 <input type="hidden" id="paymentTermModalMode" value="create">
                 <input type="hidden" id="paymentTermModalId" value="">
 
+                {{-- Basis perhitungan - saling eksklusif:
+                       % of Revenue   → hanya di TOP Type "% of Revenue" (dikunci di Contract Line Item)
+                       % of Line Item → isi Payment %, Amount = % × nilai line item
+                       Amount         → isi nominal, % terhadap line item dihitung otomatis --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Calculation basis</label>
+                    <div class="inline-flex rounded-lg border border-gray-300 overflow-hidden" role="group">
+                        <button type="button" id="pt_basis_percentage" data-perm-keep
+                                onclick="PaymentTermPlan.setBasis('percentage')"
+                                class="pt-basis-btn px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed">% of Revenue</button>
+                        <button type="button" id="pt_basis_line_item" data-perm-keep
+                                onclick="PaymentTermPlan.setBasis('line_item')"
+                                class="pt-basis-btn px-4 py-2 text-sm font-medium border-l border-gray-300 transition disabled:cursor-not-allowed">Payment %</button>
+                        <button type="button" id="pt_basis_fixed" data-perm-keep
+                                onclick="PaymentTermPlan.setBasis('fixed')"
+                                class="pt-basis-btn px-4 py-2 text-sm font-medium border-l border-gray-300 transition disabled:cursor-not-allowed">Amount</button>
+                    </div>
+                    <p id="pt_basis_hint" class="mt-1 text-xs text-gray-400"></p>
+                </div>
+
+                {{-- Line Item - wajib di mode Line Item --}}
+                <div id="pt_line_item_wrap" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Line Item <span class="text-red-500">*</span>
+                        <span class="text-gray-400 font-normal">(required in Line Item mode)</span>
+                    </label>
+                    <select id="pt_line_item" onchange="PaymentTermPlan.onLineItemChange()"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus"></select>
+                </div>
+
                 {{-- Payment Term --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Payment Term <span class="text-red-500">*</span></label>
@@ -2473,29 +2831,47 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {{-- Payment % --}}
+                    {{-- Payment % - terkunci saat basis Amount (menampilkan porsi terhadap line item) --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Payment % <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Payment % <span id="pt_pct_req" class="text-red-500">*</span>
+                            <span id="pt_pct_of" class="text-gray-400 font-normal"></span>
+                        </label>
                         <div class="relative">
                             <input type="number" id="pt_payment_percentage" min="0" max="100" step="0.01" autocomplete="off"
                                    oninput="PaymentTermPlan.recalcAmount()"
-                                   class="w-full pr-9 pl-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus text-right"
+                                   class="w-full pr-9 pl-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus text-right disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
                                    placeholder="0">
                             <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-500 pointer-events-none">%</span>
                         </div>
                     </div>
 
-                    {{-- Amount (auto) --}}
+                    {{-- Amount - auto dari revenue / nilai line item (basis %) atau diisi sendiri (basis Amount) --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount <span class="text-gray-400 font-normal">(auto)</span></label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Amount <span id="pt_amount_req" class="text-red-500 hidden">*</span>
+                            <span id="pt_amount_auto" class="text-gray-400 font-normal">(auto)</span>
+                        </label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-gray-500 pointer-events-none">Rp.</span>
-                            <input type="text" id="pt_amount_disp" readonly tabindex="-1"
+                            <input type="text" id="pt_amount_disp" readonly tabindex="-1" inputmode="numeric" autocomplete="off"
+                                   oninput="PaymentTermPlan.onAmountInput(this); PaymentTermPlan.recalcAmount()"
                                    class="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed text-sm text-gray-600 text-right"
                                    placeholder="0">
                         </div>
                     </div>
                 </div>
+
+                {{-- Period - label periode tagihan (mode Line Item) --}}
+                <div id="pt_period_wrap" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Period</label>
+                    <input type="text" id="pt_period" maxlength="50" autocomplete="off"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus"
+                           placeholder="e.g. Feb 2027">
+                </div>
+
+                {{-- Peringatan langsung: total TOP melebihi revenue / nilai line item (tidak memblokir) --}}
+                <div id="pt_over_warning" class="hidden rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800"></div>
 
                 {{-- Payment Requirements / Evidence --}}
                 <div>
@@ -2514,16 +2890,19 @@
                                placeholder="dd/mm/yyyy">
                     </div>
 
-                    {{-- Submit Invoice Date --}}
+                    {{-- Submit Invoice Date - wajib saat Status = Invoiced --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Submit Invoice Date</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Submit Invoice Date <span id="pt_submit_invoice_req" class="text-red-500 hidden">*</span>
+                        </label>
                         <input type="text" id="pt_submit_invoice_date" autocomplete="off"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus"
                                placeholder="dd/mm/yyyy">
+                        <p id="pt_submit_invoice_hint" class="mt-1 text-xs text-gray-400 hidden">Required because Status is Invoiced.</p>
                     </div>
                 </div>
 
-                {{-- Invoice Number — wajib saat Submit Invoice Date terisi --}}
+                {{-- Invoice Number - wajib saat Submit Invoice Date terisi --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Invoice Number <span id="pt_invoice_number_req" class="text-red-500 hidden">*</span>
@@ -2535,7 +2914,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {{-- Paid Date — wajib saat Status = Paid --}}
+                    {{-- Paid Date - wajib saat Status = Paid --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Paid Date <span id="pt_paid_date_req" class="text-red-500 hidden">*</span>
@@ -2551,7 +2930,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Status <span class="text-red-500">*</span></label>
                         <select id="pt_status" onchange="PaymentTermPlan.togglePaidDateRequired()"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus">
-                            @foreach(['Open','Paid','Delay'] as $s)
+                            @foreach(\App\Models\DeliveryProjectPaymentTerm::STATUSES as $s)
                                 <option value="{{ $s }}">{{ $s }}</option>
                             @endforeach
                         </select>
@@ -2575,7 +2954,66 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TERM OF PAYMENT (TOP) PLAN — DELETE CONFIRMATION MODAL         --}}
+{{-- TERM OF PAYMENT (TOP) PLAN - EXPORT EXCEL MODAL                --}}
+{{-- ══════════════════════════════════════════════════════════════ --}}
+{{-- data-lock-exempt: export hanya membaca, tetap bisa dipakai walau project closed. --}}
+<div id="paymentTermExportModal" data-lock-exempt class="fixed inset-0 z-50 hidden">
+    <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PaymentTermPlan.closeExport()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-900">Export Term Of Payment</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Choose which payment terms to include in the Excel file.</p>
+                </div>
+                <button type="button" onclick="PaymentTermPlan.closeExport()" class="text-gray-400 hover:text-gray-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-3">
+                <label class="pt-export-opt flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition">
+                    <input type="radio" name="pt_export_scope" value="all" class="mt-1" onchange="PaymentTermPlan.renderExportOptions()">
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-sm font-semibold text-gray-900">Full Term Of Payment</span>
+                            <span id="ptExportCountAll" class="text-xs font-medium text-gray-500"></span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-0.5">All payment terms, whatever their status.</p>
+                    </div>
+                </label>
+                <label class="pt-export-opt flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition">
+                    <input type="radio" name="pt_export_scope" value="invoiced" class="mt-1" onchange="PaymentTermPlan.renderExportOptions()">
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-sm font-semibold text-gray-900">Invoiced Only</span>
+                            <span id="ptExportCountInvoiced" class="text-xs font-medium text-gray-500"></span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-0.5">Only payment terms that already have an Invoice No.</p>
+                    </div>
+                </label>
+                <p class="text-xs text-gray-400 pt-1">The file includes project info, the payment term table with totals, and a summary by status<span id="ptExportLineItemHint"> and by line item</span>.</p>
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                <button type="button" onclick="PaymentTermPlan.closeExport()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="button" id="ptExportBtn" onclick="PaymentTermPlan.confirmExport()"
+                        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-file-excel"></i>
+                    Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════ --}}
+{{-- TERM OF PAYMENT (TOP) PLAN - DELETE CONFIRMATION MODAL         --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="paymentTermDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PaymentTermPlan.closeDeleteModal()"></div>
@@ -2606,7 +3044,204 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- RISK REGISTER — DELETE CONFIRMATION MODAL                      --}}
+{{-- TOP - CONTRACT LINE ITEM ADD / EDIT MODAL                      --}}
+{{-- ══════════════════════════════════════════════════════════════ --}}
+<div id="lineItemModal" class="fixed inset-0 z-50 hidden">
+    <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PaymentTermPlan.closeLineItemModal()"></div>
+    <div class="relative flex items-center justify-center min-h-screen p-4">
+        <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                <h3 class="text-base font-semibold text-gray-900" id="lineItemModalTitle">Add Line Item</h3>
+                <button type="button" onclick="PaymentTermPlan.closeLineItemModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-4">
+                <input type="hidden" id="li_id" value="">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Line Item <span class="text-red-500">*</span></label>
+                    <input type="text" id="li_name" maxlength="255" autocomplete="off"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus"
+                           placeholder="e.g. SAP License, Implementation Service, ATS">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Type <span class="text-red-500">*</span></label>
+                        <select id="li_type" onchange="PaymentTermPlan.onLineItemTypeChange()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus">
+                            <option value="one_time">One-time</option>
+                            <option value="recurring">Recurring</option>
+                            <option value="milestone">Milestone / Term-based</option>
+                        </select>
+                    </div>
+                    <div id="li_frequency_wrap" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Frequency <span class="text-red-500">*</span></label>
+                        <select id="li_frequency" onchange="PaymentTermPlan.previewLineItem()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus">
+                            <option value="monthly">Monthly</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="semiannual">Semi-annual</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div id="li_start_wrap">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <span id="li_start_label">Billing Month</span> <span id="li_start_req" class="text-red-500 hidden">*</span>
+                        </label>
+                        <input type="text" id="li_start_date" autocomplete="off"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus" placeholder="dd/mm/yyyy">
+                    </div>
+                    <div id="li_end_wrap" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">End <span class="text-red-500">*</span></label>
+                        <input type="text" id="li_end_date" autocomplete="off"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus" placeholder="dd/mm/yyyy">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <span id="li_amount_label">Nominal</span> <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-gray-500 pointer-events-none">Rp.</span>
+                        <input type="text" id="li_amount" inputmode="numeric" autocomplete="off"
+                               oninput="PaymentTermPlan.onAmountInput(this); PaymentTermPlan.previewLineItem()"
+                               class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus text-right" placeholder="0">
+                    </div>
+                </div>
+
+                <div id="li_preview" class="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-600"></div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
+                <button type="button" onclick="PaymentTermPlan.closeLineItemModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button type="button" id="lineItemSaveBtn" onclick="PaymentTermPlan.saveLineItem()"
+                        class="px-4 py-2 text-sm font-semibold text-white primary-gradient rounded-lg hover:opacity-90 transition disabled:opacity-50">
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════ --}}
+{{-- TOP - GENERATE SCHEDULE (LINE ITEM RECURRING) MODAL            --}}
+{{-- ══════════════════════════════════════════════════════════════ --}}
+<div id="generateScheduleModal" class="fixed inset-0 z-50 hidden">
+    <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PaymentTermPlan.closeGenerateModal()"></div>
+    <div class="relative flex items-center justify-center min-h-screen p-4">
+        <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                <h3 class="text-base font-semibold text-gray-900">Generate Schedule: <span id="gs_title"></span></h3>
+                <button type="button" onclick="PaymentTermPlan.closeGenerateModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-4">
+                <input type="hidden" id="gs_id" value="">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nominal per period</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-gray-500 pointer-events-none">Rp.</span>
+                            <input type="text" id="gs_amount" inputmode="numeric" autocomplete="off"
+                                   oninput="PaymentTermPlan.onAmountInput(this); PaymentTermPlan.previewGenerate()"
+                                   class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus text-right" placeholder="0">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                        <select id="gs_frequency" onchange="PaymentTermPlan.previewGenerate()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus">
+                            <option value="monthly">Monthly</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="semiannual">Semi-annual</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start</label>
+                        <input type="text" id="gs_start_date" autocomplete="off"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus" placeholder="dd/mm/yyyy">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">End</label>
+                        <input type="text" id="gs_end_date" autocomplete="off"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus" placeholder="dd/mm/yyyy">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Requirements</label>
+                    <input type="text" id="gs_requirements" autocomplete="off"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm primary-focus" placeholder="e.g. Monthly invoice">
+                </div>
+                <div id="gs_preview" class="rounded-lg border px-3 py-2 text-sm"></div>
+                <p class="text-xs text-gray-400">Every generated term can still be edited per row. Periods that already have a payment term are skipped, and the schedule above is saved back to the line item.</p>
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
+                <button type="button" onclick="PaymentTermPlan.closeGenerateModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button type="button" id="generateScheduleBtn" onclick="PaymentTermPlan.confirmGenerate()"
+                        class="px-4 py-2 text-sm font-semibold text-white primary-gradient rounded-lg hover:opacity-90 transition disabled:opacity-50">
+                    Generate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════ --}}
+{{-- TOP - CONTRACT LINE ITEM DELETE CONFIRMATION MODAL             --}}
+{{-- ══════════════════════════════════════════════════════════════ --}}
+<div id="lineItemDeleteModal" class="fixed inset-0 z-50 hidden">
+    <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="PaymentTermPlan.closeLineItemDeleteModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-sm">
+            <div class="p-6 text-center">
+                <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900 mb-1">Delete line item "<span id="liDeleteName"></span>"?</h3>
+                <p class="text-sm text-gray-500 mb-5">Only possible when no payment term uses it.</p>
+                <input type="hidden" id="liDeleteId" value="">
+                <div class="flex gap-3 justify-center">
+                    <button type="button" onclick="PaymentTermPlan.closeLineItemDeleteModal()"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="button" id="liDeleteConfirmBtn" onclick="PaymentTermPlan.confirmDeleteLineItem()"
+                            class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition">
+                        Yes, Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════ --}}
+{{-- RISK REGISTER - DELETE CONFIRMATION MODAL                      --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="riskDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="RiskRegister.closeDeleteModal()"></div>
@@ -2711,9 +3346,9 @@
                     <div class="sm:col-span-2">
                         <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                             <span class="text-sm text-gray-600 font-medium">Risk Score (P × I):</span>
-                            <span id="riskScorePreview" class="text-sm font-bold text-gray-400">—</span>
+                            <span id="riskScorePreview" class="text-sm font-bold text-gray-400">-</span>
                             <span class="text-sm text-gray-400 mx-1">→</span>
-                            <span id="riskLevelPreview" class="text-sm font-bold text-gray-400">—</span>
+                            <span id="riskLevelPreview" class="text-sm font-bold text-gray-400">-</span>
                         </div>
                     </div>
 
@@ -2812,7 +3447,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- RISK REGISTER — DASHBOARD MODAL                               --}}
+{{-- RISK REGISTER - DASHBOARD MODAL                               --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="riskDashboardModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="RiskRegister.closeDashboard()"></div>
@@ -2929,7 +3564,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- PLAN COST — JAVASCRIPT                                        --}}
+{{-- PLAN COST - JAVASCRIPT                                        --}}
 {{-- Axios harus di-load dulu sebelum script ini dieksekusi        --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -2946,13 +3581,13 @@
 
     // ── Formatter ──────────────────────────────────────────────────
     function fmt(val) {
-        if (val === null || val === undefined) return '—';
+        if (val === null || val === undefined) return '-';
         return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(val);
     }
 
-    /** Tampil dengan prefix "Rp " — untuk sel tabel */
+    /** Tampil dengan prefix "Rp " - untuk sel tabel */
     function fmtRp(val) {
-        if (val === null || val === undefined) return '—';
+        if (val === null || val === undefined) return '-';
         return 'Rp ' + new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(val);
     }
 
@@ -2985,9 +3620,28 @@
     let _adEditId      = null;  // expense item id being edited
     let _adEditRowEl   = null;  // <tr> element being edited
     let _adEditRemoveDoc = false; // user asked to remove the existing document
+    let _adSort        = 'default'; // urutan Expense List: 'default' (urutan input) | 'desc' (terbaru) | 'asc' (terlama)
+    let _adSeq         = 0;     // nomor urut input baris (dasar urutan default)
 
     // Cost form modal: current actual_amount (derived from expenses, read-only here)
     let _currentActual = 0;
+
+    // Actual detail modal: release item (untuk kartu Release / Avail. Release)
+    let _adRelease = null;
+
+    // Release modal state
+    let _rlCostId = null;   // cost leaf yang sedang diatur
+    let _rlDirty  = false;  // release berubah → tabel & monthly perlu reload
+
+    // Tampilan section: 'plan' | 'monthly'. Monthly di-fetch saat dibuka dan
+    // ditandai basi setiap data Plan Cost berubah.
+    let _view         = 'plan';
+    let _monthlyStale = true;
+
+    // Izin section (UI saja - penegakan di middleware route).
+    const _section   = document.getElementById('plancost');
+    const CAN_EDIT   = _section?.dataset.permEdit === '1';
+    const CAN_MANAGE = _section?.dataset.permManage === '1';
 
     // ── Init ───────────────────────────────────────────────────────
     async function init() {
@@ -3009,6 +3663,8 @@
             _costs = res.data.costs ?? [];
             renderTable(_costs);
             renderSummaryCards(res.data.summary ?? {});
+            _monthlyStale = true;
+            if (_view === 'monthly') loadMonthly();
         } catch (e) {
             console.error('PlanCost: load error', e);
             document.getElementById('planCostTableBody').innerHTML =
@@ -3091,16 +3747,25 @@
             ? `<td class="px-4 py-3 text-right whitespace-nowrap bg-orange-50/40 cursor-pointer hover:bg-orange-100 transition-colors"
                    onclick="PlanCost.openActualDetailModal(${item.id}, '${(item.name ?? '').replace(/'/g, "\\'")}')"
                    title="Click to view / add expense details">
-                   <span class="text-orange-700 font-mono text-xs">${fmtRp(actual)}</span>
+                   <span class="text-orange-700 font-mono text-xs underline decoration-dotted underline-offset-2">${fmtRp(actual)}</span>
                </td>`
             : `<td class="px-4 py-3 text-right whitespace-nowrap text-orange-700 font-mono text-xs bg-orange-50/40">${fmtRp(actual)}</td>`;
+
+        // Release cell: leaf → buka "Atur Release Cost" (total + jadwal bulanan).
+        const releaseCell = !isParent
+            ? `<td class="px-4 py-3 text-right whitespace-nowrap bg-blue-50/40 cursor-pointer hover:bg-blue-100 transition-colors"
+                   onclick="PlanCost.openReleaseModal(${item.id})"
+                   title="Click to set the release total & monthly schedule">
+                   <span class="text-blue-700 font-mono text-xs underline decoration-dotted underline-offset-2">${fmtRp(release)}</span>
+               </td>`
+            : `<td class="px-4 py-3 text-right whitespace-nowrap text-blue-700 font-mono text-xs bg-blue-50/40">${fmtRp(release)}</td>`;
 
         return `
         <tr class="${rowBg} transition-colors">
             <td class="px-4 py-3 whitespace-nowrap">${codeLabel}</td>
             <td class="px-4 py-3 ${nameClass}">${item.name ?? ''}</td>
             <td class="px-4 py-3 text-right whitespace-nowrap text-gray-800 font-mono text-xs">${fmtRp(budget)}</td>
-            <td class="px-4 py-3 text-right whitespace-nowrap text-blue-700 font-mono text-xs bg-blue-50/40">${fmtRp(release)}</td>
+            ${releaseCell}
             ${actualCell}
             <td class="px-4 py-3 text-right whitespace-nowrap font-mono text-xs ${availColor(avBudg)} bg-green-50/40">${fmtRp(avBudg)}</td>
             <td class="px-4 py-3 text-right whitespace-nowrap font-mono text-xs ${availColor(avRel)}  bg-teal-50/40">${fmtRp(avRel)}</td>
@@ -3134,7 +3799,7 @@
         const wrap = document.getElementById('planCostSummaryCards');
         if (!wrap) return;
 
-        // Inline SVG (heroicons-outline) — jangan pakai emoji literal (mojibake via HTTP).
+        // Inline SVG (heroicons-outline) - jangan pakai emoji literal (mojibake via HTTP).
         const icon = (path) =>
             `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">`
             + `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${path}"/></svg>`;
@@ -3203,8 +3868,8 @@
 
         const abEl = document.getElementById('previewAvailBudget');
         const arEl = document.getElementById('previewAvailRelease');
-        abEl.textContent = ab !== null ? `Rp ${fmt(ab)}` : '—';
-        arEl.textContent = ar !== null ? `Rp ${fmt(ar)}` : '—';
+        abEl.textContent = ab !== null ? `Rp ${fmt(ab)}` : '-';
+        arEl.textContent = ar !== null ? `Rp ${fmt(ar)}` : '-';
         abEl.className = `font-semibold ml-1 ${ab !== null && ab < 0 ? 'text-red-600' : 'text-green-700'}`;
         arEl.className = `font-semibold ml-1 ${ar !== null && ar < 0 ? 'text-red-600' : 'text-teal-700'}`;
     }
@@ -3236,7 +3901,7 @@
 
         openAddParentModal() {
             resetForm();
-            // Default title — updates dynamically when type is changed
+            // Default title - updates dynamically when type is changed
             const defaultParent = _costs.find(c => c.cost_type === 'direct' && c.parent_id === null);
             const defaultName   = defaultParent ? defaultParent.name : 'Direct Cost';
             document.getElementById('costModalTitle').textContent = `Add Item to ${defaultName}`;
@@ -3281,7 +3946,7 @@
             const aggregateNotice = document.getElementById('costAggregateNotice');
 
             if (item.has_children) {
-                // Parent-with-children: amounts are aggregated — hide inputs, show notice
+                // Parent-with-children: amounts are aggregated - hide inputs, show notice
                 amountsSection.style.display  = 'none';
                 aggregateNotice.style.display = '';
             } else {
@@ -3352,7 +4017,7 @@
                 cost_type:      costType,
                 budget:         amountsHidden ? null : getRawVal('costBudgetInput'),
                 release_amount: amountsHidden ? null : getRawVal('costReleaseInput'),
-                // actual_amount is derived server-side from expense details — not sent here.
+                // actual_amount is derived server-side from expense details - not sent here.
                 _token:         getCsrf(),
             };
 
@@ -3363,7 +4028,7 @@
                 if (mode === 'create') {
                     await axios.post(BASE_URL, payload);
                 } else {
-                    // POST + X-HTTP-Method-Override:PUT — verb PUT diblokir sebagian edge production.
+                    // POST + X-HTTP-Method-Override:PUT - verb PUT diblokir sebagian edge production.
                     await axios.post(`${BASE_URL}/${id}`, payload, { headers: { 'X-HTTP-Method-Override': 'PUT' } });
                 }
                 _close();
@@ -3399,11 +4064,17 @@
             _adCostId = costId;
             _adDirty  = false;
 
-            // Set subtitle
-            document.getElementById('actualDetailSubtitle').textContent = costName;
+            // Judul "<code> <name>" + release item untuk kartu ringkasan.
+            const costItem = findItem(costId, _costs);
+            _adRelease = costItem?.release_amount ?? null;
+            document.getElementById('actualDetailSubtitle').textContent =
+                [costItem?.code, costItem?.name ?? costName].filter(Boolean).join(' ');
 
-            // Reset form
+            // Reset form + period filter + sort
             _adResetForm();
+            _setSelect('adFilterMonth', '');
+            _setSelect('adFilterYear', '');
+            _adSort = 'default';
 
             // Show modal
             document.getElementById('actualDetailModal').classList.remove('hidden');
@@ -3429,10 +4100,15 @@
             const rawAmt = document.getElementById('adAmountInput').value.replace(/\./g, '').replace(',', '.');
             const amount = parseFloat(rawAmt);
             const file   = document.getElementById('adFileInput').files[0];
+            const date   = document.getElementById('adDateInput').value;
 
             if (!desc) {
                 showPlanCostToast('Expense name is required.', 'error');
                 document.getElementById('adDescInput').focus();
+                return;
+            }
+            if (!date) {
+                showPlanCostToast('Expense date is required.', 'error');
                 return;
             }
             if (!rawAmt || isNaN(amount) || amount <= 0) {
@@ -3448,6 +4124,7 @@
                 const fd = new FormData();
                 fd.append('description', desc);
                 fd.append('amount', amount);
+                fd.append('expense_date', date);
                 fd.append('_token', getCsrf());
                 if (file) fd.append('document', file);
 
@@ -3459,7 +4136,10 @@
                 _adDirty = true;
                 _adAppendRow(res.data.item, _adGetCurrentCount() + 1);
                 _adUpdateSummary();
-                _adResetForm();
+                _adRefreshFilter(res.data.item);
+                // Tanggal dipertahankan: biasanya beberapa expense diinput
+                // berturut-turut untuk bulan yang sama.
+                _adResetForm(true);
                 showPlanCostToast('Expense added successfully.', 'success');
             } catch (err) {
                 const msg = err.response?.data?.message
@@ -3499,9 +4179,9 @@
                 _adTotal = res.data.total ?? 0;
                 _adDirty = true;
                 rowEl?.remove();
-                _adRenumberRows();
                 _adUpdateSummary();
                 if (_adGetCurrentCount() === 0) _adShowEmpty();
+                _adRefreshFilter();
                 PlanCost.closeExpenseDeleteModal();
                 showPlanCostToast('Expense deleted.', 'success');
             } catch (err) {
@@ -3549,6 +4229,12 @@
             document.getElementById('aeDescInput').value   = desc;
             document.getElementById('aeAmountInput').value = amount
                 ? new Intl.NumberFormat('id-ID').format(amount) : '';
+            // Expense lama belum punya tanggal: isi tgl 1 bulan period-nya (bila
+            // ada) sebagai titik awal kalender, dan beri tanda agar user memeriksa.
+            const exDate = rowEl?.dataset.expenseDate ?? '';
+            const exPer  = rowEl?.dataset.period ?? '';
+            document.getElementById('aeDateInput').value = exDate || (exPer ? `${exPer}-01` : '');
+            document.getElementById('aeDateHint').classList.toggle('hidden', !!exDate);
 
             // Current document row (only when the item already has one)
             const curRow = document.getElementById('aeCurrentDocRow');
@@ -3615,10 +4301,15 @@
             const rawAmt = document.getElementById('aeAmountInput').value.replace(/\./g, '').replace(',', '.');
             const amount = parseFloat(rawAmt);
             const file   = document.getElementById('aeFileInput').files[0];
+            const date   = document.getElementById('aeDateInput').value;
 
             if (!desc) {
                 showPlanCostToast('Expense name is required.', 'error');
                 document.getElementById('aeDescInput').focus();
+                return;
+            }
+            if (!date) {
+                showPlanCostToast('Expense date is required.', 'error');
                 return;
             }
             if (!rawAmt || isNaN(amount) || amount <= 0) {
@@ -3633,10 +4324,11 @@
                 const fd = new FormData();
                 fd.append('description', desc);
                 fd.append('amount', amount);
+                fd.append('expense_date', date);
                 if (file) fd.append('document', file);
                 if (_adEditRemoveDoc) fd.append('remove_document', '1');
 
-                // POST + X-HTTP-Method-Override:PUT — verb PUT diblokir sebagian edge
+                // POST + X-HTTP-Method-Override:PUT - verb PUT diblokir sebagian edge
                 // production; Laravel tetap merutekan ke updateItem() (lihat confirmDeleteExpense).
                 const res = await axios.post(
                     `${BASE_URL}/${_adCostId}/items/${_adEditId}`,
@@ -3648,6 +4340,7 @@
                 _adDirty = true;
                 _adUpdateRow(_adEditRowEl, res.data.item);
                 _adUpdateSummary();
+                _adRefreshFilter(res.data.item);
                 PlanCost.closeExpenseEditModal();
                 showPlanCostToast('Expense updated successfully.', 'success');
             } catch (err) {
@@ -3661,21 +4354,283 @@
         },
     };
 
+    // ── Period filter (Expense List) ──────────────────────────────
+    PlanCost.applyPeriodFilter = function () { _adApplyFilter(); };
+    PlanCost.resetPeriodFilter = function () {
+        _setSelect('adFilterMonth', '');
+        _setSelect('adFilterYear', '');
+        _adApplyFilter();
+    };
+
+    // ── Period sort (Expense List): default → terbaru → terlama → default ──
+    PlanCost.togglePeriodSort = function () {
+        _adSort = { default: 'desc', desc: 'asc', asc: 'default' }[_adSort];
+        _adApplyFilter();
+    };
+
+    // ── Toggle tampilan: Plan Cost ↔ Monthly Cost vs TOP Invoiced ──
+    const VIEW_META = {
+        plan:    ['Plan Cost', 'Project cost recapitulation: Indirect Cost & Direct Cost'],
+        monthly: ['Monthly Cost vs TOP Invoiced', 'Monthly recap: Release, Actual, and terms already invoiced to the customer'],
+    };
+
+    PlanCost.switchView = function (view) {
+        _view = view === 'monthly' ? 'monthly' : 'plan';
+        const monthly = _view === 'monthly';
+
+        document.getElementById('pcViewPlan').classList.toggle('hidden', monthly);
+        document.getElementById('pcViewMonthly').classList.toggle('hidden', !monthly);
+        document.getElementById('pcAddCostBtn')?.classList.toggle('hidden', monthly);
+        document.getElementById('pcViewTitle').textContent    = VIEW_META[_view][0];
+        document.getElementById('pcViewSubtitle').textContent = VIEW_META[_view][1];
+
+        const ACTIVE   = ['primary-gradient', 'text-white'];
+        const INACTIVE = ['text-gray-600', 'hover:bg-white'];
+        [['pcTabPlan', !monthly], ['pcTabMonthly', monthly]].forEach(([id, on]) => {
+            const b = document.getElementById(id);
+            b.classList.remove(...ACTIVE, ...INACTIVE);
+            b.classList.add(...(on ? ACTIVE : INACTIVE));
+        });
+
+        // Selalu muat ulang: termin TOP bisa berubah di section lain tanpa menandai basi.
+        if (monthly) loadMonthly();
+    };
+
+    async function loadMonthly() {
+        _monthlyStale = false;
+        try {
+            const res = await axios.get(`${BASE_URL}/monthly`);
+            renderMonthly(res.data);
+        } catch (e) {
+            _monthlyStale = true;
+            console.error('PlanCost: monthly load error', e);
+            document.getElementById('monthlyCostTableBody').innerHTML =
+                `<tr><td colspan="6" class="text-center py-8 text-red-500 text-sm">Failed to load monthly data. Please try again.</td></tr>`;
+        }
+    }
+
+    function renderMonthly(r) {
+        const t = r.totals ?? {};
+
+        const card = (label, value, cls) => `
+            <div class="bg-white rounded-lg border border-gray-200 p-4 flex flex-col gap-1 shadow-sm">
+                <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">${label}</span>
+                <span class="text-base font-bold font-mono ${cls}">${fmtRp(value ?? 0)}</span>
+            </div>`;
+        document.getElementById('monthlyCostSummaryCards').innerHTML =
+            card('Total Release', t.release, 'text-gray-800') +
+            card('Total Actual', t.actual, 'text-orange-600') +
+            card('Total TOP Invoiced', t.top, 'text-green-700') +
+            card('Cumulative Position (TOP Invoiced − Actual)', t.diff, (t.diff ?? 0) < 0 ? 'text-red-600' : 'text-gray-800');
+
+        // null / 0 → "-" (sama seperti mockup: bulan tanpa data di kolom tsb.)
+        const money = v => (v === null || v === undefined) ? '<span class="text-gray-400">-</span>' : fmtRp(v);
+        const signed = v => `<span class="${v < 0 ? 'text-red-600' : 'text-gray-800'}">${fmtRp(v)}</span>`;
+        const row = (label, d, extra = '') => `
+            <tr class="hover:bg-gray-50 ${extra}">
+                <td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">${label}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${money(d.release)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${money(d.actual)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${money(d.top)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${signed(d.diff)}</td>
+                <td class="px-4 py-2.5 text-right font-mono text-xs whitespace-nowrap">${signed(d.cumulative)}</td>
+            </tr>`;
+
+        const months = r.months ?? [];
+        let html = months.map(m => row(_fmtPeriod(m.period), m)).join('');
+        if (r.has_unscheduled) {
+            html += row('Unscheduled / no period', r.unscheduled, 'bg-amber-50/40 italic');
+        }
+        if (!html) {
+            html = `<tr><td colspan="6" class="text-center py-10 text-gray-400 text-sm">No monthly data yet. Set release schedules, add expenses, or invoice a TOP term to see the report.</td></tr>`;
+        } else {
+            html += `
+            <tr class="bg-gray-100 font-bold border-t-2 border-gray-300">
+                <td class="px-4 py-3 text-gray-800">Total</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${fmtRp(t.release)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${fmtRp(t.actual)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${fmtRp(t.top)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${signed(t.diff)}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs whitespace-nowrap">${signed(t.diff)}</td>
+            </tr>`;
+        }
+        document.getElementById('monthlyCostTableBody').innerHTML = html;
+    }
+
+    // ── Atur Release Cost modal ──────────────────────────────────
+    /** Cost leaf (sub-item, atau parent tanpa sub-item) berurutan sesuai tabel. */
+    function _leafCosts() {
+        return _costs.flatMap(c => c.has_children ? (c.children ?? []) : [c]);
+    }
+
+    PlanCost.openReleaseModal = async function (costId) {
+        _rlCostId = costId;
+
+        const sel = document.getElementById('rlCostSelect');
+        sel.innerHTML = _leafCosts().map(c =>
+            `<option value="${c.id}">${_esc([c.code, c.name].filter(Boolean).join(' - '))}</option>`).join('');
+        sel.value = String(costId);
+
+        document.getElementById('rlAmountInput').value = '';
+        document.getElementById('rlNotesInput').value  = '';
+        if (!document.getElementById('rlDateInput').value) {
+            document.getElementById('rlDateInput').value = _today();
+        }
+        // UI mengikuti izin section; server tetap menegakkan lewat middleware.
+        document.getElementById('rlSaveTotalBtn').classList.toggle('hidden', !CAN_EDIT);
+        document.getElementById('rlTotalInput').disabled = !CAN_EDIT;
+        document.getElementById('rlAddForm').classList.toggle('hidden', !CAN_MANAGE);
+
+        document.getElementById('rlScheduleList').innerHTML =
+            `<p class="py-3 text-center text-xs text-gray-400">Loading…</p>`;
+        document.getElementById('releaseModal').classList.remove('hidden');
+
+        try {
+            const res = await axios.get(`${BASE_URL}/${costId}/releases`);
+            _rlRender(res.data);
+        } catch (err) {
+            document.getElementById('rlScheduleList').innerHTML =
+                `<p class="py-3 text-center text-xs text-red-500">${_esc(err.response?.data?.message ?? 'Failed to load release data.')}</p>`;
+        }
+    };
+
+    PlanCost.closeReleaseModal = async function () {
+        document.getElementById('releaseModal').classList.add('hidden');
+        _rlCostId = null;
+        if (_rlDirty) {
+            _rlDirty = false;
+            await load();
+        }
+    };
+
+    PlanCost.saveReleaseTotal = async function () {
+        if (!_rlCostId) return;
+        const raw = document.getElementById('rlTotalInput').value.replace(/\./g, '').replace(',', '.');
+        const btn = document.getElementById('rlSaveTotalBtn');
+        btn.disabled = true;
+        try {
+            const res = await axios.post(`${BASE_URL}/${_rlCostId}/release`,
+                { release_amount: raw === '' ? null : parseFloat(raw) },
+                { headers: { 'X-HTTP-Method-Override': 'PUT' } });
+            _rlDirty = true;
+            _rlRender(res.data);
+            showPlanCostToast('Total release saved.', 'success');
+        } catch (err) {
+            showPlanCostToast(_errMsg(err, 'Failed to save total release.'), 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    PlanCost.addReleaseSchedule = async function () {
+        if (!_rlCostId) return;
+        const date   = document.getElementById('rlDateInput').value;
+        const amount = parseFloat(document.getElementById('rlAmountInput').value.replace(/\./g, '').replace(',', '.'));
+        const notes  = document.getElementById('rlNotesInput').value.trim();
+
+        if (!date) {
+            showPlanCostToast('Date is required.', 'error');
+            return;
+        }
+        if (isNaN(amount) || amount <= 0) {
+            showPlanCostToast('Amount must be greater than 0.', 'error');
+            document.getElementById('rlAmountInput').focus();
+            return;
+        }
+
+        const btn = document.getElementById('rlAddBtn');
+        btn.disabled = true;
+        try {
+            const res = await axios.post(`${BASE_URL}/${_rlCostId}/releases`,
+                { schedule_date: date, amount, notes: notes || null });
+            _rlDirty = true;
+            _rlRender(res.data);
+            // Tanggal dipertahankan untuk input berikutnya.
+            document.getElementById('rlAmountInput').value = '';
+            document.getElementById('rlNotesInput').value  = '';
+            showPlanCostToast('Release schedule added.', 'success');
+        } catch (err) {
+            showPlanCostToast(_errMsg(err, 'Failed to add release schedule.'), 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    PlanCost.deleteReleaseSchedule = async function (scheduleId, btn) {
+        if (!_rlCostId) return;
+        if (btn) btn.disabled = true;
+        try {
+            const res = await axios.post(`${BASE_URL}/${_rlCostId}/releases/${scheduleId}/delete`);
+            _rlDirty = true;
+            _rlRender(res.data);
+            showPlanCostToast('Release schedule deleted.', 'success');
+        } catch (err) {
+            if (btn) btn.disabled = false;
+            showPlanCostToast(_errMsg(err, 'Failed to delete release schedule.'), 'error');
+        }
+    };
+
+    function _rlRender(d) {
+        const total = d.release_amount;
+        document.getElementById('rlTotalCard').textContent     = fmtRp(total ?? 0);
+        document.getElementById('rlScheduledCard').textContent = fmtRp(d.scheduled ?? 0);
+        const un = document.getElementById('rlUnscheduledCard');
+        un.textContent = fmtRp(d.unscheduled ?? 0);
+        un.className   = `text-lg font-bold font-mono ${(d.unscheduled ?? 0) === 0 ? 'text-gray-800' : 'text-red-600'}`;
+
+        document.getElementById('rlTotalInput').value =
+            (total !== null && total !== undefined) ? new Intl.NumberFormat('id-ID').format(total) : '';
+
+        const schedules = d.schedules ?? [];
+
+        // Subtotal per bulan + baris "Belum dijadwalkan" (= total − terjadwal).
+        const listEl = document.getElementById('rlMonthlyList');
+        const shown  = _renderMonthlyList(listEl, schedules.map(s => [s.period, s.amount]), '');
+        if (Math.abs(d.unscheduled ?? 0) > 0.004) {
+            listEl.insertAdjacentHTML('beforeend', `
+                <div class="flex justify-between py-1.5">
+                    <span class="text-red-600">Unscheduled</span>
+                    <span class="font-semibold font-mono text-red-600">${fmtRp(d.unscheduled)}</span>
+                </div>`);
+        } else if (!shown) {
+            listEl.innerHTML = `<p class="py-2 text-xs text-gray-400 italic">No release yet.</p>`;
+        }
+
+        document.getElementById('rlScheduleList').innerHTML = schedules.length
+            ? schedules.map(s => `
+                <div class="flex items-center justify-between gap-3 py-2">
+                    <span class="text-gray-700">${_fmtDate(s.schedule_date)} - ${_esc(s.notes || '-')}</span>
+                    <span class="flex items-center gap-3">
+                        <span class="font-semibold font-mono text-gray-800">${fmtRp(s.amount)}</span>
+                        ${CAN_MANAGE ? `<button type="button" data-closed-hide data-perm-action="manage"
+                                onclick="PlanCost.deleteReleaseSchedule(${s.id}, this)"
+                                class="text-xs font-medium text-red-500 hover:text-red-700 disabled:opacity-50">Delete</button>` : ''}
+                    </span>
+                </div>`).join('')
+            : `<p class="py-2 text-xs text-gray-400 italic">No monthly schedule yet.</p>`;
+    }
+
+    function _errMsg(err, fallback) {
+        return err.response?.data?.message
+            ?? (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(' ') : null)
+            ?? fallback;
+    }
+
     // ── Simple toast (reuse existing showToast if available) ──────
     function showPlanCostToast(msg, type) {
         if (typeof window.showToast === 'function') {
             window.showToast(msg, type);
         } else {
-            alert(msg);
+            showAlert(msg);
         }
     }
 
-    // ── Actual Detail Modal — private helpers ─────────────────────
+    // ── Actual Detail Modal - private helpers ─────────────────────
 
     async function _adLoadItems() {
         const tbody = document.getElementById('actualDetailTableBody');
         const tfoot = document.getElementById('actualDetailTableFoot');
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-400 text-sm">
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-400 text-sm">
             <svg class="animate-spin h-5 w-5 primary-text mx-auto mb-2" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -3685,6 +4640,7 @@
             const res = await axios.get(`${BASE_URL}/${_adCostId}/items`);
             _adTotal = res.data.total ?? 0;
             const items = res.data.items ?? [];
+            _adSeq = 0;
             if (!items.length) {
                 _adShowEmpty();
             } else {
@@ -3693,14 +4649,15 @@
                 tfoot.classList.remove('hidden');
             }
             _adUpdateSummary();
+            _adRefreshFilter();
         } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-red-500 text-sm">Failed to load data.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-red-500 text-sm">Failed to load data.</td></tr>`;
         }
     }
 
     function _adShowEmpty() {
         document.getElementById('actualDetailTableBody').innerHTML =
-            `<tr><td colspan="5" class="text-center py-8 text-gray-400 text-sm italic">No expense records found.</td></tr>`;
+            `<tr data-empty><td colspan="6" class="text-center py-8 text-gray-400 text-sm italic">No expense records found.</td></tr>`;
         document.getElementById('actualDetailTableFoot').classList.add('hidden');
     }
 
@@ -3717,15 +4674,20 @@
         const tr = document.createElement('tr');
         tr.className   = 'hover:bg-gray-50 transition-colors';
         tr.dataset.itemId  = item.id;
+        // Urutan input (server mengirim urut created_at; baris baru di akhir).
+        tr.dataset.seq     = ++_adSeq;
         // Raw values cached on the row so the edit modal can be populated
         // without another round-trip.
         tr.dataset.desc    = item.description ?? '';
         tr.dataset.amount  = item.amount ?? 0;
+        tr.dataset.period  = item.period ?? '';
+        tr.dataset.expenseDate = item.expense_date ?? '';
         tr.dataset.docName = item.document_name ?? '';
         tr.dataset.docUrl  = item.document_url ?? '';
         tr.innerHTML = `
             <td class="px-4 py-2.5 text-gray-400 text-xs align-top">${no}</td>
             <td class="px-4 py-2.5 text-gray-700 text-sm align-top break-words">${_esc(item.description)}</td>
+            <td class="px-4 py-2.5 text-center text-gray-600 text-xs whitespace-nowrap align-top">${_fmtPeriod(item.period)}</td>
             <td class="px-4 py-2.5 text-right font-mono text-sm text-blue-700 font-medium whitespace-nowrap align-top">${fmtRp(item.amount)}</td>
             <td class="px-4 py-2.5 text-center align-top">${docCell}</td>
             <td class="px-4 py-2.5 text-center whitespace-nowrap align-top">
@@ -3764,7 +4726,7 @@
                    </svg>
                    <span class="truncate">${_esc(name)}</span>
                </a>`
-            : `<span class="text-gray-300 text-xs">—</span>`;
+            : `<span class="text-gray-300 text-xs">-</span>`;
     }
 
     // Update an existing row (cells + cached dataset) after an edit.
@@ -3772,19 +4734,163 @@
         if (!tr || !item) return;
         tr.dataset.desc    = item.description ?? '';
         tr.dataset.amount  = item.amount ?? 0;
+        tr.dataset.period  = item.period ?? '';
+        tr.dataset.expenseDate = item.expense_date ?? '';
         tr.dataset.docName = item.document_name ?? '';
         tr.dataset.docUrl  = item.document_url ?? '';
         const tds = tr.querySelectorAll('td');
         if (tds[1]) tds[1].textContent = item.description ?? '';
-        if (tds[2]) tds[2].textContent = fmtRp(item.amount);
-        if (tds[3]) tds[3].innerHTML   = _adDocCellHtml(item);
+        if (tds[2]) tds[2].textContent = _fmtPeriod(item.period);
+        if (tds[3]) tds[3].textContent = fmtRp(item.amount);
+        if (tds[4]) tds[4].innerHTML   = _adDocCellHtml(item);
     }
 
-    function _adRenumberRows() {
-        document.querySelectorAll('#actualDetailTableBody tr[data-item-id]').forEach((tr, idx) => {
-            const firstTd = tr.querySelector('td:first-child');
-            if (firstTd) firstTd.textContent = idx + 1;
+    // ── Period helpers ────────────────────────────────────────────
+    const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    /** "2026-10" (atau "2026-10-04") → "Okt 2026"; kosong (expense lama) → "-". */
+    function _fmtPeriod(period) {
+        if (!period) return '-';
+        const [y, m] = String(period).split('-');
+        return `${MONTHS_SHORT[Number(m) - 1] ?? m} ${y}`;
+    }
+
+    /** "2026-11-04" → "04/11/2026". */
+    function _fmtDate(date) {
+        if (!date) return '-';
+        const [y, m, d] = String(date).split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    function _today() {
+        const n = new Date();
+        return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+    }
+
+    /**
+     * Daftar "Subtotal per bulan": pasangan [period, amount] diurutkan
+     * kronologis; period kosong ditaruh paling bawah dengan label `emptyLabel`.
+     */
+    function _renderMonthlyList(el, pairs, emptyLabel, emptyClass = 'text-gray-500') {
+        const sums = {};
+        pairs.forEach(([p, a]) => { sums[p || ''] = (sums[p || ''] ?? 0) + (parseFloat(a) || 0); });
+        const keys = Object.keys(sums).filter(Boolean).sort();
+        if ('' in sums && Math.abs(sums['']) > 0.004) keys.push('');
+        el.innerHTML = keys.map(p => `
+            <div class="flex justify-between py-1.5">
+                <span class="${p ? 'text-gray-700' : emptyClass}">${p ? _fmtPeriod(p) : emptyLabel}</span>
+                <span class="font-semibold font-mono ${p ? 'text-gray-800' : emptyClass}">${fmtRp(sums[p])}</span>
+            </div>`).join('');
+        return keys.length;
+    }
+
+    // select-enhance.js merender label tombolnya dari event 'change'.
+    function _setSelect(id, value) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.value = value;
+        el.dispatchEvent(new Event('change', { bubbles: false }));
+    }
+
+    function _adRows() {
+        return Array.from(document.querySelectorAll('#actualDetailTableBody tr[data-item-id]'));
+    }
+
+    // Opsi tahun filter = tahun yang benar-benar dipakai expense item ini.
+    function _adRebuildYearOptions() {
+        const sel = document.getElementById('adFilterYear');
+        const current = sel.value;
+        const years = [...new Set(_adRows().map(tr => (tr.dataset.period || '').slice(0, 4)).filter(Boolean))]
+            .sort().reverse();
+        sel.innerHTML = '<option value="">All Years</option>'
+            + years.map(y => `<option value="${y}">${y}</option>`).join('');
+        _setSelect('adFilterYear', years.includes(current) ? current : '');
+    }
+
+    function _adMatches(period) {
+        const m = document.getElementById('adFilterMonth').value;
+        const y = document.getElementById('adFilterYear').value;
+        return (!m || period.slice(5, 7) === m) && (!y || period.slice(0, 4) === y);
+    }
+
+    /**
+     * Sinkronkan filter setelah daftar berubah. `changedItem` = expense yang
+     * baru ditambah/diedit: kalau period-nya tidak lolos filter aktif, filter
+     * dilepas supaya baris itu tidak "hilang" tepat setelah disimpan.
+     */
+    function _adRefreshFilter(changedItem) {
+        _adRebuildYearOptions();
+        if (changedItem && !_adMatches(changedItem.period ?? '')) {
+            _setSelect('adFilterMonth', '');
+            _setSelect('adFilterYear', '');
+        }
+        _adApplyFilter();
+    }
+
+    // Urutkan baris sesuai _adSort. Period "YYYY-MM" bisa dibandingkan sebagai
+    // string; expense lama tanpa period selalu di bawah. Period sama → urutan input.
+    function _adSortRows(rows) {
+        const seq = tr => Number(tr.dataset.seq) || 0;
+        if (_adSort === 'default') return rows.sort((a, b) => seq(a) - seq(b));
+        const dir = _adSort === 'desc' ? -1 : 1;
+        return rows.sort((a, b) => {
+            const pa = a.dataset.period || '', pb = b.dataset.period || '';
+            if (pa !== pb) {
+                if (!pa) return 1;
+                if (!pb) return -1;
+                return (pa < pb ? -1 : 1) * dir;
+            }
+            return seq(a) - seq(b);
         });
+    }
+
+    function _adRenderSortIndicator() {
+        const icon = document.getElementById('adSortPeriodIcon');
+        const btn  = document.getElementById('adSortPeriodBtn');
+        if (!icon || !btn) return;
+        const state = {
+            default: ['⇅', 'text-gray-400', 'Sort by period: newest first'],
+            desc:    ['↓', 'text-blue-600', 'Newest first - click for oldest first'],
+            asc:     ['↑', 'text-blue-600', 'Oldest first - click to restore input order'],
+        }[_adSort];
+        icon.textContent = state[0];
+        icon.className   = `text-[11px] leading-none ${state[1]}`;
+        btn.title        = state[2];
+        btn.classList.toggle('text-blue-700', _adSort !== 'default');
+    }
+
+    // Urutkan baris, sembunyikan yang di luar period terpilih, nomori ulang
+    // yang terlihat, dan jadikan total footer = jumlah baris yang terlihat.
+    // Kartu "Actual Amount" di atas tetap total seluruh expense (tidak ikut filter).
+    function _adApplyFilter() {
+        const tbody  = document.getElementById('actualDetailTableBody');
+        const active = !!(document.getElementById('adFilterMonth').value || document.getElementById('adFilterYear').value);
+        const rows   = _adSortRows(_adRows());
+        let shown = 0, sum = 0;
+
+        // appendChild memindahkan baris yang sudah ada → DOM ikut urutan baru.
+        rows.forEach(tr => tbody.appendChild(tr));
+        _adRenderSortIndicator();
+
+        rows.forEach(tr => {
+            const ok = _adMatches(tr.dataset.period || '');
+            tr.style.display = ok ? '' : 'none';
+            if (!ok) return;
+            shown++;
+            sum += parseFloat(tr.dataset.amount) || 0;
+            const firstTd = tr.querySelector('td:first-child');
+            if (firstTd) firstTd.textContent = shown;
+        });
+
+        tbody.querySelector('tr[data-filter-empty]')?.remove();
+        if (rows.length && !shown) {
+            tbody.insertAdjacentHTML('beforeend',
+                `<tr data-filter-empty><td colspan="6" class="text-center py-8 text-gray-400 text-sm italic">No expenses in the selected period.</td></tr>`);
+        }
+
+        document.getElementById('adFooterLabel').textContent = active ? 'Total (filtered):' : 'Total:';
+        document.getElementById('adFooterTotal').textContent = fmtRp(active ? sum : _adTotal);
+        document.getElementById('adFilterResetBtn').classList.toggle('hidden', !active);
     }
 
     function _adGetCurrentCount() {
@@ -3792,12 +4898,28 @@
     }
 
     function _adUpdateSummary() {
-        // Actual amount = sum of all expense items. Update header card & footer.
+        // Actual amount = sum of all expense items. Footer total ditulis
+        // _adApplyFilter() karena mengikuti filter period.
         document.getElementById('adTotalItems').textContent  = fmtRp(_adTotal);
-        document.getElementById('adFooterTotal').textContent = fmtRp(_adTotal);
+        document.getElementById('adReleaseCard').textContent = fmtRp(_adRelease ?? 0);
+        const avail = (_adRelease ?? 0) - _adTotal;
+        const availEl = document.getElementById('adAvailReleaseCard');
+        availEl.textContent = fmtRp(avail);
+        availEl.className   = `text-lg font-bold font-mono ${avail < 0 ? 'text-red-600' : 'text-gray-800'}`;
+
+        // Subtotal per bulan dari seluruh expense (tidak ikut filter period).
+        const shown = _renderMonthlyList(
+            document.getElementById('adMonthlyList'),
+            _adRows().map(tr => [tr.dataset.period, tr.dataset.amount]),
+            'No period'
+        );
+        document.getElementById('adMonthlyWrap').classList.toggle('hidden', !shown);
     }
 
-    function _adResetForm() {
+    function _adResetForm(keepPeriod = false) {
+        if (!keepPeriod) {
+            document.getElementById('adDateInput').value = _today();
+        }
         document.getElementById('adDescInput').value  = '';
         document.getElementById('adAmountInput').value = '';
         document.getElementById('adFileInput').value   = '';
@@ -3812,10 +4934,10 @@
 
     // ── Attach currency formatters & init ─────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
-        // Setup axios CSRF header — dilakukan di sini agar axios sudah tersedia
+        // Setup axios CSRF header - dilakukan di sini agar axios sudah tersedia
         axios.defaults.headers.common['X-CSRF-TOKEN'] = getCsrf();
 
-        ['costBudgetInput', 'costReleaseInput', 'adAmountInput', 'aeAmountInput'].forEach(id => {
+        ['costBudgetInput', 'costReleaseInput', 'adAmountInput', 'aeAmountInput', 'rlTotalInput', 'rlAmountInput'].forEach(id => {
             const el = document.getElementById(id);
             if (el) formatCurrencyInput(el);
         });
@@ -3837,7 +4959,7 @@
 
      Modal hanya dirender bila role-nya berhak. Ini penting: lapisan read-only
      `data-perm-edit` hanya mengunci field DI DALAM <section>, sedangkan modal
-     berada di luar section — tanpa @if di bawah, form-nya jadi tak terkunci
+     berada di luar section - tanpa @if di bawah, form-nya jadi tak terkunci
      sama sekali. --}}
 @if($can('delivery-project.general.edit'))
     @include('delivery.project.projects.partials.modal-general-info')
@@ -3916,7 +5038,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-900 mb-1">
                                 Employee Type
-                                <span class="text-xs text-gray-400 font-normal">— from employee data</span>
+                                <span class="text-xs text-gray-400 font-normal">- from employee data</span>
                             </label>
                             <input type="text" id="employee_type_display" readonly
                                    placeholder="Select a consultant first"
@@ -3925,7 +5047,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-900 mb-1">
                                 Module
-                                <span class="text-xs text-gray-400 font-normal">— from consultant qualification</span>
+                                <span class="text-xs text-gray-400 font-normal">- from consultant qualification</span>
                             </label>
                             {{-- Nilai akhir (nama modul dipisah koma) dikirim lewat hidden input ini. --}}
                             <input type="hidden" name="module" id="modul">
@@ -3947,7 +5069,7 @@
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-900 mb-1">
                                 Vendor <span class="text-red-500">*</span>
-                                <span class="text-xs text-gray-400 font-normal">— from Business Partner (type Vendor)</span>
+                                <span class="text-xs text-gray-400 font-normal">- from Business Partner (type Vendor)</span>
                             </label>
                             <select name="vendor_id" id="vendor_id" data-searchable="true" disabled
                                     class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus">
@@ -3957,7 +5079,7 @@
                                 @endforeach
                             </select>
                             @if($vendors->isEmpty())
-                                <p class="text-xs text-amber-600 mt-1">No Business Partner of type Vendor yet — add one in Master → Business Partner.</p>
+                                <p class="text-xs text-amber-600 mt-1">No Business Partner of type Vendor yet - add one in Master → Business Partner.</p>
                             @endif
                         </div>
                         <div>
@@ -3967,13 +5089,13 @@
                                    placeholder="Vendor consultant name">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-900 mb-1">Position <span class="text-xs text-gray-400 font-normal">— optional</span></label>
+                            <label class="block text-sm font-medium text-gray-900 mb-1">Position <span class="text-xs text-gray-400 font-normal">- optional</span></label>
                             <input type="text" name="member_position" id="member_position" disabled maxlength="255"
                                    class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus"
                                    placeholder="e.g. SAP Consultant">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-900 mb-1">Module <span class="text-xs text-gray-400 font-normal">— optional, comma separated</span></label>
+                            <label class="block text-sm font-medium text-gray-900 mb-1">Module <span class="text-xs text-gray-400 font-normal">- optional, comma separated</span></label>
                             <input type="text" name="vendor_module" id="vendor_module" disabled maxlength="255"
                                    class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus"
                                    placeholder="e.g. FI, CO">
@@ -4001,13 +5123,13 @@
                                    class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus cursor-pointer">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-900 mb-1">End Date <span class="text-xs text-gray-400 font-normal">— optional</span></label>
+                            <label class="block text-sm font-medium text-gray-900 mb-1">End Date <span class="text-xs text-gray-400 font-normal">- optional</span></label>
                             <input type="text" name="end_date" id="add_end_date" readonly
                                    placeholder="Select End Date"
                                    class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus cursor-pointer">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-900 mb-1">Notes <span class="text-xs text-gray-400 font-normal">— optional</span></label>
+                            <label class="block text-sm font-medium text-gray-900 mb-1">Notes <span class="text-xs text-gray-400 font-normal">- optional</span></label>
                             <textarea name="notes" id="add_notes" rows="2"
                                       class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus"
                                       placeholder="Additional notes for this assignment…"></textarea>
@@ -4091,7 +5213,7 @@
                         {{-- End Date (editable) --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-900 mb-1">
-                                End Date <span class="text-xs text-gray-400 font-normal">— optional</span>
+                                End Date <span class="text-xs text-gray-400 font-normal">- optional</span>
                             </label>
                             <input type="text" name="end_date" id="edit_end_date" readonly
                                    placeholder="Select End Date"
@@ -4100,7 +5222,7 @@
                         {{-- Notes (editable) --}}
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-900 mb-1">
-                                Notes <span class="text-xs text-gray-400 font-normal">— optional</span>
+                                Notes <span class="text-xs text-gray-400 font-normal">- optional</span>
                             </label>
                             <textarea name="notes" id="edit_notes" rows="2"
                                       class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus"
@@ -4208,7 +5330,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Document Name
-                        <span class="text-xs font-normal text-gray-400 ml-1">(optional — default: file name)</span>
+                        <span class="text-xs font-normal text-gray-400 ml-1">(optional - default: file name)</span>
                     </label>
                     <input type="text" id="doc_name"
                            class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm primary-focus text-sm"
@@ -4278,7 +5400,7 @@
 
 {{-- Issue Modal --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- ISSUE LOG — DELETE CONFIRMATION MODAL                          --}}
+{{-- ISSUE LOG - DELETE CONFIRMATION MODAL                          --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="issueDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="IssueLog.closeDeleteModal()"></div>
@@ -4309,7 +5431,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- ISSUE LOG — ADD / EDIT MODAL                                   --}}
+{{-- ISSUE LOG - ADD / EDIT MODAL                                   --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="issueModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="IssueLog.closeModal()"></div>
@@ -4353,7 +5475,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Project Risk ID</label>
                         <select id="issue_risk_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                            <option value="">— None —</option>
+                            <option value="">- None -</option>
                         </select>
                     </div>
 
@@ -4476,7 +5598,7 @@
 
 @if($can('delivery-project.wricef.view'))
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- WRICEF LOG — DELETE CONFIRMATION MODAL                         --}}
+{{-- WRICEF LOG - DELETE CONFIRMATION MODAL                         --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="wricefDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="WricefLog.closeDeleteModal()"></div>
@@ -4507,16 +5629,16 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- WRICEF LOG — ADD / EDIT MODAL                                  --}}
+{{-- WRICEF LOG - ADD / EDIT MODAL                                  --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- PITFALL: modal dirender DI LUAR <section>, jadi lapisan izin
      `data-perm-*` tidak menjangkaunya. Kontrol tulis di sini harus
      dipagari @if($can(...)) sendiri (lihat delivery/partials/section-permissions). --}}
 @php
     // PIC tiap tahap harus anggota tim yang mengerjakan, jadi sengaja memakai
-    // $teamPeople (tanpa AE & Project Owner — itu $projectPeople).
+    // $teamPeople (tanpa AE & Project Owner - itu $projectPeople).
     $wricefPeople  = $teamPeople;
-    $wricefCompany = $project->client->basicData->name_1 ?? '—';
+    $wricefCompany = $project->client->basicData->name_1 ?? '-';
 @endphp
 <div id="wricefModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="WricefLog.closeModal()"></div>
@@ -4542,7 +5664,7 @@
                 <div>
                     <h4 class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">Object</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {{-- Company — mengikuti customer project, tidak disimpan per baris --}}
+                        {{-- Company - mengikuti customer project, tidak disimpan per baris --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
                             <input type="text" value="{{ $wricefCompany }}" readonly
@@ -4573,7 +5695,7 @@
                             </select>
                         </div>
 
-                        {{-- Obj ID — dibuat otomatis oleh server --}}
+                        {{-- Obj ID - dibuat otomatis oleh server --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Obj ID</label>
                             <input type="text" id="wricef_obj_id_preview" readonly
@@ -4811,7 +5933,7 @@
 
 @if($can('delivery-project.stakeholder.view'))
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- STAKEHOLDER REGISTER — DELETE CONFIRMATION MODAL               --}}
+{{-- STAKEHOLDER REGISTER - DELETE CONFIRMATION MODAL               --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <div id="stakeholderDeleteModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="StakeholderRegister.closeDeleteModal()"></div>
@@ -4842,7 +5964,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- STAKEHOLDER REGISTER — ADD / EDIT MODAL                        --}}
+{{-- STAKEHOLDER REGISTER - ADD / EDIT MODAL                        --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- PITFALL: modal dirender DI LUAR <section>, jadi lapisan izin
      `data-perm-*` tidak menjangkaunya. Kontrol tulis di sini dipagari
@@ -4965,7 +6087,7 @@
                         </div>
                     </div>
 
-                    {{-- Power/Interest Grid — referensi matriks 2x2 (Panduan).
+                    {{-- Power/Interest Grid - referensi matriks 2x2 (Panduan).
                          Sel yang cocok dengan Power + Interest terpilih di-highlight
                          oleh StakeholderRegister.refreshQuadrant(). "Tinggi" = sisi
                          high; "Sedang" & "Rendah" = sisi low. --}}
@@ -5175,7 +6297,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">
                             Replace File
-                            <span class="text-xs font-normal text-gray-400 ml-1">(optional — leave empty to keep the current file)</span>
+                            <span class="text-xs font-normal text-gray-400 ml-1">(optional - leave empty to keep the current file)</span>
                         </label>
                         <div id="editDocDropZone"
                              class="border-2 border-dashed border-gray-300 rounded-lg py-5 px-4 text-center cursor-pointer hover:border-red-300 hover:bg-red-50/30 transition-all duration-200"
@@ -5456,7 +6578,7 @@
 @if($can('delivery-project.close-project'))
 {{-- Confirm modal untuk Close / Reopen Project (pengganti confirm() native) --}}
 {{-- data-lock-exempt: satu-satunya modal yang harus tetap aktif saat project
-     closed — dari sinilah project di-Reopen. --}}
+     closed - dari sinilah project di-Reopen. --}}
 <div id="projectStateModal" data-lock-exempt class="fixed inset-0 z-[9998] hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50 z-[9998]" onclick="closeModal('projectStateModal')"></div>
     <div class="fixed inset-0 flex items-center justify-center p-4 z-[9999]">
@@ -5479,7 +6601,7 @@
     </div>
 </div>
 <script>
-    // Modal konfirmasi Close/Reopen — submit form tersembunyi saat dikonfirmasi.
+    // Modal konfirmasi Close/Reopen - submit form tersembunyi saat dikonfirmasi.
     let _projectStateForm = null;
     function openProjectStateModal(mode) {
         const title = document.getElementById('projectStateTitle');
@@ -5654,7 +6776,7 @@ function scrollToSection(sectionId) {
 // ✅ Update Active Tab
 function updateActiveTab(sectionId) {
     // Delivery Data section tersendiri tapi berbagi tab "Delivery Info", jadi
-    // dinormalkan di sini — berlaku baik saat dipanggil scrollToSection maupun
+    // dinormalkan di sini - berlaku baik saat dipanggil scrollToSection maupun
     // scroll-spy.
     if (sectionId === 'delivery-data') sectionId = 'delivery';
     document.querySelectorAll('.section-tab').forEach(tab => {
@@ -6006,7 +7128,7 @@ function handleRowSelection(type) {
     updateSelectionToolbar(type);
 }
 
-// Izin hapus per jenis baris yang bisa dipilih di tabel. Ini lapisan UI saja —
+// Izin hapus per jenis baris yang bisa dipilih di tabel. Ini lapisan UI saja -
 // penegakan sebenarnya ada di middleware `menu:` pada route hapus masing-masing
 // (delivery-project.team.delete / delivery-project.documents.manage).
 const DELETE_PERMISSION = {
@@ -6178,19 +7300,19 @@ function openEditDocumentModal(checkbox) {
     document.getElementById('edit_document_id').value   = checkbox.dataset.id;
     document.getElementById('edit_document_name').value = checkbox.dataset.name;
 
-    // Populate type — handle "Others: xxx" values stored in DB
+    // Populate type - handle "Others: xxx" values stored in DB
     const rawType    = checkbox.dataset.type || '';
     const knownTypes = ['TOR', 'KAK', 'Surat Pengikatan', 'BA Negosiasi', 'Surat Penetapan', 'SPK / SPMK', 'Kontrak', 'PO', 'Others'];
     const selectEl   = document.getElementById('edit_document_type');
     if (rawType === '') {
-        // No type set — show placeholder so user must choose
+        // No type set - show placeholder so user must choose
         selectEl.value = '';
         document.getElementById('edit_doc_others_text').value = '';
     } else if (knownTypes.includes(rawType)) {
         selectEl.value = rawType;
         document.getElementById('edit_doc_others_text').value = '';
     } else {
-        // Custom / legacy type stored in DB — map to "Others" + show the text
+        // Custom / legacy type stored in DB - map to "Others" + show the text
         selectEl.value = 'Others';
         document.getElementById('edit_doc_others_text').value = rawType;
     }
@@ -6223,7 +7345,7 @@ function onDocTypeChange() {
 function updateEditPosition(select) {
     const opt = select.options[select.selectedIndex];
     const posEl = document.getElementById('edit_position_display');
-    if (posEl) posEl.textContent = opt?.dataset?.position || '—';
+    if (posEl) posEl.textContent = opt?.dataset?.position || '-';
 }
 
 function openEditTeamMemberModal(checkbox) {
@@ -6252,7 +7374,7 @@ function openEditTeamMemberModal(checkbox) {
 
     // Populate disabled fields
     document.getElementById('edit_employee_name_display').value = employeeName;
-    document.getElementById('edit_module_display').value  = module || '—';
+    document.getElementById('edit_module_display').value  = module || '-';
     document.getElementById('edit_emptype_display').value = employeeType;
 
     // Vendor name: tampilkan field hanya jika ada
@@ -6274,7 +7396,7 @@ function openEditTeamMemberModal(checkbox) {
             document.getElementById('edit_startdate_display').value = startDate;
         }
     } else {
-        document.getElementById('edit_startdate_display').value = '—';
+        document.getElementById('edit_startdate_display').value = '-';
     }
 
     // Set role langsung (native <select>, tidak butuh rAF)
@@ -6341,7 +7463,7 @@ document.getElementById('editTeamMemberForm')?.addEventListener('submit', async 
 });
 
 // ============================================
-// ADD TEAM MEMBER (AJAX — form POST biasa tidak beri notifikasi instan)
+// ADD TEAM MEMBER (AJAX - form POST biasa tidak beri notifikasi instan)
 // ============================================
 document.getElementById('addTeamMemberForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -6357,7 +7479,7 @@ document.getElementById('addTeamMemberForm')?.addEventListener('submit', async f
     try {
         const payload = new FormData(form);
 
-        // Mode vendor: modulnya free text (input terpisah) — pindahkan ke field
+        // Mode vendor: modulnya free text (input terpisah) - pindahkan ke field
         // `module` yang dibaca server.
         if (document.getElementById('member_source')?.value === 'vendor') {
             payload.set('module', document.getElementById('vendor_module')?.value || '');
@@ -6602,7 +7724,7 @@ function openDeleteModal(projectId, projectName) {
 let projectDeleteInProgress = false;
 async function executeProjectDelete(projectId) {
     // Guard against double-submit: the confirm button is shared between flows and a
-    // rapid double-click previously fired two DELETE requests — the first deleted the
+    // rapid double-click previously fired two DELETE requests - the first deleted the
     // project, the second hit an already-gone row and showed a "No query results" error.
     if (projectDeleteInProgress) return;
     projectDeleteInProgress = true;
@@ -6666,7 +7788,7 @@ document.addEventListener('keydown', function(e) {
 // ============================================
 // FLASH NOTIFICATIONS (DOMContentLoaded agar showNotification sudah terdefinisi)
 //
-// JANGAN tampilkan session('success')/('error')/('warning') di sini — layout
+// JANGAN tampilkan session('success')/('error')/('warning') di sini - layout
 // dashboard.blade.php SUDAH memunculkannya untuk semua halaman. Menambahkannya
 // lagi membuat toast dobel (mis. "Project closed successfully." muncul 2x).
 // Yang tersisa di bawah adalah $errors (validasi), yang tidak ditangani layout.
@@ -6713,7 +7835,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (host) { host.classList.add('hidden'); document.body.style.overflow = ''; }
                     showNotification(data.message || fallbackSuccess, 'success');
                     // A clear, acknowledged warning when the save left planning outside the
-                    // contract window — shown in a styled modal (consistent with the rest of
+                    // contract window - shown in a styled modal (consistent with the rest of
                     // the page) instead of a native alert(). Reload happens when dismissed.
                     if (data.warning) {
                         showContractWarningModal(data.warning);
@@ -6750,8 +7872,7 @@ function showContractWarningModal(warning) {
     const modal = document.getElementById('contractWarningModal');
     const body  = document.getElementById('contractWarningBody');
     if (!modal || !body) {            // graceful fallback if markup missing
-        alert(typeof warning === 'string' ? warning : 'Saved with warnings — please review planning.');
-        setTimeout(() => location.reload(), 200);
+        showAlert(typeof warning === 'string' ? warning : 'Saved with warnings - please review planning.', 'Saved with Warnings').then(() => location.reload());
         return;
     }
 
@@ -6908,7 +8029,7 @@ function setTeamMemberSource(source) {
     if (hint) {
         hint.textContent = isVendor
             ? 'Vendor is taken from Master Business Partner (type Vendor); the consultant details are typed in manually.'
-            : 'Consultant comes from Master Employee — Employee Type and Module follow their data.';
+            : 'Consultant comes from Master Employee - Employee Type and Module follow their data.';
     }
 }
 
@@ -6918,7 +8039,7 @@ document.getElementById('employee_id')?.addEventListener('change', function() {
     const picked  = selectedOption && selectedOption.value ? selectedOption : null;
     renderTeamModuleOptions(picked ? (picked.dataset.modules || '') : null);
     document.getElementById('whatsapp_number').value = picked?.dataset.whatsapp || '';
-    // Employee Type murni turunan data employee (Internal / External) — read-only.
+    // Employee Type murni turunan data employee (Internal / External) - read-only.
     document.getElementById('employee_type_display').value = picked ? (picked.dataset.employeeType || 'Internal') : '';
 });
 
@@ -6940,7 +8061,7 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleAEFields();
 });
 
-// ── Account Executive (Sales Data) — konsisten dengan halaman create ──────────
+// ── Account Executive (Sales Data) - konsisten dengan halaman create ──────────
 // Contact map: full_name → { phone, email } untuk auto-fill saat AE Internal dipilih.
 const aeEmployeeContacts = {
 @foreach($employees as $employee)
@@ -7125,7 +8246,7 @@ async function submitDocumentUpload() {
     label.textContent = 'Preparing upload...';
 
     try {
-        // Step 1: get upload session URL from server (no file data — tiny request)
+        // Step 1: get upload session URL from server (no file data - tiny request)
         const sessionRes = await fetch('/projects/{{ $project->id }}/documents/create-upload-session', {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
@@ -7149,7 +8270,7 @@ async function submitDocumentUpload() {
 
         if (!itemId) throw new Error('Upload completed but no item ID returned.');
 
-        // Step 3: finalize — server creates share link and saves to DB
+        // Step 3: finalize - server creates share link and saves to DB
         label.textContent = 'Finalizing...';
         const finalRes = await fetch('/projects/{{ $project->id }}/documents/finalize-upload', {
             method: 'POST',
@@ -7402,7 +8523,7 @@ async function refreshProjectFolderLink() {
         if (data.link_warning) {
             showNotification(data.link_warning, 'error');
         } else {
-            showNotification('Folder link refreshed — anyone with the link can open it.', 'success');
+            showNotification('Folder link refreshed - anyone with the link can open it.', 'success');
         }
     } catch (err) {
         showNotification('Error: ' + err.message, 'error');
@@ -7436,7 +8557,7 @@ function copyFolderLink() {
 {{-- Flatpickr + HolidayCalendar untuk semua date picker di halaman ini --}}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
-// Definisi HolidayCalendar (singleton — tidak re-define jika sudah ada dari halaman lain)
+// Definisi HolidayCalendar (singleton - tidak re-define jika sudah ada dari halaman lain)
 window.HolidayCalendar = window.HolidayCalendar || (function () {
     var _set  = new Set();
     var _meta = {};
@@ -7497,7 +8618,7 @@ window.HolidayCalendar = window.HolidayCalendar || (function () {
 // Inisialisasi semua picker setelah holidays di-load
 document.addEventListener('DOMContentLoaded', function () {
     HolidayCalendar.load().then(function () {
-        // Contract dates (General Information) — start = lower bound of end, end = upper bound of start
+        // Contract dates (General Information) - start = lower bound of end, end = upper bound of start
         var _csEl = document.getElementById('contract_start_date');
         var _ceEl = document.getElementById('contract_end_date');
         if (_csEl && _ceEl) {
@@ -7518,12 +8639,12 @@ document.addEventListener('DOMContentLoaded', function () {
         // Edit Team Member modal (hanya end_date yang editable)
         window._fpEditEnd   = HolidayCalendar.initPicker(document.getElementById('edit_end_date'));
 
-        // Issue Log modal — Date Identified / Estimated Closed / Closed Date
+        // Issue Log modal - Date Identified / Estimated Closed / Closed Date
         window._fpIssueIdentified = HolidayCalendar.initPicker(document.getElementById('issue_date_identified'));
         window._fpIssueEstClosed  = HolidayCalendar.initPicker(document.getElementById('issue_estimated_closed'));
         window._fpIssueClosed     = HolidayCalendar.initPicker(document.getElementById('issue_closed_date'));
 
-        // WRICEF modal — Request/Approved + Start & End tiap tahap.
+        // WRICEF modal - Request/Approved + Start & End tiap tahap.
         // Disimpan dalam satu map supaya reset/isi ulang bisa di-loop.
         window._fpWricef = {};
         [
@@ -7536,22 +8657,22 @@ document.addEventListener('DOMContentLoaded', function () {
             if (el) window._fpWricef[key] = HolidayCalendar.initPicker(el);
         });
 
-        // Stakeholder Register modal — Tanggal Identifikasi / Update Terakhir.
+        // Stakeholder Register modal - Tanggal Identifikasi / Update Terakhir.
         window._fpStakeholder = {};
         ['identified_date', 'last_updated_date'].forEach(function (key) {
             const el = document.getElementById('stakeholder_' + key);
             if (el) window._fpStakeholder[key] = HolidayCalendar.initPicker(el);
         });
 
-        // Location Information — Valid From / Valid To
+        // Location Information - Valid From / Valid To
         window._fpLocFrom = HolidayCalendar.initPicker(document.getElementById('loc_valid_from'));
         window._fpLocTo   = HolidayCalendar.initPicker(document.getElementById('loc_valid_to'));
 
-        // Risk Register — Target Date & Actual End Date
+        // Risk Register - Target Date & Actual End Date
         window._fpRiskTarget    = HolidayCalendar.initPicker(document.getElementById('risk_target_date'));
         window._fpRiskActualEnd = HolidayCalendar.initPicker(document.getElementById('risk_actual_end_date'));
 
-        // Term Of Payment Plan — Estimated / Submit Invoice / Paid Date
+        // Term Of Payment Plan - Estimated / Submit Invoice / Paid Date
         window._fpPtEstimated     = HolidayCalendar.initPicker(document.getElementById('pt_estimated_date'));
         window._fpPtSubmitInvoice = HolidayCalendar.initPicker(document.getElementById('pt_submit_invoice_date'), {
             onChange: function () {
@@ -7561,12 +8682,23 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
         window._fpPtPaid          = HolidayCalendar.initPicker(document.getElementById('pt_paid_date'));
+
+        // TOP mode Line Item - jadwal Contract Line Item & Generate Schedule
+        // Jadwal kontrak boleh jatuh di hari libur (mis. 1 Jan) → jangan disable tanggal apa pun.
+        const ptPreview = (fn) => ({
+            disable : [],
+            onChange: function () { window.PaymentTermPlan && window.PaymentTermPlan[fn](); },
+        });
+        window._fpLiStart = HolidayCalendar.initPicker(document.getElementById('li_start_date'), ptPreview('previewLineItem'));
+        window._fpLiEnd   = HolidayCalendar.initPicker(document.getElementById('li_end_date'),   ptPreview('previewLineItem'));
+        window._fpGsStart = HolidayCalendar.initPicker(document.getElementById('gs_start_date'), ptPreview('previewGenerate'));
+        window._fpGsEnd   = HolidayCalendar.initPicker(document.getElementById('gs_end_date'),   ptPreview('previewGenerate'));
     });
 });
 </script>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- RISK REGISTER — JAVASCRIPT                                    --}}
+{{-- RISK REGISTER - JAVASCRIPT                                    --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <script>
 window.RiskRegister = (function () {
@@ -7618,7 +8750,7 @@ window.RiskRegister = (function () {
             return '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Opportunity</span>';
         if (type === 'Threat')
             return '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Threat</span>';
-        return '—';
+        return '-';
     }
 
     // Repopulate Response Strategy <select> based on selected Risk Type,
@@ -7705,19 +8837,19 @@ window.RiskRegister = (function () {
             <td class="px-3 py-3 text-center whitespace-nowrap">${typeBadge(r.risk_type)}</td>
             <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(r.category)}</td>
             <td class="px-3 py-3 text-xs text-gray-800 max-w-[200px]"><div class="line-clamp-3">${esc(r.description)}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(r.cause) || '—'}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(r.project_impact) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(r.cause) || '-'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(r.project_impact) || '-'}</div></td>
             <td class="px-3 py-3 text-center text-sm font-semibold text-gray-700">${r.probability}</td>
             <td class="px-3 py-3 text-center text-sm font-semibold text-gray-700">${r.impact}</td>
             <td class="px-3 py-3 text-center text-sm font-bold text-gray-800">${score}</td>
             <td class="px-3 py-3 text-center">${levelBadge(level)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(r.response_strategy) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px]"><div class="line-clamp-3">${esc(r.mitigation_plan) || '—'}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(r.risk_owner) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(r.response_strategy) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px]"><div class="line-clamp-3">${esc(r.mitigation_plan) || '-'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(r.risk_owner) || '-'}</td>
             <td class="px-3 py-3 text-center">${statusBadge(r.status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(r.target_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(r.actual_end_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 max-w-[140px]"><div class="line-clamp-2">${esc(r.notes) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(r.target_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(r.actual_end_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 max-w-[140px]"><div class="line-clamp-2">${esc(r.notes) || '-'}</div></td>
             <td class="px-3 py-3 text-center whitespace-nowrap">
                 <button onclick="RiskRegister.openEdit(${r.id})"
                         class="inline-flex items-center p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition" title="Edit">
@@ -7752,8 +8884,8 @@ window.RiskRegister = (function () {
         if (window._fpRiskTarget) window._fpRiskTarget.clear();
         populateResponseStrategies('');         // reset strategy options (none until type chosen)
         onStatusChange();                        // hide & clear Actual End Date
-        document.getElementById('riskScorePreview').textContent  = '—';
-        document.getElementById('riskLevelPreview').textContent  = '—';
+        document.getElementById('riskScorePreview').textContent  = '-';
+        document.getElementById('riskLevelPreview').textContent  = '-';
         document.getElementById('riskLevelPreview').className    = 'text-sm font-bold text-gray-400';
         document.getElementById('riskScorePreview').className    = 'text-sm font-bold text-gray-400';
     }
@@ -7774,7 +8906,7 @@ window.RiskRegister = (function () {
         resetForm();
         document.getElementById('riskModalMode').value  = 'edit';
         document.getElementById('riskModalId').value    = id;
-        document.getElementById('riskModalTitle').textContent = `Edit Risk — ${r.risk_id_label}`;
+        document.getElementById('riskModalTitle').textContent = `Edit Risk - ${r.risk_id_label}`;
 
         document.getElementById('risk_type').value               = r.risk_type ?? '';
         document.getElementById('risk_category').value           = r.category ?? '';
@@ -7819,9 +8951,9 @@ window.RiskRegister = (function () {
         const levelEl = document.getElementById('riskLevelPreview');
 
         if (!p || !i) {
-            scoreEl.textContent = '—';
+            scoreEl.textContent = '-';
             scoreEl.className   = 'text-sm font-bold text-gray-400';
-            levelEl.textContent = '—';
+            levelEl.textContent = '-';
             levelEl.className   = 'text-sm font-bold text-gray-400';
             return;
         }
@@ -8009,7 +9141,7 @@ window.RiskRegister = (function () {
 </script>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- ISSUE LOG — JAVASCRIPT                                         --}}
+{{-- ISSUE LOG - JAVASCRIPT                                         --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <script>
 window.IssueLog = (function () {
@@ -8062,7 +9194,7 @@ window.IssueLog = (function () {
             'Low':    { letter: 'L', cls: 'bg-green-100 text-green-700' },
         };
         const p = map[priority];
-        if (!p) return '—';
+        if (!p) return '-';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-bold ${p.cls}" title="${esc(priority)}">${p.letter}</span>`;
     }
 
@@ -8086,7 +9218,7 @@ window.IssueLog = (function () {
             risks = [];
         }
         const prev = keepValue ?? sel.value;
-        sel.innerHTML = '<option value="">— None —</option>' +
+        sel.innerHTML = '<option value="">- None -</option>' +
             risks.map(r => `<option value="${r.id}">${esc(r.risk_id_label)}</option>`).join('');
         if (prev) sel.value = String(prev);
     }
@@ -8130,19 +9262,19 @@ window.IssueLog = (function () {
         return `<tr class="hover:bg-gray-50 align-top">
             <td class="px-3 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">${esc(i.issue_id_label)}</td>
             <td class="px-3 py-3 text-xs text-gray-800 max-w-[220px]"><div class="line-clamp-3">${esc(i.issue_description)}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.module) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.date_identified_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.closed_date_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.module) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.date_identified_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.closed_date_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${statusBadge(i.status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(i.risk_to_project) || '—'}</div></td>
-            <td class="px-3 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">${esc(i.risk_id_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(i.risk_to_project) || '-'}</div></td>
+            <td class="px-3 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">${esc(i.risk_id_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${priorityBadge(i.priority)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.originator) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.owner) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.estimated_closed_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.originator) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(i.owner) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(i.estimated_closed_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${escalationBadge(i.escalation_needed)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(i.impact_of_issue) || '—'}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px]"><div class="line-clamp-3">${esc(i.tracking_comments) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[160px]"><div class="line-clamp-3">${esc(i.impact_of_issue) || '-'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px]"><div class="line-clamp-3">${esc(i.tracking_comments) || '-'}</div></td>
             <td class="px-3 py-3 text-center whitespace-nowrap">
                 <button onclick="IssueLog.openEdit(${i.id})"
                         class="inline-flex items-center p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition" title="Edit">
@@ -8198,7 +9330,7 @@ window.IssueLog = (function () {
         resetForm();
         document.getElementById('issueModalMode').value  = 'edit';
         document.getElementById('issueModalId').value    = id;
-        document.getElementById('issueModalTitle').textContent = `Edit Issue — ${i.issue_id_label}`;
+        document.getElementById('issueModalTitle').textContent = `Edit Issue - ${i.issue_id_label}`;
 
         document.getElementById('issue_description').value       = i.issue_description ?? '';
         document.getElementById('issue_module').value            = i.module ?? '';
@@ -8350,7 +9482,7 @@ window.IssueLog = (function () {
 </script>
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- WRICEF LOG — JAVASCRIPT                                        --}}
+{{-- WRICEF LOG - JAVASCRIPT                                        --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 @if($can('delivery-project.wricef.view'))
 <script>
@@ -8360,7 +9492,7 @@ window.WricefLog = (function () {
     const PROJECT_ID = {{ $project->id }};
     const BASE_URL   = `/projects/${PROJECT_ID}/wricefs`;
 
-    // Huruf Obj_Id per kategori — harus sama dengan
+    // Huruf Obj_Id per kategori - harus sama dengan
     // App\Models\DeliveryProjectWricef::CATEGORY_LETTERS (server tetap yang
     // menentukan nilai final; ini cuma pratinjau prefix di modal).
     const CATEGORY_LETTERS = @json(\App\Models\DeliveryProjectWricef::CATEGORY_LETTERS);
@@ -8419,7 +9551,7 @@ window.WricefLog = (function () {
             'In Progress': 'bg-blue-100 text-blue-800',
             'Closed':      'bg-green-100 text-green-800',
         };
-        if (!status) return '—';
+        if (!status) return '-';
         const cls = map[status] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${esc(status)}</span>`;
     }
@@ -8435,7 +9567,7 @@ window.WricefLog = (function () {
             'Develop':          'bg-amber-100 text-amber-800',
             'Develop Scenario': 'bg-amber-100 text-amber-800',
         };
-        if (!status) return '<span class="text-gray-300">—</span>';
+        if (!status) return '<span class="text-gray-300">-</span>';
         const cls = map[status] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${cls}">${esc(status)}</span>`;
     }
@@ -8446,21 +9578,21 @@ window.WricefLog = (function () {
             'Medium': 'bg-orange-100 text-orange-700',
             'Low':    'bg-green-100 text-green-700',
         };
-        if (!priority) return '—';
+        if (!priority) return '-';
         const cls = map[priority] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-bold ${cls}">${esc(priority)}</span>`;
     }
 
     function fmtMandays(v) {
-        if (v === null || v === undefined || v === '') return '—';
+        if (v === null || v === undefined || v === '') return '-';
         const num = Number(v);
-        if (isNaN(num)) return '—';
-        return Number.isInteger(num) ? String(num) : num.toFixed(2).replace('.', ',');
+        if (isNaN(num)) return '-';
+        return formatMd(num).replace('.', ',');
     }
 
-    // Capability boleh multi-baris (lihat contoh CSV) — pertahankan barisnya.
+    // Capability boleh multi-baris (lihat contoh CSV) - pertahankan barisnya.
     function multiline(text) {
-        if (!text) return '—';
+        if (!text) return '-';
         return esc(text).replace(/\r?\n/g, '<br>');
     }
 
@@ -8502,45 +9634,43 @@ window.WricefLog = (function () {
             return sum + (isNaN(num) ? 0 : num);
         }, 0);
 
-        cell.textContent = Number.isInteger(total)
-            ? String(total)
-            : total.toFixed(2).replace('.', ',');
+        cell.textContent = formatMd(total).replace('.', ',');
     }
 
     function rowHtml(w) {
         return `<tr class="hover:bg-gray-50 align-top">
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.company) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.company) || '-'}</td>
             <td class="px-3 py-3 text-xs text-center font-semibold text-gray-700 whitespace-nowrap">${esc(w.sap_module)}</td>
             <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.category)}</td>
             <td class="px-3 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">${esc(w.obj_id)}</td>
             <td class="px-3 py-3 text-xs text-gray-800 max-w-[240px]"><div class="line-clamp-3">${esc(w.obj_name)}</div></td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[240px]"><div class="line-clamp-4">${multiline(w.capability)}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.tcode) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.tcode) || '-'}</td>
             <td class="px-3 py-3 text-center">${priorityBadge(w.priority)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.requestor) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.request_date_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.requestor) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.request_date_label) || '-'}</td>
             <td class="px-3 py-3 text-xs text-right text-gray-700 whitespace-nowrap">${fmtMandays(w.effort_mandays)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.approved_by) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.approved_date_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.approved_by) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.approved_date_label) || '-'}</td>
             <td class="px-3 py-3 text-center border-r border-gray-200">${statusBadge(w.status)}</td>
 
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.fsd_pic) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.fsd_start_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.fsd_end_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.fsd_pic) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.fsd_start_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.fsd_end_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${stageBadge(w.fsd_status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.fsd_remarks) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.fsd_remarks) || '-'}</div></td>
 
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.dev_pic) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.dev_start_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.dev_end_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.dev_pic) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.dev_start_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.dev_end_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${stageBadge(w.dev_status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.dev_remarks) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.dev_remarks) || '-'}</div></td>
 
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.test_pic) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.test_start_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.test_end_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(w.test_pic) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.test_start_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(w.test_end_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${stageBadge(w.test_status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.test_remarks) || '—'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[180px] border-r border-gray-200"><div class="line-clamp-3">${esc(w.test_remarks) || '-'}</div></td>
 
             <td class="px-3 py-3 text-center whitespace-nowrap">
                 <button onclick="WricefLog.openEdit(${w.id})"
@@ -8622,7 +9752,7 @@ window.WricefLog = (function () {
         document.getElementById('wricefModalMode').value = 'edit';
         document.getElementById('wricefModalId').value   = id;
         resetForm();
-        document.getElementById('wricefModalTitle').textContent = `Edit WRICEF — ${w.obj_id}`;
+        document.getElementById('wricefModalTitle').textContent = `Edit WRICEF - ${w.obj_id}`;
 
         TEXT_FIELDS.forEach(function (key) {
             const node = el(key);
@@ -8777,7 +9907,7 @@ window.WricefLog = (function () {
 @endif
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- STAKEHOLDER REGISTER — JAVASCRIPT                              --}}
+{{-- STAKEHOLDER REGISTER - JAVASCRIPT                              --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 @if($can('delivery-project.stakeholder.view'))
 <script>
@@ -8787,7 +9917,7 @@ window.StakeholderRegister = (function () {
     const PROJECT_ID = {{ $project->id }};
     const BASE_URL   = `/projects/${PROJECT_ID}/stakeholders`;
 
-    // Label kuadran — harus sama dengan
+    // Label kuadran - harus sama dengan
     // App\Models\DeliveryProjectStakeholder::QUADRANTS. Server tetap yang
     // menentukan nilai final; ini hanya pratinjau di modal & grid.
     const QUADRANTS = {
@@ -8838,7 +9968,7 @@ window.StakeholderRegister = (function () {
     }
 
     function multiline(text) {
-        if (!text) return '<span class="text-gray-300">—</span>';
+        if (!text) return '<span class="text-gray-300">-</span>';
         return esc(text).replace(/\r?\n/g, '<br>');
     }
 
@@ -8861,13 +9991,13 @@ window.StakeholderRegister = (function () {
             'Sedang': 'bg-amber-100 text-amber-800',
             'Rendah': 'bg-gray-100 text-gray-600',
         };
-        if (!level) return '<span class="text-gray-300">—</span>';
+        if (!level) return '<span class="text-gray-300">-</span>';
         const cls = map[level] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${esc(level)}</span>`;
     }
 
     function categoryBadge(cat) {
-        if (!cat) return '—';
+        if (!cat) return '-';
         const cls = cat === 'Internal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${esc(cat)}</span>`;
     }
@@ -8880,7 +10010,7 @@ window.StakeholderRegister = (function () {
             'Supportive': 'bg-green-100 text-green-800',
             'Leading':    'bg-emerald-100 text-emerald-800',
         };
-        if (!att) return '<span class="text-gray-300">—</span>';
+        if (!att) return '<span class="text-gray-300">-</span>';
         const cls = map[att] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${cls}">${esc(att)}</span>`;
     }
@@ -8891,7 +10021,7 @@ window.StakeholderRegister = (function () {
             'Tidak Aktif': 'bg-gray-100 text-gray-600',
             'Selesai':     'bg-blue-100 text-blue-800',
         };
-        if (!status) return '—';
+        if (!status) return '-';
         const cls = map[status] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${esc(status)}</span>`;
     }
@@ -8925,27 +10055,27 @@ window.StakeholderRegister = (function () {
         return `<tr class="hover:bg-gray-50 align-top">
             <td class="px-3 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">${esc(s.stakeholder_id)}</td>
             <td class="px-3 py-3 text-xs font-semibold text-gray-800 whitespace-nowrap">${esc(s.name)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.role_title) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.organization) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.role_title) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.organization) || '-'}</td>
             <td class="px-3 py-3 text-center">${categoryBadge(s.category)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.classification) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(s.email) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(s.phone) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.classification) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(s.email) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(s.phone) || '-'}</td>
             <td class="px-3 py-3 text-center">${levelBadge(s.power)}</td>
             <td class="px-3 py-3 text-center">${levelBadge(s.interest)}</td>
-            <td class="px-3 py-3 text-xs text-gray-700">${esc(quadrant) || '<span class="text-gray-300">—</span>'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700">${esc(quadrant) || '<span class="text-gray-300">-</span>'}</td>
             <td class="px-3 py-3 text-center">${attitudeBadge(s.current_attitude)}</td>
             <td class="px-3 py-3 text-center">${attitudeBadge(s.expected_attitude)}</td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[240px]"><div class="line-clamp-3">${multiline(s.key_expectations)}</div></td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[240px]"><div class="line-clamp-3">${multiline(s.information_needs)}</div></td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[240px]"><div class="line-clamp-3">${multiline(s.engagement_strategy)}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.communication_frequency) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700">${esc(s.communication_method) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.pic_internal) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.communication_frequency) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700">${esc(s.communication_method) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(s.pic_internal) || '-'}</td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[220px]"><div class="line-clamp-3">${multiline(s.stakeholder_risk)}</div></td>
             <td class="px-3 py-3 text-center">${statusBadge(s.status)}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(s.identified_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(s.last_updated_date_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(s.identified_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(s.last_updated_date_label) || '-'}</td>
             <td class="px-3 py-3 text-xs text-gray-600 max-w-[200px]"><div class="line-clamp-3">${multiline(s.notes)}</div></td>
             <td class="px-3 py-3 text-center whitespace-nowrap">
                 <button onclick="StakeholderRegister.openEdit(${s.id})"
@@ -9015,19 +10145,19 @@ window.StakeholderRegister = (function () {
     }
 
     function openEdit(id) {
-        // id dari onclick bisa Number, id di _rows bisa Number — samakan sbagai string.
+        // id dari onclick bisa Number, id di _rows bisa Number - samakan sbagai string.
         const s = _rows.find(x => String(x.id) === String(id));
         if (!s) return;
 
         document.getElementById('stakeholderModalMode').value = 'edit';
         document.getElementById('stakeholderModalId').value   = s.id;
         resetForm();
-        document.getElementById('stakeholderModalTitle').textContent = `Edit Stakeholder — ${s.stakeholder_id}`;
+        document.getElementById('stakeholderModalTitle').textContent = `Edit Stakeholder - ${s.stakeholder_id}`;
 
         const sid = document.getElementById('stakeholder_sid_preview');
         if (sid) sid.value = s.stakeholder_id;
 
-        // Semua field diisi ulang dari data baris — teks, textarea, DAN setiap
+        // Semua field diisi ulang dari data baris - teks, textarea, DAN setiap
         // <select> (Kategori, Tipe/Klasifikasi, Power, Interest, Sikap, Frekuensi,
         // PIC Internal, Status). Nilai yang tidak lagi ada di daftar opsi
         // disisipkan oleh setSelectValue() supaya tetap tampil.
@@ -9049,7 +10179,7 @@ window.StakeholderRegister = (function () {
             if (s[key] && window._fpStakeholder && window._fpStakeholder[key]) {
                 window._fpStakeholder[key].setDate(s[key], false, 'Y-m-d');
             } else {
-                // Flatpickr belum siap — isi nilai mentah supaya tetap tersimpan.
+                // Flatpickr belum siap - isi nilai mentah supaya tetap tersimpan.
                 node.value = s[key] || '';
             }
         });
@@ -9173,16 +10303,35 @@ window.StakeholderRegister = (function () {
 @endif
 
 {{-- ══════════════════════════════════════════════════════════════ --}}
-{{-- TERM OF PAYMENT (TOP) PLAN — JAVASCRIPT                        --}}
+{{-- TERM OF PAYMENT (TOP) PLAN - JAVASCRIPT                        --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
 <script>
 window.PaymentTermPlan = (function () {
     'use strict';
 
-    const PROJECT_ID = {{ $project->id }};
-    const BASE_URL   = `/projects/${PROJECT_ID}/payment-terms`;
+    // Dua Type TOP (lihat App\Services\ProjectTopPlan):
+    //   percentage → Amount = Payment % × revenue Sales Data (total % ≤ 100, diblokir)
+    //   line_item  → termin dikaitkan ke Contract Line Item; amount diambil dari
+    //                nilai line item: basis "line_item" (Payment % × nilai line item)
+    //                ATAU "fixed" (Amount diisi, % terhadap line item dihitung).
+    //                Basis % of Revenue dikunci. Melebihi revenue hanya diperingatkan.
+    const PROJECT_ID   = {{ $project->id }};
+    const BASE_URL     = `/projects/${PROJECT_ID}/payment-terms`;
+    const MODE_URL     = `/projects/${PROJECT_ID}/top-mode`;
+    const LINE_URL     = `/projects/${PROJECT_ID}/contract-line-items`;
+    const FREQ_MONTHS  = { monthly: 1, quarterly: 3, semiannual: 6, yearly: 12 };
+    const MONTHS       = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    // Grup line item dengan termin sebanyak ini atau lebih dilipat (design: "… 8 tagihan lainnya").
+    const COLLAPSE_AT  = 7;
+    const COLLAPSE_SHOW = 4;
 
-    let _terms   = [];
+    let _mode      = @json($project->top_mode === 'line_item' ? 'line_item' : 'percentage');
+    let _terms     = [];
+    let _lineItems = [];
+    let _warnings  = [];
+    let _basis     = 'percentage';   // basis termin yang sedang diedit di modal
+    let _legacyPct = false;          // termin lama basis % revenue di mode Line Item (boleh tetap)
+    const _expanded = new Set();     // id line item yang grupnya sedang dibuka penuh
     // Revenue acuan untuk hitung Amount = revenue × % / 100
     let _revenue = parseFloat('{{ $project->revenue ?? 0 }}') || 0;
 
@@ -9207,6 +10356,22 @@ window.PaymentTermPlan = (function () {
         return 'Rp ' + (neg ? '-' : '') + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
 
+    function fmtThousands(n) {
+        return Math.abs(Math.round(Number(n) || 0)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    // "2.000.000" → 2000000 (input nominal memakai titik ribuan)
+    function parseAmount(str) {
+        const digits = String(str ?? '').replace(/[^\d]/g, '');
+        return digits === '' ? null : parseInt(digits, 10);
+    }
+
+    function onAmountInput(el) {
+        if (el.readOnly) return;
+        const v = parseAmount(el.value);
+        el.value = v === null ? '' : fmtThousands(v);
+    }
+
     // Baca revenue terkini dari field Sales Data (jika user mengubah tanpa reload)
     function currentRevenue() {
         const el = document.getElementById('sfin_rev_val');
@@ -9219,9 +10384,10 @@ window.PaymentTermPlan = (function () {
 
     function statusBadge(status) {
         const map = {
-            'Open':  'bg-yellow-100 text-yellow-800',
-            'Paid':  'bg-green-100 text-green-800',
-            'Delay': 'bg-red-100 text-red-700',
+            'Open':     'bg-yellow-100 text-yellow-800',
+            'Invoiced': 'bg-blue-100 text-blue-800',
+            'Paid':     'bg-green-100 text-green-800',
+            'Delay':    'bg-red-100 text-red-700',
         };
         const cls = map[status] ?? 'bg-gray-100 text-gray-700';
         return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${esc(status)}</span>`;
@@ -9233,55 +10399,334 @@ window.PaymentTermPlan = (function () {
         return (Number.isInteger(num) ? num.toString() : num.toFixed(2).replace('.', ',')) + '%';
     }
 
+    function errMsg(e, fallback) {
+        if (e.response?.data?.errors) {
+            const first = Object.values(e.response.data.errors)[0];
+            return Array.isArray(first) ? first[0] : String(first);
+        }
+        return e.response?.data?.message ?? fallback ?? 'Something went wrong. Please try again.';
+    }
+
+    function spinner() {
+        return '<svg class="animate-spin w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>';
+    }
+
+    // Peringatan dari server ditampilkan setelah notifikasi sukses.
+    function notifyWarnings(warnings) {
+        (warnings || []).forEach(w => showNotification(w, 'warning'));
+    }
+
+    // Info perbandingan sebuah total dengan revenue Sales Data (sesuai / kurang / lebih).
+    function revenueCompareHtml(total, revenue) {
+        const pill = (cls, text) => `<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${cls}">${text}</span>`;
+        const head = `Revenue in Sales Data: <span class="font-semibold text-gray-700">${fmtRp(revenue)}</span>`;
+        if (revenue <= 0) {
+            return head + pill('bg-gray-100 text-gray-600', 'Revenue is empty - cannot compare');
+        }
+        const diff = total - revenue;
+        if (Math.abs(diff) < 1) {
+            return head + pill('bg-green-100 text-green-800', '✓ Matches revenue');
+        }
+        const pct = fmtPct(Math.round(Math.abs(diff) / revenue * 10000) / 100);
+        return diff > 0
+            ? head + pill('bg-red-100 text-red-700', `Over revenue by ${fmtRp(diff)} (${pct})`)
+            : head + pill('bg-amber-100 text-amber-800', `Below revenue by ${fmtRp(-diff)} (${pct})`);
+    }
+
+    // ── Periode (mirror DeliveryProjectContractLineItem::buildPeriods) ──
+    function parseYmd(s) {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+        return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+    }
+
+    function monthLabel(d) { return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`; }
+
+    function buildPeriods(freq, startStr, endStr) {
+        const months = FREQ_MONTHS[freq];
+        const start  = parseYmd(startStr);
+        const end    = parseYmd(endStr);
+        if (!months || !start || !end) return [];
+
+        const periods = [];
+        let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+        while (cursor <= end && periods.length < 120) {
+            const pEnd = new Date(cursor.getFullYear(), cursor.getMonth() + months - 1, 1);
+            periods.push(months === 1 ? monthLabel(cursor) : `${monthLabel(cursor)} - ${monthLabel(pEnd)}`);
+            cursor = new Date(cursor.getFullYear(), cursor.getMonth() + months, 1);
+        }
+        return periods;
+    }
+
+    function lineItemById(id) {
+        return _lineItems.find(li => li.id === Number(id)) || null;
+    }
+
     // ── Load & render ─────────────────────────────────────────────
     async function load() {
         try {
             const res = await axios.get(BASE_URL);
-            _terms = res.data.payment_terms ?? [];
+            _terms     = res.data.payment_terms ?? [];
+            _lineItems = res.data.line_items ?? [];
+            _warnings  = res.data.warnings ?? [];
+            _mode      = res.data.top_mode === 'line_item' ? 'line_item' : 'percentage';
             if (res.data.project_revenue !== undefined && res.data.project_revenue !== null) {
                 _revenue = parseFloat(res.data.project_revenue) || _revenue;
             }
-            renderTable();
+            render();
         } catch (e) {
             const tbody = document.getElementById('paymentTermBody');
             if (tbody) tbody.innerHTML =
-                `<tr><td colspan="11" class="text-center py-8 text-red-500 text-sm">Failed to load data. Please refresh.</td></tr>`;
+                `<tr><td colspan="12" class="text-center py-8 text-red-500 text-sm">Failed to load data. Please refresh.</td></tr>`;
         }
     }
 
+    function render() {
+        renderMode();
+        renderWarnings();
+        renderLineItems();
+        renderTable();
+    }
+
+    function renderMode() {
+        document.querySelectorAll('#ptModeToggle .pt-mode-btn').forEach(btn => {
+            const active = btn.dataset.mode === _mode;
+            btn.classList.toggle('primary-gradient', active);
+            btn.classList.toggle('text-white', active);
+            btn.classList.toggle('bg-white', !active);
+            btn.classList.toggle('text-gray-700', !active);
+            btn.classList.toggle('hover:bg-gray-50', !active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+
+        const hint = document.getElementById('ptModeHint');
+        if (hint) {
+            hint.textContent = _mode === 'line_item'
+                ? `Amount is taken from the contract line items (Payment % of the line item value, or a fixed Amount) and compared with the revenue in Sales Data (${fmtRp(currentRevenue())}).`
+                : `Amount = Payment % × revenue in Sales Data (${fmtRp(currentRevenue())}).`;
+        }
+
+        document.getElementById('ptLineItemSection')?.classList.toggle('hidden', _mode !== 'line_item');
+    }
+
+    function renderWarnings() {
+        const box = document.getElementById('ptWarnings');
+        if (!box) return;
+        box.classList.toggle('hidden', !_warnings.length);
+        box.innerHTML = _warnings.length
+            ? `<div class="flex gap-2">
+                   <svg class="w-5 h-5 flex-shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                   <ul class="space-y-1">${_warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>
+               </div>`
+            : '';
+    }
+
+    function renderLineItems() {
+        const tbody = document.getElementById('ptLineItemBody');
+        if (!tbody) return;
+        renderLineItemFoot();
+
+        if (!_lineItems.length) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-400 text-sm">No line items yet. Add the contract line items (e.g. Service, License, ATS) before creating payment terms.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = _lineItems.map(li => {
+            const over   = li.billed_total > li.total + 0.01;
+            const billedCls = over ? 'text-red-600' : (Math.abs(li.billed_total - li.total) < 0.01 ? 'text-green-700' : 'text-gray-700');
+            return `<tr class="hover:bg-gray-50">
+                <td class="px-3 py-3 text-xs font-medium text-gray-800">${esc(li.name)}</td>
+                <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(li.type_label)}</td>
+                <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(li.schedule_label)}</td>
+                <td class="px-3 py-3 text-xs text-right text-gray-700 whitespace-nowrap">${fmtRp(li.amount)}</td>
+                <td class="px-3 py-3 text-xs text-right font-semibold text-gray-800 whitespace-nowrap">${fmtRp(li.total)}</td>
+                <td class="px-3 py-3 text-xs text-right font-semibold whitespace-nowrap ${billedCls}" title="${li.terms_count} payment term(s)">${fmtRp(li.billed_total)}</td>
+                <td class="px-3 py-3 text-center whitespace-nowrap">
+                    ${li.type === 'recurring' ? `
+                    <button type="button" onclick="PaymentTermPlan.openGenerate(${li.id})"
+                            class="inline-flex items-center px-3 py-1.5 mr-1 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                        Generate Schedule
+                    </button>` : `
+                    <button type="button" onclick="PaymentTermPlan.openAdd(${li.id})"
+                            class="inline-flex items-center px-3 py-1.5 mr-1 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                        Add Term
+                    </button>`}
+                    <button type="button" onclick="PaymentTermPlan.openEditLineItem(${li.id})" title="Edit Line Item"
+                            class="inline-flex items-center p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </button>
+                    <button type="button" onclick="PaymentTermPlan.openLineItemDelete(${li.id})" title="Delete Line Item"
+                            class="inline-flex items-center p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    // Footer tabel Line Item: total nilai kontrak & total yang sudah masuk TOP vs revenue.
+    function renderLineItemFoot() {
+        const tfoot = document.getElementById('ptLineItemFoot');
+        if (!tfoot) return;
+        if (!_lineItems.length) { tfoot.innerHTML = ''; return; }
+
+        const total  = _lineItems.reduce((s, li) => s + (Number(li.total) || 0), 0);
+        const billed = _lineItems.reduce((s, li) => s + (Number(li.billed_total) || 0), 0);
+        const billedCls = billed > total + 0.01 ? 'text-red-600' : (Math.abs(billed - total) < 1 ? 'text-green-700' : 'text-gray-700');
+
+        tfoot.innerHTML = `<tr class="font-semibold text-gray-700">
+                <td class="px-3 py-3 text-xs" colspan="4">Total Contract Value</td>
+                <td class="px-3 py-3 text-xs text-right whitespace-nowrap">${fmtRp(total)}</td>
+                <td class="px-3 py-3 text-xs text-right whitespace-nowrap ${billedCls}">${fmtRp(billed)}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="px-3 pb-3 text-xs font-normal text-gray-500" colspan="7">${revenueCompareHtml(total, currentRevenue())}</td>
+            </tr>`;
+    }
+
+    function colCount() { return _mode === 'line_item' ? 12 : 11; }
+
+    function renderHead() {
+        const thead = document.getElementById('paymentTermHead');
+        if (!thead) return;
+        const th = (label, cls) => `<th class="px-3 py-3 font-semibold whitespace-nowrap ${cls}">${label}</th>`;
+        thead.innerHTML = `<tr class="bg-gray-700 text-white">
+            ${th('No', 'text-center w-[50px]')}
+            ${th('Payment Term', 'text-left min-w-[160px]')}
+            ${_mode === 'line_item' ? th('Period', 'text-left min-w-[110px]') : ''}
+            ${th('Payment %', 'text-center w-[110px]')}
+            ${th('Amount', 'text-right min-w-[150px]')}
+            ${th('Payment Requirements / Evidence', 'text-left min-w-[220px]')}
+            ${th('Estimated Date', 'text-left min-w-[130px]')}
+            ${th('Submit Invoice Date', 'text-left min-w-[150px]')}
+            ${th('Invoice No', 'text-left min-w-[130px]')}
+            ${th('Paid Date', 'text-left min-w-[130px]')}
+            ${th('Status', 'text-center w-[100px]')}
+            ${th('Action', 'text-center w-[80px]')}
+        </tr>`;
+    }
+
     function renderTable() {
+        renderHead();
         const tbody = document.getElementById('paymentTermBody');
         if (!tbody) return;
 
         if (!_terms.length) {
-            tbody.innerHTML = `<tr><td colspan="11" class="text-center py-8 text-gray-400 text-sm">No payment terms yet. Click "Add Payment Term" to get started.</td></tr>`;
+            const hint = _mode === 'line_item' && !_lineItems.length
+                ? 'No payment terms yet. Add a contract line item first, then click "Add Payment Term" or "Generate Schedule".'
+                : 'No payment terms yet. Click "Add Payment Term" to get started.';
+            tbody.innerHTML = `<tr><td colspan="${colCount()}" class="text-center py-8 text-gray-400 text-sm">${hint}</td></tr>`;
+        } else if (_mode === 'line_item') {
+            tbody.innerHTML = groupedRowsHtml();
         } else {
             tbody.innerHTML = _terms.map(t => rowHtml(t)).join('');
         }
 
-        // Footer totals
-        const totalPct = _terms.reduce((s, t) => s + (Number(t.payment_percentage) || 0), 0);
+        renderFoot();
+    }
+
+    // Mode Line Item: termin dikelompokkan per line item + subtotal (design "Contract Line Items").
+    function groupedRowsHtml() {
+        const groups = _lineItems.map(li => ({ li, terms: _terms.filter(t => t.contract_line_item_id === li.id) }))
+            .filter(g => g.terms.length);
+        const orphan = _terms.filter(t => !lineItemById(t.contract_line_item_id));
+        if (orphan.length) groups.push({ li: null, terms: orphan });
+
+        const span = colCount();
+        return groups.map(({ li, terms }) => {
+            const key      = li ? li.id : 0;
+            const subtotal = terms.reduce((s, t) => s + (Number(t.amount) || 0), 0);
+            const title    = li ? li.name : 'Not linked to a line item';
+            const collapse = terms.length >= COLLAPSE_AT && !_expanded.has(key);
+            const visible  = collapse ? terms.slice(0, COLLAPSE_SHOW) : terms;
+            const hidden   = terms.slice(COLLAPSE_SHOW);
+
+            let html = `<tr class="bg-rose-50">
+                <td colspan="${span}" class="px-3 py-2.5 text-xs font-semibold text-gray-800">
+                    ${esc(title)} <span class="font-normal text-gray-500">(${terms.length} term${terms.length > 1 ? 's' : ''})</span>
+                    ${li ? `<span class="float-right font-normal text-gray-500">Contract value ${fmtRp(li.total)}</span>`
+                         : `<span class="float-right font-normal text-amber-700">Edit these terms to choose a line item.</span>`}
+                </td>
+            </tr>`;
+            html += visible.map(t => rowHtml(t)).join('');
+
+            if (terms.length >= COLLAPSE_AT) {
+                const range = hidden.length ? `${hidden[0].period || hidden[0].payment_term} - ${hidden[hidden.length - 1].period || hidden[hidden.length - 1].payment_term}` : '';
+                html += `<tr><td colspan="${span}" class="px-3 py-2 text-center text-xs">
+                    <button type="button" data-perm-keep onclick="PaymentTermPlan.toggleGroup(${key})" class="text-gray-500 hover:text-gray-800 underline-offset-2 hover:underline">
+                        ${collapse ? `… ${hidden.length} more term${hidden.length > 1 ? 's' : ''} (${esc(range)}) · Show all` : 'Show less'}
+                    </button>
+                </td></tr>`;
+            }
+
+            html += `<tr class="bg-gray-50/60">
+                <td colspan="4" class="px-3 py-2 text-xs font-semibold text-gray-500">Subtotal ${esc(title)}</td>
+                <td class="px-3 py-2 text-right text-xs font-semibold text-gray-600 whitespace-nowrap">${fmtRp(subtotal)}</td>
+                <td colspan="${span - 5}"></td>
+            </tr>`;
+            return html;
+        }).join('');
+    }
+
+    function renderFoot() {
+        const tfoot = document.getElementById('paymentTermFoot');
+        if (!tfoot) return;
+
+        if (!_terms.length) { tfoot.innerHTML = ''; return; }
+
         const totalAmt = _terms.reduce((s, t) => s + (Number(t.amount) || 0), 0);
-        const pctEl = document.getElementById('ptTotalPct');
-        const amtEl = document.getElementById('ptTotalAmount');
-        if (pctEl) {
-            pctEl.textContent = fmtPct(totalPct);
-            pctEl.className = 'px-3 py-3 text-center ' + (totalPct > 100 ? 'text-red-600' : 'text-gray-700');
-        }
-        if (amtEl) amtEl.textContent = fmtRp(totalAmt);
+        const revenue  = currentRevenue();
+        const over     = totalAmt - revenue;
+        // Total % hanya bermakna untuk basis % of Revenue (= porsi revenue).
+        const revTerms = _terms.filter(t => t.basis === 'percentage');
+        const totalPct = revTerms.reduce((s, t) => s + (Number(t.payment_percentage) || 0), 0);
+        const pctCell  = _mode === 'percentage' && revTerms.length
+            ? `<td class="px-3 py-3 text-center ${totalPct > 100 ? 'text-red-600' : 'text-gray-700'}">${fmtPct(totalPct)}</td>`
+            : `<td class="px-3 py-3 text-center text-gray-400">-</td>`;
+
+        // Rincian status penagihan (dari total TOP).
+        const byStatus = s => _terms.filter(t => t.status === s).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+        const statusInfo = ['Paid', 'Invoiced']
+            .map(s => ({ s, v: byStatus(s) })).filter(x => x.v > 0)
+            .map(x => `${x.s} ${fmtRp(x.v)}`).join(' · ');
+
+        const lead = _mode === 'line_item' ? 3 : 2;
+        tfoot.innerHTML = `<tr class="font-semibold text-gray-700">
+                <td class="px-3 py-3" colspan="${lead}">Total</td>
+                ${pctCell}
+                <td class="px-3 py-3 text-right whitespace-nowrap ${over > 0.01 ? 'text-red-600' : ''}">${fmtRp(totalAmt)}</td>
+                <td class="px-3 py-3 text-xs font-normal text-gray-500" colspan="7">
+                    ${revenueCompareHtml(totalAmt, revenue)}
+                    ${statusInfo ? `<span class="ml-2 text-gray-400">· ${statusInfo}</span>` : ''}
+                </td>
+            </tr>`;
     }
 
     function rowHtml(t) {
+        // % of Revenue → "x%" (+ "of revenue" di mode Line Item, data lama);
+        // % of Line Item → "x% of item"; Amount → badge Fixed + porsinya ke line item.
+        const sub = txt => `<div class="text-[10px] font-normal text-gray-400">${txt}</div>`;
+        let pctCell;
+        if (t.basis === 'fixed') {
+            pctCell = `<span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-500">Fixed</span>`
+                + (t.line_item_share !== null && t.line_item_share !== undefined ? sub(`${fmtPct(t.line_item_share)} of item`) : '');
+        } else if (t.basis === 'line_item') {
+            pctCell = fmtPct(t.payment_percentage) + sub('of item');
+        } else {
+            pctCell = fmtPct(t.payment_percentage) + (_mode === 'line_item' ? sub('of revenue') : '');
+        }
+
         return `<tr class="hover:bg-gray-50 align-top">
             <td class="px-3 py-3 text-center text-xs font-mono text-gray-600">${t.term_number}</td>
             <td class="px-3 py-3 text-xs text-gray-800"><div class="line-clamp-3">${esc(t.payment_term)}</div></td>
-            <td class="px-3 py-3 text-center text-xs font-semibold text-gray-700">${fmtPct(t.payment_percentage)}</td>
+            ${_mode === 'line_item' ? `<td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(t.period) || '-'}</td>` : ''}
+            <td class="px-3 py-3 text-center text-xs font-semibold text-gray-700">${pctCell}</td>
             <td class="px-3 py-3 text-right text-xs font-semibold text-gray-800 whitespace-nowrap">${fmtRp(t.amount)}</td>
-            <td class="px-3 py-3 text-xs text-gray-600 max-w-[260px]"><div class="line-clamp-3">${esc(t.requirements) || '—'}</div></td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.estimated_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.submit_invoice_date_label) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(t.invoice_number) || '—'}</td>
-            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.paid_date_label) || '—'}</td>
+            <td class="px-3 py-3 text-xs text-gray-600 max-w-[260px]"><div class="line-clamp-3">${esc(t.requirements) || '-'}</div></td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.estimated_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.submit_invoice_date_label) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${esc(t.invoice_number) || '-'}</td>
+            <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(t.paid_date_label) || '-'}</td>
             <td class="px-3 py-3 text-center">${statusBadge(t.status)}</td>
             <td class="px-3 py-3 text-center whitespace-nowrap">
                 <button type="button" onclick="PaymentTermPlan.openEdit(${t.id})"
@@ -9300,15 +10745,207 @@ window.PaymentTermPlan = (function () {
         </tr>`;
     }
 
+    function toggleGroup(key) {
+        if (_expanded.has(key)) _expanded.delete(key); else _expanded.add(key);
+        renderTable();
+    }
+
+    // ── Mode penagihan ─────────────────────────────────────────────
+    async function switchMode(mode) {
+        if (mode === _mode) return;
+
+        const question = mode === 'line_item'
+            ? 'Existing % of Revenue terms stay as they are. New payment terms must be linked to a contract line item and take their amount from it - "% of Revenue" is locked.'
+            : 'Contract line items are kept but hidden. Only possible when no term takes its amount from a line item.';
+        const title = mode === 'line_item'
+            ? 'Switch TOP Type to "Contract Line Item"?'
+            : 'Switch TOP Type back to "% of Revenue"?';
+        if (!(await showConfirm(question, title, 'primary', { okText: 'Switch Type' }))) return;
+
+        try {
+            const res = await axios.post(MODE_URL, { top_mode: mode, _token: getCsrf() });
+            showNotification(res.data.message ?? 'Billing mode updated.', 'success');
+            await load();
+        } catch (e) {
+            showNotification(errMsg(e, 'Failed to change TOP type.'), 'error');
+        }
+    }
+
+    // ── Modal Payment Term: basis ──────────────────────────────────
+    // Ketersediaan basis per Type TOP:
+    //   % of Revenue       → hanya Type "% of Revenue". Di Contract Line Item
+    //                        dikunci, kecuali termin lama yang sudah memakainya.
+    //   Payment % / Amount → hanya Type "Contract Line Item" (acuan: nilai line item).
+    function basisAllowed(basis) {
+        if (_mode !== 'line_item') return basis === 'percentage';
+        return basis !== 'percentage' || _legacyPct;
+    }
+
+    function selectedLineItem() {
+        return lineItemById(document.getElementById('pt_line_item')?.value);
+    }
+
+    function round2(n) { return Math.round(n * 100) / 100; }
+
+    // Porsi (%) nilai line item yang belum masuk TOP - prefill Payment %.
+    function remainingShare(li) {
+        if (!li || !(li.total > 0)) return 0;
+        const editId = document.getElementById('paymentTermModalMode').value === 'edit'
+            ? parseInt(document.getElementById('paymentTermModalId').value, 10) : null;
+        const billed = _terms.filter(t => t.id !== editId && t.contract_line_item_id === li.id)
+            .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+        return Math.max(0, round2(100 - billed / li.total * 100));
+    }
+
+    function setBasis(basis) {
+        if (!basisAllowed(basis)) {
+            showNotification(_mode === 'line_item'
+                ? '"% of Revenue" is locked for TOP Type "Contract Line Item". Use "Payment %" or "Amount".'
+                : 'Payment % / Amount of a line item is only available in TOP Type "Contract Line Item".', 'warning');
+            return;
+        }
+        const prevAmount = modalAmount();   // nilai sebelum pindah basis → dipertahankan
+        _basis = basis;
+        const fixed = basis === 'fixed';
+
+        ['percentage', 'line_item', 'fixed'].forEach(b => {
+            const btn = document.getElementById('pt_basis_' + b);
+            if (!btn) return;
+            const active  = b === basis;
+            const allowed = basisAllowed(b);
+            btn.disabled = !allowed;
+            btn.title = !allowed && b === 'percentage' ? 'Locked for TOP Type "Contract Line Item"' : '';
+            btn.classList.toggle('primary-gradient', active);
+            btn.classList.toggle('text-white', active);
+            btn.classList.toggle('bg-white', !active);
+            btn.classList.toggle('text-gray-700', !active && allowed);
+            btn.classList.toggle('text-gray-400', !active && !allowed);
+            btn.classList.toggle('bg-gray-100', !active && !allowed);
+            // Type "% of Revenue" hanya punya satu basis - tombol lain disembunyikan.
+            if (b !== 'percentage') btn.classList.toggle('hidden', _mode !== 'line_item');
+        });
+
+        // Payment % ↔ Amount: satu diisi, yang lain dihitung otomatis.
+        const pct = document.getElementById('pt_payment_percentage');
+        pct.disabled = fixed;
+        document.getElementById('pt_pct_req').classList.toggle('hidden', fixed);
+        document.getElementById('pt_pct_of').textContent =
+            basis === 'percentage' ? '(of revenue)' : (fixed ? '(of line item, auto)' : '(of line item)');
+
+        const amt = document.getElementById('pt_amount_disp');
+        amt.readOnly = !fixed;
+        amt.tabIndex = fixed ? 0 : -1;
+        amt.classList.toggle('bg-gray-50', !fixed);
+        amt.classList.toggle('cursor-not-allowed', !fixed);
+        amt.classList.toggle('text-gray-600', !fixed);
+        amt.classList.toggle('border-gray-200', !fixed);
+        amt.classList.toggle('border-gray-300', fixed);
+        amt.classList.toggle('primary-focus', fixed);
+        document.getElementById('pt_amount_req').classList.toggle('hidden', !fixed);
+        document.getElementById('pt_amount_auto').classList.toggle('hidden', fixed);
+
+        document.getElementById('pt_basis_hint').textContent = {
+            percentage: `Amount = Payment % × revenue in Sales Data (${fmtRp(currentRevenue())}).`,
+            line_item:  'Fill in Payment % - Amount = Payment % × the selected line item value.',
+            fixed:      'Fill in the Amount - its share (%) of the selected line item value is calculated automatically.',
+        }[basis];
+
+        // Pertahankan nilai yang sudah terisi saat berpindah Payment % ↔ Amount.
+        const li = selectedLineItem();
+        if (fixed) {
+            amt.value = prevAmount > 0 ? fmtThousands(prevAmount) : '';
+            if (!amt.value) { onLineItemChange(true); return; }
+        } else if (basis === 'line_item') {
+            if (prevAmount > 0 && li && li.total > 0) pct.value = round2(prevAmount / li.total * 100);
+            if (pct.value === '') { onLineItemChange(true); return; }
+        }
+        recalcAmount();
+    }
+
+    function populateLineItemSelect(selectedId) {
+        const sel = document.getElementById('pt_line_item');
+        if (!sel) return;
+        sel.innerHTML = `<option value="">- Select line item -</option>` +
+            _lineItems.map(li => `<option value="${li.id}">${esc(li.name)} · ${esc(li.type_label)} · ${
+                li.type === 'recurring' ? fmtRp(li.amount) + ' / period' : fmtRp(li.total)}</option>`).join('');
+        sel.value = selectedId ? String(selectedId) : '';
+    }
+
+    // Prefill dari line item yang dipilih - tetap bisa diubah:
+    //   Amount    → nominal line item (per periode untuk recurring)
+    //   Payment % → sisa porsi line item yang belum masuk TOP
+    function onLineItemChange(fromBasisSwitch) {
+        const li  = selectedLineItem();
+        const amt = document.getElementById('pt_amount_disp');
+        const pct = document.getElementById('pt_payment_percentage');
+        if (li && _basis === 'fixed' && (fromBasisSwitch === true || parseAmount(amt.value) === null)) {
+            amt.value = fmtThousands(li.amount);
+        }
+        if (li && _basis === 'line_item' && pct.value === '') {
+            const rem = remainingShare(li);
+            if (rem > 0) pct.value = rem;
+        }
+        const name = document.getElementById('pt_payment_term');
+        if (li && fromBasisSwitch !== true && !name.value.trim()) name.value = li.name;
+        recalcAmount();
+    }
+
     // ── Amount auto-calc (preview di modal) ────────────────────────
     function recalcAmount() {
-        const pct = parseFloat(document.getElementById('pt_payment_percentage').value);
-        const amount = (isNaN(pct) ? 0 : currentRevenue() * pct / 100);
-        const disp = document.getElementById('pt_amount_disp');
-        if (disp) {
-            const abs = Math.abs(Math.round(amount));
-            disp.value = abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        const pctEl = document.getElementById('pt_payment_percentage');
+        const disp  = document.getElementById('pt_amount_disp');
+        if (_basis === 'fixed') {
+            // Basis Amount: tampilkan porsinya terhadap nilai line item.
+            const li     = selectedLineItem();
+            const amount = parseAmount(disp.value) || 0;
+            pctEl.value  = li && li.total > 0 && amount > 0 ? round2(amount / li.total * 100) : '';
+        } else if (disp) {
+            disp.value = fmtThousands(modalAmount());
         }
+        checkOver();
+    }
+
+    function modalAmount() {
+        if (_basis === 'fixed') return parseAmount(document.getElementById('pt_amount_disp').value) || 0;
+        const pct = parseFloat(document.getElementById('pt_payment_percentage').value);
+        if (isNaN(pct)) return 0;
+        if (_basis === 'line_item') {
+            const li = selectedLineItem();
+            return li ? (Number(li.total) || 0) * pct / 100 : 0;
+        }
+        return currentRevenue() * pct / 100;
+    }
+
+    // Notifikasi (tidak memblokir) bila total TOP melebihi revenue / nilai line item.
+    function checkOver() {
+        const box = document.getElementById('pt_over_warning');
+        if (!box) return;
+        if (_mode !== 'line_item') { box.classList.add('hidden'); return; }
+
+        const editId  = document.getElementById('paymentTermModalMode').value === 'edit'
+            ? parseInt(document.getElementById('paymentTermModalId').value, 10) : null;
+        const others  = _terms.filter(t => t.id !== editId);
+        const amount  = modalAmount();
+        const revenue = currentRevenue();
+        const total   = others.reduce((s, t) => s + (Number(t.amount) || 0), 0) + amount;
+        const msgs    = [];
+
+        if (revenue <= 0 && amount > 0) {
+            msgs.push('Revenue in Sales Data is still empty, so this amount cannot be checked against it.');
+        } else if (total > revenue + 0.01) {
+            msgs.push(`Total payment terms will be ${fmtRp(total)}, exceeding the revenue in Sales Data (${fmtRp(revenue)}) by ${fmtRp(total - revenue)}.`);
+        }
+
+        const li = lineItemById(document.getElementById('pt_line_item')?.value);
+        if (li) {
+            const billed = others.filter(t => t.contract_line_item_id === li.id).reduce((s, t) => s + (Number(t.amount) || 0), 0) + amount;
+            if (billed > li.total + 0.01) {
+                msgs.push(`Terms for "${li.name}" will be ${fmtRp(billed)}, exceeding its contract value (${fmtRp(li.total)}).`);
+            }
+        }
+
+        box.classList.toggle('hidden', !msgs.length);
+        box.innerHTML = msgs.map(m => `<p>⚠ ${esc(m)}</p>`).join('') + (msgs.length ? '<p class="mt-1 text-amber-700/80">You can still save - this is only a notification.</p>' : '');
     }
 
     // Toggle indikator "wajib" pada Invoice Number sesuai isi Submit Invoice Date
@@ -9320,13 +10957,20 @@ window.PaymentTermPlan = (function () {
         if (hint) hint.classList.toggle('hidden', !hasDate);
     }
 
-    // Toggle indikator "wajib" pada Paid Date sesuai nilai Status (Paid → wajib)
+    // Toggle indikator "wajib" sesuai nilai Status:
+    //   Paid     → Paid Date wajib
+    //   Invoiced → Submit Invoice Date wajib (invoice sudah dikirim)
     function togglePaidDateRequired() {
-        const isPaid = document.getElementById('pt_status').value === 'Paid';
+        const status = document.getElementById('pt_status').value;
+        const isPaid = status === 'Paid';
         const req  = document.getElementById('pt_paid_date_req');
         const hint = document.getElementById('pt_paid_date_hint');
         if (req)  req.classList.toggle('hidden', !isPaid);
         if (hint) hint.classList.toggle('hidden', !isPaid);
+
+        const isInvoiced = status === 'Invoiced';
+        document.getElementById('pt_submit_invoice_req')?.classList.toggle('hidden', !isInvoiced);
+        document.getElementById('pt_submit_invoice_hint')?.classList.toggle('hidden', !isInvoiced);
     }
 
     // ── Modal helpers ──────────────────────────────────────────────
@@ -9334,6 +10978,7 @@ window.PaymentTermPlan = (function () {
         document.getElementById('pt_payment_term').value        = '';
         document.getElementById('pt_payment_percentage').value  = '';
         document.getElementById('pt_amount_disp').value         = '';
+        document.getElementById('pt_period').value              = '';
         document.getElementById('pt_requirements').value        = '';
         document.getElementById('pt_status').value              = 'Open';
         document.getElementById('pt_estimated_date').value      = '';
@@ -9343,28 +10988,48 @@ window.PaymentTermPlan = (function () {
         if (window._fpPtEstimated)     window._fpPtEstimated.clear();
         if (window._fpPtSubmitInvoice) window._fpPtSubmitInvoice.clear();
         if (window._fpPtPaid)          window._fpPtPaid.clear();
+
+        _legacyPct = false;
+        const lineMode = _mode === 'line_item';
+        document.getElementById('pt_line_item_wrap').classList.toggle('hidden', !lineMode);
+        document.getElementById('pt_period_wrap').classList.toggle('hidden', !lineMode);
+        document.getElementById('pt_over_warning').classList.add('hidden');
+        populateLineItemSelect(null);
+
         toggleInvoiceRequired();
         togglePaidDateRequired();
     }
 
-    function openAdd() {
-        resetForm();
+    // lineItemId (opsional) → dibuka dari tombol "Add Term" pada baris line item.
+    function openAdd(lineItemId) {
+        // Amount diambil dari Contract Line Item → line item wajib ada dulu.
+        if (_mode === 'line_item' && !_lineItems.length) {
+            showNotification('Add a contract line item first - payment terms in Contract Line Item mode must be linked to one.', 'warning');
+            openAddLineItem();
+            return;
+        }
+
         document.getElementById('paymentTermModalMode').value  = 'create';
         document.getElementById('paymentTermModalId').value    = '';
+        resetForm();
         document.getElementById('paymentTermModalTitle').textContent = 'Add Payment Term';
+        if (lineItemId) populateLineItemSelect(lineItemId);
+        setBasis(_mode === 'line_item' ? 'line_item' : 'percentage');
+        if (lineItemId) onLineItemChange();
         document.getElementById('paymentTermModal').classList.remove('hidden');
     }
 
     function openEdit(id) {
         const t = _terms.find(x => x.id === id);
         if (!t) return;
-        resetForm();
         document.getElementById('paymentTermModalMode').value  = 'edit';
         document.getElementById('paymentTermModalId').value    = id;
+        resetForm();
         document.getElementById('paymentTermModalTitle').textContent = `Edit Payment Term #${t.term_number}`;
 
+        populateLineItemSelect(t.contract_line_item_id);
         document.getElementById('pt_payment_term').value       = t.payment_term ?? '';
-        document.getElementById('pt_payment_percentage').value = t.payment_percentage ?? '';
+        document.getElementById('pt_period').value             = t.period ?? '';
         document.getElementById('pt_requirements').value       = t.requirements ?? '';
         document.getElementById('pt_invoice_number').value     = t.invoice_number ?? '';
         document.getElementById('pt_status').value             = t.status ?? 'Open';
@@ -9378,9 +11043,19 @@ window.PaymentTermPlan = (function () {
         if (t.paid_date && window._fpPtPaid) window._fpPtPaid.setDate(t.paid_date, false, 'Y-m-d');
         else if (t.paid_date) document.getElementById('pt_paid_date').value = t.paid_date;
 
+        // Termin lama basis % of Revenue di Type Contract Line Item tetap boleh diedit apa adanya.
+        _legacyPct = _mode === 'line_item' && t.basis === 'percentage';
+        setBasis(t.basis === 'fixed' || t.basis === 'line_item' ? t.basis : 'percentage');
+        if (t.basis === 'fixed') {
+            document.getElementById('pt_amount_disp').value = fmtThousands(t.amount);
+        } else {
+            document.getElementById('pt_payment_percentage').value = t.payment_percentage ?? '';
+        }
+        recalcAmount();
+
         toggleInvoiceRequired();
         togglePaidDateRequired();
-        recalcAmount();
+        checkOver();
         document.getElementById('paymentTermModal').classList.remove('hidden');
     }
 
@@ -9390,48 +11065,63 @@ window.PaymentTermPlan = (function () {
 
     // ── Save (create / update) ─────────────────────────────────────
     async function save() {
-        const mode = document.getElementById('paymentTermModalMode').value;
-        const term = document.getElementById('pt_payment_term').value.trim();
-        const pct  = document.getElementById('pt_payment_percentage').value;
+        const mode   = document.getElementById('paymentTermModalMode').value;
+        const term   = document.getElementById('pt_payment_term').value.trim();
+        const pct    = document.getElementById('pt_payment_percentage').value;
+        const fixed  = _basis === 'fixed';
+        const amount = parseAmount(document.getElementById('pt_amount_disp').value);
+        const lineId = document.getElementById('pt_line_item').value;
 
         const submitInvoiceDate = document.getElementById('pt_submit_invoice_date').value || null;
         const invoiceNumber     = document.getElementById('pt_invoice_number').value.trim();
         const paidDate          = document.getElementById('pt_paid_date').value || null;
         const status            = document.getElementById('pt_status').value;
 
+        if (_mode === 'line_item' && !lineId) { showNotification('Line Item is required in Contract Line Item mode.', 'error'); return; }
         if (!term) { showNotification('Payment Term is required.', 'error'); return; }
-        if (pct === '' || isNaN(parseFloat(pct))) { showNotification('Payment % is required.', 'error'); return; }
-        if (parseFloat(pct) < 0 || parseFloat(pct) > 100) { showNotification('Payment % must be between 0 and 100.', 'error'); return; }
+        if (fixed) {
+            if (amount === null) { showNotification('Amount is required for a fixed-amount term.', 'error'); return; }
+        } else {
+            if (pct === '' || isNaN(parseFloat(pct))) { showNotification('Payment % is required.', 'error'); return; }
+            if (parseFloat(pct) < 0 || parseFloat(pct) > 100) { showNotification('Payment % must be between 0 and 100.', 'error'); return; }
+        }
+        if (status === 'Invoiced' && !submitInvoiceDate) { showNotification('Submit Invoice Date is required when Status is Invoiced.', 'error'); return; }
         if (submitInvoiceDate && !invoiceNumber) { showNotification('Invoice Number is required when Submit Invoice Date is filled.', 'error'); return; }
         if (status === 'Paid' && !paidDate) { showNotification('Paid Date is required when Status is Paid.', 'error'); return; }
 
-        // Guard: total payment terms tidak boleh melebihi 100% / revenue
-        const editId    = mode === 'edit' ? parseInt(document.getElementById('paymentTermModalId').value, 10) : null;
-        const otherPct  = _terms.reduce((s, t) => (t.id === editId ? s : s + (Number(t.payment_percentage) || 0)), 0);
-        const totalPct  = otherPct + parseFloat(pct);
-        if (totalPct > 100 + 0.001) {
-            const rev      = currentRevenue();
-            const totalAmt = rev * totalPct / 100;
-            const pctLabel = (Number.isInteger(totalPct) ? totalPct.toString() : totalPct.toFixed(2).replace('.', ',')) + '%';
-            showNotification(`Total payment terms (${pctLabel} = ${fmtRp(totalAmt)}) cannot exceed the project revenue (${fmtRp(rev)}).`, 'error');
-            return;
+        // Guard: total termin basis % of Revenue tidak boleh melebihi 100% / revenue.
+        // Basis line item tidak diblokir - hanya diperingatkan (lihat checkOver()).
+        const editId = mode === 'edit' ? parseInt(document.getElementById('paymentTermModalId').value, 10) : null;
+        if (_basis === 'percentage') {
+            const otherPct = _terms.reduce((s, t) => (t.id === editId || t.basis !== 'percentage' ? s : s + (Number(t.payment_percentage) || 0)), 0);
+            const totalPct = otherPct + parseFloat(pct);
+            if (totalPct > 100 + 0.001) {
+                const rev      = currentRevenue();
+                const pctLabel = (Number.isInteger(totalPct) ? totalPct.toString() : totalPct.toFixed(2).replace('.', ',')) + '%';
+                showNotification(`Total payment terms (${pctLabel} = ${fmtRp(rev * totalPct / 100)}) cannot exceed the project revenue (${fmtRp(rev)}).`, 'error');
+                return;
+            }
         }
 
         const btn = document.getElementById('paymentTermSaveBtn');
         const orig = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<svg class="animate-spin w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>';
+        btn.innerHTML = spinner();
 
         const payload = {
-            payment_term:        term,
-            payment_percentage:  parseFloat(pct),
-            requirements:        document.getElementById('pt_requirements').value.trim() || null,
-            estimated_date:      document.getElementById('pt_estimated_date').value || null,
-            submit_invoice_date: submitInvoiceDate,
-            invoice_number:      invoiceNumber || null,
-            paid_date:           paidDate,
-            status:              status,
-            _token:              getCsrf(),
+            basis:                 _basis,
+            contract_line_item_id: _mode === 'line_item' ? parseInt(lineId, 10) : null,
+            payment_term:          term,
+            period:                _mode === 'line_item' ? (document.getElementById('pt_period').value.trim() || null) : null,
+            payment_percentage:    fixed ? null : parseFloat(pct),
+            amount:                fixed ? amount : null,
+            requirements:          document.getElementById('pt_requirements').value.trim() || null,
+            estimated_date:        document.getElementById('pt_estimated_date').value || null,
+            submit_invoice_date:   submitInvoiceDate,
+            invoice_number:        invoiceNumber || null,
+            paid_date:             paidDate,
+            status:                status,
+            _token:                getCsrf(),
         };
 
         try {
@@ -9439,21 +11129,14 @@ window.PaymentTermPlan = (function () {
             if (mode === 'create') {
                 res = await axios.post(BASE_URL, payload);
             } else {
-                const id = document.getElementById('paymentTermModalId').value;
-                res = await axios.put(`${BASE_URL}/${id}`, payload);
+                res = await axios.put(`${BASE_URL}/${editId}`, payload);
             }
             showNotification(res.data.message ?? 'Saved.', 'success');
+            notifyWarnings(res.data.warnings);
             closeModal();
             await load();
         } catch (e) {
-            let msg = 'Something went wrong. Please try again.';
-            if (e.response?.data?.errors) {
-                const first = Object.values(e.response.data.errors)[0];
-                msg = Array.isArray(first) ? first[0] : String(first);
-            } else if (e.response?.data?.message) {
-                msg = e.response.data.message;
-            }
-            showNotification(msg, 'error');
+            showNotification(errMsg(e), 'error');
         } finally {
             btn.disabled = false;
             btn.innerHTML = orig;
@@ -9495,9 +11178,307 @@ window.PaymentTermPlan = (function () {
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function () { load(); });
+    // ── Contract Line Item ─────────────────────────────────────────
+    function setPicker(fp, inputId, value) {
+        if (fp) { value ? fp.setDate(value, false, 'Y-m-d') : fp.clear(); }
+        else document.getElementById(inputId).value = value || '';
+    }
 
-    return { openAdd, openEdit, closeModal, save, openDeleteModal, closeDeleteModal, confirmDelete, recalcAmount, toggleInvoiceRequired, togglePaidDateRequired, reload: load };
+    function onLineItemTypeChange() {
+        const type      = document.getElementById('li_type').value;
+        const recurring = type === 'recurring';
+        const milestone = type === 'milestone';
+        document.getElementById('li_frequency_wrap').classList.toggle('hidden', !recurring);
+        document.getElementById('li_end_wrap').classList.toggle('hidden', !recurring);
+        // Milestone: jadwal ditentukan per termin, jadi tanpa bulan tagih.
+        document.getElementById('li_start_wrap').classList.toggle('hidden', milestone);
+        document.getElementById('li_start_req').classList.toggle('hidden', !recurring);
+        document.getElementById('li_start_label').textContent  = recurring ? 'Start' : 'Billing Month';
+        document.getElementById('li_amount_label').textContent = recurring ? 'Nominal per period' : (milestone ? 'Contract value' : 'Nominal');
+        previewLineItem();
+    }
+
+    function previewLineItem() {
+        const box = document.getElementById('li_preview');
+        if (!box) return;
+        const amount = parseAmount(document.getElementById('li_amount').value) || 0;
+
+        if (document.getElementById('li_type').value === 'milestone') {
+            box.textContent = `Contract value: ${fmtRp(amount)} - billed in several terms (milestones). Add each term with "Payment %" of this line item.`;
+            return;
+        }
+        if (document.getElementById('li_type').value !== 'recurring') {
+            box.textContent = `Contract value: ${fmtRp(amount)} (billed once).`;
+            return;
+        }
+        const periods = buildPeriods(
+            document.getElementById('li_frequency').value,
+            document.getElementById('li_start_date').value,
+            document.getElementById('li_end_date').value
+        );
+        box.textContent = periods.length
+            ? `${periods.length} period(s): ${periods[0]} to ${periods[periods.length - 1]} × ${fmtRp(amount)} = ${fmtRp(amount * periods.length)}`
+            : 'Fill in the start and end date to see the schedule.';
+    }
+
+    function openAddLineItem() {
+        document.getElementById('li_id').value = '';
+        document.getElementById('lineItemModalTitle').textContent = 'Add Line Item';
+        document.getElementById('li_name').value = '';
+        document.getElementById('li_type').value = 'one_time';
+        document.getElementById('li_frequency').value = 'monthly';
+        document.getElementById('li_amount').value = '';
+        setPicker(window._fpLiStart, 'li_start_date', null);
+        setPicker(window._fpLiEnd, 'li_end_date', null);
+        onLineItemTypeChange();
+        document.getElementById('lineItemModal').classList.remove('hidden');
+    }
+
+    function openEditLineItem(id) {
+        const li = lineItemById(id);
+        if (!li) return;
+        document.getElementById('li_id').value = li.id;
+        document.getElementById('lineItemModalTitle').textContent = `Edit Line Item: ${li.name}`;
+        document.getElementById('li_name').value = li.name;
+        document.getElementById('li_type').value = li.type;
+        document.getElementById('li_frequency').value = li.frequency || 'monthly';
+        document.getElementById('li_amount').value = fmtThousands(li.amount);
+        setPicker(window._fpLiStart, 'li_start_date', li.start_date);
+        setPicker(window._fpLiEnd, 'li_end_date', li.end_date);
+        onLineItemTypeChange();
+        document.getElementById('lineItemModal').classList.remove('hidden');
+    }
+
+    function closeLineItemModal() {
+        document.getElementById('lineItemModal').classList.add('hidden');
+    }
+
+    async function saveLineItem() {
+        const id        = document.getElementById('li_id').value;
+        const name      = document.getElementById('li_name').value.trim();
+        const type      = document.getElementById('li_type').value;
+        const amount    = parseAmount(document.getElementById('li_amount').value);
+        const startDate = document.getElementById('li_start_date').value || null;
+        const endDate   = document.getElementById('li_end_date').value || null;
+
+        if (!name) { showNotification('Line Item name is required.', 'error'); return; }
+        if (amount === null) { showNotification('Nominal is required.', 'error'); return; }
+        if (type === 'recurring') {
+            if (!startDate || !endDate) { showNotification('Start and End are required for a recurring line item.', 'error'); return; }
+            if (endDate < startDate) { showNotification('End must be on or after Start.', 'error'); return; }
+        }
+
+        const btn  = document.getElementById('lineItemSaveBtn');
+        const orig = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = spinner();
+
+        const payload = {
+            name, type, amount,
+            frequency:  type === 'recurring' ? document.getElementById('li_frequency').value : null,
+            start_date: type === 'milestone' ? null : startDate,
+            end_date:   type === 'recurring' ? endDate : null,
+            _token:     getCsrf(),
+        };
+
+        try {
+            const res = await axios.post(id ? `${LINE_URL}/${id}` : LINE_URL, payload);
+            showNotification(res.data.message ?? 'Saved.', 'success');
+            notifyWarnings(res.data.warnings);
+            closeLineItemModal();
+            await load();
+        } catch (e) {
+            showNotification(errMsg(e), 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+        }
+    }
+
+    function openLineItemDelete(id) {
+        const li = lineItemById(id);
+        if (!li) return;
+        if (li.terms_count > 0) {
+            showNotification(`"${li.name}" still has ${li.terms_count} payment term(s). Delete those payment terms first.`, 'warning');
+            return;
+        }
+        document.getElementById('liDeleteId').value = li.id;
+        document.getElementById('liDeleteName').textContent = li.name;
+        document.getElementById('lineItemDeleteModal').classList.remove('hidden');
+    }
+
+    function closeLineItemDeleteModal() {
+        document.getElementById('lineItemDeleteModal').classList.add('hidden');
+    }
+
+    async function confirmDeleteLineItem() {
+        const id = document.getElementById('liDeleteId').value;
+        if (!id) return;
+        const btn  = document.getElementById('liDeleteConfirmBtn');
+        const orig = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = 'Deleting…';
+        try {
+            const res = await axios.post(`${LINE_URL}/${id}/delete`, {}, { headers: { 'X-CSRF-TOKEN': getCsrf() } });
+            closeLineItemDeleteModal();
+            showNotification(res.data.message ?? 'Deleted.', 'success');
+            await load();
+        } catch (e) {
+            showNotification(errMsg(e, 'Failed to delete.'), 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+        }
+    }
+
+    // ── Generate Schedule (line item recurring) ────────────────────
+    function generateInputs() {
+        return {
+            amount:    parseAmount(document.getElementById('gs_amount').value),
+            frequency: document.getElementById('gs_frequency').value,
+            start:     document.getElementById('gs_start_date').value,
+            end:       document.getElementById('gs_end_date').value,
+        };
+    }
+
+    function previewGenerate() {
+        const li  = lineItemById(document.getElementById('gs_id').value);
+        const box = document.getElementById('gs_preview');
+        const btn = document.getElementById('generateScheduleBtn');
+        if (!li || !box) return;
+
+        const { amount, frequency, start, end } = generateInputs();
+        const periods  = buildPeriods(frequency, start, end);
+        const existing = new Set(_terms.filter(t => t.contract_line_item_id === li.id && t.period)
+            .map(t => t.period.toLowerCase()));
+        const fresh    = periods.filter(p => !existing.has(p.toLowerCase()));
+        const skipped  = periods.length - fresh.length;
+
+        const ok = fresh.length > 0 && amount !== null;
+        box.className = 'rounded-lg border px-3 py-2 text-sm ' + (ok ? 'border-green-200 bg-green-50 text-green-800' : 'border-gray-200 bg-gray-50 text-gray-600');
+
+        if (!periods.length) {
+            box.textContent = 'Fill in the start and end date to see the schedule.';
+        } else if (!fresh.length) {
+            box.textContent = `All ${periods.length} period(s) already have a payment term - nothing to generate.`;
+        } else {
+            box.textContent = `Will create ${fresh.length} payment term(s) (${li.name} - ${fresh[0]} to ${li.name} - ${fresh[fresh.length - 1]}), total ${fmtRp((amount || 0) * fresh.length)}.`
+                + (skipped ? ` ${skipped} existing period(s) will be skipped.` : '');
+        }
+
+        btn.disabled = !ok;
+        btn.textContent = ok ? `Generate ${fresh.length} term${fresh.length > 1 ? 's' : ''}` : 'Generate';
+    }
+
+    function openGenerate(id) {
+        const li = lineItemById(id);
+        if (!li) return;
+        document.getElementById('gs_id').value = li.id;
+        document.getElementById('gs_title').textContent = li.name;
+        document.getElementById('gs_amount').value = fmtThousands(li.amount);
+        document.getElementById('gs_frequency').value = li.frequency || 'monthly';
+        document.getElementById('gs_requirements').value = '';
+        setPicker(window._fpGsStart, 'gs_start_date', li.start_date);
+        setPicker(window._fpGsEnd, 'gs_end_date', li.end_date);
+        previewGenerate();
+        document.getElementById('generateScheduleModal').classList.remove('hidden');
+    }
+
+    function closeGenerateModal() {
+        document.getElementById('generateScheduleModal').classList.add('hidden');
+    }
+
+    async function confirmGenerate() {
+        const id = document.getElementById('gs_id').value;
+        const { amount, frequency, start, end } = generateInputs();
+        if (amount === null || !start || !end) { showNotification('Nominal, Start and End are required.', 'error'); return; }
+        if (end < start) { showNotification('End must be on or after Start.', 'error'); return; }
+
+        const btn  = document.getElementById('generateScheduleBtn');
+        const orig = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = spinner();
+
+        try {
+            const res = await axios.post(`${LINE_URL}/${id}/generate-schedule`, {
+                amount, frequency, start_date: start, end_date: end,
+                requirements: document.getElementById('gs_requirements').value.trim() || null,
+                _token: getCsrf(),
+            });
+            showNotification(res.data.message ?? 'Schedule generated.', 'success');
+            notifyWarnings(res.data.warnings);
+            closeGenerateModal();
+            await load();
+        } catch (e) {
+            showNotification(errMsg(e), 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+            previewGenerate();
+        }
+    }
+
+    // ── Export Excel ──────────────────────────────────────────────
+    // Scope "invoiced" = termin yang sudah punya Invoice No (sama dengan filter
+    // di DeliveryProjectPaymentTermController::export()).
+    function invoicedCount() {
+        return _terms.filter(t => String(t.invoice_number ?? '').trim() !== '').length;
+    }
+
+    function openExport() {
+        const all = document.querySelector('input[name="pt_export_scope"][value="all"]');
+        if (all) all.checked = true;
+        renderExportOptions();
+        document.getElementById('paymentTermExportModal').classList.remove('hidden');
+    }
+
+    function closeExport() {
+        document.getElementById('paymentTermExportModal').classList.add('hidden');
+    }
+
+    function renderExportOptions() {
+        const counts = { all: _terms.length, invoiced: invoicedCount() };
+        const label  = n => `${n} term${n === 1 ? '' : 's'}`;
+        document.getElementById('ptExportCountAll').textContent      = label(counts.all);
+        document.getElementById('ptExportCountInvoiced').textContent = label(counts.invoiced);
+        document.getElementById('ptExportLineItemHint').classList.toggle('hidden', _mode !== 'line_item');
+
+        let selected = null;
+        document.querySelectorAll('input[name="pt_export_scope"]').forEach(r => {
+            // Scope tanpa termin tidak bisa dipilih (file-nya akan kosong).
+            r.disabled = counts[r.value] === 0;
+            if (r.disabled) r.checked = false;
+            if (r.checked) selected = r.value;
+            const opt = r.closest('.pt-export-opt');
+            opt.classList.toggle('border-green-500', r.checked);
+            opt.classList.toggle('bg-green-50', r.checked);
+            opt.classList.toggle('border-gray-200', !r.checked);
+            opt.classList.toggle('opacity-50', r.disabled);
+            opt.classList.toggle('cursor-not-allowed', r.disabled);
+            opt.classList.toggle('cursor-pointer', !r.disabled);
+        });
+        document.getElementById('ptExportBtn').disabled = !selected;
+    }
+
+    function confirmExport() {
+        const scope = document.querySelector('input[name="pt_export_scope"]:checked')?.value;
+        if (!scope) return;
+        // Download biasa (bukan axios) supaya browser menangani file-nya.
+        window.location.href = `${BASE_URL}/export?scope=${scope}`;
+        closeExport();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () { renderMode(); load(); });
+
+    return {
+        openExport, closeExport, renderExportOptions, confirmExport,
+        openAdd, openEdit, closeModal, save, openDeleteModal, closeDeleteModal, confirmDelete,
+        recalcAmount, toggleInvoiceRequired, togglePaidDateRequired, reload: load,
+        switchMode, setBasis, onLineItemChange, onAmountInput, toggleGroup,
+        openAddLineItem, openEditLineItem, closeLineItemModal, onLineItemTypeChange, previewLineItem, saveLineItem,
+        openLineItemDelete, closeLineItemDeleteModal, confirmDeleteLineItem,
+        openGenerate, closeGenerateModal, previewGenerate, confirmGenerate,
+    };
 })();
 </script>
 @endsection

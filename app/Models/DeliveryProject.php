@@ -55,6 +55,8 @@ class DeliveryProject extends Model
         'plan_cost',
         'gross_profit',
         'gross_profit_percentage',
+        // Mode Term Of Payment: percentage | line_item
+        'top_mode',
         'delivery_method',
         'warranty_period',
         'total_mandays',
@@ -69,6 +71,8 @@ class DeliveryProject extends Model
         'location_region',
         'location_city',
         'location_street',
+        'location_latitude',
+        'location_longitude',
         'location_valid_from',
         'location_valid_to',
         'onedrive_folder_id',
@@ -86,6 +90,8 @@ class DeliveryProject extends Model
         'closed_at' => 'datetime',
         'location_valid_from' => 'date',
         'location_valid_to' => 'date',
+        'location_latitude' => 'float',
+        'location_longitude' => 'float',
         'contract_start_date' => 'date',
         'contract_end_date' => 'date',
         'last_activity_at' => 'datetime',
@@ -95,7 +101,7 @@ class DeliveryProject extends Model
      * Kolom yang diisi OTOMATIS oleh sistem (turunan planning / metadata OneDrive).
      * Perubahan pada kolom ini saja tidak dihitung sebagai aktivitas user.
      * Catatan: category/status/phase juga diturunkan sistem, tapi jalurnya
-     * (updateFromPlanning) memakai saveQuietly sehingga tidak memicu event —
+     * (updateFromPlanning) memakai saveQuietly sehingga tidak memicu event -
      * sedangkan perubahan manual lewat updateField tetap terhitung.
      */
     private const SYSTEM_MANAGED_COLUMNS = [
@@ -118,7 +124,7 @@ class DeliveryProject extends Model
      * Catat "Last Update Date" (last_activity_at) project = sekarang.
      *
      * Ditulis lewat query builder mentah: tidak memicu event model, audit log,
-     * maupun updated_at — kolom ini murni jejak aktivitas user.
+     * maupun updated_at - kolom ini murni jejak aktivitas user.
      */
     public static function markActivity($projectId): void
     {
@@ -144,6 +150,16 @@ class DeliveryProject extends Model
         return $this->last_activity_at ?? $this->updated_at;
     }
 
+    /**
+     * Urutan default list/export: project dengan "Last Update Date" paling baru
+     * di atas (sama dengan nilai kolom getLastUpdateDateAttribute()).
+     */
+    public function scopeOrderByLastUpdate($query)
+    {
+        return $query->orderByRaw('COALESCE(last_activity_at, updated_at) DESC')
+                     ->orderByDesc('id');
+    }
+
     /** Versi instance dari markActivity(); ikut menyegarkan nilai in-memory. */
     public function touchActivity(): void
     {
@@ -157,7 +173,7 @@ class DeliveryProject extends Model
     }
 
     /**
-     * Jalankan $callback tanpa mencatat aktivitas — untuk penulisan yang
+     * Jalankan $callback tanpa mencatat aktivitas - untuk penulisan yang
      * dilakukan SISTEM (auto-sync saat halaman dibuka, scheduler, dsb).
      */
     public static function withoutActivityTracking(callable $callback)
@@ -215,6 +231,13 @@ class DeliveryProject extends Model
                     ->orderBy('order_sequence');
     }
 
+    public function contractLineItems()
+    {
+        return $this->hasMany(DeliveryProjectContractLineItem::class, 'delivery_projects_id')
+                    ->orderBy('order_sequence')
+                    ->orderBy('id');
+    }
+
     public function costs()
     {
         return $this->hasMany(DeliveryProjectCost::class, 'delivery_projects_id')
@@ -239,12 +262,12 @@ class DeliveryProject extends Model
      * Apakah employee ini adalah Project Owner dari project ini?
      *
      * PENTING: kolom `project_owner` menyimpan NAMA (EmployeeBasicData::$full_name),
-     * bukan foreign key — dropdown "Project Owner" di form Add/Edit Project mengirim
+     * bukan foreign key - dropdown "Project Owner" di form Add/Edit Project mengirim
      * full_name sebagai value. Jadi pencocokan terpaksa dilakukan by nama
      * (trim + case-insensitive). Konsekuensinya: kalau ada dua employee dengan
      * full_name identik, keduanya dianggap owner.
      *
-     * Catatan: `full_name` adalah ACCESSOR (first_name + last_name), bukan kolom —
+     * Catatan: `full_name` adalah ACCESSOR (first_name + last_name), bukan kolom -
      * jadi tidak bisa di-query lewat where/value(), harus dibaca dari model.
      */
     public function isOwnedByEmployee($employeeId): bool
@@ -529,11 +552,36 @@ class DeliveryProject extends Model
     }
 
     /**
+     * Preload massal semua relasi yang dibaca accessor progress (calculated_progress,
+     * planned_progress, calculated_weight) untuk banyak project sekaligus. Tanpa ini
+     * setiap group dan activity memicu query sendiri (N+1). Aman dipanggil berulang.
+     *
+     * @param iterable<self> $projects
+     */
+    public static function preloadProgressRelations(iterable $projects): void
+    {
+        $projects = new \Illuminate\Database\Eloquent\Collection(collect($projects)->all());
+        if ($projects->isEmpty()) {
+            return;
+        }
+
+        $projects->loadMissing('plannings');
+
+        $plannings = new \Illuminate\Database\Eloquent\Collection($projects->flatMap->plannings->all());
+        $plannings->loadMissing('children');
+
+        $groups = new \Illuminate\Database\Eloquent\Collection($plannings->where('is_group', true)->all());
+        $groups->loadMissing(['stages.projectActivities', 'directActivities.activity', 'directActivities.children']);
+
+        \App\Models\ActivityStage::hydrateActivities($groups->flatMap->stages);
+    }
+
+    /**
      * Bobot-tertimbang mentah (belum dibulatkan) untuk progres AKTUAL & RENCANA:
      * Σ(bobot phase × progres phase) ÷ Σbobot phase, dengan progres phase sendiri
      * = Σ(bobot group × progres group) ÷ Σbobot group.
      *
-     * Satu-satunya sumber angka Overall Progress / Planned Progress / SPI —
+     * Satu-satunya sumber angka Overall Progress / Planned Progress / SPI -
      * calculateOverallProgress(), calculatePlannedProgress() dan calculateSpi()
      * semuanya membacanya dari sini, supaya list, halaman detail dan export
      * tidak pernah menampilkan tiga angka berbeda.
@@ -545,11 +593,9 @@ class DeliveryProject extends Model
     {
         $empty = ['actual' => null, 'planned' => null];
 
-        $groups = $this->plannings->where('is_group', true);
+        self::preloadProgressRelations([$this]);
 
-        foreach ($groups as $group) {
-            $group->loadMissing('stages');
-        }
+        $groups = $this->plannings->where('is_group', true);
 
         $visiblePhases = $this->phases()
             ->where('is_visible', true)
@@ -589,7 +635,7 @@ class DeliveryProject extends Model
                     $phaseProgress = $weightedGroupProgress / $totalGroupWeight;
                     $phasePlanned  = $weightedGroupPlanned / $totalGroupWeight;
                 } else {
-                    // Bobot group belum diisi sama sekali — bagi rata, jangan
+                    // Bobot group belum diisi sama sekali - bagi rata, jangan
                     // diperlakukan 0%. Bobot phase-nya tetap menekan penyebut
                     // overall, jadi menol-kan progresnya menarik turun angka
                     // proyek tanpa sebab. Aturan yang sama dipakai
@@ -674,7 +720,7 @@ class DeliveryProject extends Model
     }
 
     /**
-     * Progres RENCANA keseluruhan — pasangan dari calculateOverallProgress().
+     * Progres RENCANA keseluruhan - pasangan dari calculateOverallProgress().
      * Dipakai export/laporan untuk menampilkan deviasi rencana vs aktual di
      * samping SPI (SPI = aktual ÷ rencana).
      */

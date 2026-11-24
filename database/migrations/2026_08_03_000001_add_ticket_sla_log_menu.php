@@ -28,7 +28,7 @@ return new class extends Migration
             'updated_at' => $now,
         ]);
 
-        // ticket.sla-log → role 1 (ADMIN), 5 (HOS), 6 (HELPDESK) — sama seperti sla.report
+        // ticket.sla-log → role 1 (ADMIN), 5 (HOS), 6 (HELPDESK) - sama seperti sla.report
         foreach ([1, 5, 6] as $roleId) {
             DB::table('role_menu')->updateOrInsert(
                 ['role_id' => $roleId, 'menu_id' => $menuId],

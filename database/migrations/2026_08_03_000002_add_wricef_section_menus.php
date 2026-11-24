@@ -22,9 +22,9 @@ return new class extends Migration
     private const PARENT_SLUG = 'delivery.project';
 
     private const MENUS = [
-        'delivery-project.wricef.view'   => 'WRICEF Log — View',
-        'delivery-project.wricef.edit'   => 'WRICEF Log — Edit',
-        'delivery-project.wricef.manage' => 'WRICEF Log — Create / Delete',
+        'delivery-project.wricef.view'   => 'WRICEF Log - View',
+        'delivery-project.wricef.edit'   => 'WRICEF Log - Edit',
+        'delivery-project.wricef.manage' => 'WRICEF Log - Create / Delete',
     ];
 
     public function up(): void

@@ -3,6 +3,7 @@
 namespace App\Services\Ai\Drivers;
 
 use App\Services\Ai\Drivers\Concerns\TranslatesCanonicalMessages;
+use App\Services\Ai\AiUsageRecorder;
 use App\Services\Ai\Drivers\Contracts\ChatDriver;
 use Closure;
 use OpenAI\Client;
@@ -16,11 +17,11 @@ use RuntimeException;
  * GPT side of AiChatService's turn, via OpenAI's Responses API.
  *
  * The service and its cache only ever see Anthropic-shaped canonical blocks
- * (see ChatDriver's docblock) — message/tool translation to OpenAI's
+ * (see ChatDriver's docblock) - message/tool translation to OpenAI's
  * `input`/`function_call`/`function_call_output` shapes lives in the shared
  * TranslatesCanonicalMessages trait (also used by OpenAiResearchDriver).
  * Rather than hand-reassembling function-call argument deltas from streamed
- * chunks (error-prone — see the Anthropic driver's InputJSONDelta handling),
+ * chunks (error-prone - see the Anthropic driver's InputJSONDelta handling),
  * this class only uses the stream for text deltas and builds the final
  * canonical blocks from the terminal response.completed/incomplete event's
  * already-assembled `output` array (finalize()).
@@ -49,7 +50,7 @@ class OpenAiChatDriver implements ChatDriver
             'input' => $this->toResponsesInput($messages),
             'max_output_tokens' => $maxTokens,
             // Percakapan AI di EcoSystem TIDAK PERNAH masuk database di sisi kita
-            // (lihat AiChatService) — store:false menjaga janji yang sama berlaku
+            // (lihat AiChatService) - store:false menjaga janji yang sama berlaku
             // di sisi OpenAI, bukan cuma di sisi kita.
             'store' => false,
         ];
@@ -64,13 +65,13 @@ class OpenAiChatDriver implements ChatDriver
 
         $stream = $this->client->responses()->createStreamed($parameters);
 
-        return $this->consumeStream($stream, $onDelta, $isAborted);
+        return $this->consumeStream($stream, $model, $onDelta, $isAborted);
     }
 
     /**
      * @return array{0: ?array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>, 2: ?string}
      */
-    private function consumeStream($stream, Closure $onDelta, Closure $isAborted): array
+    private function consumeStream($stream, string $model, Closure $onDelta, Closure $isAborted): array
     {
         foreach ($stream as $event) {
             if ($isAborted()) {
@@ -85,6 +86,8 @@ class OpenAiChatDriver implements ChatDriver
                 case 'response.completed':
                 case 'response.incomplete':
                 case 'response.failed':
+                    AiUsageRecorder::recordOpenAi($model, 'chat', $event->response->response->usage ?? null);
+
                     return $this->finalize($event->response->response);
 
                 case 'error':

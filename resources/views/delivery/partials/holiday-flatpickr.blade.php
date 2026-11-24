@@ -1,5 +1,5 @@
 {{-- ══════════════════════════════════════════════════════════════
-     Flatpickr + HolidayCalendar — datepicker standar modul Delivery.
+     Flatpickr + HolidayCalendar - datepicker standar modul Delivery.
 
      Perilaku (sama persis dengan Delivery Project):
        • header bulan STATIS (bukan <select>) → "August 2026"
@@ -20,7 +20,7 @@
 </style>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
-// Definisi HolidayCalendar (singleton — tidak re-define jika sudah ada dari halaman lain)
+// Definisi HolidayCalendar (singleton - tidak re-define jika sudah ada dari halaman lain)
 window.HolidayCalendar = window.HolidayCalendar || (function () {
     var _set  = new Set();
     var _meta = {};

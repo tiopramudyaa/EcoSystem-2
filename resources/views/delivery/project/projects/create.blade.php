@@ -164,10 +164,10 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
                        value="{{ old('io_number') }}"
                        placeholder="e.g. IO-2026-001"
                        required>
-                {{-- Opsi IO existing (khusus Body Hire) diisi oleh refreshIoOptions() sesuai company terpilih. --}}
+                {{-- Opsi IO existing diisi oleh refreshIoOptions() sesuai company terpilih. --}}
                 <datalist id="io_number_options"></datalist>
                 <p id="io_number_hint" class="mt-1 text-xs text-blue-600 hidden">
-                    <i class="fas fa-info-circle mr-1"></i>Body Hire: pilih IO number yang sudah ada milik company terpilih, atau ketik IO number baru.
+                    <i class="fas fa-info-circle mr-1"></i>Pilih IO number yang sudah ada milik company terpilih, atau ketik IO number baru.
                 </p>
                 @error('io_number')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
@@ -575,6 +575,8 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
                     <textarea name="location_street" id="location_street" rows="3"
                               class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm primary-focus text-sm px-4 py-2.5">{{ old('location_street') }}</textarea>
                 </div>
+
+                @include('delivery.project.projects.partials.location-coordinates-fields', ['prefix' => 'create_loc', 'lat' => null, 'lng' => null])
             </div>
         </div>
     </div>
@@ -658,7 +660,7 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
                     {{-- Employee Type (turunan data employee) --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-900 mb-1">
-                            Employee Type <span class="text-xs text-gray-400 font-normal">— from employee data</span>
+                            Employee Type <span class="text-xs text-gray-400 font-normal">- from employee data</span>
                         </label>
                         <input type="text" id="ctm_employee_type_display" readonly
                                placeholder="Select a consultant first"
@@ -667,7 +669,7 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
                     {{-- Module (dari kualifikasi employee) --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-900 mb-1">
-                            Module <span class="text-xs text-gray-400 font-normal">— from consultant qualification</span>
+                            Module <span class="text-xs text-gray-400 font-normal">- from consultant qualification</span>
                         </label>
                         <div id="ctm_module_picker"
                              class="block w-full min-h-[42px] max-h-28 overflow-y-auto py-2 px-3 border border-gray-300 rounded-md shadow-sm bg-white">
@@ -682,7 +684,7 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-900 mb-1">
                             Vendor <span class="text-red-500">*</span>
-                            <span class="text-xs text-gray-400 font-normal">— from Business Partner (type Vendor)</span>
+                            <span class="text-xs text-gray-400 font-normal">- from Business Partner (type Vendor)</span>
                         </label>
                         <select id="ctm_vendor_id"
                                 class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus">
@@ -692,7 +694,7 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
                             @endforeach
                         </select>
                         @if($vendors->isEmpty())
-                            <p class="text-xs text-amber-600 mt-1">No Business Partner of type Vendor yet — add one in Master → Business Partner.</p>
+                            <p class="text-xs text-amber-600 mt-1">No Business Partner of type Vendor yet - add one in Master → Business Partner.</p>
                         @endif
                         <p id="ctm_vendor_err" class="mt-1 text-xs text-red-500 hidden">Please select a vendor.</p>
                     </div>
@@ -704,13 +706,13 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
                         <p id="ctm_member_name_err" class="mt-1 text-xs text-red-500 hidden">Consultant name is required.</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-900 mb-1">Position <span class="text-xs text-gray-400 font-normal">— optional</span></label>
+                        <label class="block text-sm font-medium text-gray-900 mb-1">Position <span class="text-xs text-gray-400 font-normal">- optional</span></label>
                         <input type="text" id="ctm_member_position" maxlength="255"
                                class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus"
                                placeholder="e.g. SAP Consultant">
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-900 mb-1">Module <span class="text-xs text-gray-400 font-normal">— optional, comma separated</span></label>
+                        <label class="block text-sm font-medium text-gray-900 mb-1">Module <span class="text-xs text-gray-400 font-normal">- optional, comma separated</span></label>
                         <input type="text" id="ctm_vendor_module" maxlength="255"
                                class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus"
                                placeholder="e.g. FI, CO">
@@ -747,7 +749,7 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
                     {{-- End Date --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-900 mb-1">
-                            End Date <span class="text-xs text-gray-400 font-normal">— optional</span>
+                            End Date <span class="text-xs text-gray-400 font-normal">- optional</span>
                         </label>
                         <input type="text" id="ctm_end_date"
                                placeholder="Select End Date"
@@ -757,7 +759,7 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
                     {{-- Notes --}}
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-900 mb-1">
-                            Notes <span class="text-xs text-gray-400 font-normal">— optional</span>
+                            Notes <span class="text-xs text-gray-400 font-normal">- optional</span>
                         </label>
                         <textarea id="ctm_notes" rows="2"
                                   class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus"
@@ -894,7 +896,7 @@ const indonesiaCities = {
     'Papua Barat Daya' :['Sorong', 'Sorong Selatan', 'Raja Ampat', 'Maybrat', 'Tambrauw'],
 };
 
-// Contact map: full_name → { phone, email } — di-generate dari data employee
+// Contact map: full_name → { phone, email } - di-generate dari data employee
 const aeEmployeeContacts = {
 @foreach($employees as $employee)
 @php
@@ -1020,31 +1022,28 @@ document.addEventListener('DOMContentLoaded', function() {
         updateRegions();
     @endif
 
-    // Populate IO options for the currently-selected client/type (Body Hire flow).
+    // Populate IO options for the currently-selected client.
     refreshIoOptions();
 });
 
-// ===== Body Hire: pilih IO existing (per company) atau ketik baru =====
-// IO number existing dikelompokkan per client_id. Untuk Body Hire, datalist
-// diisi HANYA dengan IO milik company (client) yang sedang dipilih.
+// ===== Pilih IO existing (per company) atau ketik baru =====
+// IO number existing dikelompokkan per client_id. Datalist diisi HANYA dengan
+// IO milik company (client) yang sedang dipilih - berlaku untuk semua project type.
 window.IOS_BY_CLIENT = @json($iosByClient ?? []);
 window.refreshIoOptions = function () {
-    const type   = document.getElementById('project_type')?.value || '';
     const client = document.getElementById('client_id')?.value || '';
     const dl     = document.getElementById('io_number_options');
     const hint   = document.getElementById('io_number_hint');
     if (!dl) return;
 
-    const isBodyHire = (type === 'Body Hire');
+    const ios = (client && window.IOS_BY_CLIENT[client]) || [];
     dl.innerHTML = '';
-    if (isBodyHire && client && window.IOS_BY_CLIENT[client]) {
-        window.IOS_BY_CLIENT[client].forEach(io => {
-            const opt = document.createElement('option');
-            opt.value = io;
-            dl.appendChild(opt);
-        });
-    }
-    if (hint) hint.classList.toggle('hidden', !isBodyHire);
+    ios.forEach(io => {
+        const opt = document.createElement('option');
+        opt.value = io;
+        dl.appendChild(opt);
+    });
+    if (hint) hint.classList.toggle('hidden', ios.length === 0);
 };
 </script>
 {{-- ===== Sales Financial: Thousand Separator + Auto-Calculation ===== --}}
@@ -1127,7 +1126,7 @@ window.refreshIoOptions = function () {
 @endphp
 <script src="/js/custom-dropdown.js?v={{ $customDdVer }}"></script>
 
-{{-- Flatpickr + HolidayCalendar (inline, uses fetch — no axios needed) --}}
+{{-- Flatpickr + HolidayCalendar (inline, uses fetch - no axios needed) --}}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
 window.HolidayCalendar = (function () {
@@ -1279,7 +1278,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.getElementById('ctmSrcHint').textContent = isVendor
             ? 'Vendor is taken from Master Business Partner (type Vendor); the consultant details are typed in manually.'
-            : 'Consultant comes from Master Employee — Employee Type and Module follow their data.';
+            : 'Consultant comes from Master Employee - Employee Type and Module follow their data.';
     }
     window.ctmSetSource = ctmSetSource;
 
@@ -1527,7 +1526,7 @@ document.addEventListener('DOMContentLoaded', function () {
         teamMembers.forEach(function (m, i) {
             var tr = document.createElement('tr');
             tr.className = 'hover:bg-gray-50';
-            var period = fmtDate(m.start_date) + ' – ' + (m.end_date ? fmtDate(m.end_date) : 'Present');
+            var period = fmtDate(m.start_date) + ' - ' + (m.end_date ? fmtDate(m.end_date) : 'Present');
             var typeDisplay = escHtml(m.employee_type) + (m.vendor_name ? ' (' + escHtml(m.vendor_name) + ')' : '');
             var nameCell = escHtml(m.name) + (m.position ? '<div class="text-xs text-gray-400 mt-0.5">' + escHtml(m.position) + '</div>' : '');
             tr.innerHTML =

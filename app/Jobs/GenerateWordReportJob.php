@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Jalankan ReportGeneratorService::generate() di background — bisa beberapa
+ * Jalankan ReportGeneratorService::generate() di background - bisa beberapa
  * kali round-trip tool-calling + code execution/code interpreter di sandbox
  * provider (Claude atau GPT, lihat AiModelSettings::WORD_REPORT), jadi tidak
  * layak dijalankan synchronous di request HTTP (lihat keputusan di
@@ -122,7 +122,7 @@ class GenerateWordReportJob implements ShouldQueue
                 $report->update([
                     'status' => WordReport::STATUS_PAUSED,
                     'error_message' => 'Layanan AI sedang sibuk (batas pemakaian sesaat tercapai). '
-                        . 'Progres yang sudah selesai tersimpan — klik "Lanjutkan" untuk meneruskan.',
+                        . 'Progres yang sudah selesai tersimpan - klik "Lanjutkan" untuk meneruskan.',
                 ]);
 
                 return;
@@ -154,7 +154,7 @@ class GenerateWordReportJob implements ShouldQueue
             $report->update([
                 'status' => WordReport::STATUS_PAUSED,
                 'error_message' => 'Layanan AI sedang sibuk (batas pemakaian sesaat tercapai). '
-                    . 'Progres yang sudah selesai tersimpan — klik "Lanjutkan" untuk meneruskan.',
+                    . 'Progres yang sudah selesai tersimpan - klik "Lanjutkan" untuk meneruskan.',
             ]);
 
             return;

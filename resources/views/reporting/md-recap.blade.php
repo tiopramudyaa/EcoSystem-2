@@ -1,7 +1,7 @@
 @extends('dashboard')
 @section('title', 'MD Recap')
 @section('page-title', 'MD Recap')
-@section('page-subtitle', 'MD Recap — mandays by employee and mode')
+@section('page-subtitle', 'MD Recap - mandays by employee and mode')
 
 @section('content')
 <div class="bg-white rounded-xl p-6 shadow-sm">
@@ -48,11 +48,13 @@
                 <i class="fas fa-file-excel text-green-600 text-sm"></i>
                 Export MD Recap (Summary)
             </button>
+            @if($can('reporting.resolution-days'))
             <button onclick="exportResolutionDays()"
                 class="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-all duration-200">
                 <i class="fas fa-file-excel text-green-600 text-sm"></i>
                 Export Resolution Days
             </button>
+            @endif
         </div>
     </div>
 
@@ -60,22 +62,22 @@
     <div id="recapStats" class="hidden grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total MD</p>
-            <p id="statTotalMd" class="text-2xl font-bold primary-text">—</p>
+            <p id="statTotalMd" class="text-2xl font-bold primary-text">-</p>
             <p class="text-xs text-gray-400 mt-0.5">All modes combined</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Employees</p>
-            <p id="statEmployees" class="text-2xl font-bold text-gray-800">—</p>
+            <p id="statEmployees" class="text-2xl font-bold text-gray-800">-</p>
             <p class="text-xs text-gray-400 mt-0.5">With approved timesheets</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">OnSite MD</p>
-            <p id="statOnsiteMd" class="text-2xl font-bold text-green-700">—</p>
+            <p id="statOnsiteMd" class="text-2xl font-bold text-green-700">-</p>
             <p class="text-xs text-gray-400 mt-0.5">Field visits</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Remote MD</p>
-            <p id="statRemoteMd" class="text-2xl font-bold text-blue-700">—</p>
+            <p id="statRemoteMd" class="text-2xl font-bold text-blue-700">-</p>
             <p class="text-xs text-gray-400 mt-0.5">Remote work</p>
         </div>
     </div>
@@ -88,7 +90,7 @@
                  natures (2 text columns that should share leftover space, 2 compact
                  fixed-content columns), HTML table width distribution (auto OR fixed
                  layout) can't reliably do "some columns flexible + fill 100% + stay
-                 aligned across every row" at once — Grid's `fr` units do this natively
+                 aligned across every row" at once - Grid's `fr` units do this natively
                  and consistently. `.recap-grid-row` (defined in the styles block below)
                  is the single source of truth for the 4 column widths; every row
                  (header, data, loading/error placeholder) reuses the same class so
@@ -184,7 +186,7 @@
 }
 .primary-text { color: var(--primary-color) !important; }
 
-/* Single source of truth for the 4 columns — Name and Delivery share leftover
+/* Single source of truth for the 4 columns - Name and Delivery share leftover
    width proportionally (1.1fr : 2fr) while Mode/Mandays stay fixed, and this
    stays IDENTICAL across every row (header, data, group header spans across
    all 4 via grid-column), so columns always line up regardless of how short
@@ -222,7 +224,7 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Tutup panel search saat scroll di luar panel atau resize — panel pakai posisi
+// Tutup panel search saat scroll di luar panel atau resize - panel pakai posisi
 // absolute terhadap header sehingga scroll bikin tidak sinkron dengan view.
 window.addEventListener('scroll', function(e) {
     const t = e.target;
@@ -396,7 +398,7 @@ function renderRecap() {
     // Group by employee → mode → delivery → {count, mandays}. A single employee
     // can log mandays against different deliveries (project/ticket) even within
     // the same mode, so delivery is its own grouping level rather than being
-    // blended into one number — mirrors the export's grouping exactly.
+    // blended into one number - mirrors the export's grouping exactly.
     const grouped = new Map();
     filtered.forEach(row => {
         if (!grouped.has(row.name)) grouped.set(row.name, new Map());
@@ -442,7 +444,7 @@ function renderRecap() {
             });
         });
 
-        // Employee header row — a plain flex row (not `.recap-grid-row`), it spans
+        // Employee header row - a plain flex row (not `.recap-grid-row`), it spans
         // the full width as one block same as a table row's colspan would.
         const initials = name.trim().split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
         html += `<div class="recap-emp-row border-t-2 border-gray-200 px-4 py-2.5">
@@ -467,17 +469,17 @@ function renderRecap() {
                     </div>
                     <div class="px-4 py-2 text-xs text-gray-600 truncate" title="${escHtml(delivery)}">${escHtml(delivery)}</div>
                     <div class="px-4 py-2 text-center">${modeBadge(mode)}</div>
-                    <div class="px-4 py-2 text-sm text-center ${valueColor}">${agg.mandays.toFixed(2)}</div>
+                    <div class="px-4 py-2 text-sm text-center ${valueColor}">${formatMd(agg.mandays)}</div>
                 </div>`;
             });
         });
     });
 
     tbody.innerHTML = html;
-    document.getElementById('statTotalMd').textContent   = totalMd.toFixed(2);
+    document.getElementById('statTotalMd').textContent   = formatMd(totalMd);
     document.getElementById('statEmployees').textContent = empCount;
-    document.getElementById('statOnsiteMd').textContent  = totalOnsite.toFixed(2);
-    document.getElementById('statRemoteMd').textContent  = totalRemote.toFixed(2);
+    document.getElementById('statOnsiteMd').textContent  = formatMd(totalOnsite);
+    document.getElementById('statRemoteMd').textContent  = formatMd(totalRemote);
     stats.classList.remove('hidden');
 }
 

@@ -17,7 +17,7 @@ class EmployeeExport implements
     WithStyles,
     ShouldAutoSize
 {
-    // Column count: A–X (24 columns)
+    // Column count: A-X (24 columns)
     private const LAST_COL = 'X';
 
     protected Collection $rows;

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Enums\HomeBase;
+use App\Models\Customer;
 use App\Models\Employee;
 use App\Services\ResourceTimelineService;
 use App\Support\SessionUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ResourceTimelineController extends Controller
@@ -31,7 +33,7 @@ class ResourceTimelineController extends Controller
         ]);
     }
 
-    public function consultants()
+    public function customers()
     {
         $guard = $this->guard();
         if ($guard instanceof \Illuminate\Http\JsonResponse) {
@@ -40,7 +42,7 @@ class ResourceTimelineController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $this->service->consultantOptions(),
+            'data'    => $this->service->customerCodeOptions(),
         ]);
     }
 
@@ -56,10 +58,22 @@ class ResourceTimelineController extends Controller
             $year     = $request->integer('year', now()->year);
             $homeBase = $request->string('home_base')->toString() ?: null;
 
+            if ($request->query('view') === 'yearly') {
+                $grid = $this->service->buildYearGrid($year, $homeBase);
+
+                return response()->json([
+                    'success' => true,
+                    'view'    => 'yearly',
+                    'year'    => $year,
+                    'rows'    => $grid['rows'],
+                ]);
+            }
+
             $grid = $this->service->buildGrid($month, $year, $homeBase);
 
             return response()->json([
                 'success' => true,
+                'view'    => 'monthly',
                 'month'   => $month,
                 'year'    => $year,
                 'days'    => $grid['days'],
@@ -103,18 +117,47 @@ class ResourceTimelineController extends Controller
 
         try {
             $validated = $this->validateRange($request, [
-                'location'             => 'nullable|string|max:255',
+                // Location = customer code dari master Business Partner, ATAU teks bebas
+                // bila is_custom = true (customer di luar master).
+                'is_custom'            => 'nullable|boolean',
+                'location'             => ['nullable', 'string', 'max:255', function ($attribute, $value, $fail) use ($request) {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+                    if ($request->boolean('is_custom')) {
+                        // Karakter aman saja (huruf, angka, spasi, . , & ( ) / _ -) supaya
+                        // tidak menyerupai payload dan terblokir WAF di edge.
+                        if (!preg_match('/^[\p{L}\p{N} .,&()\/_\-]+$/u', $value)) {
+                            $fail('Custom customer may only contain letters, numbers, spaces and . , & ( ) / _ -');
+                        }
+                        return;
+                    }
+                    if (!Customer::where('customer_code', $value)->exists()) {
+                        $fail('Selected customer code is not in the master list. Use the custom customer field instead.');
+                    }
+                }],
                 'previous_start_date'  => 'nullable|date',
                 'previous_end_date'    => 'nullable|date|after_or_equal:previous_start_date',
+                'previous_location'    => 'nullable|string|max:255',
             ]);
+
+            $location = isset($validated['location']) ? preg_replace('/\s+/', ' ', trim($validated['location'])) : null;
+
+            // Custom text that matches a master code (ignoring case) is stored as
+            // the master code, so it does not create a look-alike duplicate.
+            if ($location && $request->boolean('is_custom')) {
+                $master = Customer::whereRaw('LOWER(customer_code) = ?', [mb_strtolower($location)])->value('customer_code');
+                $location = $master ?: $location;
+            }
 
             $this->service->upsertRange(
                 $validated['employee_id'],
                 $validated['start_date'],
                 $validated['end_date'],
-                $validated['location'] ?? null,
+                $location,
                 $validated['previous_start_date'] ?? null,
-                $validated['previous_end_date'] ?? null
+                $validated['previous_end_date'] ?? null,
+                $validated['previous_location'] ?? null
             );
 
             return response()->json(['success' => true, 'message' => 'Timeline saved.']);
@@ -138,12 +181,13 @@ class ResourceTimelineController extends Controller
         }
 
         try {
-            $validated = $this->validateRange($request);
+            $validated = $this->validateRange($request, ['location' => 'nullable|string|max:255']);
 
             $this->service->deleteRange(
                 $validated['employee_id'],
                 $validated['start_date'],
-                $validated['end_date']
+                $validated['end_date'],
+                $validated['location'] ?? null
             );
 
             return response()->json(['success' => true, 'message' => 'Timeline cleared.']);
@@ -169,7 +213,7 @@ class ResourceTimelineController extends Controller
                 function ($attribute, $value, $fail) {
                     $isConsultant = $this->service->consultantsQuery()->where('employee.employee_id', $value)->exists();
                     if (!$isConsultant) {
-                        $fail('Selected employee is not an SAP Consultant.');
+                        $fail('Selected employee is not an SAP Consultant, Salesforce Consultant or Project Management Officer.');
                     }
                 },
             ],

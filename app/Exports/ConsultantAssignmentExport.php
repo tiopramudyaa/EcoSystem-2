@@ -11,7 +11,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 /**
- * Export laporan Consultant Assignment — satu baris per penugasan, kolomnya
+ * Export laporan Consultant Assignment - satu baris per penugasan, kolomnya
  * mengikuti tabel di halaman supaya angka di Excel bisa dicocokkan langsung
  * dengan yang dilihat user.
  */

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 class SettingsController extends Controller
 {
-    /** Nilai default preferensi — satu-satunya sumber kebenaran. */
+    /** Nilai default preferensi - satu-satunya sumber kebenaran. */
     const DEFAULT_PREFERENCES = [
         'theme'                 => 'light',
         'primary_color'         => '#991b1b',
@@ -29,7 +29,7 @@ class SettingsController extends Controller
         // Daftar href menu sidebar yang di-pin user ke Command Center (Dashboard).
         // Diidentifikasi lewat href (bukan slug menu) karena sidebar dirender dari
         // ~100 blok <a> hardcoded per item, bukan dari satu sumber data menu yang
-        // bisa ditandai slug-nya — baca/tulis murni dari DOM yang sudah dirender.
+        // bisa ditandai slug-nya - baca/tulis murni dari DOM yang sudah dirender.
         'pinned_menus'          => [],
     ];
 
@@ -89,6 +89,7 @@ class SettingsController extends Controller
                 'user'              => $user,
                 'preferences'       => $userPreferences,
                 'twoFactorEnabled'  => $twoFactorEnabled,
+                'microsoft'         => $this->microsoftSettingsData($authUser),
             ]);
 
         } catch (\Exception $e) {
@@ -101,6 +102,27 @@ class SettingsController extends Controller
                 'message' => 'An error occurred while loading settings.'
             ]);
         }
+    }
+
+    /**
+     * Data kartu "Microsoft account" di Settings > Security. Client secret
+     * sengaja TIDAK ikut: browser hanya tahu ada atau tidaknya secret tersimpan.
+     */
+    private function microsoftSettingsData(?object $authUser): array
+    {
+        return [
+            'available'    => \App\Support\MicrosoftLoginSettings::loginAvailable(),
+            'can_manage'   => \App\Support\MicrosoftLoginSettings::canManage(),
+            'enabled'      => \App\Support\MicrosoftLoginSettings::enabled(),
+            'tenant_id'    => \App\Support\MicrosoftLoginSettings::storedTenantId(),
+            'client_id'    => \App\Support\MicrosoftLoginSettings::storedClientId(),
+            'has_secret'   => \App\Support\MicrosoftLoginSettings::hasStoredSecret(),
+            'env_fallback' => \App\Support\MicrosoftLoginSettings::usesEnvFallback(),
+            'redirect_uri' => \App\Support\MicrosoftLoginSettings::redirectUri(),
+            'linked'       => !empty($authUser?->microsoft_oid),
+            'linked_email' => $authUser->microsoft_email ?? null,
+            'has_account'  => $authUser !== null,
+        ];
     }
 
     public function updatePreferences(Request $request)
@@ -274,7 +296,7 @@ class SettingsController extends Controller
                     $clean[$key] = strtolower($value);
                 }
             } elseif (is_array($default)) {
-                // Mis. pinned_menus — tanpa cabang ini nilainya KE-BUANG oleh
+                // Mis. pinned_menus - tanpa cabang ini nilainya KE-BUANG oleh
                 // fallback scalar di bawah (is_scalar(array) === false), diam-diam
                 // kembali ke default setiap kali field array dikirim.
                 $clean[$key] = is_array($value)

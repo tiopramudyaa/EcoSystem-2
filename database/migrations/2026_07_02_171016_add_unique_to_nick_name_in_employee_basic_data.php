@@ -18,7 +18,7 @@ return new class extends Migration
 
         Schema::table('employee_basic_data', function (Blueprint $table) {
             $table->string('nick_name')->nullable(false)->change();
-            // NULL values are excluded from uniqueness — multiple employees can have no nickname
+            // NULL values are excluded from uniqueness - multiple employees can have no nickname
             $table->unique('nick_name', 'uq_employee_basic_data_nick_name');
         });
     }

@@ -39,7 +39,7 @@ class ConsultantWorkloadSeeder extends Seeder
         $tickets = [
             [
                 'number'    => 'TKT-SEED-001',
-                'subject'   => '[SEED] Error AP Invoice Posting – Duplicate Document',
+                'subject'   => '[SEED] Error AP Invoice Posting - Duplicate Document',
                 'status'    => 'in_progress',
                 'priority'  => 'High',
                 'type'      => 'AMS',
@@ -57,7 +57,7 @@ class ConsultantWorkloadSeeder extends Seeder
             ],
             [
                 'number'    => 'TKT-SEED-002',
-                'subject'   => '[SEED] BOM Explosion Issue – MRP Planning Run',
+                'subject'   => '[SEED] BOM Explosion Issue - MRP Planning Run',
                 'status'    => 'in_progress',
                 'priority'  => 'Medium',
                 'type'      => 'AMS',
@@ -75,7 +75,7 @@ class ConsultantWorkloadSeeder extends Seeder
             ],
             [
                 'number'    => 'TKT-SEED-003',
-                'subject'   => '[SEED] Customer Master Data Mismatch – Credit Limit',
+                'subject'   => '[SEED] Customer Master Data Mismatch - Credit Limit',
                 'status'    => 'in_progress',
                 'priority'  => 'High',
                 'type'      => 'MO',
@@ -94,7 +94,7 @@ class ConsultantWorkloadSeeder extends Seeder
             ],
             [
                 'number'    => 'TKT-SEED-004',
-                'subject'   => '[SEED] Goods Receipt Quantity Discrepancy – WM Integration',
+                'subject'   => '[SEED] Goods Receipt Quantity Discrepancy - WM Integration',
                 'status'    => 'in_progress',
                 'priority'  => 'Medium',
                 'type'      => 'ATS',
@@ -112,7 +112,7 @@ class ConsultantWorkloadSeeder extends Seeder
             ],
             [
                 'number'    => 'TKT-SEED-005',
-                'subject'   => '[SEED] Payroll Calculation Error – Overtime Rule Change',
+                'subject'   => '[SEED] Payroll Calculation Error - Overtime Rule Change',
                 'status'    => 'in_progress',
                 'priority'  => 'Very High',
                 'type'      => 'AMS',
@@ -130,7 +130,7 @@ class ConsultantWorkloadSeeder extends Seeder
             ],
             [
                 'number'    => 'TKT-SEED-006',
-                'subject'   => '[SEED] Asset Depreciation Run – Incorrect Period Assignment',
+                'subject'   => '[SEED] Asset Depreciation Run - Incorrect Period Assignment',
                 'status'    => 'open',
                 'priority'  => 'Low',
                 'type'      => 'AMS',
@@ -222,7 +222,7 @@ class ConsultantWorkloadSeeder extends Seeder
                 ]);
             }
 
-            $this->command->line("  ✓ {$def['number']} – {$def['subject']}");
+            $this->command->line("  ✓ {$def['number']} - {$def['subject']}");
         }
 
         $this->command->info('Done. ' . count($tickets) . ' tiket di-seed.');

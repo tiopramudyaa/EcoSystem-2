@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * ============================================================================
- * DELIVERY SUPPORT — RECONS (rekonsiliasi tiket)
+ * DELIVERY SUPPORT - RECONS (rekonsiliasi tiket)
  * ============================================================================
  *
  * Satu "Recons" = satu batch rekonsiliasi berisi sekumpulan tiket yang sudah

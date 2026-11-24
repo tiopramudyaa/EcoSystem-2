@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::table('employee_basic_data', function (Blueprint $table) {
             // Home base office (Jakarta, Yogyakarta, Surabaya)
             $table->string('home_base', 100)->nullable()->after('authorization_group');
-            // Consultant grade — used to determine the man-day (MD) price
+            // Consultant grade - used to determine the man-day (MD) price
             $table->string('grade', 100)->nullable()->after('home_base');
         });
     }

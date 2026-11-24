@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Jembatan antara satu baris `ticket_message` dan satu pesan di Teams.
  *
- * Tabel pendamping, BUKAN kolom baru di `ticket_message` — tabel itu dibagi
+ * Tabel pendamping, BUKAN kolom baru di `ticket_message` - tabel itu dibagi
  * dengan repo Jarvies (design §2).
  *
  * Unique (chat_id, teams_message_id) adalah jantung anti-loop dan anti-duplikat.
@@ -15,12 +15,12 @@ use Illuminate\Support\Facades\Schema;
  * di spike 17 Sep 2026:
  *
  *  1. teams_message_id ternyata epoch-milidetik 13 digit (mis. 1789614743752),
- *     sama dengan createdDateTime — TIDAK unik lintas chat. Unique pada kolomnya
+ *     sama dengan createdDateTime - TIDAK unik lintas chat. Unique pada kolomnya
  *     sendiri akan salah menolak pesan sah dari chat lain.
  *  2. Pesan bergambar punya lastModifiedDateTime ~7 detik SESUDAH createdDateTime
  *     (Teams memproses gambar belakangan; lastEditedDateTime tetap null), jadi
  *     pesan yang sudah diserap MUNCUL LAGI di jendela polling berikutnya. Tanpa
- *     dedupe ini, pesan bergambar pasti dobel — bukan mungkin dobel.
+ *     dedupe ini, pesan bergambar pasti dobel - bukan mungkin dobel.
  */
 return new class extends Migration
 {
@@ -34,7 +34,7 @@ return new class extends Migration
 
             $table->string('chat_id', 255);
 
-            // NULL selama pesan keluar belum dikonfirmasi id-nya oleh Teams —
+            // NULL selama pesan keluar belum dikonfirmasi id-nya oleh Teams -
             // flow Power Automate tidak selalu mengembalikan id pesan.
             $table->string('teams_message_id', 64)->nullable();
 

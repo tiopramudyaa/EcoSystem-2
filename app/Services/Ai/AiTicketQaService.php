@@ -14,27 +14,27 @@ use Illuminate\Support\Str;
 
 /**
  * Tanya-jawab interaktif di panel AI Analyzer selagi admin memvalidasi satu
- * staging ticket — bukan cuma menerima saran AiTicketAnalyzerService apa
+ * staging ticket - bukan cuma menerima saran AiTicketAnalyzerService apa
  * adanya, validator bisa bertanya balik ("apa langkah paling awal?", "kenapa
  * root cause-nya begitu?") dan dijawab dengan konteks tiket yang sama persis
  * dengan yang dilihat di layar.
  *
  * SENGAJA lebih ringan dari kembarnya di AI Assistant (AiChatService):
- *   - tools: [] — tidak ada tool loop. Semua konteks yang relevan (deskripsi
+ *   - tools: [] - tidak ada tool loop. Semua konteks yang relevan (deskripsi
  *     tiket, hasil analyze() sebelumnya, daftar konsultan customer, tiket
  *     serupa, catatan credential kalau actor punya izin) sudah dibangun
- *     SEKALI ke system prompt tiap giliran lewat systemPrompt() — model tidak
+ *     SEKALI ke system prompt tiap giliran lewat systemPrompt() - model tidak
  *     perlu memanggil apa pun untuk menjawab pertanyaan tentang tiket yang
  *     sama, jadi tidak ada tool baru yang perlu ditulis untuk fitur ini.
  *   - Tidak ada arsip DB. Validasi satu tiket biasanya selesai dalam satu
  *     duduk; riwayatnya cukup hidup di cache selama sesi modal terbuka.
  *   - $sessionId BUKAN id yang dipertahankan lintas buka-tutup modal (beda
  *     dari AiChatService, yang justru sengaja mempertahankan conversation id
- *     lewat sessionStorage supaya chat tidak hilang saat pindah halaman) —
+ *     lewat sessionStorage supaya chat tidak hilang saat pindah halaman) -
  *     di sini frontend membuat UUID baru SETIAP KALI modal validasi dibuka
  *     untuk sebuah tiket (lihat staging/index.blade.php). Sesi validasi yang
  *     sudah ditinggalkan tidak boleh diam-diam "diingat" lagi saat tiket yang
- *     sama dibuka ulang nanti — kalau id-nya dipertahankan, layar akan mulai
+ *     sama dibuka ulang nanti - kalau id-nya dipertahankan, layar akan mulai
  *     kosong padahal server masih ingat percakapan lama, persis kelas bug
  *     yang baru dibenahi di AI Assistant.
  */
@@ -84,7 +84,7 @@ class AiTicketQaService
         );
 
         if (null === $assistantContent) {
-            // Aborted mid-stream — jangan simpan giliran yang tidak lengkap.
+            // Aborted mid-stream - jangan simpan giliran yang tidak lengkap.
             return;
         }
 
@@ -132,7 +132,7 @@ class AiTicketQaService
      * Konteks tiket dibangun ULANG tiap giliran (bukan disimpan sekali di
      * cache) supaya kalau admin mengklik Re-analyze DI TENGAH sesi tanya-
      * jawab, pertanyaan berikutnya otomatis melihat ai_analysis yang
-     * terbaru — tanpa ini, chat akan tetap merujuk ke saran AI yang sudah
+     * terbaru - tanpa ini, chat akan tetap merujuk ke saran AI yang sudah
      * ditimpa.
      */
     private function systemPrompt(StagingTicket $staging, Employee $employee): string
@@ -144,7 +144,7 @@ class AiTicketQaService
 
         $lines = [
             'Anda membantu seorang validator EcoSystem menjawab pertanyaan tentang SATU staging ticket yang '
-                . 'sedang divalidasi. Jawab HANYA berdasar konteks tiket ini — jangan mengarang nomor tiket, nama '
+                . 'sedang divalidasi. Jawab HANYA berdasar konteks tiket ini - jangan mengarang nomor tiket, nama '
                 . 'orang, atau data lain yang tidak ada di bawah. Kalau pertanyaannya tidak bisa dijawab dari '
                 . 'konteks ini, katakan terus terang alih-alih menebak. Jawab singkat dan langsung, sesuai bahasa '
                 . 'pertanyaan validator.',
@@ -158,15 +158,15 @@ class AiTicketQaService
 
         // $staging->ai_analysis adalah CACHE yang mungkin dibuat oleh actor LAIN
         // (siapa pun yang membuka staging ticket ini duluan dan memicu analyze())
-        // — kalau actor itu punya izin 'customer.section.credential.view',
+        // - kalau actor itu punya izin 'customer.section.credential.view',
         // overview/root_cause_hypothesis/resolution_steps di cache ini bisa
         // sudah menyerap catatan credential customer (lihat resolveCredentialContext()
         // di AiTicketAnalyzerService). Tanpa gerbang ini, employee LAIN yang
-        // bertanya lewat ask() — TANPA izin credential sendiri — bisa memancing
+        // bertanya lewat ask() - TANPA izin credential sendiri - bisa memancing
         // model menjawab balik info credential itu lewat cache lama, padahal
         // injeksi credential FRESH di bawah (baris "Catatan credential…") sudah
         // benar menggerbangi actor saat ini. Ini gerbang yang SAMA seperti
-        // StagingTicketController::canViewAiAnalysis() — kalau logikanya
+        // StagingTicketController::canViewAiAnalysis() - kalau logikanya
         // berubah di satu tempat, ubah juga di sini.
         $canSeeCachedAnalysis = $employee->hasMenuPermission('customer.section.credential.view')
             || !CustomerCredential::whereIn('customer_id', array_filter([$staging->customer_id, $staging->end_customer_id]))->exists();
@@ -194,7 +194,7 @@ class AiTicketQaService
                 foreach ($bestFit as $i => $c) {
                     $lines[] = ($i + 1) . '. ' . ($c['name'] ?? '-')
                         . ($c['is_module_lead'] ?? false ? ' (Module Lead)' : '')
-                        . ' — ' . ($c['similar_issues_handled'] ?? 0) . ' tiket isu serupa pernah ditangani, '
+                        . ' - ' . ($c['similar_issues_handled'] ?? 0) . ' tiket isu serupa pernah ditangani, '
                         . 'workload ' . round($c['workload_pct'] ?? 0) . '%';
                 }
             }

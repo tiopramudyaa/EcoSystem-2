@@ -28,12 +28,46 @@ class OneDriveService
      * Sanitize a single path segment (folder name) for OneDrive/SharePoint.
      * Replaces illegal characters ( \ / : * ? " < > | ) with a space,
      * collapses whitespace, and trims. Falls back to a safe default if empty.
+     *
+     * Nama yang ditolak SharePoint TIDAK dijawab Graph sebagai "nama tidak valid",
+     * melainkan error menyesatkan seperti `itemNotFound` - contoh: customer
+     * "PT ADHI KARYA (PERSERO) TBK." (titik di ujung) membuat folder customer
+     * tidak pernah terbuat dan setiap upload deliverable gagal. Karena itu
+     * semua aturan nama SharePoint dibersihkan di sini:
+     *   - karakter ilegal & karakter kontrol
+     *   - titik/spasi di awal atau akhir, prefix "~$" (file lock Office)
+     *   - nama terlarang (CON, PRN, AUX, NUL, COM0-9, LPT0-9, desktop.ini)
+     *   - "_vti_" di mana pun dalam nama
+     * Idempotent: memanggilnya dua kali menghasilkan nama yang sama.
      */
     public static function sanitizeSegment(string $name, string $fallback = 'Folder'): string
     {
         $clean = preg_replace('~[\\\\/:*?"<>|]~', ' ', $name);
-        $clean = trim(preg_replace('~\s+~', ' ', $clean));
-        return $clean !== '' ? $clean : $fallback;
+        $clean = preg_replace('~[\x00-\x1F\x7F]~', '', $clean);
+        $clean = str_ireplace('_vti_', 'vti', $clean);
+        $clean = preg_replace('~\s+~', ' ', $clean);
+        // Ulang sampai stabil: membuang "~$" bisa memunculkan titik/spasi baru di
+        // depan, dan sebaliknya (mis. " .~$x" → "~$x" → "x").
+        do {
+            $before = $clean;
+            $clean  = trim(preg_replace('/^~\$/', '', trim($clean, ". \t")), ". \t");
+        } while ($clean !== $before);
+
+        // Batas panjang segmen OneDrive 255 karakter; 200 menyisakan ruang.
+        if (mb_strlen($clean) > 200) {
+            $clean = trim(mb_substr($clean, 0, 200), ". \t");
+        }
+
+        if ($clean === '') {
+            return $fallback;
+        }
+
+        // ".lock" tidak perlu dicek: titik di awal sudah dibuang di atas.
+        if (preg_match('~^(con|prn|aux|nul|com\d|lpt\d|desktop\.ini)$~i', $clean)) {
+            $clean .= ' Folder';
+        }
+
+        return $clean;
     }
 
     /**
@@ -41,7 +75,7 @@ class OneDriveService
      *
      * WAJIB dipakai sebelum menyentuh Graph. Selain karakter ilegal ( \ / : * ? " < > | )
      * ditolak SharePoint, karakter ":" juga MERUSAK path-addressing Graph
-     * (`/drive/items/{id}:/{nama}:/content`) — request jadi diarahkan ke entitas
+     * (`/drive/items/{id}:/{nama}:/content`) - request jadi diarahkan ke entitas
      * driveItem, dan Graph menjawab dengan error yang menyesatkan:
      *   "Entity only allows writes with a JSON Content-Type header"  (PUT /content)
      *   "invalidRequest / Invalid request"                            (createUploadSession)
@@ -103,7 +137,8 @@ class OneDriveService
      */
     public function createFolder(string $folderName): string
     {
-        $token = $this->getAccessToken();
+        $folderName = self::sanitizeSegment($folderName);
+        $token      = $this->getAccessToken();
 
         $response = Http::withToken($token)->post(
             "{$this->driveBase}/drive/root/children",
@@ -154,7 +189,8 @@ class OneDriveService
      */
     public function createFolderInPath(string $folderName, string $parentPath): string
     {
-        $token = $this->getAccessToken();
+        $folderName = self::sanitizeSegment($folderName);
+        $token      = $this->getAccessToken();
         $encodedParent = implode('/', array_map('rawurlencode', explode('/', $parentPath)));
 
         $response = Http::withToken($token)->post(
@@ -201,7 +237,7 @@ class OneDriveService
         if (!$response->successful()) {
             $errorCode = $response->json('error.code', '');
 
-            // Folder belum dibuat — return kosong, bukan error
+            // Folder belum dibuat - return kosong, bukan error
             if ($response->status() === 404 && in_array($errorCode, ['itemNotFound', 'ItemNotFound'])) {
                 return [];
             }
@@ -228,16 +264,20 @@ class OneDriveService
      */
     public function findOrCreateFolderInPath(string $parentPath, string $folderName): string
     {
-        $children = $this->listFolderChildrenByPath($parentPath);
+        // Sanitasi SEBELUM mencari, supaya nama yang dicocokkan sama dengan
+        // nama yang benar-benar dibuat - kalau tidak, upload berikutnya tidak
+        // menemukan foldernya dan membuat duplikat ("... 1").
+        $folderName = self::sanitizeSegment($folderName);
+        $children   = $this->listFolderChildrenByPath($parentPath);
 
-        $needle = mb_strtolower(trim($folderName));
+        $needle = mb_strtolower($folderName);
         foreach ($children as $child) {
             if (mb_strtolower($child['name']) === $needle) {
                 return $child['id'];
             }
         }
 
-        // Not found — create it
+        // Not found - create it
         return $this->createFolderInPath($folderName, $parentPath);
     }
 
@@ -247,7 +287,8 @@ class OneDriveService
      */
     public function createSubFolder(string $parentFolderId, string $folderName): string
     {
-        $token = $this->getAccessToken();
+        $folderName = self::sanitizeSegment($folderName);
+        $token      = $this->getAccessToken();
 
         $response = Http::withToken($token)->post(
             "{$this->driveBase}/drive/items/{$parentFolderId}/children",
@@ -352,7 +393,7 @@ class OneDriveService
 
         return [
             'id'          => $response->json('id'),
-            // Nama final di OneDrive — bisa berbeda dari nama asli (disanitasi, atau
+            // Nama final di OneDrive - bisa berbeda dari nama asli (disanitasi, atau
             // di-rename otomatis saat bentrok). Caller sebaiknya menyimpan ini.
             'name'        => $response->json('name', $fileName),
             'webUrl'      => $response->json('webUrl'),
@@ -362,7 +403,7 @@ class OneDriveService
 
     /**
      * Permanently delete any drive item (file OR folder) by its item ID.
-     * Sudah hilang (404) dianggap sukses — pemanggil hanya peduli "tidak ada lagi".
+     * Sudah hilang (404) dianggap sukses - pemanggil hanya peduli "tidak ada lagi".
      */
     public function deleteItem(string $itemId): void
     {
@@ -462,16 +503,18 @@ class OneDriveService
      */
     public function findOrCreateSubFolderById(string $parentFolderId, string $folderName): string
     {
-        $children = $this->listSubFoldersByParentId($parentFolderId);
+        // Lihat findOrCreateFolderInPath(): sanitasi sebelum mencari.
+        $folderName = self::sanitizeSegment($folderName);
+        $children   = $this->listSubFoldersByParentId($parentFolderId);
 
-        $needle = mb_strtolower(trim($folderName));
+        $needle = mb_strtolower($folderName);
         foreach ($children as $child) {
             if (mb_strtolower($child['name']) === $needle) {
                 return $child['id'];
             }
         }
 
-        // Not found — create it
+        // Not found - create it
         return $this->createSubFolder($parentFolderId, $folderName);
     }
 
@@ -548,7 +591,7 @@ class OneDriveService
         // Anonymous ditolak (kebijakan tenant/site) → coba scope organization agar
         // pengguna internal tetap dapat link yang berfungsi; caller diberi tahu.
         if (!$response->successful() && $scope === 'anonymous') {
-            Log::warning('OneDrive createLink anonymous rejected — falling back to organization scope', [
+            Log::warning('OneDrive createLink anonymous rejected - falling back to organization scope', [
                 'item_id' => $itemId,
                 'type'    => $type,
                 'status'  => $response->status(),
@@ -666,11 +709,265 @@ class OneDriveService
         return true;
     }
 
+    // ─── Berkas untuk group chat Teams ───────────────────────────────────────
+    // Dipakai TeamsFileService. Lihat docs/teams-sync-parity-design.md §6c.
+
+    /**
+     * Pastikan sebuah path folder (mis. "DELIVERY SUPPORT/TEAMS CHAT FILES") ada
+     * dan kembalikan item ID folder terakhirnya.
+     *
+     * Segmen yang belum ada dibuat satu per satu. conflictBehavior=fail, bukan
+     * rename seperti method lain di kelas ini: dua proses yang membuat folder
+     * yang sama bersamaan harus berakhir di SATU folder, bukan "NAMA 1".
+     */
+    public function ensureFolderPath(string $path): string
+    {
+        $segments = array_values(array_filter(
+            array_map(fn ($s) => self::sanitizeSegment(trim($s)), explode('/', $path)),
+            static fn ($s) => $s !== ''
+        ));
+
+        if ($segments === []) {
+            throw new \InvalidArgumentException('Path folder OneDrive kosong.');
+        }
+
+        $token    = $this->getAccessToken();
+        $parentId = null;
+        $walked   = [];
+
+        foreach ($segments as $segment) {
+            $walked[] = $segment;
+            $encoded  = implode('/', array_map('rawurlencode', $walked));
+
+            $found = Http::withToken($token)->get(
+                "{$this->driveBase}/drive/root:/{$encoded}",
+                ['$select' => 'id,folder']
+            );
+
+            if ($found->successful()) {
+                $parentId = $found->json('id');
+                continue;
+            }
+
+            if ($found->status() !== 404) {
+                throw new \RuntimeException('Failed to look up OneDrive folder: ' . $found->body());
+            }
+
+            $children = $parentId
+                ? "{$this->driveBase}/drive/items/{$parentId}/children"
+                : "{$this->driveBase}/drive/root/children";
+
+            $created = Http::withToken($token)->post($children, [
+                'name'                              => $segment,
+                'folder'                            => new \stdClass(),
+                '@microsoft.graph.conflictBehavior' => 'fail',
+            ]);
+
+            // 409 = proses lain membuatnya di sela GET dan POST kita - ambil saja.
+            if ($created->status() === 409) {
+                $created = Http::withToken($token)->get(
+                    "{$this->driveBase}/drive/root:/{$encoded}",
+                    ['$select' => 'id']
+                );
+            }
+
+            if (!$created->successful() || !$created->json('id')) {
+                throw new \RuntimeException('Failed to create OneDrive folder: ' . $created->body());
+            }
+
+            $parentId = $created->json('id');
+        }
+
+        return $parentId;
+    }
+
+    /**
+     * Sub-folder bernama $folderName di dalam $parentFolderId; dibuat bila belum
+     * ada. Sama dengan findOrCreateSubFolderById() tetapi aman dari balapan
+     * (conflictBehavior=fail + ambil ulang saat 409).
+     */
+    public function ensureSubFolder(string $parentFolderId, string $folderName): string
+    {
+        $folderName = self::sanitizeSegment($folderName);
+        $token      = $this->getAccessToken();
+        $byName     = "{$this->driveBase}/drive/items/{$parentFolderId}:/" . rawurlencode($folderName);
+
+        $found = Http::withToken($token)->get($byName, ['$select' => 'id']);
+
+        if ($found->successful()) {
+            return $found->json('id');
+        }
+
+        $created = Http::withToken($token)->post(
+            "{$this->driveBase}/drive/items/{$parentFolderId}/children",
+            [
+                'name'                              => $folderName,
+                'folder'                            => new \stdClass(),
+                '@microsoft.graph.conflictBehavior' => 'fail',
+            ]
+        );
+
+        if ($created->status() === 409) {
+            $created = Http::withToken($token)->get($byName, ['$select' => 'id']);
+        }
+
+        if (!$created->successful() || !$created->json('id')) {
+            throw new \RuntimeException('Failed to create OneDrive sub-folder: ' . $created->body());
+        }
+
+        return $created->json('id');
+    }
+
+    /**
+     * Unggah berkas dari stream lewat upload session, lalu kembalikan driveItem
+     * hasilnya (`id`, `name`, `eTag`, `webUrl`).
+     *
+     * Selalu lewat upload session, berapa pun ukurannya: satu jalur kode untuk
+     * berkas kecil dan besar, dan createUploadSession() memakai
+     * conflictBehavior=rename - PUT `:/content` biasa MENIMPA berkas bernama
+     * sama, padahal dua note berbeda sangat mungkin melampirkan "image.png".
+     *
+     * @param  resource  $stream
+     */
+    public function uploadStream(string $folderId, string $fileName, $stream, int $size): array
+    {
+        if ($size <= 0) {
+            throw new \InvalidArgumentException('Berkas kosong tidak bisa diunggah ke OneDrive.');
+        }
+
+        $uploadUrl = $this->createUploadSession($folderId, $fileName);
+
+        // Graph menuntut tiap potongan (kecuali yang terakhir) berukuran
+        // kelipatan 320 KiB.
+        $chunkSize = 320 * 1024 * 10;
+        $offset    = 0;
+        $response  = null;
+
+        while ($offset < $size) {
+            $length = min($chunkSize, $size - $offset);
+            $chunk  = stream_get_contents($stream, $length);
+
+            if ($chunk === false || strlen($chunk) !== $length) {
+                throw new \RuntimeException('Gagal membaca berkas lokal saat mengunggah ke OneDrive.');
+            }
+
+            // TANPA Authorization: uploadUrl sudah membawa otorisasinya sendiri,
+            // dan Graph menolak (401) kalau header bearer ikut dikirim.
+            $response = Http::withHeaders([
+                    'Content-Range' => 'bytes ' . $offset . '-' . ($offset + $length - 1) . '/' . $size,
+                ])
+                ->withBody($chunk, 'application/octet-stream')
+                ->timeout(120)
+                ->put($uploadUrl);
+
+            if (!$response->successful()) {
+                Log::error('OneDrive uploadStream failed', [
+                    'folder_id' => $folderId,
+                    'file_name' => $fileName,
+                    'offset'    => $offset,
+                    'status'    => $response->status(),
+                    'body'      => $response->body(),
+                ]);
+                throw new \RuntimeException('Failed to upload file to OneDrive: ' . $response->body());
+            }
+
+            $offset += $length;
+        }
+
+        if (!$response || !$response->json('id')) {
+            throw new \RuntimeException('OneDrive upload session selesai tanpa mengembalikan driveItem.');
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * Isi mentah satu lampiran email di mailbox helpdesk.
+     *
+     * Dipakai untuk menyalin lampiran email customer ke OneDrive supaya tampil
+     * sebagai kartu berkas asli di group chat Teams. Lewat `/$value` dan bukan
+     * `contentBytes`: hasilnya byte langsung, tanpa base64 yang membengkakkan
+     * memori sepertiga lebih besar.
+     */
+    public function downloadMailAttachment(string $messageId, string $attachmentId): string
+    {
+        $mailbox = config('services.microsoft_graph.sender_email');
+
+        $response = Http::withToken($this->getAccessToken())
+            ->timeout(120)
+            ->get("{$this->baseUrl}/users/{$mailbox}/messages/{$messageId}/attachments/{$attachmentId}/\$value");
+
+        if (!$response->successful()) {
+            throw new \RuntimeException(
+                'Gagal mengambil lampiran email dari Graph (HTTP ' . $response->status() . ').'
+            );
+        }
+
+        return $response->body();
+    }
+
+    /**
+     * Ambil satu driveItem dengan field pilihan pemanggil.
+     */
+    public function getItem(string $itemId, string $select = 'id,name,eTag,webUrl'): array
+    {
+        $response = Http::withToken($this->getAccessToken())->get(
+            "{$this->driveBase}/drive/items/{$itemId}",
+            ['$select' => $select]
+        );
+
+        if (!$response->successful()) {
+            throw new \RuntimeException('Failed to read OneDrive item: ' . $response->body());
+        }
+
+        return $response->json() ?? [];
+    }
+
+    /**
+     * Beri hak BACA atas sebuah item (berkas atau folder) kepada daftar alamat,
+     * tanpa mengirim email undangan.
+     *
+     * Dipakai untuk folder berkas chat tiket: izin di folder diwarisi semua
+     * berkas di dalamnya, jadi satu panggilan menutup berkas lama maupun baru.
+     *
+     * @param  list<string>  $emails
+     */
+    public function grantRead(string $itemId, array $emails): void
+    {
+        $recipients = [];
+
+        foreach ($emails as $email) {
+            $email = trim((string) $email);
+
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $recipients[mb_strtolower($email)] = ['email' => $email];
+            }
+        }
+
+        if ($recipients === []) {
+            return;
+        }
+
+        $response = Http::withToken($this->getAccessToken())->post(
+            "{$this->driveBase}/drive/items/{$itemId}/invite",
+            [
+                'recipients'     => array_values($recipients),
+                'requireSignIn'  => true,
+                'sendInvitation' => false,
+                'roles'          => ['read'],
+            ]
+        );
+
+        if (!$response->successful()) {
+            throw new \RuntimeException('Failed to share OneDrive item: ' . $response->body());
+        }
+    }
+
     /**
      * Bedakan share link (`/:f:/g/...`, `/:w:/g/...`) dari webUrl langsung
      * (`.../Documents/...` atau `_layouts/15/onedrive.aspx?id=...`).
      *
-     * webUrl langsung HANYA bisa dibuka akun yang punya izin item tersebut —
+     * webUrl langsung HANYA bisa dibuka akun yang punya izin item tersebut -
      * kalau URL semacam itu tersimpan sebagai "share link", penerima eksternal
      * pasti kena halaman "Request access".
      */

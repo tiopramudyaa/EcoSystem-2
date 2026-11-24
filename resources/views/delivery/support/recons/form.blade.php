@@ -38,7 +38,7 @@
         </div>
 
         <div class="px-6 py-5 grid grid-cols-1 md:grid-cols-3 gap-5">
-            {{-- Nomor selalu dibuat sistem — ditampilkan, tidak diisi manual. --}}
+            {{-- Nomor selalu dibuat sistem - ditampilkan, tidak diisi manual. --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Recons Number</label>
                 <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
@@ -51,7 +51,7 @@
                     @if($isEdit)
                         Issued automatically and kept for the life of this recons.
                     @else
-                        Generated automatically on save — format MDRC-[customer code]-[yymm]-[counter].
+                        Generated automatically on save - format MDRC-[customer code]-[yymm]-[counter].
                     @endif
                 </p>
             </div>
@@ -151,7 +151,7 @@
                 <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-1">Filter by date</span>
 
                 {{-- Dasar tanggal: Close Date / Start Date --}}
-                {{-- data-onchange WAJIB nama fungsi global polos — custom-dropdown.js
+                {{-- data-onchange WAJIB nama fungsi global polos - custom-dropdown.js
                      mencarinya lewat window[nama], yang tidak mengurai nama bertitik. --}}
                 <div class="custom-dd relative" id="ddDateBasis" data-fixed="true" data-onchange="reconsChangeDateBasis" style="min-width:150px">
                     {{-- Default = Start Date karena kolom itu selalu terisi;
@@ -169,7 +169,7 @@
                     </div>
                 </div>
 
-                {{-- Bulan/tahun — bisa pilih lebih dari satu (opsi diisi dari data) --}}
+                {{-- Bulan/tahun - bisa pilih lebih dari satu (opsi diisi dari data) --}}
                 <div class="custom-dd relative" id="ddPeriod" data-multi="true" data-fixed="true"
                      data-placeholder="All months" data-searchable="true" data-search-placeholder="Search month…"
                      data-onchange="reconsApplyDateFilter" style="min-width:190px">
@@ -255,7 +255,7 @@
 window.ReconsForm = (function () {
     'use strict';
 
-    // URL relatif — konsisten dengan section lain & aman di belakang proxy HTTPS.
+    // URL relatif - konsisten dengan section lain & aman di belakang proxy HTTPS.
     const BASE_URL   = `/delivery/support/{{ $support->id }}/recons`;
     const RECONS_ID  = @json($isEdit ? $recons->id : null);
     const SAVE_URL   = RECONS_ID ? `${BASE_URL}/${RECONS_ID}/save` : `${BASE_URL}/save`;
@@ -271,7 +271,7 @@ window.ReconsForm = (function () {
         return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     }
 
-    // Deskripsi tiket berasal dari email customer — escape sebelum innerHTML.
+    // Deskripsi tiket berasal dari email customer - escape sebelum innerHTML.
     function esc(value) {
         if (value === null || value === undefined) return '';
         return String(value)
@@ -283,11 +283,11 @@ window.ReconsForm = (function () {
     function notify(msg, type) {
         if (typeof window.showToast === 'function') window.showToast(msg, type);
         else if (typeof window.showNotification === 'function') window.showNotification(msg, type);
-        else alert(msg);
+        else showAlert(msg);
     }
 
     function fmtMd(v) {
-        return (v === null || v === undefined || v === '') ? '-' : Number(v).toFixed(2);
+        return (v === null || v === undefined || v === '') ? '-' : formatMd(v);
     }
 
     // ── filter tanggal ───────────────────────────────────────────────────
@@ -308,7 +308,7 @@ window.ReconsForm = (function () {
     /** Opsi bulan dibangun dari data tiket yang benar-benar ada. */
     function buildPeriodOptions() {
         const dd = document.getElementById('ddPeriod');
-        // Panel bisa sedang dilepas ke <body> (mode fixed) — pakai ref tersimpan.
+        // Panel bisa sedang dilepas ke <body> (mode fixed) - pakai ref tersimpan.
         const panel  = dd?._ddPanel || dd?.querySelector('.custom-dd-panel');
         const footer = document.getElementById('periodClearFooter');
         if (!panel || !footer) return;
@@ -335,7 +335,7 @@ window.ReconsForm = (function () {
         // membaca .custom-dd-item secara live, jadi item yang disisipkan belakangan
         // sudah otomatis berfungsi. Meng-init ulang justru memasang listener KEDUA
         // pada tombol: klik pertama membuka panel, handler kedua langsung
-        // menutupnya lagi — inilah penyebab dropdown "tidak bisa ditekan".
+        // menutupnya lagi - inilah penyebab dropdown "tidak bisa ditekan".
         //
         // Yang perlu disegarkan hanyalah tanda centang + label, karena item lama
         // dibuang dan diganti sementara nilai pilihannya tersimpan di hidden input.
@@ -370,14 +370,14 @@ window.ReconsForm = (function () {
 
     /**
      * Terapkan filter tanggal. Dipanggil otomatis saat pilihan berubah, DAN
-     * lewat tombol "Apply filter" — tombol itu berguna untuk input rentang
+     * lewat tombol "Apply filter" - tombol itu berguna untuk input rentang
      * tanggal, yang tidak selalu memicu event 'change' selagi user mengetik.
      */
     function applyDateFilter() {
         const from = document.getElementById('filterFrom').value;
         const to   = document.getElementById('filterTo').value;
 
-        // Rentang terbalik hampir pasti salah ketik — beri tahu, jangan diam
+        // Rentang terbalik hampir pasti salah ketik - beri tahu, jangan diam
         // saja menampilkan tabel kosong.
         if (from && to && to < from) {
             notify('The "to" date is earlier than the "from" date. Please check the range.', 'error');
@@ -398,14 +398,14 @@ window.ReconsForm = (function () {
      * Pencocokan kata kunci: nomor tiket, deskripsi, DAN tanggal.
      *
      * Tanggal yang dicocokkan HANYA yang sesuai dasar filter aktif (Start Date
-     * atau Close Date) — bukan dua-duanya. Alasannya: kalau keduanya ikut
+     * atau Close Date) - bukan dua-duanya. Alasannya: kalau keduanya ikut
      * dicocokkan, mengetik "Jul" ikut menjaring tiket yang Start Date-nya Juni
      * hanya karena Close Date-nya Juli, sehingga daftarnya terlihat "tidak
      * tersaring". Dengan mengikuti dasar yang dipilih, perilakunya konsisten
      * dengan kontrol "Filter by date" tepat di bawah kotak pencarian ini.
      *
      * Bentuk yang dicocokkan: mentah (`2026-07-26`), label tampilan
-     * (`26 Jul 2026`), dan format lokal (`26/07/2026`) — sehingga user bisa
+     * (`26 Jul 2026`), dan format lokal (`26/07/2026`) - sehingga user bisa
      * mengetik "jul", "jul 2026", "26 jul", "2026-07", atau "26/07/2026".
      */
     function matchesTerm(ticket, term) {
@@ -460,7 +460,7 @@ window.ReconsForm = (function () {
 
             // Jaring pengaman: buang pilihan yang tiketnya tidak ada di daftar.
             // Server sudah menyertakan seluruh baris batch ini (termasuk yang
-            // sudah tidak eligible), jadi normalnya tak ada yang terbuang —
+            // sudah tidak eligible), jadi normalnya tak ada yang terbuang -
             // tapi tanpa ini sebuah id "hantu" bisa ikut terkirim dan membuat
             // penyimpanan gagal terus tanpa cara memperbaikinya dari layar.
             const available = new Set(tickets.map(t => t.ticket_id));
@@ -477,7 +477,7 @@ window.ReconsForm = (function () {
     /**
      * Alasan tabel kosong, ditulis sespesifik mungkin. Kasus paling sering:
      * memfilter memakai Close Date padahal tiket-tiketnya belum punya tanggal
-     * itu — tanpa penjelasan, filter terlihat seperti rusak.
+     * itu - tanpa penjelasan, filter terlihat seperti rusak.
      */
     function emptyReason() {
         const basisLabel = basis() === 'close_date' ? 'close date' : 'start date';
@@ -519,7 +519,7 @@ window.ReconsForm = (function () {
                     <td class="px-4 py-3 text-gray-700">
                         ${esc(t.description || '-')}
                         ${t.in_recons && t.eligible_now === false
-                            ? '<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-100 text-amber-800" title="Already recorded in this recons, but it no longer meets the criteria (reopened, or its Customer MD was cleared). Uncheck it to take it out.">Already in this recons — no longer eligible</span>'
+                            ? '<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-100 text-amber-800" title="Already recorded in this recons, but it no longer meets the criteria (reopened, or its Customer MD was cleared). Uncheck it to take it out.">Already in this recons - no longer eligible</span>'
                             : ''}
                     </td>
                     <td class="px-4 py-3 text-center whitespace-nowrap text-gray-600">${esc(t.start_date_label)}</td>
@@ -539,7 +539,7 @@ window.ReconsForm = (function () {
         const totalMd = chosen.reduce((sum, t) => sum + Number(t.man_days || 0), 0);
 
         document.getElementById('selectedCount').textContent = chosen.length;
-        document.getElementById('selectedMd').textContent    = totalMd.toFixed(2);
+        document.getElementById('selectedMd').textContent    = formatMd(totalMd);
 
         const visible  = rows || visibleTickets();
         const checkAll = document.getElementById('checkAll');
@@ -583,7 +583,7 @@ window.ReconsForm = (function () {
         }
     }
 
-    /** Dipanggil dari oninput/onchange field — tanda merah hilang begitu diisi. */
+    /** Dipanggil dari oninput/onchange field - tanda merah hilang begitu diisi. */
     function clearFieldError(id) {
         const input = document.getElementById(id);
         const note  = document.getElementById(id + 'Error');
@@ -633,13 +633,13 @@ window.ReconsForm = (function () {
         }
 
         // Modal konfirmasi global (partials/confirm-modal), bukan confirm()
-        // bawaan browser — konsisten dengan aksi penting lain di aplikasi.
+        // bawaan browser - konsisten dengan aksi penting lain di aplikasi.
         if (action === 'submit') {
             const chosen  = tickets.filter(t => selected.has(t.ticket_id));
             const totalMd = chosen.reduce((sum, t) => sum + Number(t.man_days || 0), 0);
 
             const ok = await showConfirm(
-                `Submit this recons with ${chosen.length} ticket(s) and ${totalMd.toFixed(2)} MD?\n\n`
+                `Submit this recons with ${chosen.length} ticket(s) and ${formatMd(totalMd)} MD?\n\n`
                 + 'After submitting, its header and ticket list are locked. You can still cancel it later to return it to draft.',
                 'Submit Recons',
                 'primary',
@@ -681,7 +681,7 @@ window.ReconsForm = (function () {
             // Toast sukses TIDAK ditampilkan di sini: halaman langsung berpindah
             // ke detail Recons, jadi toast dititipkan lewat flash session
             // (dirender oleh blok session('success') di dashboard.blade.php pada
-            // halaman tujuan). Menampilkannya di sini sia-sia — DOM keburu dibuang
+            // halaman tujuan). Menampilkannya di sini sia-sia - DOM keburu dibuang
             // sebelum animasi toast sempat jalan.
             window.location.href = data.redirect_url;
         } catch (e) {
@@ -702,7 +702,7 @@ window.ReconsForm = (function () {
     };
 })();
 
-// custom-dropdown.js memanggil callback-nya lewat `window[namaFungsi]` — sebuah
+// custom-dropdown.js memanggil callback-nya lewat `window[namaFungsi]` - sebuah
 // lookup DATAR yang tidak bisa menguraikan nama bertitik. `data-onchange` karena
 // itu WAJIB berisi nama fungsi global polos (pola yang dipakai seluruh halaman
 // lain: applyFilters, applyColFilter, dst). Sebelumnya di sini tertulis

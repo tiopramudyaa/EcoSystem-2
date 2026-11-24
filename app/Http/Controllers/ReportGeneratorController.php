@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Pilih template .docx (tersimpan di library per customer — upload/kelola
+ * Pilih template .docx (tersimpan di library per customer - upload/kelola
  * lewat tab "Report Templates" di halaman detail Customer, lihat
  * CustomerReportTemplateController) -> generate laporan terisi data nyata
  * lewat ReportGeneratorService (queue job, lihat GenerateWordReportJob).
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Storage;
 class ReportGeneratorController extends Controller
 {
     /**
-     * Halaman uji coba sementara (form upload + poll status) — bukan UI final.
+     * Halaman uji coba sementara (form upload + poll status) - bukan UI final.
      */
     public function index()
     {
@@ -28,7 +28,7 @@ class ReportGeneratorController extends Controller
     }
 
     /**
-     * Cari/daftar template di library lintas-customer — dipakai picker di
+     * Cari/daftar template di library lintas-customer - dipakai picker di
      * halaman generate. Upload template TIDAK terjadi di sini (lihat
      * CustomerReportTemplateController); ini murni pencarian data yang
      * sudah ada, setiap hasil membawa nama customer-nya sebagai label.
@@ -55,7 +55,7 @@ class ReportGeneratorController extends Controller
     }
 
     /**
-     * Riwayat generate laporan milik employee yang sedang login — dipakai
+     * Riwayat generate laporan milik employee yang sedang login - dipakai
      * panel History di halaman generate (pola sama seperti AI Research).
      */
     public function history()
@@ -146,7 +146,7 @@ class ReportGeneratorController extends Controller
      * simpan jawabannya di qa_log lalu generate ULANG dari awal (baca
      * template + panggil tool lagi), kali ini dengan riwayat tanya-jawab
      * disisipkan ke prompt (lihat ReportGeneratorService::buildPrompt()).
-     * Bukan resume persis di titik AI berhenti — restart yang aman karena
+     * Bukan resume persis di titik AI berhenti - restart yang aman karena
      * tool-nya read-only, jauh lebih robust daripada menyimpan-ulang state
      * mentah provider lintas job.
      */
@@ -220,7 +220,7 @@ class ReportGeneratorController extends Controller
     }
 
     /**
-     * Tampilkan file inline (Content-Disposition: inline) — dipakai <iframe>
+     * Tampilkan file inline (Content-Disposition: inline) - dipakai <iframe>
      * pratinjau PDF di tengah halaman, beda dari download() yang memaksa
      * "Save As".
      */

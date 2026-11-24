@@ -110,7 +110,7 @@
                 </div>
                 <div class="text-right">
                     <p class="text-xs text-gray-500">Total MD</p>
-                    <p class="font-bold text-gray-900">{{ number_format($summary['total_md'], 2) }}</p>
+                    <p class="font-bold text-gray-900">{{ \App\Support\Md::format($summary['total_md']) }}</p>
                 </div>
             </div>
         </div>
@@ -143,7 +143,7 @@
                             <td class="px-4 py-3 text-center whitespace-nowrap text-gray-600">{{ $row['status_label'] }}</td>
                             <td class="px-4 py-3 text-center whitespace-nowrap text-gray-600">{{ $row['type'] ?: '-' }}</td>
                             <td class="px-4 py-3 text-right whitespace-nowrap text-gray-900">
-                                {{ $row['man_days'] !== null ? number_format($row['man_days'], 2) : '-' }}
+                                {{ $row['man_days'] !== null ? \App\Support\Md::format($row['man_days']) : '-' }}
                             </td>
                         </tr>
                         @empty
@@ -167,7 +167,7 @@
 window.ReconsDetail = (function () {
     'use strict';
 
-    // URL relatif — konsisten dengan section lain & aman di belakang proxy HTTPS.
+    // URL relatif - konsisten dengan section lain & aman di belakang proxy HTTPS.
     const BASE_URL   = `/delivery/support/{{ $support->id }}/recons/{{ $recons->id }}`;
     const SUBMIT_URL = `${BASE_URL}/submit`;
     const CANCEL_URL = `${BASE_URL}/cancel`;
@@ -180,14 +180,14 @@ window.ReconsDetail = (function () {
     function notify(msg, type) {
         if (typeof window.showToast === 'function') window.showToast(msg, type);
         else if (typeof window.showNotification === 'function') window.showNotification(msg, type);
-        else alert(msg);
+        else showAlert(msg);
     }
 
     async function submit() {
         // Modal konfirmasi global (partials/confirm-modal), bukan confirm() browser.
         const ok = await showConfirm(
             @json('Submit recons ' . $recons->recons_number . ' with ' . $summary['ticket_count']
-                . ' ticket(s) and ' . number_format($summary['total_md'], 2) . " MD?\n\n"
+                . ' ticket(s) and ' . \App\Support\Md::format($summary['total_md']) . " MD?\n\n"
                 . 'After submitting, its header and ticket list can no longer be changed.'),
             'Submit Recons',
             'primary',
@@ -227,7 +227,7 @@ window.ReconsDetail = (function () {
         }
     }
 
-    /** Batalkan submit — status kembali ke Draft sehingga bisa diedit lagi. */
+    /** Batalkan submit - status kembali ke Draft sehingga bisa diedit lagi. */
     async function cancel() {
         const ok = await showConfirm(
             @json('Cancel recons ' . $recons->recons_number . "? Its status returns to Draft so the header and ticket list can be edited again.\n\n"

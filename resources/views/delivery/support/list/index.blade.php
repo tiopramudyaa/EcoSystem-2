@@ -7,7 +7,7 @@
 <style>
     .primary-focus:focus { border-color: var(--primary-color) !important; box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15) !important; outline: none !important; }
 
-    /* Summary tiles — clickable, men-drive filter tabel yang sama dengan header kolom */
+    /* Summary tiles - clickable, men-drive filter tabel yang sama dengan header kolom */
     .stat-tile {
         display: block; width: 100%; text-align: left;
         padding: 0.875rem 1rem;
@@ -80,14 +80,14 @@
 
         $progressOf = fn($s) => (float) ($s->calculated_progress ?? 0);
 
-        // Bucket progress — nilai ini juga dipakai sebagai data-bucket & value filter.
+        // Bucket progress - nilai ini juga dipakai sebagai data-bucket & value filter.
         $bucketOf = function ($s) use ($progressOf) {
             $p = $progressOf($s);
             if ($p >= 100) return 'completed';
             return $p > 0 ? 'in progress' : 'not started';
         };
 
-        // Timeline flag — eksklusif (tepat satu label per baris) supaya angka tile
+        // Timeline flag - eksklusif (tepat satu label per baris) supaya angka tile
         // tidak saling tumpang tindih. Support yang sudah Completed tidak dihitung
         // sebagai overdue/ending soon karena pekerjaannya memang sudah selesai.
         $timelineOf = function ($s) use ($today, $soonLimit, $progressOf) {
@@ -212,6 +212,17 @@
         <div class="px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
             <div class="flex justify-between items-center flex-wrap gap-4">
                 <h3 class="text-lg font-medium text-gray-900">All Support Items</h3>
+                <div class="flex items-center gap-2">
+                {{-- Export mengikuti filter/sort yang sedang aktif di tabel:
+                     id baris yang terlihat dikirim sebagai query `ids`. --}}
+                @if($can('delivery-support.export'))
+                <button type="button" onclick="supExportExcel(this)"
+                        class="inline-flex items-center gap-2 border border-gray-300 bg-white text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-50 transition duration-300 text-sm disabled:opacity-60 disabled:cursor-not-allowed">
+                    <i class="fas fa-file-excel text-green-600"></i>
+                    <span class="hidden sm:inline">Export Excel</span>
+                    <span class="sm:hidden">Export</span>
+                </button>
+                @endif
                 @if($can('delivery-support.add-new'))
                 <a href="{{ route('delivery.support.create') }}"
                    class="primary-gradient text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition duration-300 text-sm">
@@ -219,10 +230,11 @@
                     Add Delivery Support
                 </a>
                 @endif
+                </div>
             </div>
         </div>
 
-        {{-- Search Bar — selaras dengan style input pada Create form (rounded-lg + border eksplisit + padding seragam) --}}
+        {{-- Search Bar - selaras dengan style input pada Create form (rounded-lg + border eksplisit + padding seragam) --}}
         <div class="p-4">
             <input type="search" id="support-search"
                 placeholder="Search by client, ticket ID, or description..."
@@ -445,6 +457,7 @@
                                 $progressColor = $progress >= 100 ? '#10b981' : ($progress > 50 ? '#3b82f6' : ($progress > 0 ? '#f59e0b' : '#9ca3af'));
                             @endphp
                             <tr class="support-row hover:bg-gray-50 transition-colors cursor-pointer"
+                                data-id="{{ $support->id }}"
                                 onclick="window.location.href='{{ route('delivery.support.show', $support->id) }}'"
                                 data-client="{{ strtolower($support->client->basicData->name_1 ?? '') }}"
                                 data-name="{{ strtolower($support->name ?? '') }}"
@@ -579,6 +592,30 @@
         if (tc) tc.scrollTop = 0;
     }
 
+    // Export Excel: yang diekspor = baris desktop yang sedang terlihat. Filter
+    // kolom, tile, dan search semuanya sudah menyembunyikan baris lewat supMatches.
+    function supExportExcel(btn) {
+        const rows = Array.from(document.querySelectorAll('#desktop-support-table-body tr.support-row'));
+
+        const ids = rows
+            .filter(r => r.style.display !== 'none')
+            .map(r => r.dataset.id)
+            .filter(Boolean);
+
+        if (!ids.length) {
+            if (typeof showToast === 'function') showToast('No support items match the current filter - nothing to export.', 'warning');
+            return;
+        }
+
+        const url = new URL('{{ route('delivery.support.export') }}', window.location.origin);
+        // Semua baris terpilih → biarkan server mengekspor semuanya (hindari URL panjang).
+        if (ids.length < rows.length) url.searchParams.set('ids', ids.join(','));
+
+        btn.disabled = true;
+        window.location.href = url.toString();
+        setTimeout(() => { btn.disabled = false; }, 3000);
+    }
+
     function applySupportMobileView() {
         const cards = document.querySelectorAll('.support-card');
         if (!cards.length) return;
@@ -636,7 +673,7 @@
     }
     document.addEventListener('click', function (e) {
         // .se-panel / .se-wrap: dropdown hasil select-enhance.js. Panelnya di-detach
-        // ke <body> (mode fixed) sehingga bukan lagi turunan .sup-panel — tanpa
+        // ke <body> (mode fixed) sehingga bukan lagi turunan .sup-panel - tanpa
         // guard ini, klik di dalamnya menutup panel filter.
         if (e.target.closest('.sup-th-btn') || e.target.closest('.sup-panel')
             || e.target.closest('.se-panel') || e.target.closest('.se-wrap')) return;

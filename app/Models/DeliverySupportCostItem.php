@@ -18,13 +18,16 @@ class DeliverySupportCostItem extends Model
         'delivery_support_cost_id',
         'description',
         'amount',
+        'expense_date',
+        'period',
         'document_name',
         'document_file_id',
         'document_url',
     ];
 
     protected $casts = [
-        'amount' => 'float',
+        'amount'       => 'float',
+        'expense_date' => 'date',
     ];
 
     public function costItem()

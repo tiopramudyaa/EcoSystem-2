@@ -8,11 +8,12 @@ use Anthropic\Messages\InputJSONDelta;
 use Anthropic\Messages\TextBlockParam;
 use Anthropic\Messages\TextDelta;
 use Anthropic\Messages\ToolUseBlock;
+use App\Services\Ai\AiUsageRecorder;
 use App\Services\Ai\Drivers\Contracts\ChatDriver;
 use Closure;
 
 /**
- * Claude side of AiChatService's turn — this is exactly the logic that used
+ * Claude side of AiChatService's turn - this is exactly the logic that used
  * to live directly in AiChatService before GPT became a second provider.
  * Messages/tools arrive already in Anthropic's own shape, so no translation
  * is needed here (compare OpenAiChatDriver, which does the translating).
@@ -40,7 +41,7 @@ class AnthropicChatDriver implements ChatDriver
             // Cache breakpoint: pemanggil (AiTicketQaService, AiChatService) merakit
             // ulang system prompt yang sama persis di setiap giliran chat SELAMA
             // state yang dirujuknya (mis. ai_analysis staging ticket) belum berubah
-            // — tanpa breakpoint ini, giliran ke-2/3/dst dalam satu sesi tanya-jawab
+            // - tanpa breakpoint ini, giliran ke-2/3/dst dalam satu sesi tanya-jawab
             // memproses ulang konteks yang identik dari nol setiap kali.
             system: [TextBlockParam::with(text: $systemPrompt, cacheControl: CacheControlEphemeral::with())],
             thinking: $effort ? ['type' => 'adaptive'] : null,
@@ -48,7 +49,7 @@ class AnthropicChatDriver implements ChatDriver
             tools: $tools,
         );
 
-        return $this->consumeStream($stream, $onDelta, $isAborted);
+        return $this->consumeStream($stream, $model, $onDelta, $isAborted);
     }
 
     /**
@@ -58,20 +59,29 @@ class AnthropicChatDriver implements ChatDriver
      *
      * @return array{0: ?array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>, 2: ?string}
      */
-    private function consumeStream($stream, Closure $onDelta, Closure $isAborted): array
+    private function consumeStream($stream, string $model, Closure $onDelta, Closure $isAborted): array
     {
         /** @var array<int, array<string, mixed>> $blocks */
         $blocks = [];
         $stopReason = null;
+        $startUsage = null;
+        $deltaUsage = null;
 
         foreach ($stream as $event) {
             if ($isAborted()) {
                 $stream->close();
 
+                // Token yang sudah terkirim tetap ditagih provider.
+                AiUsageRecorder::recordAnthropicStream($model, 'chat', $startUsage, $deltaUsage);
+
                 return [null, [], null];
             }
 
             switch ($event->type) {
+                case 'message_start':
+                    $startUsage = $event->message->usage;
+                    break;
+
                 case 'content_block_start':
                     $block = $event->contentBlock;
                     $blocks[$event->index] = $block instanceof ToolUseBlock
@@ -91,12 +101,15 @@ class AnthropicChatDriver implements ChatDriver
 
                 case 'message_delta':
                     $stopReason = $event->delta->stopReason;
+                    $deltaUsage = $event->usage;
                     break;
 
                 case 'message_stop':
                     break 2;
             }
         }
+
+        AiUsageRecorder::recordAnthropicStream($model, 'chat', $startUsage, $deltaUsage);
 
         ksort($blocks);
 

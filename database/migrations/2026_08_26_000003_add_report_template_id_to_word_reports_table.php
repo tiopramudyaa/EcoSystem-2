@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
  * Tautkan word_reports ke template library-nya (report_templates). Kolom
  * template_path/template_original_name yang sudah ada TETAP dipakai apa
  * adanya oleh ReportGeneratorService (snapshot template yang benar-benar
- * dipakai generate ini) — report_template_id murni penanda "dari template
+ * dipakai generate ini) - report_template_id murni penanda "dari template
  * mana asalnya", untuk riwayat/reuse, bukan pengganti kolom itu.
  */
 return new class extends Migration

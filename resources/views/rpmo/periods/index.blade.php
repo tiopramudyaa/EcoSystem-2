@@ -16,15 +16,17 @@
 
 @section('content')
 @php
-    $isRpmo           = $roleId === 7;
-    $isProjectHead    = $roleId === 4;
-    $isSupportHead    = $roleId === 5;
-    $isAdmin          = $roleId === 1;
-    $isHead           = $isProjectHead || $isSupportHead;
-    $headDomain       = $isProjectHead ? 'project' : ($isSupportHead ? 'support' : null);
-    // Superadmin gates
-    $canManageGlobal  = $isRpmo || $isAdmin;   // create period, open/close global, force-close
-    $canManageDomains = $isHead || $isAdmin;   // open/close domain, late exceptions
+    // Semua izin datang dari Menu Access lewat controller (rpmo.periods.manage-global / -project / -support).
+    $canManageGlobal  = $canManageGlobal ?? false;      // create period, open/close global, force-close, RPMO step
+    $manageDomains    = $manageDomains ?? [];           // domain yang boleh dikelola: 'project' dan/atau 'support'
+    $canManageDomains = !empty($manageDomains);         // open/close domain, late exceptions (Head step)
+    $manageBoth       = count($manageDomains) > 1;
+    $headDomain       = count($manageDomains) === 1 ? $manageDomains[0] : null;
+    $isRpmo           = $canManageGlobal;               // memutuskan di langkah RPMO
+    $isHead           = $canManageDomains && !$manageBoth; // mengelola tepat satu domain: tombol domainnya sendiri
+    $isAdmin          = $manageBoth;                    // mengelola kedua domain: tombol untuk masing-masing
+    $isProjectHead    = in_array('project', $manageDomains, true);
+    $isSupportHead    = in_array('support', $manageDomains, true);
     $MONTHS           = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
 @endphp
 
@@ -39,8 +41,9 @@
         <div>
             <h2 class="text-2xl font-bold text-gray-900">Period Management</h2>
             <p class="text-sm text-gray-500 mt-0.5">
-                @if($isAdmin) Full period lifecycle control (EC Administrator)
-                @elseif($isRpmo) Full period lifecycle control (RPMO)
+                @if($canManageGlobal && $manageBoth) Full period lifecycle control
+                @elseif($canManageGlobal) Global period control and late access decisions
+                @elseif($manageBoth) Project and Support domain control & late exceptions
                 @elseif($isProjectHead) Project domain control & late exceptions
                 @elseif($isSupportHead) Support domain control & late exceptions
                 @else Read-only view with audit logs
@@ -65,7 +68,7 @@
         $pStatus     = $active->project_status;
         $sStatus     = $active->support_status;
         $periodLabel = $MONTHS[$active->month] . ' ' . $active->year;
-        $dateRange   = \Carbon\Carbon::parse($active->start_date)->format('d M Y') . ' – ' . \Carbon\Carbon::parse($active->end_date)->format('d M Y');
+        $dateRange   = \Carbon\Carbon::parse($active->start_date)->format('d M Y') . ' - ' . \Carbon\Carbon::parse($active->end_date)->format('d M Y');
     @endphp
 
     <div class="mb-6">
@@ -217,11 +220,11 @@
     </div>
 
     @else
-    {{-- No open period — check if there's a pending (not_open) one --}}
+    {{-- No open period - check if there's a pending (not_open) one --}}
     @if($pending)
     @php
         $pendingLabel = $MONTHS[$pending->month] . ' ' . $pending->year;
-        $pendingRange = \Carbon\Carbon::parse($pending->start_date)->format('d M Y') . ' – ' . \Carbon\Carbon::parse($pending->end_date)->format('d M Y');
+        $pendingRange = \Carbon\Carbon::parse($pending->start_date)->format('d M Y') . ' - ' . \Carbon\Carbon::parse($pending->end_date)->format('d M Y');
     @endphp
     <div class="mb-6">
         <div class="flex items-center justify-between mb-3">
@@ -317,7 +320,7 @@
                     @foreach($periods as $p)
                     @php
                         $pLabel = $MONTHS[$p->month] . ' ' . $p->year;
-                        $pRange = \Carbon\Carbon::parse($p->start_date)->format('d M Y') . ' – ' . \Carbon\Carbon::parse($p->end_date)->format('d M Y');
+                        $pRange = \Carbon\Carbon::parse($p->start_date)->format('d M Y') . ' - ' . \Carbon\Carbon::parse($p->end_date)->format('d M Y');
                     @endphp
                     <tr class="hover:bg-gray-50 transition-colors {{ $active && $active->id === $p->id ? 'bg-blue-50' : '' }}">
                         <td class="px-4 py-3">
@@ -415,7 +418,7 @@
                     <input type="date" id="cpEndDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus-ring">
                 </div>
             </div>
-            <p class="text-[10px] text-gray-400">Dates can be customized. Default follows the 21st–20th rule.</p>
+            <p class="text-[10px] text-gray-400">Dates can be customized. Default follows the 21st-20th rule.</p>
         </div>
         <div class="px-6 pb-6 flex gap-3">
             <button onclick="closeCreateModal()" class="flex-1 px-4 py-2.5 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all">Cancel</button>
@@ -441,7 +444,7 @@
         </div>
         <div class="p-6">
             <p class="text-sm text-gray-600 mb-2">You are about to globally close period:</p>
-            <p class="text-base font-bold text-gray-900 mb-4" id="cgPeriodLabel">—</p>
+            <p class="text-base font-bold text-gray-900 mb-4" id="cgPeriodLabel">-</p>
             <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-5 text-sm text-yellow-700">
                 After closing, no new timesheets can be submitted for this period unless exceptions are granted.
             </div>
@@ -468,8 +471,8 @@
             </button>
         </div>
         <div class="p-6">
-            <p class="text-sm text-gray-600 mb-1">You are about to close the <strong id="cdDomainLabel" class="capitalize">—</strong> domain for:</p>
-            <p class="text-base font-bold text-gray-900 mb-4" id="cdPeriodLabel">—</p>
+            <p class="text-sm text-gray-600 mb-1">You are about to close the <strong id="cdDomainLabel" class="capitalize">-</strong> domain for:</p>
+            <p class="text-base font-bold text-gray-900 mb-4" id="cdPeriodLabel">-</p>
             <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-5 text-sm text-yellow-700">
                 Users in your domain will not be able to submit timesheets until RPMO opens the next period or grants a late exception.
             </div>
@@ -499,8 +502,8 @@
             </button>
         </div>
         <div class="p-6">
-            <p class="text-sm text-gray-600 mb-1">You are about to <strong class="text-red-600">force-close</strong> the <strong id="fcDomainLabel" class="capitalize">—</strong> domain for:</p>
-            <p class="text-base font-bold text-gray-900 mb-4" id="fcPeriodLabel">—</p>
+            <p class="text-sm text-gray-600 mb-1">You are about to <strong class="text-red-600">force-close</strong> the <strong id="fcDomainLabel" class="capitalize">-</strong> domain for:</p>
+            <p class="text-base font-bold text-gray-900 mb-4" id="fcPeriodLabel">-</p>
             <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-5 text-sm text-red-700">
                 This overrides the normal closing flow. The action will be recorded in the audit log.
                 <strong>This cannot be undone.</strong>
@@ -524,7 +527,7 @@
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
             <div>
                 <h3 class="text-base font-bold text-gray-900">Audit Log</h3>
-                <p class="text-xs text-gray-500 mt-0.5" id="auditLogPeriodLabel">—</p>
+                <p class="text-xs text-gray-500 mt-0.5" id="auditLogPeriodLabel">-</p>
             </div>
             <button onclick="document.getElementById('auditLogModal').classList.replace('flex','hidden')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -607,7 +610,7 @@ function computeDefaultDates() {
     const end    = `${year}-${pad(month)}-20`;
     document.getElementById('cpStartDate').value      = start;
     document.getElementById('cpEndDate').value        = end;
-    document.getElementById('cpDefaultHint').textContent = `Default: ${start} – ${end} (21st–20th rule)`;
+    document.getElementById('cpDefaultHint').textContent = `Default: ${start} - ${end} (21st-20th rule)`;
 }
 async function submitCreatePeriod() {
     const year  = parseInt(document.getElementById('cpYear').value);
@@ -833,10 +836,10 @@ function openEditDatesModal(id, label, cfg) {
     _edPeriodId = id;
     document.getElementById('edPeriodLabel').textContent = label;
     // Fetch current dates from the period row already in the menu config
-    // We need to fetch them — do a quick API call
+    // We need to fetch them - do a quick API call
     api(`/api/periods/${id}/audit-logs`).then(() => {}); // just warm up; dates come from the row
     // Pre-fill by reading the rendered date range cell in the table
-    // Simpler: store start/end in cfg — we'll add them to openPeriodMenu call below
+    // Simpler: store start/end in cfg - we'll add them to openPeriodMenu call below
     document.getElementById('edStartDate').value = cfg.startDate || '';
     document.getElementById('edEndDate').value   = cfg.endDate   || '';
     document.getElementById('editDatesModal').classList.replace('hidden', 'flex');
@@ -904,7 +907,7 @@ async function executeDeletePeriod() {
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <div>
                 <h3 class="text-base font-bold text-gray-900">Edit Period Dates</h3>
-                <p class="text-xs text-gray-500 mt-0.5" id="edPeriodLabel">—</p>
+                <p class="text-xs text-gray-500 mt-0.5" id="edPeriodLabel">-</p>
             </div>
             <button onclick="closeEditDatesModal()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -952,7 +955,7 @@ async function executeDeletePeriod() {
         </div>
         <div class="p-6">
             <p class="text-sm text-gray-600 mb-2">You are about to permanently delete period:</p>
-            <p class="text-base font-bold text-gray-900 mb-4" id="dpPeriodLabel">—</p>
+            <p class="text-base font-bold text-gray-900 mb-4" id="dpPeriodLabel">-</p>
             <div id="dpWarnOpened" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-700">
                 <i class="fas fa-exclamation-triangle mr-1"></i>
                 <strong>Warning:</strong> This period has already been opened. Deleting it will also remove all related audit logs, late exception records, and requests. This action cannot be undone.
@@ -1053,7 +1056,7 @@ function renderExRequests(requests) {
             <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2 space-y-2">
                 <p class="text-[10px] font-semibold text-yellow-700 uppercase tracking-wide">
                     <i class="fas fa-clock mr-1"></i>Head: ${esc(r.head_name ?? '-')} · ${esc(r.head_approved_at ?? '-')}
-                    ${r.head_notes ? `— ${esc(r.head_notes)}` : ''}
+                    ${r.head_notes ? `- ${esc(r.head_notes)}` : ''}
                 </p>
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
@@ -1086,7 +1089,7 @@ function renderExRequests(requests) {
                 <div>
                     <p class="text-sm font-semibold text-gray-900">${esc(r.employee_name)}</p>
                     <p class="text-xs text-gray-500">${esc(r.period_label)} &nbsp;·&nbsp; ${r.domain === 'project' ? 'Project' : 'Support'}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">${esc(r.period_start)} – ${esc(r.period_end)}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">${esc(r.period_start)} - ${esc(r.period_end)}</p>
                 </div>
                 <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${r.status_color}">${esc(r.status_label)}</span>
             </div>
@@ -1120,13 +1123,13 @@ async function decideExRequest(reqId, level, decision) {
             showNotification('Access deadline is required when approving.', 'error');
             return;
         }
-        // Send the raw local-time string — backend parses with app timezone (Asia/Jakarta)
+        // Send the raw local-time string - backend parses with app timezone (Asia/Jakarta)
         body.expires_at = expiryEl.value; // "YYYY-MM-DDTHH:mm" local
     }
 
     try {
         const res  = await fetch(url, {
-            method: 'PATCH',
+            method: 'POST',   // POST, bukan PATCH: WAF edge di production menolak method selain GET/POST
             headers: getHeaders(),
             credentials: 'same-origin',
             body: JSON.stringify(body),

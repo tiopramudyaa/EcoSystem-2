@@ -24,6 +24,7 @@ class TicketTeamsChat extends Model
         'ticket_id',
         'chat_id',
         'topic',
+        'files_folder_id',
         'created_via',
         'sync_enabled',
         'last_message_at',
@@ -35,7 +36,7 @@ class TicketTeamsChat extends Model
      * Disamakan dengan default kolom di migrasi.
      *
      * Tanpa ini, instance hasil create() memegang NULL untuk kolom-kolom itu
-     * sampai di-fresh() — sehingga `if ($chat->sync_enabled)` tepat sesudah chat
+     * sampai di-fresh() - sehingga `if ($chat->sync_enabled)` tepat sesudah chat
      * dibuat akan bernilai salah, padahal barisnya di DB sudah benar.
      */
     protected $attributes = [
@@ -63,7 +64,7 @@ class TicketTeamsChat extends Model
 
     /**
      * Kursor $filter untuk Graph. Null berarti baris ini belum pernah dipoll
-     * dan pemanggilnya harus menetapkan batas bawah sendiri — JANGAN diperlakukan
+     * dan pemanggilnya harus menetapkan batas bawah sendiri - JANGAN diperlakukan
      * sebagai "tarik semua", karena itu akan menyeret seluruh riwayat chat masuk
      * ke thread tiket (design §7).
      */
@@ -86,7 +87,7 @@ class TicketTeamsChat extends Model
             //
             // Graph selalu mengirim UTC, sedangkan kolom datetime ini dibaca
             // Laravel sebagai Asia/Jakarta. Menyimpan jam-dinding UTC apa adanya
-            // membuat cursorIso() — yang mengonversinya balik ke UTC —
+            // membuat cursorIso() - yang mengonversinya balik ke UTC -
             // menghasilkan nilai 7 jam terlalu awal. Akibatnya jendela polling
             // selamanya 7 jam lebih lebar: hasilnya tetap benar karena ada
             // dedupe, tapi tiap menit memindai ulang pesan yang sudah lama
@@ -97,7 +98,7 @@ class TicketTeamsChat extends Model
                     : $newest
             )->setTimezone(config('app.timezone'));
 
-            // Hanya maju, tidak pernah mundur — pesan lama yang termodifikasi
+            // Hanya maju, tidak pernah mundur - pesan lama yang termodifikasi
             // (mis. gambar yang selesai diproses Teams) tidak boleh menarik
             // kursor ke belakang dan membuat pesan sesudahnya diserap ulang.
             if (!$this->last_message_at || $newest->gt($this->last_message_at)) {

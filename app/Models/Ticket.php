@@ -4,13 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 use App\Traits\Auditable;
-use App\Services\TicketDeliverableRequirementSync;
 
 class Ticket extends Model
 {
-    use HasFactory, Auditable;
+    use HasFactory, Auditable, SoftDeletes;
     use \App\Models\Concerns\HasOneDriveShareLink;
 
     protected static ?string $auditModule = 'Ticket';
@@ -33,6 +33,16 @@ class Ticket extends Model
 
     protected static function booted(): void
     {
+        // Default mandatory document types depend on ticket_type, so a type change
+        // drops the ticket's own deliverable requirements and it falls back to the
+        // new type's default (see App\Support\DeliverableRequirements). Creation
+        // needs nothing: a new ticket has no own rows and follows the default.
+        static::saved(function (Ticket $ticket) {
+            if ($ticket->wasChanged('ticket_type')) {
+                $ticket->deliverableRequirements()->delete();
+            }
+        });
+
         // Ticket list endpoints sort by last_message_at directly (not
         // COALESCE(last_message_at, created_at)) so the index on that column
         // stays usable. Any creation path that forgets to set it (e.g. bulk
@@ -44,13 +54,13 @@ class Ticket extends Model
             }
         });
 
-        // Re-snapshot the deliverable document checklist whenever the ticket
-        // gets its type for the first time or is reclassified — see
-        // TicketDeliverableRequirementSync. Deliberately NOT run on every
-        // save: only a type change should reset the checklist.
-        static::saved(function (Ticket $ticket) {
-            if ($ticket->wasRecentlyCreated || $ticket->wasChanged('ticket_type')) {
-                TicketDeliverableRequirementSync::sync($ticket);
+        // "Last Update" (= last_message_at) must also move when the status changes
+        // (closed, reopened, etc.), not only on chat messages. Doing it here covers
+        // every code path that changes status. A caller that sets last_message_at
+        // explicitly in the same save keeps its own value.
+        static::updating(function (Ticket $ticket) {
+            if ($ticket->isDirty('status') && !$ticket->isDirty('last_message_at')) {
+                $ticket->last_message_at = now();
             }
         });
     }
@@ -130,7 +140,7 @@ class Ticket extends Model
     // ── Ticket type ──────────────────────────────────────────────────────────
 
     /**
-     * Tiket yang murni urusan internal Eclectic — TIDAK ditampilkan ke customer
+     * Tiket yang murni urusan internal Eclectic - TIDAK ditampilkan ke customer
      * di JARVIES (tabel `ticket` dipakai bersama kedua aplikasi).
      *
      * Ini satu-satunya pembeda visibilitas: tiket buatan EcoSystem dengan type
@@ -163,7 +173,7 @@ class Ticket extends Model
 
     // Relasi ke tabel modules (master). Nama relasi sengaja beda dari kolom
     // string `module` (legacy free text) supaya keduanya bisa diakses terpisah.
-    // Ini masih mengacu ke module_id TUNGGAL ("modul utama") — lihat modules()
+    // Ini masih mengacu ke module_id TUNGGAL ("modul utama") - lihat modules()
     // di bawah untuk daftar LENGKAP tiket yang sudah bisa multi-modul.
     public function moduleMaster()
     {
@@ -178,7 +188,7 @@ class Ticket extends Model
     }
 
     /**
-     * Nama SEMUA modul tiket ini, digabung koma — dipakai di tempat-tempat yang
+     * Nama SEMUA modul tiket ini, digabung koma - dipakai di tempat-tempat yang
      * memang menampilkan modul tiket ke user (list, export, SLA, task, konteks
      * AI) supaya tiket multi-modul tidak terlihat cuma 1 modul. Fallback ke
      * teks lama (module) kalau belum ada satu pun baris di pivot ticket_module
@@ -193,7 +203,7 @@ class Ticket extends Model
     /**
      * Versi batch dari getModuleNamesAttribute() untuk caller yang punya baris
      * ticket dari query builder mentah (bukan Eloquent, jadi relasi modules()
-     * tidak terjangkau) dan perlu nama modul banyak tiket sekaligus tanpa N+1 —
+     * tidak terjangkau) dan perlu nama modul banyak tiket sekaligus tanpa N+1 -
      * lihat TaskController::list(). TIDAK menyertakan fallback ke `module` teks
      * lama di sini (caller yang punya baris $ticket->module sendiri sudah bisa
      * fallback ke situ, seperti TaskController melakukannya).
@@ -218,7 +228,7 @@ class Ticket extends Model
 
     /**
      * Daftar LENGKAP modul tiket ini (satu tiket boleh menyentuh lebih dari
-     * satu modul) — lihat migrasi create_ticket_module_table. `module_id`
+     * satu modul) - lihat migrasi create_ticket_module_table. `module_id`
      * (scalar, dipakai moduleMaster()/module_name di atas) tetap ada sebagai
      * "modul utama" untuk kompatibilitas ~20 tempat lama yang cuma baca satu
      * nilai; tabel ini yang jadi sumber kebenaran untuk daftar lengkapnya.
@@ -230,15 +240,15 @@ class Ticket extends Model
     }
 
     /**
-     * SATU-SATUNYA titik tulis untuk modul tiket — dipakai oleh semua jalur
+     * SATU-SATUNYA titik tulis untuk modul tiket - dipakai oleh semua jalur
      * create/update/approve (TicketController, StagingTicketService) supaya
      * "modul utama" (module_id) dan daftar lengkap (pivot ticket_module)
      * TIDAK PERNAH bisa saling menyimpang. Modul utama otomatis mengikuti
-     * modul PERTAMA dalam daftar — bukan pilihan terpisah — supaya tempat
+     * modul PERTAMA dalam daftar - bukan pilihan terpisah - supaya tempat
      * lama yang cuma baca module_id tetap melihat sesuatu yang masuk akal
      * tanpa perlu tahu apa-apa soal multi-modul.
      *
-     * @param array<int, int|null> $moduleIds boleh memuat null/duplikat — dibuang sebelum disimpan
+     * @param array<int, int|null> $moduleIds boleh memuat null/duplikat - dibuang sebelum disimpan
      */
     public function syncModules(array $moduleIds): void
     {
@@ -259,7 +269,7 @@ class Ticket extends Model
      * Returns null when customer / basic data is missing.
      *
      * Deliverable ticket disimpan di level customer ({root}/{customer}/TICKETING/...),
-     * sehingga folder-nya diturunkan langsung dari customer ticket — TIDAK lagi
+     * sehingga folder-nya diturunkan langsung dari customer ticket - TIDAK lagi
      * bergantung pada delivery support. Format dijaga identik dengan
      * DeliverySupport::customerDeliverableFolderName() agar folder existing tetap match.
      */
@@ -271,8 +281,10 @@ class Ticket extends Model
             return null;
         }
 
-        return str_pad((string) $this->customer_id, 3, '0', STR_PAD_LEFT)
-            . ' ' . strtoupper($this->customer->basicData->name_1);
+        return \App\Services\OneDriveService::sanitizeSegment(
+            str_pad((string) $this->customer_id, 3, '0', STR_PAD_LEFT)
+                . ' ' . strtoupper($this->customer->basicData->name_1)
+        );
     }
 
     // Relasi ke Employee (Ticket Lead)
@@ -300,7 +312,7 @@ class Ticket extends Model
 
     /**
      * Isi man_days sementara (1 MD per orang: lead + member aktif) supaya progress
-     * tidak tampil "-" sebelum ada man_days "asli". Tidak menambah kolom baru —
+     * tidak tampil "-" sebelum ada man_days "asli". Tidak menambah kolom baru -
      * status "sudah asli atau belum" diturunkan dari data yang sudah ada:
      * proposal mandays yang approved, riwayat man_days manual, atau konfirmasi
      * take-ticket yang sudah confirmed. Kalau salah satu itu ada, method ini
@@ -347,11 +359,11 @@ class Ticket extends Model
      * Jaga proposal Resolution Days berstatus draft supaya punya 1 baris
      * consultant_mandays_detail per orang aktif (lead + member). mandays
      * disimpan 0 (bukan 1) supaya form "Propose Resolution Days" tampil
-     * kosong/baru bagi PIC — angka "1 md" yang tampil di My Task/Consultant
+     * kosong/baru bagi PIC - angka "1 md" yang tampil di My Task/Consultant
      * Workload dihasilkan terpisah oleh freeze display, bukan dari kolom ini.
      * Tujuannya supaya tombol expand/edit progress per-orang di My Task &
      * Consultant Workload bisa dipakai sebelum PIC benar-benar mengajukan
-     * proposal. Tidak membuat tabel baru — reuse consultant_mandays/
+     * proposal. Tidak membuat tabel baru - reuse consultant_mandays/
      * consultant_mandays_detail yang sudah ada. Tidak pernah menyentuh
      * proposal yang statusnya bukan draft (sedang direview/sudah diputuskan).
      */
@@ -393,7 +405,7 @@ class Ticket extends Model
         foreach ($targetIds as $empId) {
             if (!$existingDetails->has($empId)) {
                 // mandays disimpan 0 (bukan 1) supaya form "Propose Resolution Days"
-                // tampil kosong/baru bagi PIC — angka "1 md" yang ditampilkan di
+                // tampil kosong/baru bagi PIC - angka "1 md" yang ditampilkan di
                 // My Task/Consultant Workload dihasilkan terpisah oleh freeze display
                 // (lihat ConsultantWorkloadController::consultantDetailsForTickets()),
                 // bukan dari kolom ini.
@@ -416,7 +428,7 @@ class Ticket extends Model
     }
 
     // Relasi Many-to-Many ke Employee (Support Members/Pendamping)
-    /** Active members only — digunakan di semua logika bisnis dan tampilan ticket list */
+    /** Active members only - digunakan di semua logika bisnis dan tampilan ticket list */
     public function members()
     {
         return $this->belongsToMany(
@@ -429,7 +441,7 @@ class Ticket extends Model
         )->withTimestamps()->withPivot('is_active')->wherePivot('is_active', true);
     }
 
-    /** Semua members (aktif + nonaktif) — digunakan untuk manajemen member di ticket detail */
+    /** Semua members (aktif + nonaktif) - digunakan untuk manajemen member di ticket detail */
     public function allMembers()
     {
         return $this->belongsToMany(
@@ -443,9 +455,9 @@ class Ticket extends Model
     }
 
     /**
-     * ID tiket di mana employee ini ditugaskan — sebagai Lead, Member
+     * ID tiket di mana employee ini ditugaskan - sebagai Lead, Member
      * (ticket_member aktif), atau punya alokasi di consultant_mandays_detail.
-     * Tidak memfilter status/deleted/hidden — caller yang menerapkan filter itu
+     * Tidak memfilter status/deleted/hidden - caller yang menerapkan filter itu
      * di query final.
      */
     public static function assignedTicketIds(int $employeeId): \Illuminate\Support\Collection
@@ -523,12 +535,7 @@ class Ticket extends Model
             ->orderBy('created_at', 'asc');
     }
 
-    /**
-     * Snapshotted deliverable-document requirements for this ticket — see
-     * App\Services\TicketDeliverableRequirementSync and the `saved` hook in
-     * booted() below, which (re)populates this whenever ticket_type is set
-     * or changed.
-     */
+    /** Own mandatory/optional deliverable document types of this ticket (overrides the type default). */
     public function deliverableRequirements()
     {
         return $this->hasMany(TicketDeliverableRequirement::class, 'ticket_id', 'ticket_id');

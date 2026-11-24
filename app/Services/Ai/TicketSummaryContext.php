@@ -11,14 +11,14 @@ use Illuminate\Support\Facades\DB;
  *
  * Dua tanggung jawab, dan keduanya harus dilihat berpasangan:
  *
- *   build()       — teks yang dikirim ke model.
- *   fingerprint() — sidik jari ISI tiket, dipakai sebagai bagian kunci cache.
+ *   build()       - teks yang dikirim ke model.
+ *   fingerprint() - sidik jari ISI tiket, dipakai sebagai bagian kunci cache.
  *
  * SIDIK JARI, BUKAN last_message_at. Ringkasan wajib ikut basi setiap kali ada
- * pembaruan apa pun pada tiket — bukan cuma saat ada pesan baru. Karena itu
+ * pembaruan apa pun pada tiket - bukan cuma saat ada pesan baru. Karena itu
  * fingerprint() mengambil MAX(updated_at) DAN COUNT(*) dari setiap sumber yang
  * ikut masuk ke build(). COUNT ikut dihitung sebab penghapusan baris menurunkan
- * jumlah tanpa menaikkan MAX(updated_at) — tanpa itu, menghapus sebuah activity
+ * jumlah tanpa menaikkan MAX(updated_at) - tanpa itu, menghapus sebuah activity
  * log akan menyisakan ringkasan lama yang masih menyebutnya.
  *
  * KONSEKUENSINYA: setiap sumber baru yang ditambahkan ke build() WAJIB
@@ -137,7 +137,7 @@ class TicketSummaryContext
     /**
      * Nama pegawai untuk dibaca model.
      *
-     * Tabel `employee` hanya menyimpan eci dan kapasitas — namanya ada di
+     * Tabel `employee` hanya menyimpan eci dan kapasitas - namanya ada di
      * relasi basicData. Urutan fallback mengikuti yang sudah dipakai
      * TicketController: nama lengkap, lalu nick_name, baru menyerah.
      */
@@ -154,7 +154,7 @@ class TicketSummaryContext
     }
 
     /**
-     * Dipanggil SEKALI dari build() — lihat komentar di sana untuk kenapa
+     * Dipanggil SEKALI dari build() - lihat komentar di sana untuk kenapa
      * dibagi ke technicalSignalsSection() DAN messagesSection().
      */
     private function fetchMessages(Ticket $ticket): Collection
@@ -170,13 +170,13 @@ class TicketSummaryContext
 
     /**
      * Sorotan TCODE & nomor SAP Note/KBA yang disebut di tiket ini, ditaruh
-     * di PALING ATAS context — dihitung dari SELURUH pesan (bukan yang sudah
+     * di PALING ATAS context - dihitung dari SELURUH pesan (bukan yang sudah
      * dipotong messagesSection()), supaya sinyal teknis yang kebetulan ada di
      * pesan yang nanti terpotong tetap sampai ke model.
      *
      * Presisi disengaja lebih diutamakan daripada recall: dua pola di bawah
      * (extractTcodes/extractSapNotes) HANYA menangkap penyebutan yang
-     * eksplisit berlabel ("tcode SE38", "SAP Note 1234567") — menebak dari
+     * eksplisit berlabel ("tcode SE38", "SAP Note 1234567") - menebak dari
      * kata uppercase acak akan menangkap singkatan lain (PIC, CEO, dst) dan
      * section ini jadi lebih menyesatkan daripada membantu. Karena itu
      * daftarnya BOLEH kosong/tidak lengkap; thread penuh di bawah tetap jadi

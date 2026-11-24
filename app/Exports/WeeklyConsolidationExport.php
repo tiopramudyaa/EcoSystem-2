@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
 // Laporan Weekly Consolidation: judul + periode + baris "digenerate" di atas
 // tabel (baris 1-3), header tabel di baris 5, data mulai baris 6. Struktur dan
 // warna sengaja identik dengan LogShiftingExport (dipakai sebagai referensi
-// gaya export di seluruh Reporting) — hanya kolom & isi banner yang berbeda.
+// gaya export di seluruh Reporting) - hanya kolom & isi banner yang berbeda.
 // Urutan kolom (Ticket..Notes) mengikuti format tabel yang diminta user.
 class WeeklyConsolidationExport implements FromArray, WithStyles, WithColumnWidths
 {
@@ -37,14 +37,14 @@ class WeeklyConsolidationExport implements FromArray, WithStyles, WithColumnWidt
         $labelValue = fn (string $label, string $value) => array_merge([$label, $value], array_slice($blank, 2));
 
         $rows = [
-            array_merge(['WEEKLY CONSOLIDATION — ' . strtoupper($this->meta['module_name'] ?? '')], array_slice($blank, 1)),
-            $labelValue('Code', $this->meta['code'] ?? '—'),
-            $labelValue('Recon Date', $this->meta['recon_date'] ?? '—'),
-            $labelValue('Module Group', $this->meta['module_group'] ?? '—'),
+            array_merge(['WEEKLY CONSOLIDATION - ' . strtoupper($this->meta['module_name'] ?? '')], array_slice($blank, 1)),
+            $labelValue('Code', $this->meta['code'] ?? '-'),
+            $labelValue('Recon Date', $this->meta['recon_date'] ?? '-'),
+            $labelValue('Module Group', $this->meta['module_group'] ?? '-'),
             array_merge([$this->periodLabel()], array_slice($blank, 1)),
             array_merge([$this->metaLabel()], array_slice($blank, 1)),
             $blank,
-            ['Last Update', 'Ticket', 'Description', 'Start Date', 'Type', 'Status', 'Module', 'Lead & Member', 'PIC', 'Progress (%)', 'Deliverable', 'Notes'],
+            ['Last Update', 'Ticket', 'Customer', 'Description', 'Start Date', 'Type', 'Status', 'Module', 'Lead & Member', 'PIC', 'Progress (%)', 'Notes'],
         ];
 
         foreach ($this->rows as $r) {
@@ -52,31 +52,22 @@ class WeeklyConsolidationExport implements FromArray, WithStyles, WithColumnWidt
             $lastUpdate = $r['last_update'] ?? null;
 
             $rows[] = [
-                $lastUpdate ? $lastUpdate->format('d M Y H:i') . ' WIB' : '—',
-                $r['ticket_number'] ?? '—',
-                $r['description'] ?? '—',
-                $startDate ? $startDate->format('d M Y H:i') . ' WIB' : '—',
-                $r['ticket_type'] ?? '—',
-                $r['status_label'] ?? '—',
-                $r['module_name'] ?? '—',
-                $r['lead_member'] ?: '—',
-                $r['pic'] ?? '—',
-                isset($r['progress_percentage']) ? number_format((float) $r['progress_percentage'], 0) . '%' : '—',
-                $this->deliverableLabel($r['deliverable_status'] ?? null),
+                $lastUpdate ? $lastUpdate->format('d M Y H:i') . ' WIB' : '-',
+                $r['ticket_number'] ?? '-',
+                $r['customer_name'] ?? '-',
+                $r['description'] ?? '-',
+                $startDate ? $startDate->format('d M Y H:i') . ' WIB' : '-',
+                $r['ticket_type'] ?? '-',
+                $r['status_label'] ?? '-',
+                $r['module_name'] ?? '-',
+                $r['lead_member'] ?: '-',
+                $r['pic'] ?? '-',
+                isset($r['progress_percentage']) ? number_format((float) $r['progress_percentage'], 0) . '%' : '-',
                 $r['notes'] ?? '',
             ];
         }
 
         return $rows;
-    }
-
-    private function deliverableLabel(?string $status): string
-    {
-        return match ($status) {
-            'ok'     => 'OK',
-            'not_ok' => 'Not OK',
-            default  => '—',
-        };
     }
 
     private function periodLabel(): string
@@ -88,7 +79,7 @@ class WeeklyConsolidationExport implements FromArray, WithStyles, WithColumnWidt
     {
         $generatedAt = $this->meta['generated_at'] ?? null;
         $generatedBy = $this->meta['generated_by'] ?? 'System';
-        $genStr = $generatedAt ? $generatedAt->format('d/m/Y H:i') . ' WIB' : '—';
+        $genStr = $generatedAt ? $generatedAt->format('d/m/Y H:i') . ' WIB' : '-';
         return "Generated: {$genStr} by {$generatedBy}  •  Total {$this->rows->count()} Tickets";
     }
 
@@ -97,15 +88,15 @@ class WeeklyConsolidationExport implements FromArray, WithStyles, WithColumnWidt
         return [
             'A' => 18, // Last Update
             'B' => 16, // Ticket
-            'C' => 34, // Description
-            'D' => 18, // Start Date
-            'E' => 14, // Type
-            'F' => 18, // Status
-            'G' => 12, // Module
-            'H' => 26, // Lead & Member
-            'I' => 16, // PIC
-            'J' => 11, // Progress (%)
-            'K' => 11, // Deliverable
+            'C' => 26, // Customer
+            'D' => 34, // Description
+            'E' => 18, // Start Date
+            'F' => 14, // Type
+            'G' => 18, // Status
+            'H' => 12, // Module
+            'I' => 26, // Lead & Member
+            'J' => 16, // PIC
+            'K' => 11, // Progress (%)
             'L' => 35, // Notes
         ];
     }
@@ -118,7 +109,7 @@ class WeeklyConsolidationExport implements FromArray, WithStyles, WithColumnWidt
         $lastRow      = $headerRow + $this->rows->count();
 
         $sheet->mergeCells("A1:{$lastCol}1");
-        // Baris 2-4 (Code/Recon Date/Module Group) SENGAJA tidak di-merge —
+        // Baris 2-4 (Code/Recon Date/Module Group) SENGAJA tidak di-merge -
         // format label (kolom A) : value (kolom B), beda dari baris judul/
         // periode/meta yang teksnya menyatu selebar tabel.
         $sheet->mergeCells("A5:{$lastCol}5");
@@ -168,7 +159,7 @@ class WeeklyConsolidationExport implements FromArray, WithStyles, WithColumnWidt
                 'borders'   => ['allBorders' => $thinBorder],
                 'alignment' => ['vertical' => Alignment::VERTICAL_TOP, 'wrapText' => true],
             ];
-            foreach (['A', 'D', 'E', 'F', 'G', 'J', 'K'] as $col) {
+            foreach (['A', 'E', 'F', 'G', 'H', 'K'] as $col) {
                 $styles["{$col}{$i}"] = ['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_TOP]];
             }
         }

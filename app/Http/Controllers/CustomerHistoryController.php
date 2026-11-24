@@ -129,7 +129,7 @@ class CustomerHistoryController extends Controller
                 auditableId: $historyId,
                 event: 'created',
                 recordLabel: $label,
-                description: "added Customer History: {$label} — Customer #{$customerId}",
+                description: "added Customer History: {$label} - Customer #{$customerId}",
                 old: null,
                 new: $historyData,
             );
@@ -228,7 +228,7 @@ class CustomerHistoryController extends Controller
                 ->delete();
 
             // One summary row per cleanup run rather than one per deleted
-            // history record — individual rows were already bulk-deleted
+            // history record - individual rows were already bulk-deleted
             // above so there's nothing left to snapshot per-row anyway.
             AuditLog::recordAction(
                 module: 'Customer', // matches CustomerHistory's own $auditModule so these rows group together
@@ -236,7 +236,7 @@ class CustomerHistoryController extends Controller
                 auditableId: $customerId,
                 event: 'deleted',
                 recordLabel: "Cleanup ({$deletedCount} record(s))",
-                description: "deleted {$deletedCount} old Customer History record(s) older than {$days} days — Customer #{$customerId}",
+                description: "deleted {$deletedCount} old Customer History record(s) older than {$days} days - Customer #{$customerId}",
                 old: null,
                 new: [
                     'deleted_count' => $deletedCount,

@@ -159,7 +159,7 @@ class EmployeeController extends Controller
 
             // Section mana yang boleh dilihat / diubah oleh pembuka halaman.
             // Slug employee.section.* ini dulu hanya berupa baris menu tanpa
-            // pemakai — akibatnya halaman detail selalu bisa diedit penuh
+            // pemakai - akibatnya halaman detail selalu bisa diedit penuh
             // walaupun checkbox-nya dimatikan di Control Center.
             // Padanan untuk halaman /profile ada di ProfileController.
             $viewer   = Employee::find($user['id'] ?? null);
@@ -267,7 +267,7 @@ class EmployeeController extends Controller
 
             // Fetch qualified modules for all employees via employee_qualification -> modules
             // (isolated so missing table won't break employee list). Sama pattern dengan roles
-            // di atas, dan sama query-nya dengan MandaysController::getModules() — semua module
+            // di atas, dan sama query-nya dengan MandaysController::getModules() - semua module
             // dari kualifikasi employee, tanpa filter qualification_type.
             $moduleAssignments = collect();
             try {
@@ -342,7 +342,7 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Export Master Employee list ke Excel — pakai filter yang sama persis dengan
+     * Export Master Employee list ke Excel - pakai filter yang sama persis dengan
      * getData() (lewat applyEmployeeListFilters) supaya hasil export selalu match
      * dengan apa yang sedang ditampilkan/difilter di layar, tanpa pagination.
      */
@@ -461,7 +461,7 @@ class EmployeeController extends Controller
      * Terapkan semua filter list Master Employee (status, employee, department,
      * home_base, modules) ke query builder. Dipakai bersama oleh getData() (list)
      * dan exportToExcel() supaya hasil export SELALU konsisten dengan filter yang
-     * sedang aktif di layar — satu-satunya tempat logic filter didefinisikan.
+     * sedang aktif di layar - satu-satunya tempat logic filter didefinisikan.
      *
      * @param  \Illuminate\Database\Query\Builder  $query
      */
@@ -486,14 +486,14 @@ class EmployeeController extends Controller
             Log::info('Filter applied: status', ['status' => $request->status]);
         }
 
-        // Filter by ECI — separate column filter from Name below (each has its
+        // Filter by ECI - separate column filter from Name below (each has its
         // own header search box on the list page).
         if ($request->filled('eci')) {
             $query->where('e.eci', 'like', "%{$request->eci}%");
             Log::info('Filter applied: eci', ['eci' => $request->eci]);
         }
 
-        // Filter by name only (first/last/nick/search terms) — independent from
+        // Filter by name only (first/last/nick/search terms) - independent from
         // the ECI filter above.
         // Pisahkan jadi per-kata supaya pencarian "Dado Widagdo" cocok walau
         // first_name & nick_name terpisah, dan setiap kata dicari di SEMUA
@@ -503,7 +503,7 @@ class EmployeeController extends Controller
             Log::info('Filter applied: name', ['search' => $request->name]);
         }
 
-        // Filter by ECI OR name — the ECI column header on the list page has a
+        // Filter by ECI OR name - the ECI column header on the list page has a
         // single combined "Search by ECI or name" box that sends `employee`.
         // (The `eci` / `name` params above are the split-column variant kept for
         // other callers; the list/export UI only ever sends `employee`.)
@@ -512,7 +512,7 @@ class EmployeeController extends Controller
             Log::info('Filter applied: employee', ['search' => $request->employee]);
         }
 
-        // Filter by full name — kolom terpisah dari ECI di atas (dedicated Full
+        // Filter by full name - kolom terpisah dari ECI di atas (dedicated Full
         // Name column filter), jadi HANYA cocokkan nama, bukan ECI/nick name,
         // supaya perilakunya jelas per-kolom bagi user.
         if ($request->filled('full_name')) {
@@ -529,7 +529,7 @@ class EmployeeController extends Controller
             }
         }
 
-        // Filter by department (multi-select, comma-separated) — sama semantik dengan
+        // Filter by department (multi-select, comma-separated) - sama semantik dengan
         // home_base/position: dropdown pilihan dari daftar department yang ada, bukan
         // lagi free-text partial match.
         if ($request->filled('department')) {
@@ -540,7 +540,7 @@ class EmployeeController extends Controller
             }
         }
 
-        // Filter by division (multi-select, comma-separated) — sama semantik dengan home_base/position.
+        // Filter by division (multi-select, comma-separated) - sama semantik dengan home_base/position.
         if ($request->filled('division')) {
             $divisions = array_values(array_filter(array_map('trim', explode(',', $request->division)), fn ($d) => $d !== ''));
             if (!empty($divisions)) {
@@ -567,7 +567,7 @@ class EmployeeController extends Controller
             }
         }
 
-        // Filter by employee type (multi-select, comma-separated) — fixed set: Internal / External.
+        // Filter by employee type (multi-select, comma-separated) - fixed set: Internal / External.
         if ($request->filled('employee_type')) {
             $types = array_values(array_filter(array_map('trim', explode(',', $request->employee_type)), fn ($t) => $t !== ''));
             if (!empty($types)) {
@@ -591,7 +591,7 @@ class EmployeeController extends Controller
             }
         }
 
-        // Filter by position (multi-select, comma-separated) — sama semantik dengan
+        // Filter by position (multi-select, comma-separated) - sama semantik dengan
         // home_base: cocok kalau position employee ada di salah satu nilai terpilih.
         if ($request->filled('position')) {
             $positions = array_values(array_filter(array_map('trim', explode(',', $request->position)), fn ($p) => $p !== ''));
@@ -603,7 +603,7 @@ class EmployeeController extends Controller
 
         // Filter by module qualification (multi-select, comma-separated).
         // Employee cocok kalau punya minimal satu qualification dengan module
-        // yang dipilih (match ANY, bukan harus semua) — sama semantik dengan
+        // yang dipilih (match ANY, bukan harus semua) - sama semantik dengan
         // filter multi-select lain yang sudah ada di ticket list.
         if ($request->filled('modules')) {
             $moduleNames = array_filter(explode(',', $request->modules));
@@ -650,7 +650,7 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Filter dedicated untuk kolom Full Name di tabel — sama pola per-kata
+     * Filter dedicated untuk kolom Full Name di tabel - sama pola per-kata
      * (AND antar-kata, OR antar-kolom) dengan applyNameSearch(), tapi HANYA
      * mencocokkan kolom nama (bukan ECI/nick name/org fields) supaya
      * perilakunya jelas terpisah dari filter ECI di kolom sebelahnya.
@@ -825,7 +825,7 @@ class EmployeeController extends Controller
         DB::beginTransaction();
 
         try {
-            // Create employee — default primary role: EC User (3)
+            // Create employee - default primary role: EC User (3)
             $employeeId = DB::table('employee')->insertGetId([
                 'eci'       => $request->eci,
                 'is_active' => 1,
@@ -1075,7 +1075,7 @@ class EmployeeController extends Controller
         $existingBasicData = DB::table('employee_basic_data')->where('employee_id', $id)->first();
         $basicDataId = $existingBasicData?->basic_data_id;
 
-        // ECI is intentionally NOT editable through this general form anymore —
+        // ECI is intentionally NOT editable through this general form anymore -
         // it also doubles as the login username (auth_users.username), so it now
         // only changes through the dedicated changeEci() flow below, which keeps
         // both tables in sync and forces the affected employee to re-log in.
@@ -1121,7 +1121,7 @@ class EmployeeController extends Controller
                 ], 404);
             }
 
-            // NOTE: `employee.eci` is intentionally NOT touched here — see the
+            // NOTE: `employee.eci` is intentionally NOT touched here - see the
             // comment above the validator. It only changes via changeEci().
 
             Log::info('Employee record updated');
@@ -1406,7 +1406,7 @@ public function getRoles()
     }
 
     /**
-     * Change an employee's ECI (Employee ID) — deliberately separate from the
+     * Change an employee's ECI (Employee ID) - deliberately separate from the
      * general update() form because ECI doubles as the login username
      * (auth_users.username, see AuthController::login). This keeps both tables
      * in sync atomically, requires the ACTING ADMIN's own password as a
@@ -1441,13 +1441,13 @@ public function getRoles()
         }
 
         // Re-auth: verify it's really the acting admin's own password, not the
-        // target employee's — session('user.id') is the ADMIN currently logged
+        // target employee's - session('user.id') is the ADMIN currently logged
         // in and making this request (not $id, the employee being changed).
         $actingAdminId   = session('user.id');
         $actingAuthUser  = DB::table('auth_users')->where('employee_id', $actingAdminId)->first();
 
         if (!$actingAuthUser || !Hash::check($request->admin_password, $actingAuthUser->password)) {
-            Log::warning('=== API: CHANGE ECI — WRONG ADMIN PASSWORD ===', [
+            Log::warning('=== API: CHANGE ECI - WRONG ADMIN PASSWORD ===', [
                 'employee_id' => $id,
                 'admin_id'    => $actingAdminId,
             ]);
@@ -1532,7 +1532,74 @@ public function getRoles()
     }
 
     /**
-     * Sync employee roles — replaces all current roles with the given list (API)
+     * Reset (matikan) 2FA karyawan yang kehilangan ponsel DAN kode pemulihannya.
+     *
+     * Pengamanan, karena ini membuka pintu ke akun orang lain:
+     *   - izin menu `master.employee.reset-two-factor` (default hanya EC Administrator);
+     *   - admin tidak boleh mereset akunnya sendiri (jalurnya Settings > Security + password);
+     *   - admin yang mereset WAJIB punya 2FA aktif dan memasukkan kode 2FA baru (step-up),
+     *     jadi sesi admin yang dicuri saja tidak cukup;
+     *   - kunci, kode pemulihan, dan kepercayaan perangkat target dihapus;
+     *   - tercatat di Audit Log, dan karyawannya diberi tahu lewat notifikasi dan email
+     *     supaya reset yang tidak ia minta ketahuan.
+     */
+    public function resetTwoFactor(Request $request, $id)
+    {
+        $actorEmployeeId = (int) session('user.id');
+
+        if ((int) $id === $actorEmployeeId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot reset your own two-factor authentication here. Use Settings > Security.',
+            ], 403);
+        }
+
+        $target = DB::table('auth_users')->where('employee_id', $id)->first();
+
+        if (!$target) {
+            return response()->json(['success' => false, 'message' => 'Auth account for this employee not found'], 404);
+        }
+
+        if (!\App\Services\TwoFactorAuthService::isEnabled($target)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Two-factor authentication is not enabled for this account.',
+            ], 422);
+        }
+
+        $actor = DB::table('auth_users')->where('employee_id', $actorEmployeeId)->first();
+
+        if (!$actor || !\App\Services\TwoFactorAuthService::isEnabled($actor)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Turn on your own two-factor authentication first (Settings > Security). It is needed to reset someone else's.",
+            ], 403);
+        }
+
+        if ($stepUpFailure = $this->verifyStepUpOrFail($request)) {
+            return $stepUpFailure;
+        }
+
+        $actorName = (string) (session('user.name') ?? 'An administrator');
+
+        $result = \App\Services\TwoFactorResetService::reset($target, $actorName);
+
+        Log::info('=== API: EMPLOYEE TWO-FACTOR RESET ===', [
+            'employee_id'  => $id,
+            'reset_by_eci' => $this->getCurrentUserECI(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['email_sent']
+                ? "Two-factor authentication reset. {$result['target_name']} was notified by email and in the app."
+                : "Two-factor authentication reset. {$result['target_name']} was notified in the app, but the email could not be sent.",
+            'data'    => ['email_sent' => $result['email_sent']],
+        ]);
+    }
+
+    /**
+     * Sync employee roles - replaces all current roles with the given list (API)
      */
     public function changeRole(Request $request, $id)
     {
@@ -1573,7 +1640,7 @@ public function getRoles()
 
             $roleIds = array_unique(array_map('intval', $request->role_ids));
 
-            // Snapshot old roles before the sync — this bypasses Eloquent
+            // Snapshot old roles before the sync - this bypasses Eloquent
             // (raw query builder delete+insert below), so AuditObserver never
             // fires; log it explicitly for the Audit Log page and for the
             // Security Center's privilege-escalation detection job.
@@ -1675,7 +1742,7 @@ public function getRoles()
             $eci = $employee->eci;
             Log::info('Employee found, proceeding with permanent deletion', ['eci' => $eci]);
 
-            // Snapshot before the cascade delete below removes it — needed for the audit log entry.
+            // Snapshot before the cascade delete below removes it - needed for the audit log entry.
             $basicDataSnapshot = DB::table('employee_basic_data')->where('employee_id', $id)->first();
 
             // Delete related records first (foreign key constraints)

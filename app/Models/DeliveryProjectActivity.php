@@ -205,7 +205,7 @@ class DeliveryProjectActivity extends Model
 
     /**
      * Compute status from current progress + dates.
-     * Rules (Delayed checked first — takes precedence over Completed):
+     * Rules (Delayed checked first - takes precedence over Completed):
      *   1. actual_end > planned_end                                → delayed
      *   2. progress < 100 AND today > planned_end                  → delayed
      *   3. progress = 0   AND today > planned_start AND !actual_start → delayed

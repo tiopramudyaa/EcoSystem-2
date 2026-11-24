@@ -41,7 +41,7 @@
 
     /* ── Markdown jawaban ──────────────────────────────────────────────────
        Preflight Tailwind me-reset list-style dan ukuran heading secara global,
-       jadi semuanya HARUS dinyalakan ulang di sini — kalau tidak, "- item"
+       jadi semuanya HARUS dinyalakan ulang di sini - kalau tidak, "- item"
        tampil tanpa bullet dan "## Judul" tampil sebesar teks biasa.
        Lihat catatan yang sama pada editor Quill di halaman ticket. */
     .air-prose { font-size: .875rem; line-height: 1.6; word-break: break-word; }
@@ -91,13 +91,13 @@
     }
     .air-prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: .9rem 0; }
 
-    /* Tabel bisa lebih lebar dari bubble — biarkan menggulir sendiri. */
+    /* Tabel bisa lebih lebar dari bubble - biarkan menggulir sendiri. */
     .air-table-wrap { overflow-x: auto; margin: 0 0 .6rem; }
     .air-prose table { border-collapse: collapse; font-size: .8125rem; }
     .air-prose th, .air-prose td { border: 1px solid #e5e7eb; padding: .35rem .6rem; text-align: left; }
     .air-prose th { background: rgba(0,0,0,.04); font-weight: 700; }
 
-    /* Kartu konteks tiket (seed otomatis) — <summary> collapsed by default,
+    /* Kartu konteks tiket (seed otomatis) - <summary> collapsed by default,
        marker native dimatikan manual karena list-style saja tidak cukup di
        semua engine (Chrome/Safari masih pakai ::-webkit-details-marker). */
     .air-ticket-ctx summary { list-style: none; }
@@ -127,7 +127,7 @@
 
     @if(session('user_preferences.theme', 'light') === 'dark')
     /* Dark mode: aturan di atas memakai CSS mentah, jadi override utilitas
-       Tailwind di dashboard tidak menyentuhnya — warnanya dipetakan ulang di sini. */
+       Tailwind di dashboard tidak menyentuhnya - warnanya dipetakan ulang di sini. */
     .air-prose h1, .air-prose h2, .air-prose h3,
     .air-prose h4, .air-prose h5, .air-prose h6,
     .air-prose strong { color: #f3f4f6; }
@@ -150,7 +150,7 @@
 <div class="air-shell flex gap-4">
 
     {{-- ── Riwayat percakapan ───────────────────────────────────────────────
-         Isinya hanya milik user yang login — tidak ada jalur untuk melihat
+         Isinya hanya milik user yang login - tidak ada jalur untuk melihat
          riwayat orang lain, termasuk untuk admin (lihat AiResearchController). --}}
     <aside id="airHistory" class="hidden lg:flex w-64 shrink-0 flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div class="flex items-center gap-2 px-3 py-3 border-b border-gray-100">
@@ -320,7 +320,7 @@
                 <dd class="text-gray-500 mt-0.5">
                     Any number of files, up to {{ $limits['file_mb'] }} MB each and {{ $limits['message_mb'] }} MB in
                     total per message, and only if the conversation still has room for them (see below). PDF, images
-                    (PNG, JPEG, GIF, WEBP), Word documents (.docx — text only, formatting and images inside it are not
+                    (PNG, JPEG, GIF, WEBP), Word documents (.docx - text only, formatting and images inside it are not
                     read), and text/code files can be read; other file types are skipped, and the reply says which
                     ones.
                 </dd>
@@ -424,26 +424,26 @@
    Satu-satunya titik sentuh backend adalah airSendToBackend().
    ────────────────────────────────────────────────────────────────────────── */
 
-/* Semua angka batas datang dari controller — tidak ada yang ditulis ulang di
+/* Semua angka batas datang dari controller - tidak ada yang ditulis ulang di
    sini. Duplikatnya dulu yang membuat tooltip lampiran menyebut angka yang
    sudah tidak berlaku selama berbulan-bulan. */
 const AIR_MAX_CHARS = @json($limits['chars']);
 
-/* JUMLAH berkas per pesan tidak dibatasi — lihat catatan di
+/* JUMLAH berkas per pesan tidak dibatasi - lihat catatan di
    AiResearchController. Dua angka di bawah dicek di sini hanya supaya user
    dapat pesan yang jelas; server tetap yang menegakkannya.
 
    AIR_MAX_FILE_MB  : harus sama dengan MAX_ATTACHMENT_KB di controller.
    AIR_MAX_TOTAL_MB : total satu pesan, ditahan di bawah `post_max_size`
                       PHP (30M di produksi). Melewatinya membuat PHP
-                      membuang SELURUH body, bukan cuma berkasnya — server
+                      membuang SELURUH body, bukan cuma berkasnya - server
                       punya pagar untuk itu, tapi jauh lebih baik dicegah
                       di sini sebelum 30 MB terlanjur terkirim. */
 const AIR_MAX_FILE_MB = @json($limits['file_mb']);
 const AIR_MAX_TOTAL_MB = @json($limits['message_mb']);
 const AIR_CHAT_ENDPOINT = @json(route('ai-research.chat'));
 const AIR_LIST_ENDPOINT = @json(route('ai-research.conversations'));
-/* {id} diganti saat dipakai — route() butuh parameter, dan menyusun URL-nya
+/* {id} diganti saat dipakai - route() butuh parameter, dan menyusun URL-nya
    di sisi JS dengan string mentah gampang salah kalau prefiks app berubah. */
 const AIR_CONV_ENDPOINT   = @json(route('ai-research.conversation', ['conversation' => '__ID__']));
 const AIR_DELETE_ENDPOINT = @json(route('ai-research.conversation.delete', ['conversation' => '__ID__']));
@@ -460,7 +460,7 @@ let airAttachSeq = 0;   // id unik elemen badge lampiran arsip, lihat airAppendU
 const AIR_USER_NAME = @json(session('user.name', ''));
 
 /* Placeholder composer: satu dipilih acak tiap halaman dimuat / chat baru,
-   supaya terasa hidup alih-alih satu kalimat instruksi yang sama terus —
+   supaya terasa hidup alih-alih satu kalimat instruksi yang sama terus -
    pola yang sama seperti composer claude.ai. Instruksi keyboard (Enter/
    Shift+Enter) sengaja tidak dijejalkan ke sini lagi; itu perilaku standar
    yang tidak perlu diiklankan di setiap kunjungan. */
@@ -476,20 +476,20 @@ function airRandomPlaceholder() {
     return AIR_PLACEHOLDERS[Math.floor(Math.random() * AIR_PLACEHOLDERS.length)];
 }
 
-/* Object URL pratinjau gambar. Dipegang sampai percakapan direset — bubble
+/* Object URL pratinjau gambar. Dipegang sampai percakapan direset - bubble
    yang sudah terkirim masih memakai URL yang sama dengan chip composer. */
 const airPreviews = new Map();  // File → object URL
 let airPreviewUrls = [];
 
 /* ── Tempelan besar ─────────────────────────────────────────────────────────
    Di atas salah satu ambang ini, teks yang di-paste TIDAK masuk ke textarea
-   melainkan jadi lampiran .txt — sama seperti composer claude.ai. Alasannya
+   melainkan jadi lampiran .txt - sama seperti composer claude.ai. Alasannya
    bukan kosmetik: `message` dibatasi AIR_MAX_CHARS di server, jadi menempel
    ribuan baris kode ke textarea berakhir sebagai penolakan validasi. */
 const AIR_PASTE_MIN_CHARS = @json(\App\Support\AiTextAttachment::PASTE_THRESHOLD_CHARS);
 const AIR_PASTE_MIN_LINES = @json(\App\Support\AiTextAttachment::PASTE_THRESHOLD_LINES);
 
-/* Sinkron dengan AiTextAttachment::MAX_CHARS — di atas ini server memotong,
+/* Sinkron dengan AiTextAttachment::MAX_CHARS - di atas ini server memotong,
    dan user berhak tahu SEBELUM mengirim, bukan sesudah. */
 const AIR_TEXT_MAX_CHARS = @json(\App\Support\AiTextAttachment::MAX_CHARS);
 
@@ -545,7 +545,7 @@ function airCsrfToken() {
  *
  * Penghitungnya BERWARNA, dan Send ikut mati begitu batas terlampaui: dulu
  * angkanya abu-abu sampai batas berapa pun, lalu pesan panjang baru ditolak
- * lewat toast SETELAH user menekan Send — sudah terlambat untuk berguna.
+ * lewat toast SETELAH user menekan Send - sudah terlambat untuk berguna.
  */
 function airAutoGrow(el) {
     el.style.height = 'auto';
@@ -592,10 +592,10 @@ function airPreviewUrl(file) {
 /* ── Cache lampiran di browser (opsional, murni kenyamanan) ──────────────
    Server TIDAK PERNAH menyimpan byte gambar (lihat migration
    create_ai_conversation_tables: "tanpa menyimpan screenshot sistem
-   customer selamanya") — arsip cuma mencatat JUMLAH lampiran. Supaya
+   customer selamanya") - arsip cuma mencatat JUMLAH lampiran. Supaya
    thumbnail tetap muncul lagi saat conversation dibuka ulang DI BROWSER/
    DEVICE YANG SAMA, file-nya disimpan di IndexedDB milik user sendiri,
-   dikunci dari teks pesan (bukan posisi/index — lebih tahan terhadap
+   dikunci dari teks pesan (bukan posisi/index - lebih tahan terhadap
    pesan yang gagal/ditolak terkirim, yang tidak pernah benar-benar
    sampai ke arsip). Kegagalan di jalur ini SELALU diam: ini cuma
    penambah, bukan pengganti, badge teks "N attachment" yang sudah ada. */
@@ -626,7 +626,7 @@ async function airCacheAttachmentFile(key, file) {
             tx.oncomplete = resolve;
             tx.onerror = resolve;
         });
-    } catch { /* diam — lihat catatan di atas */ }
+    } catch { /* diam - lihat catatan di atas */ }
 }
 
 async function airGetCachedAttachmentFile(key) {
@@ -664,7 +664,7 @@ function airAddFiles(files) {
     if (incoming.length === 0) return;
 
     // Tolak yang kebesaran di sini, supaya user tahu berkas mana yang bermasalah
-    // — kalau dibiarkan sampai server, yang muncul cuma "HTTP 422".
+    // - kalau dibiarkan sampai server, yang muncul cuma "HTTP 422".
     const tooBig = incoming.filter(f => f.size > AIR_MAX_FILE_MB * 1024 * 1024);
     if (tooBig.length > 0) {
         incoming = incoming.filter(f => f.size <= AIR_MAX_FILE_MB * 1024 * 1024);
@@ -728,7 +728,7 @@ function airRenderAttachments() {
         const paste = airPasteMeta.get(file);
 
         // Tempelan besar tampil sebagai chip PASTED yang bisa diklik untuk
-        // dilihat isinya — nama berkas buatan ("pasted-1.php") tidak
+        // dilihat isinya - nama berkas buatan ("pasted-1.php") tidak
         // memberi tahu apa pun tentang apa yang barusan ditempel.
         if (paste) {
             return `
@@ -807,7 +807,7 @@ function airFileSize(bytes) {
  * Tempel gambar dari clipboard.
  *
  * Screenshot yang di-paste datang sebagai File tanpa nama (name === ''), jadi
- * kita beri nama sendiri — kalau tidak, chip lampiran tampil kosong dan
+ * kita beri nama sendiri - kalau tidak, chip lampiran tampil kosong dan
  * backend kehilangan ekstensi untuk ditebak.
  */
 function airOnPaste(e) {
@@ -874,7 +874,7 @@ function airAddPastedText(text) {
 }
 
 /**
- * Ekstensi ditebak dari isinya supaya nama lampiran memberi petunjuk bahasa —
+ * Ekstensi ditebak dari isinya supaya nama lampiran memberi petunjuk bahasa -
  * model membaca nama berkas, dan "pasted-1.txt" untuk file Blade membuang
  * konteks yang sebenarnya gratis.
  */
@@ -886,7 +886,7 @@ function airPasteFileName(text, seq) {
     // Escape heksadesimal DIPAKAI DENGAN SENGAJA di baris berikut (\x40 =
     // karakter at, \x7b/\x7d = kurung kurawal): file ini Blade, dan penanda
     // direktif Blade yang ditulis literal di dalam <script> tetap ikut
-    // dikompilasi — hasilnya view gagal dirender (500), bukan sekadar regex
+    // dikompilasi - hasilnya view gagal dirender (500), bukan sekadar regex
     // yang salah.
     else if (/\x40extends|\x40section|\x40php|\x7b\x7b.*\x7d\x7d/.test(head))  ext = 'blade.php';
     else if (/<\?php|namespace\s+\w+|public function /.test(head))   ext = 'php';
@@ -913,7 +913,7 @@ function airOpenPaste(id) {
     box.classList.add('flex');
 }
 
-/** Klik latar (bukan isi panel) menutup — sama seperti lightbox. */
+/** Klik latar (bukan isi panel) menutup - sama seperti lightbox. */
 function airClosePaste(e) {
     if (e && e.target !== e.currentTarget) return;
 
@@ -966,7 +966,7 @@ function airOpenLimits() {
     box.classList.add('flex');
 }
 
-/** Klik latar (bukan isi panel) menutup — sama seperti lightbox. */
+/** Klik latar (bukan isi panel) menutup - sama seperti lightbox. */
 function airCloseLimits(e) {
     if (e && e.target !== e.currentTarget) return;
 
@@ -977,8 +977,8 @@ function airCloseLimits(e) {
 
 /* ── Markdown ──────────────────────────────────────────────────────────── */
 
-/* Penanda sementara saat mengurai. Sengaja hanya huruf/angka/@ — karakter yang
-   TIDAK diubah oleh airEsc() — supaya penanda tetap utuh setelah escaping.
+/* Penanda sementara saat mengurai. Sengaja hanya huruf/angka/@ - karakter yang
+   TIDAK diubah oleh airEsc() - supaya penanda tetap utuh setelah escaping.
    (Jangan pakai byte kontrol seperti NUL: itu membuat file dianggap biner.) */
 const AIR_PH_CODE = '@@AIRCODE';
 const AIR_PH_INLINE = '@@AIRINL';
@@ -999,7 +999,7 @@ function airLink(href, label) {
  * Emphasis dengan garis bawah (_x_ / __x__) SENGAJA tidak didukung: domain
  * halaman ini penuh identifier seperti BAPI_SALESORDER_CREATEFROMDAT1 dan
  * TSV_TNEW_PAGE_ALLOC_FAILED, yang akan hancur kalau underscore dianggap
- * penanda gaya. Bintang (**x** / *x*) sudah cukup — itu yang dipakai model.
+ * penanda gaya. Bintang (**x** / *x*) sudah cukup - itu yang dipakai model.
  */
 function airInline(t) {
     const stash = [];
@@ -1008,7 +1008,7 @@ function airInline(t) {
     // Kode inline lebih dulu: isinya harus kebal dari aturan lain.
     t = t.replace(/`([^`\n]+)`/g, (m, code) => keep('<code>' + code + '</code>'));
 
-    // [teks](url) — hanya http/https.
+    // [teks](url) - hanya http/https.
     t = t.replace(/\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)/g,
         (m, label, href) => keep(airLink(href, label || href)));
 
@@ -1030,7 +1030,7 @@ function airInline(t) {
  * Markdown blok → HTML.
  *
  * Ditulis sendiri, bukan memakai pustaka: proyek ini tidak punya build step
- * (Tailwind pun lewat CDN), dan kebutuhannya sempit — hanya bentuk yang benar
+ * (Tailwind pun lewat CDN), dan kebutuhannya sempit - hanya bentuk yang benar
  * dipakai model. Urutannya penting: blok kode dipisahkan SEBELUM escaping,
  * sisanya di-escape lebih dulu supaya tidak ada HTML dari model yang lolos.
  */
@@ -1173,7 +1173,7 @@ function airTable(lines, start) {
 
 /* ── Thread ────────────────────────────────────────────────────────────── */
 
-/* Tanpa argumen = sekarang. Riwayat yang dimuat ulang mengirim waktu aslinya —
+/* Tanpa argumen = sekarang. Riwayat yang dimuat ulang mengirim waktu aslinya -
    kalau tidak, percakapan bulan lalu tampil seolah baru saja terjadi. */
 function airTime(at) {
     const d = at ? new Date(at) : new Date();
@@ -1199,9 +1199,9 @@ function airAppendUser(text, files) {
     const images = files.filter(airIsImage);
     const others = files.filter(f => !airIsImage(f));
 
-    // Lampiran DULU, teks/prompt di bawahnya — sama seperti composer
+    // Lampiran DULU, teks/prompt di bawahnya - sama seperti composer
     // claude.ai. Gambar tampil utuh sebagai thumbnail; file lain sebagai
-    // chip nama. justify-start (bukan justify-end) — bubble-nya sendiri sudah
+    // chip nama. justify-start (bukan justify-end) - bubble-nya sendiri sudah
     // rata kanan (flex justify-end di bawah), thumbnail di DALAM bubble harus
     // rata kiri seperti alur baca normal, bukan menempel ke sudut kanan.
     const thumbs = images.length === 0 ? '' : `
@@ -1240,7 +1240,7 @@ function airAppendUser(text, files) {
 
 /** Bubble assistant kosong + indikator mengetik. Kembalikan id-nya. */
 /* Hidrasi riwayat membuat banyak bubble dalam milidetik yang sama, jadi id-nya
-   TIDAK boleh berbasis Date.now() — id kembar membuat delta jawaban baru
+   TIDAK boleh berbasis Date.now() - id kembar membuat delta jawaban baru
    mendarat di bubble lama. */
 let airMsgSeq = 0;
 
@@ -1407,7 +1407,7 @@ function airClearNotice(id) {
 }
 
 /**
- * Lanjutkan jawaban yang berhenti karena batas — hasilnya di-stream ke bubble
+ * Lanjutkan jawaban yang berhenti karena batas - hasilnya di-stream ke bubble
  * YANG SAMA, bukan bubble baru: bagi user ini satu jawaban yang tersambung,
  * dan menyambungnya di tempat lain justru membuat kalimat terpotongnya makin
  * sulit dibaca. Server yang menyusun instruksi lanjutannya (resume=1), jadi
@@ -1445,17 +1445,17 @@ async function airContinue(id) {
 
 /**
  * Pemicu SEKALI untuk percakapan tiket yang baru dibuat lewat tombol "Ask AI"
- * (lihat AiResearchController::openForTicket()) — bukan giliran user mengetik,
+ * (lihat AiResearchController::openForTicket()) - bukan giliran user mengetik,
  * jadi tidak lewat airSend()/airAppendUser(): tidak ada bubble user baru yang
  * perlu ditambahkan, konteks tiketnya sudah tampil sebagai kartu (lihat
  * airAppendTicketContextCard()) dari riwayat yang baru dimuat. Server tahu ini
- * bukan pertanyaan baru maupun "Continue" lewat flag initial=1 — ia menjawab
+ * bukan pertanyaan baru maupun "Continue" lewat flag initial=1 - ia menjawab
  * giliran user yang SUDAH ada di ujung transkrip alih-alih menambah yang baru
  * (lihat AiResearchService::streamReply()).
  *
  * Dipanggil hanya dari DOMContentLoaded, dan hanya saat URL membawa
  * ?autorun=1 DAN riwayat yang baru dimuat benar-benar cuma satu pesan user
- * tanpa jawaban — dua syarat sekaligus supaya me-refresh atau membuka ulang
+ * tanpa jawaban - dua syarat sekaligus supaya me-refresh atau membuka ulang
  * percakapan yang sudah dijawab tidak pernah memicu panggilan berbayar kedua.
  */
 function airTriggerInitial() {
@@ -1487,7 +1487,7 @@ function airTriggerInitial() {
         });
 }
 
-/** Isi panel saat user menekan Stop — beda pesan kalau belum ada teks apa pun. */
+/** Isi panel saat user menekan Stop - beda pesan kalau belum ada teks apa pun. */
 function airStoppedNotice(id) {
     const body = document.querySelector('#' + id + ' .air-body');
     const hasText = Boolean(body && (body.dataset.text || '').trim());
@@ -1543,7 +1543,7 @@ function airResolveAssistant(id, text, isError) {
 
     const body = wrap.querySelector('.air-body');
     // Kalau sudah ada teks yang di-stream dan ini bukan error, biarkan apa
-    // adanya (text di sini kosong pada jalur sukses — lihat airSendToBackend).
+    // adanya (text di sini kosong pada jalur sukses - lihat airSendToBackend).
     if (!(body.dataset.streaming && !isError)) {
         body.innerHTML = `<p class="${isError ? 'text-red-600' : ''}">${airEsc(text)}</p>`;
     }
@@ -1558,7 +1558,7 @@ function airResolveAssistant(id, text, isError) {
 function airCopy(id) {
     const body = document.querySelector('#' + id + ' .air-body');
     if (!body) return;
-    // Salin sumber Markdown-nya kalau ada, bukan hasil render — lebih berguna
+    // Salin sumber Markdown-nya kalau ada, bukan hasil render - lebih berguna
     // untuk ditempel ke ticket, email, atau dokumen.
     const text = body.dataset.text || body.innerText;
     navigator.clipboard.writeText(text.trim())
@@ -1569,7 +1569,7 @@ function airCopy(id) {
 /**
  * Kirim teks jawaban assistant ke server untuk diubah jadi berkas .docx
  * sungguhan, lalu unduh hasilnya. Assistant sendiri tidak punya alat untuk
- * membuat/melampirkan file selama chat — konversi .docx terjadi di server
+ * membuat/melampirkan file selama chat - konversi .docx terjadi di server
  * (AiResearchController::exportDocx / AiDocxExport) atas teks yang SUDAH
  * ADA di bubble ini, bukan pertanyaan baru ke model.
  */
@@ -1635,7 +1635,7 @@ function airSend() {
     airAppendUser(text, files);
 
     // Cache opsional di browser sendiri (lihat blok "Cache lampiran" di
-    // atas) — kalau turn ini ternyata gagal/ditolak dan tidak pernah sampai
+    // atas) - kalau turn ini ternyata gagal/ditolak dan tidak pernah sampai
     // ke arsip, entrinya cuma jadi sisa yang tidak pernah dicocokkan siapa
     // pun; tidak ada salahnya menyimpan lebih awal daripada menunggu
     // konfirmasi sukses. airEnsureConversationId(), bukan airConversationId
@@ -1681,7 +1681,7 @@ function airSend() {
             // Pesan DITOLAK sebelum sempat diproses (lampiran penuh, unggahan
             // kebesaran): kembalikan pilihan berkas dan teksnya. Memilih ulang
             // belasan berkas hanya karena kena batas adalah hukuman yang tidak
-            // ada gunanya — tidak ada yang terkirim, jadi tidak ada yang hilang.
+            // ada gunanya - tidak ada yang terkirim, jadi tidak ada yang hilang.
             if (err.airRejected) {
                 airFiles = files;
                 airRenderAttachments();
@@ -1702,7 +1702,7 @@ function airSetBusy(busy) {
     document.getElementById('airSendBtn').classList.toggle('hidden', busy);
     document.getElementById('airStopBtn').classList.toggle('hidden', !busy);
 
-    // Tombol di panel batas ikut mati selagi ada giliran berjalan — kalau tidak,
+    // Tombol di panel batas ikut mati selagi ada giliran berjalan - kalau tidak,
     // Continue terlihat bisa ditekan padahal airContinue() akan mengabaikannya.
     document.querySelectorAll('.air-notice button').forEach(btn => {
         btn.disabled = busy;
@@ -1728,7 +1728,7 @@ function airStop() {
  *   done / error → penutup stream (backend selalu mengirim salah satunya)
  *
  * resume = true: giliran "Continue". Tidak ada teks maupun berkas yang dikirim
- * — instruksi lanjutannya disusun server supaya identik dengan penyambung
+ * - instruksi lanjutannya disusun server supaya identik dengan penyambung
  * otomatisnya.
  */
 async function airSendToBackend(text, files, model, pendingId, resume = false, initial = false) {
@@ -1810,7 +1810,7 @@ async function airSendToBackend(text, files, model, pendingId, resume = false, i
                 } else if (eventName === 'error') {
                     sawError = payload.message || 'Something went wrong.';
                 }
-                // 'done' tidak perlu ditangani — promise luar tinggal resolve.
+                // 'done' tidak perlu ditangani - promise luar tinggal resolve.
             }
         }
     } finally {
@@ -1847,7 +1847,7 @@ function airResetThread() {
 function airNewChat() {
     airResetThread();
 
-    // Percakapan lama TIDAK dihapus — ia tetap ada di sidebar. Yang dilepas
+    // Percakapan lama TIDAK dihapus - ia tetap ada di sidebar. Yang dilepas
     // hanya kaitan tab ini dengannya; giliran berikutnya membuat percakapan baru.
     airConversationId = null;
     sessionStorage.removeItem(AIR_CONVERSATION_STORAGE_KEY);
@@ -1880,7 +1880,7 @@ async function airLoadHistory() {
 }
 
 /* Pencarian murni di klien: 100 item terakhir sudah dimuat sekali lewat
-   airLoadHistory(), jadi mengetik di kotak cari tidak perlu roundtrip baru —
+   airLoadHistory(), jadi mengetik di kotak cari tidak perlu roundtrip baru -
    cukup saring ulang array yang sudah ada lalu render lagi. */
 function airFilteredHistory() {
     const q = (document.getElementById('airHistorySearch')?.value || '').trim().toLowerCase();
@@ -1963,13 +1963,13 @@ function airMarkActive(id) {
  *
  * autorun = permintaan EKSPLISIT dari pemanggil (cuma DOMContentLoaded, lewat
  * ?autorun=1 dari AiResearchController::openForTicket()) untuk memicu
- * airTriggerInitial() kalau riwayatnya ternyata masih fresh — dipakai apa
+ * airTriggerInitial() kalau riwayatnya ternyata masih fresh - dipakai apa
  * adanya untuk room PRIVAT (ticket_id null), yang tidak punya penjaga dobel-
  * klaim di server, jadi HARUS lewat jalur sekali-pakai ini saja.
  *
  * Room BERSAMA (data.shared dari server) beda: claimInitialReply() di server
  * sudah menjaga dari dua trigger yang menang bareng, jadi room itu AMAN
- * dipicu dari mana pun ia dibuka selagi masih fresh — termasuk klik langsung
+ * dipicu dari mana pun ia dibuka selagi masih fresh - termasuk klik langsung
  * di sidebar History (lihat baris pemanggil di bawah), bukan cuma lewat
  * ?autorun=1. Itu sebabnya pemicunya diputuskan DI SINI, satu tempat untuk
  * kedua jenis room, bukan diulang di tiap pemanggil.
@@ -1997,7 +1997,7 @@ async function airOpenConversation(id, silent = false, autorun = false) {
             airShowThread();
 
             // Batas ingatan model. Saat konteks kerjanya sudah kedaluwarsa,
-            // yang disemai ulang ke model hanya `window` pesan TERAKHIR — layar
+            // yang disemai ulang ke model hanya `window` pesan TERAKHIR - layar
             // menampilkan lebih banyak daripada yang diingat model, dan itu
             // harus dikatakan, bukan dibiarkan ditebak dari jawaban yang pelupa.
             const ctx = data.context || {};
@@ -2068,7 +2068,7 @@ function airAppendMemoryDivider() {
     `);
 }
 
-/** Awalan pesan seed konteks tiket — lihat AiResearchController::ticketContextSeed(). */
+/** Awalan pesan seed konteks tiket - lihat AiResearchController::ticketContextSeed(). */
 const AIR_TICKET_CONTEXT_PREFIX = '📋 Konteks tiket (otomatis';
 
 /**
@@ -2079,7 +2079,7 @@ const AIR_TICKET_CONTEXT_PREFIX = '📋 Konteks tiket (otomatis';
  * ditingkatkan jadi thumbnail sungguhan secara asinkron begitu ketemu.
  *
  * senderName cuma terisi untuk room BERSAMA satu tiket (lihat
- * AiResearchController::conversation() — ai_messages.sender_employee_id) —
+ * AiResearchController::conversation() - ai_messages.sender_employee_id) -
  * di room privat cuma ada satu orang, jadi tidak ada gunanya dilabeli.
  */
 function airAppendUserStored(text, attachmentCount, at, conversationId, senderName) {
@@ -2123,7 +2123,7 @@ function airAppendUserStored(text, attachmentCount, at, conversationId, senderNa
 }
 
 /**
- * Kartu konteks tiket yang di-seed otomatis (bukan pesan yang diketik user —
+ * Kartu konteks tiket yang di-seed otomatis (bukan pesan yang diketik user -
  * lihat AiResearchController::ticketContextSeed()). Dirender collapsed by
  * default lewat <details> supaya tidak jadi wall-of-text pertama yang harus
  * discroll user, dan isinya di-markdown lewat airMarkdown() yang sama dipakai
@@ -2138,7 +2138,7 @@ function airAppendTicketContextCard(text, at) {
             <summary class="flex items-center gap-2 cursor-pointer select-none py-1 text-[11px] text-gray-400 hover:text-gray-600">
                 <i class="fas fa-chevron-right air-ticket-ctx-chevron text-[9px] transition-transform"></i>
                 <i class="fas fa-clipboard-list text-[10px]"></i>
-                <span>Ticket context (auto-attached) — ${airTime(at)}</span>
+                <span>Ticket context (auto-attached) - ${airTime(at)}</span>
             </summary>
             <div class="mt-1.5 mb-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 air-prose text-gray-700">
                 ${airMarkdown(body)}
@@ -2154,7 +2154,7 @@ async function airUpgradeStoredAttachments(noteId, conversationId, text, count) 
         Array.from({ length: count }, (_, fi) => airGetCachedAttachmentFile(airAttachmentCacheKey(conversationId, text, fi)))
     );
 
-    if (files.some(f => !f)) return; // sebagian/semua tidak ada — biarkan badge teks apa adanya
+    if (files.some(f => !f)) return; // sebagian/semua tidak ada - biarkan badge teks apa adanya
 
     const el = document.getElementById(noteId);
     if (!el) return;
@@ -2179,13 +2179,13 @@ async function airUpgradeStoredAttachments(noteId, conversationId, text, count) 
                 </span>`).join('')}
         </div>`;
 
-    // Note (badge lampiran) diganti thumbs+chips di POSISI YANG SAMA — bubble
+    // Note (badge lampiran) diganti thumbs+chips di POSISI YANG SAMA - bubble
     // sudah dirakit dengan lampiran DI ATAS teks (lihat airAppendUserStored()),
     // jadi tidak perlu urus ulang posisi teksnya di sini.
     el.outerHTML = thumbs + chips;
 }
 
-/** Bubble assistant dari arsip — bentuknya sama dengan hasil streaming. */
+/** Bubble assistant dari arsip - bentuknya sama dengan hasil streaming. */
 function airAppendAssistantStored(text, sources, at) {
     const id = airAppendAssistantPending(at);
     const wrap = document.getElementById(id);
@@ -2226,7 +2226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     airPruneAttachmentCache();
 
     // Datang dari tombol "Ask AI" di halaman tiket (lihat AiResearchController::
-    // openForTicket()) — conversation-nya sudah disiapkan di server (judul +
+    // openForTicket()) - conversation-nya sudah disiapkan di server (judul +
     // konteks tiket), di sini cukup arahkan sessionStorage ke situ supaya
     // logic di bawah (yang sudah ada) membukanya seperti biasa.
     const urlParams = new URLSearchParams(window.location.search);

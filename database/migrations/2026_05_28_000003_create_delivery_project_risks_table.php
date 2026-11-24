@@ -18,8 +18,8 @@ return new class extends Migration
             $table->text('description');                   // Deskripsi Risiko
             $table->text('cause')->nullable();             // Penyebab (Trigger)
             $table->text('project_impact')->nullable();    // Dampak Proyek (text)
-            $table->tinyInteger('probability');            // 1–5
-            $table->tinyInteger('impact');                 // 1–5
+            $table->tinyInteger('probability');            // 1-5
+            $table->tinyInteger('impact');                 // 1-5
             $table->string('response_strategy', 20)->nullable(); // Avoid, Mitigate, etc.
             $table->text('mitigation_plan')->nullable();   // Rencana Mitigasi / Kontiniensi
             $table->string('risk_owner', 100)->nullable();

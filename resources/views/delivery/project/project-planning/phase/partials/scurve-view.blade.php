@@ -608,7 +608,7 @@
                         callbacks: {
                             title: function(items) {
                                 const w = scurveData.weekly_data[items[0].dataIndex];
-                                return 'Week ' + (w.week_index || (items[0].dataIndex + 1)) + ' — ' + w.week_label;
+                                return 'Week ' + (w.week_index || (items[0].dataIndex + 1)) + ' - ' + w.week_label;
                             },
                             label: function(context) {
                                 return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
@@ -709,7 +709,7 @@
 
             if (!hasActual) {
                 varClass = 'text-gray-400';
-                statusIcon = '—';
+                statusIcon = '-';
                 statusClass = 'text-gray-400';
                 statusText = 'Belum berjalan';
             } else if (variance < -5) {

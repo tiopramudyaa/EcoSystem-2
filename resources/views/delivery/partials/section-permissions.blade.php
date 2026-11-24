@@ -1,5 +1,5 @@
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
-{{-- IZIN PER SECTION (Menu Access) — dipakai Delivery Project & Delivery Support --}}
+{{-- IZIN PER SECTION (Menu Access) - dipakai Delivery Project & Delivery Support --}}
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
 {{--
     Konvensi slug: <modul>.<section>.<aksi>
@@ -16,7 +16,7 @@
       .delete  → boleh menghapus  (mis. `delivery-project.team.delete`)
 
     Section seperti itu menulis `data-perm-delete` juga. Skrip di bawah TIDAK
-    memakainya (tombol hapusnya ada di toolbar mengambang, di luar <section>) —
+    memakainya (tombol hapusnya ada di toolbar mengambang, di luar <section>) -
     atributnya penanda supaya izinnya terbaca dari markup; pemagarannya ada di
     view masing-masing lewat @if($can(...)) / flag JS.
 
@@ -27,7 +27,7 @@
                data-perm-manage="{{ '{{' }} $can('delivery-project.team.manage') ? '1' : '0' }}">
 
     `data-perm-manage` boleh dihilangkan untuk section yang memang tidak punya
-    aksi tambah/hapus (General, Location, Approval, ...) — nilainya ikut
+    aksi tambah/hapus (General, Location, Approval, ...) - nilainya ikut
     `data-perm-edit`.
 
     Ini murni lapisan UI. Penegakan sebenarnya ada di middleware `menu:` pada
@@ -71,7 +71,7 @@
                (el.getAttribute('aria-label') || '');
     }
 
-    /** 'manage' | 'edit' | null — kategori aksi tulis sebuah tombol. */
+    /** 'manage' | 'edit' | null - kategori aksi tulis sebuah tombol. */
     function actionKind(el) {
         if (el.hasAttribute('data-perm-keep')) return null;   // opt-out manual
         const forced = el.getAttribute('data-perm-action');   // opt-in manual
@@ -100,7 +100,7 @@
             b.disabled = true;
         });
 
-        // Form hanya diblokir kalau BENAR-BENAR tidak boleh menulis apa pun —
+        // Form hanya diblokir kalau BENAR-BENAR tidak boleh menulis apa pun -
         // section yang boleh manage tapi tidak boleh edit tetap perlu submit.
         if (!canEdit && !canManage) {
             section.querySelectorAll('form').forEach(function (f) {
@@ -134,7 +134,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('section[data-perm-edit]').forEach(function (section) {
             const canEdit = section.dataset.permEdit === '1';
-            // Section tanpa aksi tambah/hapus tidak menulis data-perm-manage —
+            // Section tanpa aksi tambah/hapus tidak menulis data-perm-manage -
             // izinnya ikut .edit.
             const canManage = section.dataset.permManage === undefined
                 ? canEdit

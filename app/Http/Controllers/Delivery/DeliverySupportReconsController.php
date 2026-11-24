@@ -17,7 +17,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 /**
  * ============================================================================
- * DELIVERY SUPPORT — RECONS
+ * DELIVERY SUPPORT - RECONS
  * ============================================================================
  *
  * Rekonsiliasi tiket: mengumpulkan tiket yang sudah closed dan punya Customer
@@ -40,7 +40,7 @@ class DeliverySupportReconsController extends Controller
     // HALAMAN
     // =========================================================================
 
-    /** GET /delivery/support/{support}/recons/create — screen New Recons. */
+    /** GET /delivery/support/{support}/recons/create - screen New Recons. */
     public function create(DeliverySupport $support)
     {
         $support->load('client.basicData');
@@ -48,21 +48,21 @@ class DeliverySupportReconsController extends Controller
         return view('delivery.support.recons.form', [
             'support'           => $support,
             'recons'            => null,
-            // Sekadar pratinjau — nomor final dibuat saat disimpan supaya
+            // Sekadar pratinjau - nomor final dibuat saat disimpan supaya
             // counter tidak "bolong" kalau halaman dibuka lalu ditinggalkan.
             'previewNumber'     => DeliverySupportRecons::nextNumberFor($support),
             'selectedTicketIds' => [],
         ]);
     }
 
-    /** GET /delivery/support/{support}/recons/{recons}/edit — edit draft. */
+    /** GET /delivery/support/{support}/recons/{recons}/edit - edit draft. */
     public function edit(DeliverySupport $support, DeliverySupportRecons $recons)
     {
         if ($redirect = $this->guardBelongsTo($support, $recons)) {
             return $redirect;
         }
 
-        // Recons yang sudah disubmit tidak boleh diedit — arahkan ke tampilan detail.
+        // Recons yang sudah disubmit tidak boleh diedit - arahkan ke tampilan detail.
         if ($recons->isSubmitted()) {
             return redirect()
                 ->route('delivery.support.recons.show', [$support->id, $recons->id])
@@ -81,7 +81,7 @@ class DeliverySupportReconsController extends Controller
         ]);
     }
 
-    /** GET /delivery/support/{support}/recons/{recons} — detail batch (read-only). */
+    /** GET /delivery/support/{support}/recons/{recons} - detail batch (read-only). */
     public function show(DeliverySupport $support, DeliverySupportRecons $recons)
     {
         if ($redirect = $this->guardBelongsTo($support, $recons)) {
@@ -100,7 +100,7 @@ class DeliverySupportReconsController extends Controller
     }
 
     // =========================================================================
-    // DATA (JSON) — dipakai tab Recons di halaman Support Details
+    // DATA (JSON) - dipakai tab Recons di halaman Support Details
     // =========================================================================
 
     /**
@@ -114,7 +114,7 @@ class DeliverySupportReconsController extends Controller
         // Sub-query info Recons per tiket. Dibuat sebagai satu join tunggal
         // (bukan dua leftJoin berantai) supaya satu tiket TIDAK PERNAH
         // menghasilkan lebih dari satu baris. Sebuah tiket hanya boleh berada
-        // di satu Recons di seluruh sistem — lihat eligibleTicketQuery().
+        // di satu Recons di seluruh sistem - lihat eligibleTicketQuery().
         $reconsInfo = DB::table('delivery_support_recons_tickets as rt')
             ->join('delivery_support_recons as r', 'r.id', '=', 'rt.delivery_support_recons_id')
             ->select([
@@ -127,6 +127,7 @@ class DeliverySupportReconsController extends Controller
 
         $rows = DB::table('delivery_support_activities as act')
             ->join('ticket as t', 'act.ticket_id', '=', 't.ticket_id')
+            ->whereNull('t.deleted_at')
             // ticket_sla.ticket_id UNIQUE → join 1:1, tidak menggandakan baris.
             ->leftJoin('ticket_sla as sla', 'sla.ticket_id', '=', 't.ticket_id')
             // Customer MD = total proposal mandays yang approved (bukan ticket.man_days).
@@ -193,7 +194,7 @@ class DeliverySupportReconsController extends Controller
         // Baris yang SUDAH ada di batch ini WAJIB ikut ditampilkan, walau kini
         // tidak lagi memenuhi syarat (tiket di-reopen, Customer MD dicabut,
         // aturan berubah, dst). Tanpa ini tiket tersebut tetap ikut terpilih di
-        // form tapi tidak pernah dirender — user tak bisa melihat apalagi
+        // form tapi tidak pernah dirender - user tak bisa melihat apalagi
         // melepasnya, sehingga draft menjadi mustahil disimpan.
         if ($currentReconsId) {
             $lines = DB::table('delivery_support_recons_tickets as rt')
@@ -272,9 +273,9 @@ class DeliverySupportReconsController extends Controller
     // =========================================================================
 
     /**
-     * POST /delivery/support/{support}/recons/save — buat Recons baru.
+     * POST /delivery/support/{support}/recons/save - buat Recons baru.
      * Body: description, recons_date, ticket_ids[], action=draft|submit
-     * (nomor TIDAK dikirim client — selalu dibuat sistem).
+     * (nomor TIDAK dikirim client - selalu dibuat sistem).
      */
     public function store(Request $request, DeliverySupport $support)
     {
@@ -300,7 +301,7 @@ class DeliverySupportReconsController extends Controller
             : 'Recons draft saved successfully.';
 
         // Form selalu berpindah ke halaman detail (window.location.href) setelah
-        // simpan, jadi toast-nya dititipkan lewat flash session — mekanisme yang
+        // simpan, jadi toast-nya dititipkan lewat flash session - mekanisme yang
         // sama dipakai DeliverySupportController::store(). Toast dirender di
         // halaman tujuan oleh blok session('success') di dashboard.blade.php.
         session()->flash('success', $message);
@@ -314,7 +315,7 @@ class DeliverySupportReconsController extends Controller
     }
 
     /**
-     * POST /delivery/support/{support}/recons/{recons}/save — simpan draft yang ada.
+     * POST /delivery/support/{support}/recons/{recons}/save - simpan draft yang ada.
      */
     public function update(Request $request, DeliverySupport $support, DeliverySupportRecons $recons)
     {
@@ -376,7 +377,7 @@ class DeliverySupportReconsController extends Controller
     }
 
     /**
-     * POST /delivery/support/{support}/recons/{recons}/submit — kunci batch.
+     * POST /delivery/support/{support}/recons/{recons}/submit - kunci batch.
      * Dipakai dari halaman detail (tanpa mengubah header/daftar tiket).
      */
     public function submit(Request $request, DeliverySupport $support, DeliverySupportRecons $recons)
@@ -411,11 +412,11 @@ class DeliverySupportReconsController extends Controller
     }
 
     /**
-     * POST /delivery/support/{support}/recons/{recons}/cancel — buka kunci batch.
+     * POST /delivery/support/{support}/recons/{recons}/cancel - buka kunci batch.
      *
      * Mengembalikan status `submitted` menjadi `draft` sehingga header dan
      * daftar tiketnya bisa diperbaiki lagi. Tiket di dalamnya TETAP terkunci
-     * (tidak bisa dipilih Recons lain) selama masih tercatat di batch ini —
+     * (tidak bisa dipilih Recons lain) selama masih tercatat di batch ini -
      * baik saat draft maupun submitted.
      */
     public function cancel(Request $request, DeliverySupport $support, DeliverySupportRecons $recons)
@@ -451,7 +452,7 @@ class DeliverySupportReconsController extends Controller
     }
 
     /**
-     * POST /delivery/support/{support}/recons/{recons}/delete — hapus draft.
+     * POST /delivery/support/{support}/recons/{recons}/delete - hapus draft.
      * Batch yang sudah disubmit tidak boleh dihapus.
      */
     public function destroy(DeliverySupport $support, DeliverySupportRecons $recons)
@@ -477,7 +478,7 @@ class DeliverySupportReconsController extends Controller
     // EXPORT
     // =========================================================================
 
-    /** GET /delivery/support/{support}/recons/{recons}/export — detail tiket ke Excel. */
+    /** GET /delivery/support/{support}/recons/{recons}/export - detail tiket ke Excel. */
     public function export(DeliverySupport $support, DeliverySupportRecons $recons)
     {
         if ($redirect = $this->guardBelongsTo($support, $recons)) {
@@ -530,10 +531,11 @@ class DeliverySupportReconsController extends Controller
 
         return DB::table('delivery_support_activities as act')
             ->join('ticket as t', 'act.ticket_id', '=', 't.ticket_id')
+            ->whereNull('t.deleted_at')
             // Dibutuhkan closeDateOf(); ticket_sla.ticket_id UNIQUE → aman 1:1.
             ->leftJoin('ticket_sla as sla', 'sla.ticket_id', '=', 't.ticket_id')
             // Syarat "ada Customer MD" memakai total proposal mandays yang
-            // approved — sama dengan yang ditampilkan Menu Ticket.
+            // approved - sama dengan yang ditampilkan Menu Ticket.
             ->joinSub($this->customerMdSubquery(), 'cmd', 'cmd.ticket_id', '=', 't.ticket_id')
             ->where('act.delivery_support_id', $support->id)
             ->whereNotNull('act.ticket_id')
@@ -604,7 +606,7 @@ class DeliverySupportReconsController extends Controller
      * Nomor memakai counter global (lihat DeliverySupportRecons::nextNumberFor),
      * jadi dua penyimpanan yang nyaris bersamaan bisa menghasilkan counter yang
      * sama. Kebentrokan itu dijaga unique index `uniq_recons_number` di level
-     * database dan di sini dicoba ulang beberapa kali — bukan dikunci dengan
+     * database dan di sini dicoba ulang beberapa kali - bukan dikunci dengan
      * lock tabel, supaya tidak memperlambat penyimpanan lain.
      *
      * @throws ReconsValidationException
@@ -646,7 +648,7 @@ class DeliverySupportReconsController extends Controller
                     return $recons;
                 });
             } catch (UniqueConstraintViolationException $e) {
-                // Nomor keburu dipakai proses lain — ambil counter berikutnya.
+                // Nomor keburu dipakai proses lain - ambil counter berikutnya.
                 if ($attempts >= 5) {
                     throw new ReconsValidationException(
                         'Could not generate a unique recons number after several attempts. Please try again.'
@@ -660,7 +662,7 @@ class DeliverySupportReconsController extends Controller
     private function syncLines(DeliverySupportRecons $recons, array $ticketIds): void
     {
         // Snapshot memakai Customer MD (total proposal approved), bukan
-        // ticket.man_days — konsisten dengan angka yang dilihat user.
+        // ticket.man_days - konsisten dengan angka yang dilihat user.
         $manDays = $this->customerMdSubquery()
             ->whereIn('ticket_id', $ticketIds)
             ->pluck('customer_md', 'ticket_id');
@@ -701,7 +703,7 @@ class DeliverySupportReconsController extends Controller
                 't.status',
                 't.ticket_type',
                 // MD yang ditampilkan adalah snapshot Customer MD saat tiket
-                // dimasukkan ke batch — sengaja beku, tidak ikut berubah.
+                // dimasukkan ke batch - sengaja beku, tidak ikut berubah.
                 'rt.man_days_snapshot as customer_md',
             ])
             ->map(fn ($row) => $this->formatTicketRow($row));
@@ -743,7 +745,7 @@ class DeliverySupportReconsController extends Controller
     }
 
     /**
-     * Sub-query "Customer MD" per tiket — definisi kanonik aplikasi ini:
+     * Sub-query "Customer MD" per tiket - definisi kanonik aplikasi ini:
      * TOTAL `customer_mandays.total_mandays` yang berstatus **approved**.
      *
      * Sumbernya `TicketController` (baris ~559 & ~790) yang membangun
@@ -752,7 +754,7 @@ class DeliverySupportReconsController extends Controller
      *
      * PENTING: ini BUKAN `ticket.man_days`. Kolom itu bisa berisi placeholder
      * headcount (lihat Ticket::refreshPlaceholderManDays) dan pada data nyata
-     * sering NULL walau customer sudah menyetujui mandays-nya — sehingga tiket
+     * sering NULL walau customer sudah menyetujui mandays-nya - sehingga tiket
      * yang seharusnya bisa direkonsiliasi jadi tidak muncul.
      */
     private function customerMdSubquery()
@@ -764,7 +766,7 @@ class DeliverySupportReconsController extends Controller
     }
 
     /**
-     * Close Date sebuah tiket — MENIRU PERSIS logika kolom "Close Date" di
+     * Close Date sebuah tiket - MENIRU PERSIS logika kolom "Close Date" di
      * Menu Ticket, yang memakai rantai fallback bertingkat, bukan satu kolom:
      *
      *   resources/views/ticket/index.blade.php (baris ~1464)

@@ -150,7 +150,7 @@ function renderGroups() {
         <tr class="hover:bg-gray-50 transition-colors ${g.is_active ? '' : 'opacity-50'}">
             <td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td>
             <td class="px-4 py-3 font-semibold text-gray-900">${escHtml(g.name)}</td>
-            <td class="px-4 py-3 text-gray-500">${escHtml(g.description || '') || '<span class="text-gray-300">—</span>'}</td>
+            <td class="px-4 py-3 text-gray-500">${escHtml(g.description || '') || '<span class="text-gray-300">-</span>'}</td>
             <td class="px-4 py-3">
                 ${(g.modules && g.modules.length)
                     ? g.modules.map(m => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 mr-1 mb-1">${escHtml(m.name)}</span>`).join('')

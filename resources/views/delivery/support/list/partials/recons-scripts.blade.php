@@ -1,12 +1,12 @@
 {{-- ══════════════════════════════════════════════════════════════════════ --}}
-{{-- RECONS — scripts section (tab Recons di halaman Support Details)       --}}
+{{-- RECONS - scripts section (tab Recons di halaman Support Details)       --}}
 {{-- ══════════════════════════════════════════════════════════════════════ --}}
 <script>
 window.SupportRecons = (function () {
     'use strict';
 
     const SUPPORT_ID = {{ $support->id }};
-    // URL relatif (bukan url()/route() absolut) — konsisten dengan section
+    // URL relatif (bukan url()/route() absolut) - konsisten dengan section
     // Plan Cost/Payment Terms, dan aman saat aplikasi diakses lewat HTTPS di
     // belakang proxy tanpa bergantung pada skema yang di-generate server.
     const BASE_URL   = `/delivery/support/${SUPPORT_ID}/recons`;
@@ -22,7 +22,7 @@ window.SupportRecons = (function () {
         return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     }
 
-    // Deskripsi tiket berasal dari email customer — WAJIB di-escape sebelum
+    // Deskripsi tiket berasal dari email customer - WAJIB di-escape sebelum
     // dimasukkan ke innerHTML supaya tidak jadi celah XSS.
     function esc(value) {
         if (value === null || value === undefined) return '';
@@ -35,12 +35,12 @@ window.SupportRecons = (function () {
     function notify(msg, type) {
         if (typeof window.showToast === 'function') window.showToast(msg, type);
         else if (typeof window.showNotification === 'function') window.showNotification(msg, type);
-        else alert(msg);
+        else showAlert(msg);
     }
 
     function fmtMd(value) {
         if (value === null || value === undefined || value === '') return '-';
-        return Number(value).toFixed(2);
+        return formatMd(value);
     }
 
     function statusBadge(status, label) {
@@ -218,8 +218,8 @@ window.SupportRecons = (function () {
     }
 
     // ── hapus draft ──────────────────────────────────────────────────────
-    // Memakai showConfirm() global (partials/confirm-modal) — bukan confirm()
-    // bawaan browser — supaya konsisten dengan seluruh aksi destruktif lain.
+    // Memakai showConfirm() global (partials/confirm-modal) - bukan confirm()
+    // bawaan browser - supaya konsisten dengan seluruh aksi destruktif lain.
     async function askDelete(id, number) {
         const ok = await showConfirm(
             `Delete draft ${number}? Its tickets will become available for a new recons again. This cannot be undone.`,

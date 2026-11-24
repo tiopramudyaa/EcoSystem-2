@@ -38,14 +38,14 @@ return new class extends Migration
         }
 
         // Default grants preserve current hardcoded behavior:
-        // DS User style (PIC/member query) — Delivery Support User(2), Helpdesk(6), RPMO Head(7).
+        // DS User style (PIC/member query) - Delivery Support User(2), Helpdesk(6), RPMO Head(7).
         foreach ([2, 6, 7] as $roleId) {
             DB::table('role_menu')->updateOrInsert(
                 ['role_id' => $roleId, 'menu_id' => $menuIds['ticket.my-tickets.ds-user']],
                 ['can_view' => true, 'can_create' => false, 'can_edit' => false, 'can_delete' => false, 'created_at' => $now, 'updated_at' => $now]
             );
         }
-        // DS Manager style (managed delivery support query) — Delivery Support Manager(14).
+        // DS Manager style (managed delivery support query) - Delivery Support Manager(14).
         DB::table('role_menu')->updateOrInsert(
             ['role_id' => 14, 'menu_id' => $menuIds['ticket.my-tickets.ds-manager']],
             ['can_view' => true, 'can_create' => false, 'can_edit' => false, 'can_delete' => false, 'created_at' => $now, 'updated_at' => $now]

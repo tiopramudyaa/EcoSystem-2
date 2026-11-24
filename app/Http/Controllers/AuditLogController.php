@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Enums\RoleId;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Concerns\ChecksMenuAccess;
 
 class AuditLogController extends Controller
 {
+    use ChecksMenuAccess;
+
     /**
      * Admin-only: render the audit log page.
      */
@@ -15,7 +18,7 @@ class AuditLogController extends Controller
     {
         $user = session('user');
 
-        if (($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
+        if (!$this->menuAllowed('control-center.audit-log')) {
             abort(403, 'Access denied.');
         }
 
@@ -32,7 +35,7 @@ class AuditLogController extends Controller
     {
         $user = session('user');
 
-        if (($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
+        if (!$this->menuAllowed('control-center.audit-log')) {
             return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
         }
 
@@ -94,7 +97,7 @@ class AuditLogController extends Controller
                 'auditable_label' => $this->humanizeClassName($row->auditable_type),
                 'auditable_id'   => $row->auditable_id,
                 'record_label'   => $row->record_label ?? '-',
-                'description'    => $row->description ?? '-',
+                'description'    => \App\Models\Notification::stripDashes($row->description) ?? '-',
                 'event'          => $row->event,
                 'event_label'    => $row->getEventLabel(),
                 'event_color'    => $row->getEventColor(),
@@ -137,7 +140,7 @@ class AuditLogController extends Controller
     {
         $user = session('user');
 
-        if (($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
+        if (!$this->menuAllowed('control-center.audit-log')) {
             return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
         }
 

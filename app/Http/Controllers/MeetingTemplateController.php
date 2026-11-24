@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 
 class MeetingTemplateController extends Controller
 {
-    // Sama seperti SlaController::assertMeetingAccess() — diatur lewat Role
+    // Sama seperti SlaController::assertMeetingAccess() - diatur lewat Role
     // Management (menu slug: ticket.meeting), bukan role hardcode.
     private function assertAccess(): bool
     {

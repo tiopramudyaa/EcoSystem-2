@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Ticket #{{ $ticket->ticket_number }} — Chat</title>
+    <title>Ticket #{{ $ticket->ticket_number }} - Chat</title>
     <style>
         /* Margin atas/bawah per halaman supaya halaman lanjutan tidak menempel ke tepi;
            halaman pertama tanpa margin atas agar header tetap full-bleed. */
@@ -51,12 +51,12 @@
 <div class="content">
     <table class="info">
         <tr><th>Ticket Number</th><td>{{ $ticket->ticket_number }}</td></tr>
-        <tr><th>Description</th><td>{{ $ticket->description ?: '—' }}</td></tr>
-        <tr><th>Customer</th><td>{{ $ticket->customer?->basicData?->name_1 ?? '—' }}</td></tr>
-        <tr><th>Date Raised</th><td>{{ $ticket->created_at?->format('d M Y, H:i') ?? '—' }}</td></tr>
-        <tr><th>Ticket Type</th><td>{{ $ticket->ticket_type ?: '—' }}</td></tr>
+        <tr><th>Description</th><td>{{ $ticket->description ?: '-' }}</td></tr>
+        <tr><th>Customer</th><td>{{ $ticket->customer?->basicData?->name_1 ?? '-' }}</td></tr>
+        <tr><th>Date Raised</th><td>{{ $ticket->created_at?->format('d M Y, H:i') ?? '-' }}</td></tr>
+        <tr><th>Ticket Type</th><td>{{ $ticket->ticket_type ?: '-' }}</td></tr>
         <tr><th>Module</th><td>{{ $moduleName }}</td></tr>
-        <tr><th>Priority</th><td>{{ $ticket->ticket_priority ?: '—' }}</td></tr>
+        <tr><th>Priority</th><td>{{ $ticket->ticket_priority ?: '-' }}</td></tr>
         <tr class="last"><th>Status</th><td>{{ $ticket->status_label }}</td></tr>
     </table>
 

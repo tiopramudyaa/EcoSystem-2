@@ -51,7 +51,7 @@ class ConsultantWorkloadController extends Controller
             $empIds     = $consultants->pluck('employee_id')->toArray();
             $modulesMap = self::modulesMapForEmployees($empIds);
 
-            // Bulk-load tickets per employee sekaligus untuk semua konsultan —
+            // Bulk-load tickets per employee sekaligus untuk semua konsultan -
             // ganti N panggilan ticketsByEmployee() (masing-masing ~6-7 query,
             // lihat komentar di ticketsByEmployeesBulk()) dengan ~3 query total.
             $ticketsByEmployeeMap = $this->ticketsByEmployeesBulk($empIds, $allTicketIds, $progressMap);
@@ -185,7 +185,7 @@ class ConsultantWorkloadController extends Controller
     }
 
     /**
-     * Export Excel: daftar tiket aktif milik satu konsultan — isinya sama persis
+     * Export Excel: daftar tiket aktif milik satu konsultan - isinya sama persis
      * dengan sub-tabel yang muncul saat baris konsultan di-expand di halaman.
      */
     public function exportTickets(int $id)
@@ -209,7 +209,7 @@ class ConsultantWorkloadController extends Controller
             ->sortBy(fn ($t) => $statusOrder[$t->status] ?? 99)
             ->values();
 
-        // Ringkasan baris utama — mirror calcActive() di view supaya angka di Excel
+        // Ringkasan baris utama - mirror calcActive() di view supaya angka di Excel
         // cocok dengan yang dilihat user. Akumulasi hanya dari sub-row
         // consultant_details milik konsultan ini.
         $allocMd = 0.0;   // Σ mandays (kolom "Alloc Days")
@@ -251,16 +251,16 @@ class ConsultantWorkloadController extends Controller
     }
 
     /**
-     * Versi bulk dari ticketsByEmployee() untuk N employee sekaligus — dipakai
+     * Versi bulk dari ticketsByEmployee() untuk N employee sekaligus - dipakai
      * oleh list() supaya tidak N+1 (ticketsByEmployee() sendirian menjalankan
      * ~6-7 query: 3 dari Ticket::assignedTicketIds(), 1 fetch ticket, 2+ dari
-     * consultantDetailsForTickets() — kalau dipanggil di dalam loop per
+     * consultantDetailsForTickets() - kalau dipanggil di dalam loop per
      * konsultan, itu jadi ratusan query untuk satu kali load halaman).
      *
      * Di sini, ketiga sumber assignment (lead/member/mandays) dan fetch
      * ticket + consultant_details masing-masing cuma dijalankan SEKALI untuk
      * seluruh $empIds, lalu hasilnya di-assemble ulang per employee di memori
-     * — bentuk & isi tiap ticket row sama persis dengan yang dihasilkan
+     * - bentuk & isi tiap ticket row sama persis dengan yang dihasilkan
      * ticketsByEmployee() (role_in_ticket, consultant_progress,
      * consultant_details), jadi aman menggantikan pemanggilan per-employee.
      *
@@ -272,7 +272,7 @@ class ConsultantWorkloadController extends Controller
             return [];
         }
 
-        // Siapa PIC/member/mandays di tiket aktif mana — 3 query total,
+        // Siapa PIC/member/mandays di tiket aktif mana - 3 query total,
         // dibatasi ke $activeTicketIds dari awal (setara dengan filter status
         // aktif yang tadinya baru diterapkan belakangan di query ticket).
         $leadRows = DB::table('ticket')
@@ -341,7 +341,7 @@ class ConsultantWorkloadController extends Controller
                 if (!isset($ticketsById[$tid])) {
                     continue; // assigned tapi tidak lolos filter status/deleted/hidden aktif
                 }
-                // Clone — satu ticket row bisa dipakai >1 employee (lead + member
+                // Clone - satu ticket row bisa dipakai >1 employee (lead + member
                 // berbeda), role_in_ticket & isi lain harus spesifik per employee.
                 $ticket = clone $ticketsById[$tid];
                 $ticket->role_in_ticket = ((int) $ticket->ticket_lead_id === $empId) ? 'pic' : 'member';
@@ -466,12 +466,12 @@ class ConsultantWorkloadController extends Controller
             $tid        = (int) $row->ticket_id;
             $isApproved = $row->proposal_status === 'approved';
 
-            // Sebelum Head approve, tampilkan MD yang diajukan PIC (cmd.mandays) —
+            // Sebelum Head approve, tampilkan MD yang diajukan PIC (cmd.mandays) -
             // sengaja ikut berubah live seiring draft proposal di-edit, supaya Alloc Days
             // dan turunannya (remain, workload %, load score) mencerminkan proposal terkini.
             $mandays     = $isApproved ? (float) ($row->approved_mandays ?? 0) : (float) ($row->mandays ?? 0);
             // Sama untuk additional: sebelum approve pakai angka yang diajukan (additional_mandays),
-            // bukan 0 — beberapa proposal murni pengajuan top-up (mandays=0, additional_mandays>0),
+            // bukan 0 - beberapa proposal murni pengajuan top-up (mandays=0, additional_mandays>0),
             // jadi kalau di-nol-kan Alloc Days tampak 0.00 padahal ada draft yang menunggu approval.
             $additional  = $isApproved ? (float) $row->approved_additional : (float) ($row->additional_mandays ?? 0);
             $effectiveMd = $mandays + $additional;
@@ -481,9 +481,9 @@ class ConsultantWorkloadController extends Controller
             $map[$tid][] = [
                 'detail_id'                    => $row->detail_id,
                 'employee_id'                  => $row->employee_id,
-                'emp_name'                     => trim($row->emp_name) ?: ($row->eci ?? '—'),
-                'eci'                          => $row->eci ?? '—',
-                'module'                       => $row->qualification_modules ?? '—',
+                'emp_name'                     => trim($row->emp_name) ?: ($row->eci ?? '-'),
+                'eci'                          => $row->eci ?? '-',
+                'module'                       => $row->qualification_modules ?? '-',
                 'mandays'                      => $mandays,
                 'approved_additional'          => $additional,
                 'effective_md'                 => $effectiveMd,
@@ -508,7 +508,7 @@ class ConsultantWorkloadController extends Controller
             $cm = ConsultantMandays::where('ticket_id', $ticketId)->latest()->first();
 
             if (!$cm) {
-                // Belum ada proposal Resolution Days — tawarkan progress level-tiket
+                // Belum ada proposal Resolution Days - tawarkan progress level-tiket
                 // (satu angka, ditulis langsung ke ticket.progress_percentage).
                 $ticket = Ticket::where('ticket_id', $ticketId)->first();
                 if (!$ticket) {
@@ -519,8 +519,8 @@ class ConsultantWorkloadController extends Controller
                     'detail_id'           => null,
                     'employee_id'         => null,
                     'emp_name'            => 'Progress Tiket (belum ada proposal Resolution Days)',
-                    'eci'                 => '—',
-                    'module'              => '—',
+                    'eci'                 => '-',
+                    'module'              => '-',
                     'mandays'             => null,
                     'progress_percentage' => (float) ($ticket->progress_percentage ?? 0),
                     'progress_note'       => $ticket->progress_note,
@@ -549,11 +549,11 @@ class ConsultantWorkloadController extends Controller
                 ->map(fn($d) => [
                     'detail_id'          => $d->detail_id,
                     'employee_id'        => $d->employee_id,
-                    'emp_name'           => trim($d->emp_name) ?: ($d->eci ?? '—'),
-                    'eci'                => $d->eci ?? '—',
-                    'module'             => $d->module ?? '—',
-                    // Sebelum Head approve, tampilkan placeholder 1 MD — bukan angka draft
-                    // yang mungkin sedang diedit PIC — supaya konsisten dengan sub-tabel.
+                    'emp_name'           => trim($d->emp_name) ?: ($d->eci ?? '-'),
+                    'eci'                => $d->eci ?? '-',
+                    'module'             => $d->module ?? '-',
+                    // Sebelum Head approve, tampilkan placeholder 1 MD - bukan angka draft
+                    // yang mungkin sedang diedit PIC - supaya konsisten dengan sub-tabel.
                     'mandays'            => $cm->status === 'approved' ? (float) ($d->approved_mandays ?? 0) : 1.0,
                     'progress_percentage' => (float) ($d->progress_percentage ?? 0),
                     'progress_note'      => $d->progress_note,
@@ -612,24 +612,43 @@ class ConsultantWorkloadController extends Controller
                 ]);
             }
 
-            // Setiap orang hanya boleh mengubah progress miliknya sendiri.
+            // Setiap orang hanya boleh mengubah progress miliknya sendiri - KECUALI
+            // Ticket Lead tiket ini, yang boleh mengubah progress semua anggotanya.
+            // Jalur Lead dibatasi ke detail milik tiket INI (lewat consultant_mandays
+            // tiket tsb), supaya Lead tiket A tidak bisa menyentuh detail tiket B
+            // dengan mengirim detail_id lain ke endpoint tiket A.
+            $leadId = Ticket::where('ticket_id', $ticketId)->value('ticket_lead_id');
+            $isLead = $leadId && (int) $leadId === (int) $empId;
+
             $ownDetailIds = collect($validated['progresses'])->pluck('detail_id');
             $ownedCount   = ConsultantMandaysDetail::whereIn('id', $ownDetailIds)
-                ->where('employee_id', $empId)
+                ->where(function ($q) use ($empId, $isLead, $ticketId) {
+                    $q->where('employee_id', $empId);
+
+                    if ($isLead) {
+                        $q->orWhereIn(
+                            'consultant_mandays_id',
+                            ConsultantMandays::where('ticket_id', $ticketId)->select('id')
+                        );
+                    }
+                })
                 ->count();
             if ($ownedCount !== $ownDetailIds->count()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Anda hanya dapat mengubah progress milik sendiri.',
+                    'message' => $isLead
+                        ? 'Anda hanya dapat mengubah progress anggota tiket ini.'
+                        : 'Anda hanya dapat mengubah progress milik sendiri.',
                 ], 403);
             }
 
             // Snapshot "before" progress fields for every detail about to be touched. The
             // update below is an Eloquent mass update via query builder
-            // (ConsultantMandaysDetail::where(...)->update(...)) — Laravel never fires model
+            // (ConsultantMandaysDetail::where(...)->update(...)) - Laravel never fires model
             // events for that (only single-instance $model->save() does), so AuditObserver
             // (wired via ConsultantMandaysDetail's Auditable trait) never sees it.
-            $detailsBeforeUpdate = ConsultantMandaysDetail::whereIn('id', $ownDetailIds)->get()->keyBy('id');
+            $detailsBeforeUpdate = ConsultantMandaysDetail::with('employee.basicData:employee_id,first_name,last_name')
+                ->whereIn('id', $ownDetailIds)->get()->keyBy('id');
             $actorName = session('user.name');
 
             foreach ($validated['progresses'] as $item) {
@@ -642,7 +661,15 @@ class ConsultantWorkloadController extends Controller
 
                 $beforeDetail = $detailsBeforeUpdate->get($item['detail_id']);
                 if ($beforeDetail) {
-                    $employeeLabel = $actorName ?: "Employee #{$empId}";
+                    // Label = PEMILIK baris, bukan aktor: sejak Ticket Lead boleh mengubah
+                    // progress anggotanya, keduanya tidak lagi selalu orang yang sama.
+                    if ((int) $beforeDetail->employee_id === (int) $empId) {
+                        $employeeLabel = $actorName ?: "Employee #{$empId}";
+                    } else {
+                        $ownerBasic    = $beforeDetail->employee?->basicData;
+                        $employeeLabel = trim(($ownerBasic->first_name ?? '') . ' ' . ($ownerBasic->last_name ?? ''))
+                            ?: "Employee #{$beforeDetail->employee_id}";
+                    }
 
                     AuditLog::recordAction(
                         module: 'Mandays', // matches ConsultantMandaysDetail::$auditModule so these rows group together

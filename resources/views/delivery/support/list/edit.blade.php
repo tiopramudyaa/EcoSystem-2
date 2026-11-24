@@ -210,7 +210,7 @@
                             </div>
                         </div>
 
-                        {{-- IO Number + Vendor (opsional) — mirror form create. --}}
+                        {{-- IO Number + Vendor (opsional) - mirror form create. --}}
                         @php
                             $vendorVal   = old('vendor_id', $support->vendor_id);
                             $vendorLabel = optional(($vendors ?? collect())->firstWhere('customer_id', (int) $vendorVal))
@@ -373,7 +373,7 @@
                         <div>
                             <label for="total_mandays" class="block text-sm font-medium text-gray-700 mb-1">Total Mandays</label>
                             <input type="number" name="total_mandays" id="total_mandays" min="0"
-                                   value="{{ old('total_mandays', $support->total_mandays) }}"
+                                   value="{{ \App\Support\Md::format(old('total_mandays', $support->total_mandays), '') }}"
                                    class="block w-full border border-gray-300 rounded-lg shadow-sm primary-focus text-sm px-4 py-2.5"
                                    placeholder="0">
                         </div>

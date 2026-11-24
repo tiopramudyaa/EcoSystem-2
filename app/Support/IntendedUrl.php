@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
  * Dipakai saat user membuka deep link (mis. tombol "Buka di EcoSystem" pada kartu
  * Teams → /ticket/123) dalam kondisi belum login. Middleware CheckAuthToken
  * menyimpan tujuan itu, halaman login membawanya, lalu setelah login berhasil
- * browser diarahkan ke sana — bukan ke /dashboard.
+ * browser diarahkan ke sana - bukan ke /dashboard.
  *
  * SEMUA nilai yang datang dari luar (query string ?redirect=) WAJIB lewat
  * sanitize() supaya tidak jadi lubang open-redirect.
@@ -83,7 +83,7 @@ class IntendedUrl
             // protocol-relative → dianggap host lain.
             return null;
         } elseif (!str_starts_with($url, '/')) {
-            // path relatif tanpa slash awal, ambigu — tolak.
+            // path relatif tanpa slash awal, ambigu - tolak.
             return null;
         }
 

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  * deliverable_document_type_ticket_types at the moment the ticket's type was
  * set (see Ticket::booted()'s `saved` hook / TicketDeliverableRequirementSync).
  *
- * This is deliberately a copy, not a live join — the requirement list for an
+ * This is deliberately a copy, not a live join - the requirement list for an
  * existing ticket must stay exactly as it was when the ticket got its type,
  * even if an admin later adds/removes/reclassifies document types in the
  * master data. `doc_type` is stored as a plain string (like

@@ -39,11 +39,11 @@ class PeriodService
      *
      * Rules:
      *  1. Roles without a domain (Admin, RPMO, etc.) → always allowed.
-     *  2. The date's period must be within the active window:
+     *  2. An approved, unexpired PeriodLateExceptionRequest for that specific
+     *     period + employee + domain → always allowed, whatever the period status.
+     *  3. Otherwise the date's period must be within the active window:
      *       - Current period  (the one today falls in)
      *       - Previous period (one month before current)
-     *  3. Outside the active window → only allowed with an approved, unexpired
-     *     PeriodLateExceptionRequest for that specific period + employee + domain.
      *  4. Inside the active window → period must be globally open and domain must be open.
      *
      * Returns ['allowed' => bool, 'reason' => string].
@@ -89,25 +89,26 @@ class PeriodService
                          && $dateCoords['month'] == $prevMonth;
         $inActiveWindow   = $isCurrentPeriod || $isPreviousPeriod;
 
-        // ── Outside active window → require approved late exception request ────
-        if (!$inActiveWindow) {
-            $hasActiveException = PeriodLateExceptionRequest::where('period_id', $period->id)
-                ->where('employee_id', $employeeId)
-                ->where('domain', $domain)
-                ->where('status', 'approved')
-                ->where('expires_at', '>', $now)
-                ->exists();
+        // ── Approved, unexpired late exception → allowed for any period, ────────
+        // including the previous one when it has been closed.
+        $hasActiveException = PeriodLateExceptionRequest::where('period_id', $period->id)
+            ->where('employee_id', $employeeId)
+            ->where('domain', $domain)
+            ->where('status', 'approved')
+            ->where('expires_at', '>', $now)
+            ->exists();
 
-            if (!$hasActiveException) {
-                return [
-                    'allowed' => false,
-                    'reason'  => 'You can only submit timesheets for the current period or the previous period. '
-                               . 'For older periods, submit a Late Exception Request.',
-                ];
-            }
-
-            // Late exception is valid → bypass period/domain status checks
+        if ($hasActiveException) {
             return ['allowed' => true, 'reason' => ''];
+        }
+
+        // ── Outside active window and no exception → refuse ─────────────────────
+        if (!$inActiveWindow) {
+            return [
+                'allowed' => false,
+                'reason'  => 'You can only submit timesheets for the current period or the previous period. '
+                           . 'For older periods, submit a Late Exception Request.',
+            ];
         }
 
         // ── Inside active window → standard period/domain status checks ───────
@@ -121,7 +122,7 @@ class PeriodService
         if ($period->global_status === 'closed') {
             return [
                 'allowed' => false,
-                'reason'  => 'Period is closed.',
+                'reason'  => 'Period is closed. If you must still fill it, submit a Late Exception Request.',
             ];
         }
 
@@ -304,7 +305,7 @@ class PeriodService
 
         if ($period->global_status !== 'open') {
             throw new \InvalidArgumentException(
-                'Cannot open domain — period is not globally open. Waiting for RPMO.'
+                'Cannot open domain - period is not globally open. Waiting for RPMO.'
             );
         }
 
@@ -428,7 +429,7 @@ class PeriodService
     }
 
     /**
-     * Head rejects the request — flow ends.
+     * Head rejects the request - flow ends.
      */
     public function headRejectLateRequest(
         PeriodLateExceptionRequest $req,
@@ -450,7 +451,7 @@ class PeriodService
 
     /**
      * RPMO approves the request (Level 2).
-     * Must provide an expires_at deadline — this controls when access expires.
+     * Must provide an expires_at deadline - this controls when access expires.
      * No separate PeriodLateException is created; access is determined by this record.
      *
      * @throws \InvalidArgumentException if deadline is in the past or missing.
@@ -482,7 +483,7 @@ class PeriodService
     }
 
     /**
-     * RPMO rejects the request — flow ends.
+     * RPMO rejects the request - flow ends.
      */
     public function rpmoRejectLateRequest(
         PeriodLateExceptionRequest $req,

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
  * Baris ini sudah lama ada di database/seeders/MenuSeeder.php (parent
  * control-center, route admin.security-center, grant admin-only) dan
  * kodenya (SecurityCenterController + view + sidebar link) sudah lengkap
- * dan aktif — tapi MenuSeeder tidak pernah benar-benar dijalankan ulang
+ * dan aktif - tapi MenuSeeder tidak pernah benar-benar dijalankan ulang
  * setelah baris ini ditambahkan ke file-nya, jadi baris menu-nya tidak
  * pernah masuk ke database manapun yang tidak di-reseed dari nol. Migration
  * ini menutup celah itu tanpa menjalankan MenuSeeder penuh (yang berisiko

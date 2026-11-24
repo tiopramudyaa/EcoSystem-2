@@ -139,7 +139,7 @@ function renderTypes() {
         <tr class="hover:bg-gray-50 transition-colors ${t.is_active ? '' : 'opacity-50'}">
             <td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td>
             <td class="px-4 py-3 font-semibold text-gray-900">${escHtml(t.name)}</td>
-            <td class="px-4 py-3 text-gray-500">${escHtml(t.description || '') || '<span class="text-gray-300">—</span>'}</td>
+            <td class="px-4 py-3 text-gray-500">${escHtml(t.description || '') || '<span class="text-gray-300">-</span>'}</td>
             <td class="px-4 py-3 text-center">
                 ${t.is_active
                     ? '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">Active</span>'
@@ -219,7 +219,7 @@ async function deleteType(id) {
     const t = typesData.find(x => x.id === id);
     const ok = await customConfirm({
         title:     'Delete Project Type?',
-        message:   `You are about to delete "${t?.name ?? ''}". Projects already using this type keep their existing value — only the dropdown option is removed. This action cannot be undone.`,
+        message:   `You are about to delete "${t?.name ?? ''}". Projects already using this type keep their existing value - only the dropdown option is removed. This action cannot be undone.`,
         okLabel:   'Yes, Delete',
         okClass:   'bg-red-600 hover:bg-red-700',
         icon:      'fas fa-trash',
@@ -287,7 +287,7 @@ function escHtml(str) {
     return d.innerHTML;
 }
 
-// Intentionally no backdrop-click-to-close on #typeModal — it should only be
+// Intentionally no backdrop-click-to-close on #typeModal - it should only be
 // dismissed via the X button (or Cancel / Escape), never by an accidental
 // click outside while filling the form.
 document.addEventListener('keydown', e => {

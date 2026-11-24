@@ -2,17 +2,17 @@
 
 Flow integrasi EcoSystem ↔ Microsoft Teams dalam bentuk siap-import.
 Panduan konsep, konfigurasi `.env`, dan troubleshooting ada di
-[../power-automate-integration.md](../power-automate-integration.md) — berkas ini
+[../power-automate-integration.md](../power-automate-integration.md) - berkas ini
 khusus soal cara meng-import dan mengonfigurasi flow-nya.
 
-## Keadaan saat ini — 18 September 2026
+## Keadaan saat ini - 18 September 2026
 
 | Flow | Bentuk | Status |
 |---|---|---|
 | 1. `EcoSystem - Email Greeting` | balas greeting di thread email yang sama | **Terbukti jalan** end-to-end |
-| 2. `EcoSystem - Ticket Validated` | buat channel tiket + kartu + tarik anggota + mention lead modul | **ARSIP** — pernah terbukti jalan, tidak lagi dipanggil EcoSystem |
+| 2. `EcoSystem - Ticket Validated` | buat channel tiket + kartu + tarik anggota + mention lead modul | **ARSIP** - pernah terbukti jalan, tidak lagi dipanggil EcoSystem |
 | 3. `EcoSystem - Open Ticket Reminder` | reminder berulang selama tiket Open | Dibuat & diuji |
-| 4. `EcoSystem - Ticket Member Added` | PIC/member baru ditarik ke channel tiketnya + kartu | **ARSIP** — pernah terbukti jalan (8 Sep 2026), tidak lagi dipanggil EcoSystem |
+| 4. `EcoSystem - Ticket Member Added` | PIC/member baru ditarik ke channel tiketnya + kartu | **ARSIP** - pernah terbukti jalan (8 Sep 2026), tidak lagi dipanggil EcoSystem |
 | 5. `EcoSystem - Ticket Validated (Group Chat)` | buat **group chat** per tiket + kartu + mention lead modul | Dibuat & diuji; kartu sudah versi tombol tunggal |
 | 6. `EcoSystem - Ticket Member Added (Group Chat)` | PIC/member baru ditambahkan ke **group chat** tiketnya + **di-@mention** | Dibuat & diuji; sudah *Post message* + token mention |
 | 7. `EcoSystem - Teams Post Message (Internal Note)` | internal note (pesan) & jadwal meeting (kartu) → group chat tiket | Dibuat & diuji; Condition kartu sudah terpasang |
@@ -32,34 +32,34 @@ alurnya. Empat penyesuaian, semuanya kecil di designer:
 |---|---|---|---|
 | 1 | Tombol *Buka di EcoSystem* cukup satu di kartu **Tiket baru** | tempel ulang kartu flow 5 | judul tombol di `cards/flow-5-…json` |
 | 2 | Penambahan PIC/member cukup **pesan**, tanpa kartu dan tanpa tombol; orangnya langsung di-@mention | flow 6: *Post card* → **Post message** + aksi *Get an @mention token* | payload flow 6 kini membawa `message_html` dan `mention_html` |
-| 3 | Pesan ke Teams tanpa nomor tiket dan tanpa tautan tiket | — | `TeamsOutboxService::wrap()` tidak lagi menambah baris `nomor → url` |
+| 3 | Pesan ke Teams tanpa nomor tiket dan tanpa tautan tiket | - | `TeamsOutboxService::wrap()` tidak lagi menambah baris `nomor → url` |
 | 4 | Jadwal meeting dikirim sebagai **kartu**, bukan pesan | flow 7: Condition baru + cabang *Post card* | `queueMeeting()` merakit Adaptive Card di `card` |
 
-Catatan 3 berlaku untuk **isi pesan** saja — blok `ticket` di payload tetap
+Catatan 3 berlaku untuk **isi pesan** saja - blok `ticket` di payload tetap
 membawa `number` dan `url`, karena pagar staging membacanya dan bersifat
 fail-closed. Alasan menghapusnya dari badan pesan: pesannya diposting di dalam
 group chat tiket itu sendiri, jadi nomornya mengulang nama grup dan tautannya
 tampil sebagai URL mentah yang panjang.
 
 Catatan 4 **tidak** mengubah flow 7 jadi *Post card* seluruhnya. Flow itu dipakai
-dua jalur — internal note dan meeting — dan note sengaja tetap berupa pesan
+dua jalur - internal note dan meeting - dan note sengaja tetap berupa pesan
 supaya bisa di-quote-reply (kartu tidak bisa). Yang dipasang adalah Condition:
 payload membawa `card` → *Post card*, selain itu → *Post message* seperti
 sebelumnya. Lihat *Konfigurasi flow 7* langkah 3.
 
 **Tambahan 11 September 2026:** peserta group chat kini juga memuat **tim
-Delivery Support tiket** — Delivery Owner, Support Manager, CO PM, dan Support
+Delivery Support tiket** - Delivery Owner, Support Manager, CO PM, dan Support
 Admin dari delivery support yang dipilih helpdesk saat validasi. Rinciannya di
 bagian *Siapa saja yang masuk group chat tiket*. Tidak ada perubahan di sisi
 designer: daftarnya tetap tiba sebagai `chat.members_csv` yang sama.
 
 **Flow 2 & 4 berstatus ARSIP.** Keduanya tetap tersimpan di Power Automate dan
 panduan konfigurasinya tetap ada di berkas ini, tapi **EcoSystem tidak lagi
-mengirim blok `channel`** — payloadnya kini hanya membawa blok `chat`. Artinya
+mengirim blok `channel`** - payloadnya kini hanya membawa blok `chat`. Artinya
 flow 2 & 4 tidak bisa dihidupkan begitu saja: kalau suatu saat bentuk channel
 dipakai lagi, sisi EcoSystem yang menyesuaikan (kembalikan
 `ticketChannelPayload()` dan `channelMembers()` dari commit `d67d446`). Itu
-keputusan sadar — satu bentuk saja yang hidup di kode supaya tidak ada dua jalur
+keputusan sadar - satu bentuk saja yang hidup di kode supaya tidak ada dua jalur
 yang harus dirawat bersamaan.
 
 URL flow 5 & 6 dipasang di variabel `.env` yang **sudah ada**, bukan variabel
@@ -72,7 +72,7 @@ baru:
 
 **Semua flow sekarang dalam keadaan `Off`, dan itu disengaja.** Perubahan
 kodenya sudah di-merge, tetapi `.env` produksi belum membawa variabel Power
-Automate sama sekali — `POWER_AUTOMATE_ENABLED` default `false`, jadi EcoSystem
+Automate sama sekali - `POWER_AUTOMATE_ENABLED` default `false`, jadi EcoSystem
 tidak memanggil apa pun. Menyalakannya nanti **tidak perlu deploy ulang**: isi
 `POWER_AUTOMATE_ENABLED`, `POWER_AUTOMATE_SECRET`, dan URL flow yang diinginkan
 di `.env`, lalu `php artisan optimize:clear`. Flow yang URL-nya dibiarkan kosong
@@ -83,19 +83,19 @@ Sisi EcoSystem aman dalam keadaan mati: keempat titik pemanggilan
 `TicketController` untuk add member/assign PIC, dan command
 `tickets:open-reminders`) semuanya memeriksa `isFlowReady()` lebih dulu dan
 `return` tanpa efek. Panggilan flow tiket-divalidasi juga merupakan langkah **terakhir** di
-`approve()` — di luar transaksi, dibungkus `try/catch`, dan dikirim setelah
-response — sehingga tidak mungkin mengganggu validasi tiket harian.
+`approve()` - di luar transaksi, dibungkus `try/catch`, dan dikirim setelah
+response - sehingga tidak mungkin mengganggu validasi tiket harian.
 
 **Penyesuaian designer hasil meeting 18 Sep 2026 sudah dikerjakan seluruhnya
-(21 Sep 2026)**, di flow 5, 6, dan 7 — sisi EcoSystem-nya sudah menyesuaikan
+(21 Sep 2026)**, di flow 5, 6, dan 7 - sisi EcoSystem-nya sudah menyesuaikan
 lebih dulu. Yang tersisa hanyalah uji ujung-ke-ujung tiap bentuk pesan. Soal
-visibilitas channel (bab terakhir) otomatis gugur di bentuk group chat — grup
-hanya terlihat oleh pesertanya — dan digantikan satu batasan baru: maksimal 20
+visibilitas channel (bab terakhir) otomatis gugur di bentuk group chat - grup
+hanya terlihat oleh pesertanya - dan digantikan satu batasan baru: maksimal 20
 peserta per chat.
 
 ## Berkas mana yang dipakai
 
-**`EcoSystem-Teams-Integration_1_0_0_0.zip`** — satu **Dataverse solution** berisi
+**`EcoSystem-Teams-Integration_1_0_0_0.zip`** - satu **Dataverse solution** berisi
 ketiga flow sekaligus. Ini yang dipakai.
 
 Environment PT Eclectic mengaktifkan opsi admin **"Create in Dataverse
@@ -110,9 +110,9 @@ environment berubah, tapi untuk sekarang **abaikan folder itu**.
 
 | Folder | Isi |
 |---|---|
-| `EcoSystem-Teams-Integration_1_0_0_0.zip` | Solution — ini yang di-import |
+| `EcoSystem-Teams-Integration_1_0_0_0.zip` | Solution - ini yang di-import |
 | `solution-src/` | Isi solution dalam bentuk mentah (`solution.xml`, `customizations.xml`, `Workflows/*.json`) |
-| `legacy/` + `src/` | Paket legacy dan sumbernya — ditolak environment ini |
+| `legacy/` + `src/` | Paket legacy dan sumbernya - ditolak environment ini |
 | `build/` | Skrip pembangun; `definitions.php` adalah sumber tunggal definisi ketiga flow |
 | `schemas/` | Request Body JSON Schema tiap flow (opsional - lihat catatan lapangan 3) |
 | `cards/` | Adaptive Card tiap aksi Teams, siap salin-tempel ke designer |
@@ -134,8 +134,8 @@ php docs/power-automate/build/extract-cards.php     # regenerasi cards/
 ## Kenapa tidak copy-paste teks saja
 
 Power Automate **Desktop** (RPA) memang bisa menyalin aksi sebagai teks. Power
-Automate **cloud** — yang dipakai di sini karena butuh trigger HTTP dan konektor
-Teams/Outlook — tidak punya fitur itu. Padanannya adalah import solution.
+Automate **cloud** - yang dipakai di sini karena butuh trigger HTTP dan konektor
+Teams/Outlook - tidak punya fitur itu. Padanannya adalah import solution.
 
 ---
 
@@ -151,7 +151,7 @@ Teams/Outlook — tidak punya fitur itu. Padanannya adalah import solution.
 6. Bila diminta memilih **connections** (Office 365 Outlook / Microsoft Teams),
    pilih koneksi yang sudah ada atau **+ New connection** dengan akun
    `@eclectic.co.id`, lalu **Refresh**.
-7. **Import**. Tunggu sampai statusnya berhasil, lalu buka solution-nya — ketiga
+7. **Import**. Tunggu sampai statusnya berhasil, lalu buka solution-nya - ketiga
    flow ada di dalamnya.
 
 **Ketiga flow sengaja masuk dalam keadaan MATI (draft).** Itu disengaja: secret
@@ -164,7 +164,7 @@ konfigurasinya benar. Nyalakan lewat **Turn on** setelah langkah di bawah selesa
 
 Empat hal yang tidak bisa dibawa paket karena khas lingkungan Anda.
 
-### 0. Request Body JSON Schema — ketiga flow
+### 0. Request Body JSON Schema - ketiga flow
 
 **Schema trigger tidak ikut terbawa saat import solution** (terpantau 2 Sep 2026:
 kotak *Request Body JSON Schema* kosong setelah import berhasil). Tanpa schema,
@@ -180,7 +180,7 @@ Schema**:
 | EcoSystem - Ticket Validated | `schemas/flow-2-ticket-validated-request-schema.json` |
 | EcoSystem - Open Ticket Reminder | `schemas/flow-3-open-ticket-reminder-request-schema.json` |
 
-Tempel **isi berkasnya apa adanya** — itu sudah berupa JSON Schema, bukan contoh
+Tempel **isi berkasnya apa adanya** - itu sudah berupa JSON Schema, bukan contoh
 payload, jadi jangan lewat tombol *Use sample payload to generate schema*.
 
 Regenerasi berkas schema (mengikuti `build/definitions.php`):
@@ -196,7 +196,7 @@ Buka aksi konektor di dalam flow (Outlook untuk flow 1, Teams untuk flow 2 & 3),
 klik **⋯ → Add new connection** atau pilih koneksi yang sudah ada dengan akun
 `@eclectic.co.id`. Banner hilang setelah tiap aksi punya koneksi.
 
-### 1. Secret — ketiga flow
+### 1. Secret - ketiga flow
 
 Buka flow → **Edit** → aksi **Cek secret EcoSystem** (Condition). Sisi kanan
 perbandingan masih berisi teks harfiah:
@@ -205,7 +205,7 @@ perbandingan masih berisi teks harfiah:
 GANTI_DENGAN_POWER_AUTOMATE_SECRET
 ```
 
-Ganti dengan nilai `POWER_AUTOMATE_SECRET` dari `.env` EcoSystem — harus sama
+Ganti dengan nilai `POWER_AUTOMATE_SECRET` dari `.env` EcoSystem - harus sama
 persis, awas spasi ikut ter-copy. Sisi kirinya sudah terisi dan tidak perlu
 diubah:
 
@@ -213,14 +213,14 @@ diubah:
 triggerOutputs()?['headers']?['X-EcoSystem-Secret']
 ```
 
-### 2. Tujuan kartu — flow *Ticket Validated* saja
+### 2. Tujuan kartu - flow *Ticket Validated* saja
 
 **Diputuskan 2 Sep 2026: satu CHANNEL BARU per tiket di dalam team Support MO
 Team.** (Rancangan sempat memakai group chat karena app Teams tidak tersedia di
 akun penyiap flow; dibatalkan atas permintaan atasan agar strukturnya rapi dalam
 satu team.) Langkahnya di bagian "Konfigurasi flow 2" di bawah.
 
-### 3. Periksa aksi balas email — flow *Email Greeting* saja
+### 3. Periksa aksi balas email - flow *Email Greeting* saja
 
 Buka aksi **Balas greeting ke pengirim**, pastikan ketiga field terisi:
 
@@ -230,13 +230,13 @@ Buka aksi **Balas greeting ke pengirim**, pastikan ketiga field terisi:
 | Body | teks greeting HTML |
 | Reply All | No |
 
-Kalau ada yang kosong setelah import, isi manual — nama parameter internal
+Kalau ada yang kosong setelah import, isi manual - nama parameter internal
 konektor Outlook bisa berbeda antar versi. Isi Body-nya ada di
 [../power-automate-integration.md](../power-automate-integration.md) bagian 4.3.
 
 Kalau mailbox helpdesk berupa **shared mailbox** dan akun koneksi Anda tidak bisa
 membalas atas namanya, ganti aksinya dengan **Send an email from a shared
-mailbox (V2)** — lihat bagian 4.4 dokumen yang sama.
+mailbox (V2)** - lihat bagian 4.4 dokumen yang sama.
 
 ### 4. Salin URL trigger ke `.env`
 
@@ -262,14 +262,14 @@ Terakhir: **Turn on** ketiga flow.
 
 Supaya jelas mana yang tidak perlu dikerjakan lagi:
 
-- Trigger HTTP **beserta schema payload-nya** — dynamic content seperti
+- Trigger HTTP **beserta schema payload-nya** - dynamic content seperti
   `ticket → number` dan `lead_emails` langsung tersedia, tidak perlu
   *Use sample payload to generate schema*.
 - **Condition pemeriksa secret** + cabang *else* **Terminate (Cancelled)**.
 - **Apply to each** atas `lead_emails` untuk chat pribadi ke tiap lead.
 - Seluruh **Adaptive Card** lengkap dengan ekspresinya, termasuk `coalesce` untuk
   field yang boleh kosong (modul/prioritas) supaya tidak tampil kosong.
-- **Tidak ada aksi Response** — disengaja. Tanpa Response, Power Automate langsung
+- **Tidak ada aksi Response** - disengaja. Tanpa Response, Power Automate langsung
   membalas `202 Accepted` dan EcoSystem tidak ikut menunggu flow selesai.
 
 ---
@@ -286,12 +286,12 @@ curl -X POST "<HTTP POST URL>" \
   -d @payload-contoh.json
 ```
 
-Uji juga jalur negatifnya — kirim tanpa header `X-EcoSystem-Secret`. Run harus
+Uji juga jalur negatifnya - kirim tanpa header `X-EcoSystem-Secret`. Run harus
 berakhir **Cancelled**, bukan mengirim kartu.
 
 ---
 
-## Catatan lapangan — hasil pengerjaan sungguhan (2-8 Sep 2026)
+## Catatan lapangan - hasil pengerjaan sungguhan (2-8 Sep 2026)
 
 Solution berhasil di-import ke tenant PT Eclectic, dan **flow 1 sudah terbukti
 jalan end-to-end**: email masuk ke `support@eclectic.co.id` → staging ticket →
@@ -308,10 +308,10 @@ di-import dari paket ini:
 2. **Parameter aksi konektor TIDAK ikut terbawa.** Aksinya sendiri muncul dengan
    nama yang benar (mis. *Balas greeting ke pengirim*), tetapi seluruh field-nya
    kosong dan harus diisi manual. Nama operasi (`ReplyToV3`,
-   `PostCardToConversation`) sudah benar — yang meleset hanya nama parameternya.
+   `PostCardToConversation`) sudah benar - yang meleset hanya nama parameternya.
 
 3. **Kotak *Request Body JSON Schema* tidak selalu bisa diketik**, dan schema
-   memang tidak ikut terbawa import. **Biarkan kosong** — trigger tetap menerima
+   memang tidak ikut terbawa import. **Biarkan kosong** - trigger tetap menerima
    payload apa pun tanpa schema, dan justru lebih aman karena tidak ada validasi
    tipe yang bisa menolak field bernilai kosong. Konsekuensinya: daftar *dynamic
    content* ikut kosong, jadi setiap nilai diambil lewat tab **Expression**.
@@ -324,7 +324,7 @@ di-import dari paket ini:
 
 5. **Connection reference hasil import kosong.** Daftarnya muncul dengan nama
    `<Konektor> EcoSystemTeamsIntegration-xxxxx` tetapi berstatus *Invalid
-   connection*. Jangan dipilih — klik **+ New connection reference** lalu buat
+   connection*. Jangan dipilih - klik **+ New connection reference** lalu buat
    koneksi baru.
 
    Untuk flow 1, koneksi Outlook **wajib** atas nama `support@eclectic.co.id`
@@ -334,10 +334,10 @@ di-import dari paket ini:
 
 Tiga hal berikut ditemukan menyusul, saat membuat flow 4 dan mengubah flow 2
 (7-8 September 2026). Ketiganya berlaku untuk flow yang **dibuat manual**, bukan
-hasil import — jadi relevan saat membuat flow 3 nanti:
+hasil import - jadi relevan saat membuat flow 3 nanti:
 
 6. **Setelan *Who can trigger the flow?* harus `Anyone`.** Flow baru lahir dengan
-   *Any user in my tenant*, yang memakai autentikasi Entra ID — dan URL trigger
+   *Any user in my tenant*, yang memakai autentikasi Entra ID - dan URL trigger
    yang diterbitkannya berhenti di `?api-version=1`, tanpa `sp`, `sv`, dan `sig`.
    EcoSystem memanggil dengan POST biasa berisi header rahasia, tanpa token
    OAuth, jadi akan ditolak **401**. Ubah ke **Anyone** lalu **Save**; URL akan
@@ -346,12 +346,12 @@ hasil import — jadi relevan saat membuat flow 3 nanti:
 
    Bandingkan URL barunya dengan yang sudah ada di `.env`: kalau tidak berakhir
    dengan `&sig=`, ia belum benar. Salin lewat **ikon salin** di sebelah field,
-   bukan dengan memblok teksnya — kotaknya sempit dan yang tersalin hanya bagian
+   bukan dengan memblok teksnya - kotaknya sempit dan yang tersalin hanya bagian
    yang terlihat.
 
 7. **Durasi run adalah alat baca pertama, bukan status.** Run **Succeeded**
-   berdurasi 70-125 ms berarti flow keluar lewat cabang **False** yang kosong —
-   hampir selalu Condition pemeriksa secret — dan **bukan** berarti berhasil. Run
+   berdurasi 70-125 ms berarti flow keluar lewat cabang **False** yang kosong -
+   hampir selalu Condition pemeriksa secret - dan **bukan** berarti berhasil. Run
    yang benar-benar menyentuh Teams butuh hitungan **detik** (flow 4 yang sehat:
    ±12 detik). `Succeeded` di Power Automate hanya berarti "tidak ada aksi yang
    error"; cabang kosong memenuhi syarat itu dengan sempurna.
@@ -361,33 +361,33 @@ hasil import — jadi relevan saat membuat flow 3 nanti:
    kanvas, lengkap per aksi, dan tiap kotak bisa dibuka untuk melihat Inputs.
 
    Waspadai juga membuka satu flow di beberapa tab sekaligus atau berpindah
-   antara designer lama dan baru — perubahan bisa terlihat benar di layar padahal
+   antara designer lama dan baru - perubahan bisa terlihat benar di layar padahal
    yang berjalan versi lama. Cek stempel **Modified** di halaman detail flow;
    itu satu-satunya konfirmasi bahwa suntingan Anda sudah tersimpan.
 
 8. **Aksi *Create a channel* hanya punya dua advanced parameter:** *Description*
    dan *Membership Type*. Tidak ada properti "favorite by default", jadi channel
    tiket **tidak bisa** dibuat otomatis tampil di daftar channel anggota lewat
-   konektor — itu hanya ada di Microsoft Graph, yang berarti aksi HTTP, yang
+   konektor - itu hanya ada di Microsoft Graph, yang berarti aksi HTTP, yang
    berarti Premium.
 ### Nilai yang diisikan manual di flow 1
 
 | Field | Isi |
 |---|---|
 | Message Id | `triggerBody()?['staging']?['graph_message_id']` |
-| Body — token setelah "Halo" | `triggerBody()?['staging']?['sender_name']` |
-| Body — token di dalam tanda kutip | `triggerBody()?['staging']?['subject']` |
+| Body - token setelah "Halo" | `triggerBody()?['staging']?['sender_name']` |
+| Body - token di dalam tanda kutip | `triggerBody()?['staging']?['subject']` |
 | Reply All | kosong (bawaan `False`) |
 | Original Mailbox Address | kosong |
 
 ---
 
-## Konfigurasi flow 2 — EcoSystem - Ticket Validated (2 Sep 2026)
+## Konfigurasi flow 2 - EcoSystem - Ticket Validated (2 Sep 2026)
 
 > **ARSIP (9 Sep 2026).** Bentuk channel diganti bentuk group chat; panduan yang
 > berlaku sekarang ada di *Konfigurasi flow 5*. Bagian ini disimpan utuh karena
 > flownya masih ada di Power Automate dan bentuk ini bisa dipilih lagi sewaktu-
-> waktu — tapi **EcoSystem sudah tidak mengirim blok `channel`**, jadi
+> waktu - tapi **EcoSystem sudah tidak mengirim blok `channel`**, jadi
 > menghidupkannya kembali menuntut perubahan kode lebih dulu (kembalikan
 > `ticketChannelPayload()` + `channelMembers()` dari commit `d67d446`).
 
@@ -404,18 +404,18 @@ nilai diambil lewat tab **Expression**, bukan dynamic content.
 | Sisi | Isi |
 |---|---|
 | Kiri | `triggerOutputs()?['headers']?['X-EcoSystem-Secret']` (sudah terisi) |
-| Kanan | nilai `POWER_AUTOMATE_SECRET` dari `.env` — ganti teks `GANTI_DENGAN_POWER_AUTOMATE_SECRET` |
+| Kanan | nilai `POWER_AUTOMATE_SECRET` dari `.env` - ganti teks `GANTI_DENGAN_POWER_AUTOMATE_SECRET` |
 
 Sama persis seperti flow 1; kalau sisi kiri ikut kosong setelah import,
 **ketik** ekspresinya (catatan 4: jangan tempel, apostrof bisa berubah).
 
-### 3. Aksi **Buat channel tiket** (Teams — Create a channel)
+### 3. Aksi **Buat channel tiket** (Teams - Create a channel)
 
 **Diputuskan 2 Sep 2026 (revisi):** tujuannya **channel baru per tiket di dalam
 satu team**, bukan group chat. Permintaan atasan: seluruh channel tiket berkumpul
 rapi di team **Support MO Team**.
 
-Koneksi: **+ New connection reference** (catatan 5 — jangan pilih yang berstatus
+Koneksi: **+ New connection reference** (catatan 5 - jangan pilih yang berstatus
 *Invalid connection*). Akun koneksi harus **anggota team tujuan**, karena ia yang
 membuat channel-nya.
 
@@ -430,9 +430,9 @@ nomor tiket selalu utuh di depan, subjek yang dipangkas) dan dibersihkan dari
 karakter terlarang `# % & * { } \ : < > ? / + | ~`. Subject utuhnya tetap terbaca
 di Description, jadi tidak ada informasi yang hilang.
 
-Aksi ini mengembalikan **Channel Id** — dipakai dua aksi berikutnya.
+Aksi ini mengembalikan **Channel Id** - dipakai dua aksi berikutnya.
 
-### 4. Aksi **Kartu tiket ke channel** (Teams — Post card in a chat or channel)
+### 4. Aksi **Kartu tiket ke channel** (Teams - Post card in a chat or channel)
 
 | Field | Isi |
 |---|---|
@@ -442,18 +442,18 @@ Aksi ini mengembalikan **Channel Id** — dipakai dua aksi berikutnya.
 | Channel | **Enter custom value** → **Channel Id** keluaran langkah 3 |
 | Adaptive Card | isi berkas [`cards/flow-2-ticket-validated-kartu-tiket-ke-channel.json`](cards/flow-2-ticket-validated-kartu-tiket-ke-channel.json) |
 
-Salin kartunya **dari berkas itu**, bukan dari chat atau dokumen — isinya sengaja
+Salin kartunya **dari berkas itu**, bukan dari chat atau dokumen - isinya sengaja
 ASCII murni supaya apostrof di dalam `['ticket']` tetap lurus.
 
 ### 5. Anggota channel + mention lead modul
 
 Dua hal yang berbeda dan sering tertukar:
 
-* **siapa yang bisa MEMBACA channel** — di Teams, *standard channel* tidak punya
+* **siapa yang bisa MEMBACA channel** - di Teams, *standard channel* tidak punya
   daftar anggota sendiri; yang bisa membacanya adalah anggota **team**-nya. Jadi
   "menambahkan orang ke channel tiket" pada praktiknya = **Add a member to a
   team**;
-* **siapa yang DAPAT NOTIFIKASI** — hanya orang yang di-@mention.
+* **siapa yang DAPAT NOTIFIKASI** - hanya orang yang di-@mention.
 
 Karena itu daftarnya dua: `channel.member_emails` (dimasukkan ke team) dan
 `lead_emails` (di-mention). Yang pertama memuat yang kedua.
@@ -462,7 +462,7 @@ Karena itu daftarnya dua: `channel.member_emails` (dimasukkan ke team) dan
 
 | Sumber | Asalnya |
 |---|---|
-| `module_lead` | Module Lead modul tiket — sama dengan `lead_emails` |
+| `module_lead` | Module Lead modul tiket - sama dengan `lead_emails` |
 | `role` | pemegang role di `POWER_AUTOMATE_TEAMS_MEMBER_ROLE_IDS`, default `5,6` = **Delivery Support Head** dan **Delivery Support Service Helpdesk** (6 orang per 7 Sep 2026, setelah `support01@` dikecualikan) |
 
 Alamat di `POWER_AUTOMATE_TEAMS_EXCLUDE_MEMBERS` dibuang dari keduanya, begitu
@@ -473,18 +473,18 @@ juga orang yang tidak punya Email (Work) maupun email login, dan employee yang
 > keberadaannya khusus group chat: menjaga peserta ≥3 orang (syarat Teams agar
 > grup boleh diberi nama) dan jadi penerima cadangan untuk modul tanpa Module
 > Lead. Channel tidak punya syarat jumlah, dan anggota channel tidak menerima
-> notifikasi apa pun — yang memberi notifikasi hanya @mention atas `lead_emails`
-> — jadi di sini knob itu hanya akan menambah orang diam-diam. Peran "selalu ada
+> notifikasi apa pun - yang memberi notifikasi hanya @mention atas `lead_emails`
+> - jadi di sini knob itu hanya akan menambah orang diam-diam. Peran "selalu ada
 > yang mengawasi" dipegang role penjaga.
 
 Keanggotaan role dibaca dari tabel pivot **`employee_role_assignment`**
-(`employee_id`, `role_id`) — bukan kolom di tabel `employee`. Resolusinya
+(`employee_id`, `role_id`) - bukan kolom di tabel `employee`. Resolusinya
 dikerjakan di EcoSystem (`PowerAutomateService::roleMembers()`), bukan lewat aksi
 tambahan di designer: pemetaan role → orang adalah pengetahuan EcoSystem, dan
 tiap aksi tambahan di flow berarti satu ekspresi rapuh lagi yang harus diketik
 tangan.
 
-**5a. Initialize variable** (Variables) — **di level teratas flow**, yaitu antara
+**5a. Initialize variable** (Variables) - **di level teratas flow**, yaitu antara
 trigger dan kartu *Cek secret EcoSystem*. Power Automate menolak aksi ini di
 dalam Condition atau Apply to each; itu batasan produk, bukan pilihan gaya.
 
@@ -495,13 +495,13 @@ dalam Condition atau Apply to each; itu batasan produk, bukan pilihan gaya.
 | Value | (kosong) |
 
 **5b. Apply to each anggota channel** atas
-`triggerBody()?['channel']?['member_emails']` — namai loopnya *Tambah anggota
+`triggerBody()?['channel']?['member_emails']` - namai loopnya *Tambah anggota
 channel*. Isinya **dua** aksi:
 
 1. **Microsoft Teams → Add a member to a team**
    * *Team*: Support MO Team (sama dengan langkah 3)
    * *A member (user)*: `items('Tambah_anggota_channel')`
-   * Aksi ini **gagal kalau orangnya sudah anggota** — konektor Teams tidak punya
+   * Aksi ini **gagal kalau orangnya sudah anggota** - konektor Teams tidak punya
      aksi "cek keanggotaan", jadi kegagalan itulah yang diserap aksi berikutnya.
      Akun koneksi harus **Owner** team, bukan sekadar member.
 2. **Data Operations → Compose** (namai mis. *Abaikan hasil tambah anggota*)
@@ -509,15 +509,15 @@ channel*. Isinya **dua** aksi:
    * **Settings → Run after** pada aksi ini (di designer BARU letaknya di tab
      *Settings*, bukan menu ⋯): centang **is successful**, **has failed**, dan
      **has timed out**. Inilah yang membuat "sudah anggota" berperilaku seperti
-     skip — tanpa ini, satu duplikat membuat seluruh run ditandai Failed dan
+     skip - tanpa ini, satu duplikat membuat seluruh run ditandai Failed dan
      kartu tiket tidak pernah terkirim.
 
 > Karena role penjaga (Delivery Support Head + Helpdesk) hampir selalu **sudah**
 > anggota team, loop ini akan sering berisi 7-8 kegagalan yang diserap. Itu
-> normal: run tetap **Succeeded**, dan biayanya ±8 aksi per tiket — masih jauh di
+> normal: run tetap **Succeeded**, dan biayanya ±8 aksi per tiket - masih jauh di
 > bawah kuota ±6.000 aksi/24 jam.
 
-**5b-2. Apply to each lead modul** atas `triggerBody()?['lead_emails']` — namai
+**5b-2. Apply to each lead modul** atas `triggerBody()?['lead_emails']` - namai
 loopnya *Mention lead*. Isinya **dua** aksi (penambahan ke team sudah dikerjakan
 loop 5b, jadi tidak diulang di sini):
 
@@ -525,15 +525,15 @@ loop 5b, jadi tidak diulang di sini):
    * *User*: `items('Mention_lead')`
    * Lead WAJIB anggota team tujuan; loop 5b yang menjamin syarat itu terpenuhi,
      jadi **5b harus berada di ATAS 5b-2**.
-2. **Variables → Append to string variable** — *Name* `mentions`, *Value* =
+2. **Variables → Append to string variable** - *Name* `mentions`, *Value* =
    keluaran token di aksi 1 diikuti satu spasi.
 
 > Kalau lebih suka pengecekan sungguhan ketimbang menyerap error: team di Teams
 > memakai id yang sama dengan Microsoft 365 Group-nya, jadi konektor **Office 365
 > Groups → List group members** bisa dipakai untuk memeriksa lebih dulu. Lebih
-> banyak aksi, butuh izin tambahan, hasil akhirnya sama — pola serap-error di
+> banyak aksi, butuh izin tambahan, hasil akhirnya sama - pola serap-error di
 > atas yang dipakai.
-**5c. Condition** — sisi kiri `length(triggerBody()?['lead_emails'])`,
+**5c. Condition** - sisi kiri `length(triggerBody()?['lead_emails'])`,
 operator **is greater than**, sisi kanan `0`.
 
 Cabang **If yes**: **Microsoft Teams → Post message in a chat or channel**
@@ -546,11 +546,11 @@ Cabang **If yes**: **Microsoft Teams → Post message in a chat or channel**
 | Message | `@{variables('mentions')}` + teks, mis. `mohon tentukan PIC atau ambil tiket ini.` |
 
 Condition ini yang menjaga flow tetap diam untuk modul yang belum punya Module
-Lead — tanpa itu, pesan tanpa mention tetap terkirim.
+Lead - tanpa itu, pesan tanpa mention tetap terkirim.
 
 > **Batas yang perlu diingat:** satu team menampung **1.000 channel** (200 di
 > antaranya private) dan channel tidak terhapus sendiri saat tiket closed. Dengan
-> 62-129 tiket/bulan, team akan penuh dalam ±10 bulan — siapkan kebiasaan
+> 62-129 tiket/bulan, team akan penuh dalam ±10 bulan - siapkan kebiasaan
 > mengarsipkan/menghapus channel tiket yang sudah selesai.
 
 > Blok `chat` di payload (`topic`, `members_csv`) **tetap dikirim** dan tidak
@@ -558,7 +558,7 @@ Lead — tanpa itu, pesan tanpa mention tetap terkirim.
 > lagi tanpa perubahan kode.
 >
 > **Berubah 7 Sep 2026:** `_EXCLUDE_MEMBERS` kini berpengaruh pada **kedua**
-> jalur — ia ikut menyaring `channel.member_emails` di langkah 5b.
+> jalur - ia ikut menyaring `channel.member_emails` di langkah 5b.
 > `POWER_AUTOMATE_TEAMS_EXTRA_MEMBERS` dan `_INCLUDE_VALIDATOR` tetap **khusus
 > jalur group chat**; keduanya tidak menyentuh keanggotaan channel.
 
@@ -572,7 +572,7 @@ POWER_AUTOMATE_FLOW_TICKET_VALIDATED=<HTTP POST URL flow 2>
 php artisan optimize:clear
 ```
 
-**Turn on** flow-nya (catatan 1 — sebelum dinyalakan, pemanggilan URL menghasilkan
+**Turn on** flow-nya (catatan 1 - sebelum dinyalakan, pemanggilan URL menghasilkan
 `WorkflowTriggerIsNotEnabled`), lalu uji dengan payload nyata:
 
 ```bash
@@ -587,19 +587,19 @@ Isi `flow-2-payload.json` bisa disalin dari contoh di
 atau dibangkitkan dari tiket sungguhan lewat `php artisan tinker` memakai
 `PowerAutomateService::ticketPayload()` + `moduleLeads()` + `leadEmails()`.
 
-Uji negatifnya: kirim tanpa header `X-EcoSystem-Secret` — run harus berakhir
+Uji negatifnya: kirim tanpa header `X-EcoSystem-Secret` - run harus berakhir
 **Cancelled** dan tidak ada kartu terkirim.
 
 ### Kalau lead tidak ter-mention padahal channel tiket terbentuk
 
 `lead_emails` kosong. Penyebabnya salah satu dari:
 
-* **tiket lama** — modulnya tersimpan sebagai teks bebas yang tidak cocok dengan
+* **tiket lama** - modulnya tersimpan sebagai teks bebas yang tidak cocok dengan
   baris mana pun di `modules` (mis. `FICO`, `Modul FI`, `HCM; ABAP`,
   `SAP Connection`). Sejak 2 Sep 2026 modal validasi memakai dropdown Master →
   Module sehingga tiket baru selalu membawa `module_id`; tiket lama bisa
   diperbaiki lewat Additional Info di halaman tiket;
-* modul terdaftar tapi **belum punya Module Lead** — per 2 Sep 2026: CO, HCM,
+* modul terdaftar tapi **belum punya Module Lead** - per 2 Sep 2026: CO, HCM,
   DATA MIGRATION, DEVELOPER, N/A, OCM, PMO, SALESFORCE, SIG, SYSTEM INTEGRATION;
 * lead ada tapi tidak punya Email (Work) maupun email login.
 
@@ -622,7 +622,7 @@ pengembangan). Yang sudah diverifikasi lokal: seluruh XML well-formed, seluruh
 JSON parse bersih, dan zip memakai pemisah `/`.
 
 Bagian yang paling mungkin berbeda antar tenant adalah nama operasi internal
-konektor — `PostCardToConversation` (Teams) dan `ReplyToV3` (Outlook).
+konektor - `PostCardToConversation` (Teams) dan `ReplyToV3` (Outlook).
 
 Cara tercepat memperbaikinya kalau importer menolak atau ada aksi yang tampil
 rusak:
@@ -634,17 +634,17 @@ rusak:
    aksi Outlook *Reply to email (V3)*, isi seadanya, **Save**.
 4. Kembali ke **Solutions** → ⋯ pada solution itu → **Export solution** →
    **Unmanaged** → unduh zip-nya.
-5. Kirimkan zip itu — nama operasi, nama parameter, dan bentuk
+5. Kirimkan zip itu - nama operasi, nama parameter, dan bentuk
    `connectionReferences` yang persis dipakai tenant Anda ada di dalamnya, dan
    paket di folder ini bisa disesuaikan agar cocok.
 
 Jalur manual (membangun flow dengan klik satu per satu di designer) selalu
 tersedia dan dijamin bekerja:
-[../power-automate-integration.md](../power-automate-integration.md) bagian 3–6.
+[../power-automate-integration.md](../power-automate-integration.md) bagian 3-6.
 
 ---
 
-## Konfigurasi flow 4 — EcoSystem - Ticket Member Added (7 Sep 2026, terbukti jalan 8 Sep 2026)
+## Konfigurasi flow 4 - EcoSystem - Ticket Member Added (7 Sep 2026, terbukti jalan 8 Sep 2026)
 
 > **ARSIP (9 Sep 2026).** Panduan yang berlaku sekarang ada di *Konfigurasi flow
 > 6* (bentuk group chat). Sama seperti flow 2: flownya masih tersimpan, tapi
@@ -653,11 +653,11 @@ tersedia dan dijamin bekerja:
 **Kapan dipanggil:** saat consultant di-assign ke satu tiket, yaitu (a) tombol
 **Add Member** di halaman tiket dan (b) penetapan/penggantian **PIC**
 (`ticket_lead_id`, lewat *Assign Ticket Lead* maupun edit tiket). Satu panggilan
-= satu orang. Pelepasan member **tidak** memicu apa pun — orang yang pernah ikut
+= satu orang. Pelepasan member **tidak** memicu apa pun - orang yang pernah ikut
 tetap bisa membaca riwayat channel.
 
 **Yang tidak memicu flow ini:** update member massal (sync) dan orang yang tidak
-punya Email (Work) maupun email login — tanpa email, konektor Teams tidak bisa
+punya Email (Work) maupun email login - tanpa email, konektor Teams tidak bisa
 menemukan orangnya, jadi EcoSystem memilih tidak memanggil flow sama sekali
 daripada membuatnya gagal separuh jalan (dicatat di log sebagai
 `penambahan ke channel dilewati, employee tanpa email kerja`).
@@ -666,17 +666,17 @@ daripada membuatnya gagal separuh jalan (dicatat di log sebagai
 
 Flow 2 memang menerima Channel Id dari aksi *Create a channel*, tapi id itu hidup
 hanya selama run flow 2. Menyimpannya berarti Power Automate harus memanggil
-balik EcoSystem lewat aksi **HTTP** — dan aksi HTTP adalah konektor **PREMIUM**.
+balik EcoSystem lewat aksi **HTTP** - dan aksi HTTP adalah konektor **PREMIUM**.
 
 Jalan tanpa premium: **cari channelnya berdasarkan nama.** EcoSystem mengirim
 `channel.name` yang dirakit oleh fungsi yang **sama persis** dengan yang dipakai
-flow 2 saat membuat channel itu (`PowerAutomateService::ticketChannelPayload()` —
+flow 2 saat membuat channel itu (`PowerAutomateService::ticketChannelPayload()` -
 potong 50 karakter, buang karakter terlarang), jadi cocoknya exact-match, bukan
 tebak-tebakan. `channel.number` ikut dikirim sebagai kunci cadangan: nomor tiket
 tidak pernah berubah, sedangkan nama bisa meleset kalau subject tiket **diedit
 setelah** channelnya terbentuk.
 
-### 1. Trigger — When an HTTP request is received
+### 1. Trigger - When an HTTP request is received
 
 **Request Body JSON Schema** dibiarkan kosong (catatan lapangan 3); semua nilai
 diambil lewat tab **Expression**.
@@ -712,7 +712,7 @@ biayanya tetap satu request berapa pun jumlah channelnya.
 > **Kalau ingin toleran terhadap subject yang diedit setelah validasi**, ganti
 > baris kondisinya menjadi *is equal to* antara
 > `startsWith(item()?['displayName'], triggerBody()?['channel']?['number'])` dan
-> `true`. Cocoknya jadi berdasar nomor tiket saja — lebih tahan perubahan nama,
+> `true`. Cocoknya jadi berdasar nomor tiket saja - lebih tahan perubahan nama,
 > tapi bisa mengembalikan lebih dari satu channel kalau ada nomor yang bersarang.
 > Pilihan default di atas (exact-match nama) yang dipakai.
 
@@ -722,7 +722,7 @@ Kiri `length(body('Filter_array'))`, operator **is greater than**, kanan `0`.
 
 Cabang **If no**: biarkan kosong, atau isi satu **Terminate** dengan status
 *Succeeded* dan pesan `Channel tiket belum ada`. Ini kejadian yang wajar untuk
-tiket yang dibuat **sebelum** flow 2 dinyalakan — jangan sampai menandai run
+tiket yang dibuat **sebelum** flow 2 dinyalakan - jangan sampai menandai run
 sebagai Failed.
 
 Cabang **If yes** berisi langkah 6-8. Channel idnya:
@@ -762,7 +762,7 @@ paling sering terjadi.
 
 Ingin orangnya benar-benar mendapat notifikasi, bukan sekadar kartu? Tambahkan
 **Get an @mention token for a user** (*User*: `triggerBody()?['person']?['email']`)
-**sesudah** aksi 7 — urutannya penting, orangnya harus sudah jadi anggota team —
+**sesudah** aksi 7 - urutannya penting, orangnya harus sudah jadi anggota team -
 lalu satu **Post message in a chat or channel** berisi
 `@{body('Get_an_@mention_token_for_a_user')}` diikuti teks pengantar.
 
@@ -795,17 +795,17 @@ curl -X POST "<HTTP POST URL>" \
 
 Pakai `<TICKET_ID>` yang channelnya **memang sudah ada** di Support MO Team,
 supaya jalur If yes yang teruji. Uji negatifnya: kirim ulang untuk tiket yang
-belum punya channel — run harus **Succeeded** tanpa mengirim apa pun.
+belum punya channel - run harus **Succeeded** tanpa mengirim apa pun.
 
 ### Kalau nanti tenant punya lisensi Premium
 
 Jalur yang lebih rapi terbuka: flow 2 memanggil balik EcoSystem lewat aksi
 **HTTP** untuk menyimpan Channel Id ke kolom baru di tabel `ticket`, dan flow 4
-memakai id itu langsung — langkah 3, 4, dan 5 di atas hilang seluruhnya
+memakai id itu langsung - langkah 3, 4, dan 5 di atas hilang seluruhnya
 (3 aksi lebih sedikit per event, dan kebal terhadap perubahan nama channel).
 Perubahan di sisi EcoSystem: satu migration kolom `teams_channel_id`, satu
 endpoint bertanda secret yang sama, dan `ticketMemberPayload()` mengirim id itu
-alih-alih `channel.name`. Belum dikerjakan — cek dulu lisensinya lewat
+alih-alih `channel.name`. Belum dikerjakan - cek dulu lisensinya lewat
 **Power Platform admin center → Environments → <env> → Settings → Users +
 permissions → Licenses**, atau lebih cepat: buka designer, cari aksi **HTTP**,
 dan lihat apakah ada lencana **Premium** di sampingnya (lencana muncul untuk
@@ -818,17 +818,17 @@ semua orang; yang menentukan adalah apakah flow tetap jalan setelah disimpan).
 
 Daftar peserta dirakit **di EcoSystem**, bukan di Power Automate, dan tiba di
 flow sebagai satu string siap pakai (`chat.members_csv`, pemisah titik-koma).
-Flow tidak pernah memutuskan siapa pun — ia hanya menempelkan string itu ke field
+Flow tidak pernah memutuskan siapa pun - ia hanya menempelkan string itu ke field
 *Members to add*. Itu disengaja: tiap keputusan yang dipindah ke designer berarti
 satu ekspresi yang harus diketik tangan dan tidak bisa diuji (catatan lapangan 4).
 
 | Kelompok | Dari mana | Sama untuk semua tiket? |
 |---|---|---|
-| **Module Lead** | `module_leads` untuk `module_id` tiket | tidak — per modul |
-| **Tim Delivery Support** | delivery support yang dipilih helpdesk saat validasi: Delivery Owner, Support Manager (bisa >1), CO PM, Support Admin | tidak — per tiket |
+| **Module Lead** | `module_leads` untuk `module_id` tiket | tidak - per modul |
+| **Tim Delivery Support** | delivery support yang dipilih helpdesk saat validasi: Delivery Owner, Support Manager (bisa >1), CO PM, Support Admin | tidak - per tiket |
 | **Role penjaga** | pemegang role di `POWER_AUTOMATE_TEAMS_MEMBER_ROLE_IDS` (default 5 = Delivery Support Head, 6 = Delivery Support Service Helpdesk) | ya |
 | **Anggota tetap** | `POWER_AUTOMATE_TEAMS_EXTRA_MEMBERS` | ya |
-| **Validator** | akun yang menekan Validate, hanya bila `POWER_AUTOMATE_TEAMS_INCLUDE_VALIDATOR=true` | — |
+| **Validator** | akun yang menekan Validate, hanya bila `POWER_AUTOMATE_TEAMS_INCLUDE_VALIDATOR=true` | - |
 
 **Tim Delivery Support baru ditambahkan 11 September 2026** (sebelumnya grup hanya
 berisi lead modul + role penjaga, sehingga pemilik delivery-nya sendiri tidak ada
@@ -837,13 +837,13 @@ di dalam grup tiket miliknya).
 Tiga hal yang perlu diketahui tentang kelompok itu:
 
 * **Tiket tidak punya kolom `delivery_support_id`.** Kaitannya lewat tabel
-  `delivery_support_activities` — memilih delivery support di modal validasi
+  `delivery_support_activities` - memilih delivery support di modal validasi
   membuat satu baris activity di sana. Karena EcoSystem membacanya dari tabel itu
   (bukan dari request), tiket yang di-assign ke delivery support **belakangan**
   juga ikut terbaca benar.
 * **Support Manager bisa lebih dari satu** dan tersimpan di tabel pivot
   `delivery_support_managers`. Kolom lama `delivery_support.support_manager_id`
-  masih ada di skema tapi sudah tidak dipakai dan isinya bisa basi — jangan
+  masih ada di skema tapi sudah tidak dipakai dan isinya bisa basi - jangan
   dipakai sebagai acuan saat memverifikasi lewat SQL.
 * **Sales tidak ikut.** `sales_id` sengaja dilewati: Sales bukan pelaksana tiket.
   Kalau suatu saat perlu, tambahkan di `PowerAutomateService::deliverySupportTeam()`.
@@ -855,8 +855,8 @@ Semua alamat lalu di-dedup **case-insensitive**, dibuang yang ada di
 > **Batas 20 peserta itu keras.** Kelebihan satu orang membuat aksi *Create a
 > chat* menolak **seluruh** permintaan dengan `BadRequest`, jadi EcoSystem
 > memotongnya lebih dulu dan menulis `PowerAutomate: peserta group chat melebihi
-> batas` ke `laravel.log`. Yang dipotong adalah yang paling belakang — anggota
-> tetap dan role penjaga — bukan lead modul atau tim Delivery Support. Hitung
+> batas` ke `laravel.log`. Yang dipotong adalah yang paling belakang - anggota
+> tetap dan role penjaga - bukan lead modul atau tim Delivery Support. Hitung
 > anggarannya: 2 lead + 4 tim support + 2 role penjaga + anggota tetap, sisanya
 > baru slot consultant yang ditambahkan flow 6. Kalau grup sering penuh, kecilkan
 > `POWER_AUTOMATE_TEAMS_EXTRA_MEMBERS` lebih dulu, bukan menaikkan batasnya.
@@ -874,17 +874,17 @@ print_r(\$s->deliverySupportPayload(\$t->ticket_id));"
 
 ---
 
-## Konfigurasi flow 5 — EcoSystem - Ticket Validated (Group Chat)
+## Konfigurasi flow 5 - EcoSystem - Ticket Validated (Group Chat)
 
 **Varian group chat dari flow 2.** Dipicu kejadian yang sama persis (staging
 ticket di-approve) dengan payload yang sama persis; bedanya flow ini memakai blok
 `chat`, bukan blok `channel`. Bentuk ini pernah dibuat dan **terbukti jalan** 2
-September 2026 sebelum sempat diganti bentuk channel — langkah di bawah adalah
+September 2026 sebelum sempat diganti bentuk channel - langkah di bawah adalah
 bentuk itu, ditambah tim Delivery Support yang kini ikut di `chat.members_csv`.
 
 Buat sebagai **flow baru**; jangan mengubah flow 2 (status ARSIP).
 
-> ### ⚠️ Diubah 17 September 2026 — grup kini dibuat EcoSystem, bukan flow ini
+> ### ⚠️ Diubah 17 September 2026 - grup kini dibuat EcoSystem, bukan flow ini
 >
 > Sejak [sinkronisasi chat Teams](../teams-chat-sync-design.md) langkah 3,
 > EcoSystem membuat group chat sendiri lewat Graph dan **memegang `chat_id`**-nya.
@@ -906,7 +906,7 @@ Buat sebagai **flow baru**; jangan mengubah flow 2 (status ARSIP).
 >        Condition "Ada lead modul" → Post message → Group chat = variables('chatId')
 > ```
 >
-> Ekspresi Condition barunya — **ketik, jangan tempel** (catatan lapangan 4):
+> Ekspresi Condition barunya - **ketik, jangan tempel** (catatan lapangan 4):
 >
 > ```
 > length(coalesce(triggerBody()?['chat']?['id'], ''))   is greater than   0
@@ -931,32 +931,32 @@ Buat sebagai **flow baru**; jangan mengubah flow 2 (status ARSIP).
 >
 > **Terbukti jalan 17 September 2026.** Diuji dengan payload ber-`chat.id` dan
 > `members_csv` SENGAJA dikosongkan: kartu mendarat di grup yang id-nya dikirim,
-> dan `Create a chat` tidak jalan — kalau ia jalan, members kosong pasti
+> dan `Create a chat` tidak jalan - kalau ia jalan, members kosong pasti
 > menggagalkannya sebelum kartu sempat terkirim. Selama `TEAMS_SYNC_ENABLED=false`,
 > `chat.id` tidak pernah dikirim dan flow berjalan persis seperti sebelumnya.
 >
 > Catatan lapangan dari pengerjaannya: kegagalan pertama ternyata karena
-> **connection Teams ke `support@eclectic.co.id` terputus** — gejalanya flow
+> **connection Teams ke `support@eclectic.co.id` terputus** - gejalanya flow
 > membalas 202 seperti biasa tapi tidak ada apa pun yang sampai ke Teams.
 > Periksa status koneksi sebelum mencurigai logika flow.
 
-### Sebelum mulai — siapkan empat hal
+### Sebelum mulai - siapkan empat hal
 
 1. **Akun koneksi Teams.** Harus akun `@eclectic.co.id` yang punya mailbox
    sungguhan. Grup yang dibuat flow akan berisi akun ini sebagai pembuat, jadi
    pilih akun layanan yang memang boleh terlihat di semua grup tiket.
-2. **Isi `POWER_AUTOMATE_SECRET`** di `.env` — nilai yang sama akan diketik di
+2. **Isi `POWER_AUTOMATE_SECRET`** di `.env` - nilai yang sama akan diketik di
    Condition langkah 3.
 3. **Isi `POWER_AUTOMATE_TEAMS_EXCLUDE_MEMBERS`** dengan minimal
    `admin@eclectic.co.id,support01@eclectic.co.id` **plus alamat akun koneksi
    Teams flow ini** (mis. `support@eclectic.co.id`). Dua yang pertama punya email
    di database tapi **tidak punya mailbox M365**; yang ketiga punya mailbox tapi
    sudah otomatis jadi peserta sebagai pemilik koneksi. Ketiganya sama-sama
-   menggagalkan *Create a chat* seluruhnya — yang pertama dengan alamat tak
+   menggagalkan *Create a chat* seluruhnya - yang pertama dengan alamat tak
    dikenal, yang terakhir dengan `Duplicate chat members`.
 4. **`POWER_AUTOMATE_TEAMS_EXTRA_MEMBERS` boleh dikosongkan.** Gunanya menjamin
    peserta ≥3 (Teams hanya mengizinkan pemberian nama grup untuk group chat ≥3
-   orang) dan tetap ada penerima saat modul tiket belum punya Module Lead — dua
+   orang) dan tetap ada penerima saat modul tiket belum punya Module Lead - dua
    syarat yang sudah dipenuhi 6 pemegang role penjaga + akun koneksi. Isi hanya
    kalau role penjaga dikosongkan, dan **jangan** dengan alamat akun koneksi.
 
@@ -969,7 +969,7 @@ Buat sebagai **flow baru**; jangan mengubah flow 2 (status ARSIP).
 4. Di daftar trigger, cari dan pilih **When an HTTP request is received** →
    **Create**.
 
-### 1. Trigger — When an HTTP request is received
+### 1. Trigger - When an HTTP request is received
 
 | Field | Isi |
 |---|---|
@@ -977,7 +977,7 @@ Buat sebagai **flow baru**; jangan mengubah flow 2 (status ARSIP).
 | Who can trigger the flow? | **Anyone** |
 
 *Who can trigger* ada di **Settings** kartu trigger (ikon ⚙ / menu ⋯ →
-*Settings*). **Wajib `Anyone`** — bawaannya *Any user in my tenant*, yang
+*Settings*). **Wajib `Anyone`** - bawaannya *Any user in my tenant*, yang
 menerbitkan URL tanpa `sp`/`sv`/`sig` sehingga EcoSystem kena **401** (catatan
 lapangan 6).
 
@@ -985,9 +985,9 @@ Schema dibiarkan kosong berarti **tidak ada dynamic content sama sekali**: semua
 nilai di langkah berikutnya diambil lewat tab **Expression**, dan harus
 **diketik, bukan ditempel** (catatan lapangan 4).
 
-**Save** sekarang juga — URL trigger baru terbit setelah save pertama.
+**Save** sekarang juga - URL trigger baru terbit setelah save pertama.
 
-### 2. Initialize variable — `mentions`
+### 2. Initialize variable - `mentions`
 
 | Field | Isi |
 |---|---|
@@ -999,7 +999,7 @@ nilai di langkah berikutnya diambil lewat tab **Expression**, dan harus
 *Initialize variable* di dalam Condition maupun Apply to each. Variabel ini
 menampung token @mention lead modul yang dikumpulkan di langkah 6.
 
-### 3. Condition — Cek secret EcoSystem
+### 3. Condition - Cek secret EcoSystem
 
 | Sisi | Isi |
 |---|---|
@@ -1010,7 +1010,7 @@ menampung token @mention lead modul yang dikumpulkan di langkah 6.
 Seluruh langkah 4-7 masuk cabang **If yes**. Cabang **If no** dibiarkan kosong.
 
 > Cabang False yang kosong inilah sumber salah baca paling sering: run yang
-> ditolak di sini tetap berstatus **Succeeded**. Bedakan dari durasinya —
+> ditolak di sini tetap berstatus **Succeeded**. Bedakan dari durasinya -
 > 70-125 ms berarti keluar lewat False, run yang benar-benar menyentuh Teams
 > butuh hitungan detik (catatan lapangan 7).
 
@@ -1022,8 +1022,8 @@ Seluruh langkah 4-7 masuk cabang **If yes**. Cabang **If no** dibiarkan kosong.
 | Title | `triggerBody()?['chat']?['topic']` |
 
 Perhatikan labelnya: **"Members to add"** (bukan *Members*) dan **"Title"**
-(bukan *Topic*). Isi `members_csv` sudah dirakit EcoSystem — lihat tabel peserta
-di atas — sudah dedup, sudah bersih dari alamat terlarang, dan sudah dipotong di
+(bukan *Topic*). Isi `members_csv` sudah dirakit EcoSystem - lihat tabel peserta
+di atas - sudah dedup, sudah bersih dari alamat terlarang, dan sudah dipotong di
 batas 20.
 
 `chat.topic` berbentuk `26080149 - Standard Cost Type S salah harga`. Ini bukan
@@ -1037,7 +1037,7 @@ jadi jangan menambahkan awalan/akhiran apa pun di designer.
 
 > **Jebakan ketiga, terbukti 11 Sep 2026: `Duplicate chat members is specified in
 > the request body`.** Akun **pemilik koneksi Teams** otomatis menjadi pembuat
-> sekaligus peserta grup — Teams menambahkannya sendiri. Kalau alamat itu ikut
+> sekaligus peserta grup - Teams menambahkannya sendiri. Kalau alamat itu ikut
 > lagi di `members_csv`, permintaannya ditolak seluruhnya sebagai anggota dobel.
 >
 > Ini muncul justru setelah koneksi flow dipindah ke `support@eclectic.co.id`
@@ -1046,8 +1046,8 @@ jadi jangan menambahkan awalan/akhiran apa pun di designer.
 >
 > **Aturannya: alamat pemilik koneksi harus masuk
 > `POWER_AUTOMATE_TEAMS_EXCLUDE_MEMBERS`, bukan `_EXTRA_MEMBERS`.** Exclude
-> menutup SEMUA jalur sekaligus — anggota tetap, Module Lead, role penjaga, tim
-> Delivery Support, maupun validator — jadi alamat itu tidak bisa menyelinap lewat
+> menutup SEMUA jalur sekaligus - anggota tetap, Module Lead, role penjaga, tim
+> Delivery Support, maupun validator - jadi alamat itu tidak bisa menyelinap lewat
 > pintu lain kalau suatu saat orangnya terdaftar sebagai lead atau anggota tim.
 >
 > Konsekuensi lain yang menguntungkan: `_EXTRA_MEMBERS` boleh dikosongkan. Ia
@@ -1065,7 +1065,7 @@ jadi jangan menambahkan awalan/akhiran apa pun di designer.
 
 Kartu flow 5 memuat dua baris yang tidak ada di kartu flow 2: **Delivery Support**
 (`delivery_support.name`) dan **Tim Support** (`delivery_support.team_csv`, sudah
-berupa teks `Budi (Delivery Owner), Ani (Support Manager)` — dirakit di EcoSystem
+berupa teks `Budi (Delivery Owner), Ani (Support Manager)` - dirakit di EcoSystem
 supaya kartunya tidak perlu Apply to each). Keduanya menampilkan `-` bila tiket
 belum di-assign ke delivery support mana pun.
 
@@ -1073,13 +1073,13 @@ Salin kartunya dari berkas JSON itu, **bukan** dari chat atau dokumen: apostrof
 di dalam ekspresi kartu rawan berubah melengkung dan Power Automate menolaknya.
 
 > **Satu tombol saja (18 Sep 2026).** Kartu ini punya tepat satu
-> `Action.OpenUrl` berjudul **Buka di EcoSystem** menuju `ticket.url` —
+> `Action.OpenUrl` berjudul **Buka di EcoSystem** menuju `ticket.url` -
 > sebelumnya judulnya *Assign / Ambil Tiket*. Aturannya: tombol boleh lebih dari
 > satu hanya kalau URL-nya memang berbeda; kalau tujuannya sama, cukup satu.
 > Kalau kartu di designer Anda masih memuat dua tombol ke URL yang sama, tempel
 > ulang isi berkas JSON-nya.
 
-### 6. Apply to each `lead_emails` — kumpulkan token mention
+### 6. Apply to each `lead_emails` - kumpulkan token mention
 
 | Field | Isi |
 |---|---|
@@ -1087,16 +1087,16 @@ di dalam ekspresi kartu rawan berubah melengkung dan Power Automate menolaknya.
 
 Dua aksi di dalam loop:
 
-1. **Microsoft Teams → Get an @mention token for a user** — *User* =
+1. **Microsoft Teams → Get an @mention token for a user** - *User* =
    `items('Apply_to_each')`.
-2. **Variables → Append to string variable** — *Name* `mentions`, *Value* =
+2. **Variables → Append to string variable** - *Name* `mentions`, *Value* =
    `@{body('Get_an_@mention_token_for_a_user')}` diikuti **satu spasi**.
 
 Tidak ada aksi *Add a member* di sini: pesertanya sudah ditentukan saat chat
-dibuat di langkah 4. Loop ini murni soal siapa yang di-**mention** — dan mention
+dibuat di langkah 4. Loop ini murni soal siapa yang di-**mention** - dan mention
 hanya untuk lead modul, karena merekalah yang diminta menindaklanjuti.
 
-### 7. Condition — Ada lead modul → Post message
+### 7. Condition - Ada lead modul → Post message
 
 | Sisi | Isi |
 |---|---|
@@ -1117,12 +1117,12 @@ channel**:
 Condition ini perlu karena beberapa modul belum punya Module Lead (per 2 Sep
 2026: CO, HCM, DATA MIGRATION, DEVELOPER, N/A, OCM, PMO, SALESFORCE, SIG, SYSTEM
 INTEGRATION). Tiket di modul itu tetap dapat grup + kartu; hanya baris mention
-yang dilewati — tanpa Condition, *Post message* dengan pesan kosong akan gagal.
+yang dilewati - tanpa Condition, *Post message* dengan pesan kosong akan gagal.
 
 ### 8. Save → salin URL trigger → pasang di `.env`
 
 **Save**, buka kembali kartu trigger, salin **HTTP POST URL** lewat **ikon
-salin** di sebelah field (jangan memblok teksnya — kotaknya sempit dan yang
+salin** di sebelah field (jangan memblok teksnya - kotaknya sempit dan yang
 tersalin hanya bagian yang terlihat). Pastikan URL-nya berakhir dengan `&sig=...`;
 kalau tidak, *Who can trigger* belum `Anyone`.
 
@@ -1135,7 +1135,7 @@ POWER_AUTOMATE_FLOW_TICKET_VALIDATED=<HTTP POST URL flow 5>
 php artisan optimize:clear
 ```
 
-Variabelnya **sama** dengan yang dulu dipakai flow 2 — cukup ganti isinya dengan
+Variabelnya **sama** dengan yang dulu dipakai flow 2 - cukup ganti isinya dengan
 URL flow 5. Pastikan flow 2 dalam keadaan **Off**.
 
 Terakhir: **Turn on** flow 5. Memanggil URL sebelum flow dinyalakan menghasilkan
@@ -1169,14 +1169,14 @@ curl -X POST "<HTTP POST URL flow 5>" \
 
 Yang harus terlihat: grup baru bernama `<nomor> - <subject>` berisi lead modul +
 tim Delivery Support + role penjaga, satu kartu tiket, dan satu pesan mention.
-Periksa `flow-5-payload.json` dulu sebelum mengirim — `chat.members` di situ
+Periksa `flow-5-payload.json` dulu sebelum mengirim - `chat.members` di situ
 adalah daftar orang yang akan benar-benar ditarik ke grup.
 
 Uji sesudahnya lewat jalur sungguhnya: validasi satu staging ticket di EcoSystem.
 
 ---
 
-## Konfigurasi flow 6 — EcoSystem - Ticket Member Added (Group Chat)
+## Konfigurasi flow 6 - EcoSystem - Ticket Member Added (Group Chat)
 
 **Varian group chat dari flow 4**, dengan pola yang sama persis: cari wadahnya
 lewat aksi *List*, cocokkan namanya, lalu masukkan orangnya.
@@ -1188,7 +1188,7 @@ lewat aksi *List*, cocokkan namanya, lalu masukkan orangnya.
 | pengumuman | Post card → Channel | **Post message** → Group chat (sejak 18 Sep 2026) |
 
 Aksi **Add a user to a chat** (`AddMemberToChat`) dan **List chats** (`GetChats`)
-dua-duanya ada di konektor Microsoft Teams kelas **Standard** — jalur ini tidak
+dua-duanya ada di konektor Microsoft Teams kelas **Standard** - jalur ini tidak
 butuh lisensi Premium.
 
 > **Flow 6 harus memakai akun koneksi Teams yang SAMA dengan flow 5.** *List
@@ -1202,12 +1202,12 @@ butuh lisensi Premium.
 `EcoSystem - Ticket Member Added (Group Chat)` → trigger **When an HTTP request
 is received** → **Create**.
 
-### 1. Trigger — When an HTTP request is received
+### 1. Trigger - When an HTTP request is received
 
 Sama persis dengan flow 5 langkah 1: schema **kosong**, **Who can trigger the
 flow? → Anyone**, lalu **Save**.
 
-### 2. Condition — Cek secret EcoSystem
+### 2. Condition - Cek secret EcoSystem
 
 Sama persis dengan flow 5 langkah 3: kiri
 `triggerOutputs()?['headers']?['X-EcoSystem-Secret']`, kanan nilai
@@ -1241,7 +1241,10 @@ dikumpulkan.
 
 `chat.topic` dirakit fungsi yang **sama persis** dengan yang dipakai flow 5 saat
 membuat grup (`PowerAutomateService::ticketChatTopic()`), jadi cocoknya
-exact-match, bukan tebak-tebakan prefix.
+exact-match, bukan tebak-tebakan prefix. Formatnya sejak 16 November 2026:
+`[nomor tiket]-[customer code]-[description]`. Untuk grup yang sudah tercatat di
+`ticket_teams_chat`, `chat.topic` berisi nama yang tersimpan (format lama tetap
+cocok).
 
 > **Kalau subject tiket diedit SETELAH grupnya terbentuk**, topic rakitan tidak
 > lagi sama dengan nama grup yang terlanjur ada. Kunci cadangannya `chat.number`
@@ -1249,7 +1252,7 @@ exact-match, bukan tebak-tebakan prefix.
 > `startsWith(item()?['topic'], triggerBody()?['chat']?['number'])` *is equal to*
 > `true`.
 
-### 5. Condition — Chat ketemu
+### 5. Condition - Chat ketemu
 
 | Sisi | Isi |
 |---|---|
@@ -1277,12 +1280,12 @@ first(body('Filter_array'))?['id']
 | Visible history start date time | `0001-01-01T00:00:00Z` |
 
 > **Isi *Visible history start date time*.** Dibiarkan kosong, orang yang baru
-> masuk **tidak melihat pesan sebelumnya** — padahal justru riwayat diskusi tiket
+> masuk **tidak melihat pesan sebelumnya** - padahal justru riwayat diskusi tiket
 > itu yang dibutuhkan consultant. Nilai `0001-01-01T00:00:00Z` berarti "seluruh
 > riwayat". Field ini tidak punya padanan di bentuk channel.
 
 > **Grup bisa penuh.** Batas 20 peserta berlaku di sini juga: kalau grup sudah
-> penuh, aksi ini gagal dan penyerap di langkah 7 membuat run tetap Succeeded —
+> penuh, aksi ini gagal dan penyerap di langkah 7 membuat run tetap Succeeded -
 > orangnya tidak masuk grup, tapi kartunya tetap terkirim. Kalau ini mulai
 > sering terjadi, kecilkan `POWER_AUTOMATE_TEAMS_EXTRA_MEMBERS` supaya slot
 > consultant lebih lega.
@@ -1307,13 +1310,13 @@ pesannya tenggelam di antara percakapan grup dan yang bersangkutan tidak dapat
 notifikasi. Aksi yang sama dipakai flow 5 untuk lead modul.
 
 Emailnya dijamin layak: `PowerAutomateService::employeeContact()` mengembalikan
-`null` — dan flow tidak dipanggil sama sekali — kalau orangnya tidak punya Email
+`null` - dan flow tidak dipanggil sama sekali - kalau orangnya tidak punya Email
 (Work) atau alamatnya masuk `POWER_AUTOMATE_TEAMS_EXCLUDE_MEMBERS`.
 
 > **Kalau akun itu tetap tidak ditemukan Teams, run berakhir Failed dan pesannya
 > tidak terkirim.** Kalau ini pernah terjadi, pasang **Compose** penyerap
 > sesudahnya (pola yang sama dengan langkah 7) dan ganti isi *Message* ke
-> `triggerBody()?['message_html']` — bentuk berdiri sendiri yang tidak butuh
+> `triggerBody()?['message_html']` - bentuk berdiri sendiri yang tidak butuh
 > token mention.
 
 ### 8. Microsoft Teams → **Post message in a chat or channel**
@@ -1322,7 +1325,7 @@ Emailnya dijamin layak: `PowerAutomateService::employeeContact()` mengembalikan
 "si A jadi PIC", Adaptive Card terasa berlebihan, dan tombol *Buka di EcoSystem*
 di dalamnya hanya menduplikasi tombol yang sudah ada di kartu Tiket baru pada
 grup yang sama. Kalau flow Anda sudah terlanjur memakai *Post card*, **hapus
-aksi itu** dan ganti dengan aksi di bawah — bukan tambahkan.
+aksi itu** dan ganti dengan aksi di bawah - bukan tambahkan.
 
 Sebelum aksi ini, sisipkan satu aksi **Microsoft Teams → Get an @mention token
 for a user** (lihat langkah 7b) supaya orangnya langsung tertag.
@@ -1335,7 +1338,7 @@ for a user** (lihat langkah 7b) supaya orangnya langsung tertag.
 | Message | token @mention, **satu spasi**, lalu `triggerBody()?['mention_html']` |
 
 **Cara mengisi *Message* (dua chip, bukan satu ekspresi).** Klik di kotak
-*Message*-nya langsung — **jangan** menempelkan `@{body(...)} @{triggerBody()...}`
+*Message*-nya langsung - **jangan** menempelkan `@{body(...)} @{triggerBody()...}`
 ke kotak **expression (fx)**: kotak fx hanya menerima satu ekspresi telanjang dan
 menolak sintaks `@{...}` dengan pesan *"This expression has a problem"*.
 
@@ -1346,7 +1349,7 @@ menolak sintaks `@{...}` dengan pesan *"This expression has a problem"*.
 
 Hasilnya dua chip ungu berdampingan.
 
-Alternatifnya satu ekspresi `concat` di kotak fx — **bentuk yang dipakai sekarang
+Alternatifnya satu ekspresi `concat` di kotak fx - **bentuk yang dipakai sekarang
 dan terbukti diterima designer (18 Sep 2026)**:
 
 ```
@@ -1358,20 +1361,20 @@ Tiga hal yang membuat bentuk ini sering gagal di percobaan pertama:
 * **Jangan tempel `@{...}` ke kotak fx.** Kotak itu menerima ekspresi telanjang;
   sintaks `@{...}` adalah bentuk untuk kotak teks, dan designer menolaknya dengan
   *"This expression has a problem"*.
-* **Dua ekspresi tidak bisa ditulis berdampingan** dipisah spasi — satu kotak fx
+* **Dua ekspresi tidak bisa ditulis berdampingan** dipisah spasi - satu kotak fx
   = satu ekspresi. Itulah gunanya `concat`.
 * **Token mention diambil lewat `outputs(...)?['body/atMention']`**, bukan
   `body('...')` begitu saja. Jalur `body/atMention` ini yang diisikan designer
-  sendiri kalau tokennya disisipkan lewat tab **Dynamic content** — cara paling
+  sendiri kalau tokennya disisipkan lewat tab **Dynamic content** - cara paling
   aman untuk mendapatkannya, sekaligus menjamin nama aksinya tertulis persis
   (designer bisa menamainya `..._1` kalau sudah ada aksi serupa).
 
 Apostrofnya harus lurus (`'`), bukan melengkung (catatan lapangan 4).
 
-**`Post as: User`, bukan Flow bot** — dipakai sejak aksinya jadi *Post message*
+**`Post as: User`, bukan Flow bot** - dipakai sejak aksinya jadi *Post message*
 (18 Sep 2026), konsisten dengan flow 7 yang juga memposting atas nama akun
 koneksi `EC Support`. Syaratnya sudah otomatis terpenuhi: akun koneksi flow 6
-memang harus sama dengan flow 5, dan flow 5 yang membuat grupnya — jadi ia
+memang harus sama dengan flow 5, dan flow 5 yang membuat grupnya - jadi ia
 anggota grup itu dan berhak memposting ke sana.
 
 Field *Group chat* harus lewat **Enter custom value**: daftar dropdown-nya berisi
@@ -1386,7 +1389,7 @@ token mention:
 | `message_html` | tanpa mention, pesan berdiri sendiri | `PIC baru di tiket ini: Rani Kusuma`<br>`Ditambahkan oleh: Tio Pramudya` |
 
 `mention_html` sengaja **tidak** diawali nama: token mention sudah tampil sebagai
-nama orangnya, jadi hasil akhirnya menyambung —
+nama orangnya, jadi hasil akhirnya menyambung -
 **@Rani Kusuma** ditambahkan sebagai PIC di tiket ini oleh Tio Pramudya.
 
 Keduanya versi HTML (field *Message* diperlakukan sebagai HTML, jadi `\n`
@@ -1394,7 +1397,7 @@ diabaikan dan pesan dua baris jadi gepeng). `message`/`mention_text` teks polos
 ikut sebagai cadangan. Dirakit `PowerAutomateService::memberAddedText()` dan
 `memberAddedMentionText()`.
 
-Tanpa nomor tiket dan tanpa tautan — pesannya diposting di dalam group chat tiket
+Tanpa nomor tiket dan tanpa tautan - pesannya diposting di dalam group chat tiket
 yang bersangkutan, jadi keduanya hanya mengulang konteks yang sudah jelas.
 
 Kartu [`cards/flow-4-ticket-member-added-kartu-anggota-baru.json`](cards/flow-4-ticket-member-added-kartu-anggota-baru.json)
@@ -1446,7 +1449,7 @@ Uji jalur sungguhnya: tambahkan member atau set PIC di halaman tiket EcoSystem.
 
 ---
 
-## Batasan yang belum terpecahkan — visibilitas channel (8 Sep 2026)
+## Batasan yang belum terpecahkan - visibilitas channel (8 Sep 2026)
 
 Ditemukan saat menguji flow 4 dengan PIC sungguhan (Agus Dwi Priyono). Belum
 diputuskan; dicatat di sini supaya tidak ditelusuri ulang dari nol.
@@ -1457,18 +1460,18 @@ diputuskan; dicatat di sini supaya tidak ditelusuri ulang dari nol.
 > aksi *List chats* yang harus dipaginasi. Bagian ini tetap disimpan karena
 > bentuk channel dipertahankan sebagai pilihan.
 
-### Masalah 1 — anggota melihat SEMUA channel tiket, bukan hanya miliknya
+### Masalah 1 - anggota melihat SEMUA channel tiket, bukan hanya miliknya
 
 Di Teams, *standard channel* tidak punya daftar anggota sendiri: yang menentukan
 akses adalah keanggotaan **team**. Begitu seseorang ditarik ke Support MO Team
-oleh flow 2 atau flow 4, seluruh channel tiket di dalamnya terbuka untuknya —
+oleh flow 2 atau flow 4, seluruh channel tiket di dalamnya terbuka untuknya -
 termasuk tiket customer lain.
 
 Satu-satunya mekanisme pembatas di Teams adalah **private channel**, dan dua hal
 menghalanginya:
 
 * **Batas jumlah.** Standard channel 1.000 per team, private channel jauh lebih
-  sedikit — catatan sesi sebelumnya menulis 200, dokumentasi Microsoft yang
+  sedikit - catatan sesi sebelumnya menulis 200, dokumentasi Microsoft yang
   diingat menyebut 30. **Kedua angka itu bertabrakan dan belum diverifikasi.**
   Dengan 62-129 tiket/bulan, batas 30 habis dalam hitungan minggu dan batas 200
   dalam 2-3 bulan, dibanding ±10 bulan untuk standard channel.
@@ -1480,18 +1483,18 @@ menghalanginya:
 Sebelum menempuh salah satunya, perlu dipastikan dulu dorongan sebenarnya:
 **kerahasiaan** (konsultan tidak boleh tahu tiket customer lain) atau
 **kerapian** (daftar channel jadi panjang). Kalau kerapian, keadaan sekarang
-sudah memadai — Teams tidak otomatis menampilkan channel baru, jadi daftar
+sudah memadai - Teams tidak otomatis menampilkan channel baru, jadi daftar
 channel orang tetap pendek sampai ia sendiri menekan *Show*. Kalau kerahasiaan,
 satu team berisi semua tiket memang bentuk yang salah, dan pilihannya bukan
-private channel melainkan pemisahan team per customer — konsekuensinya jauh lebih
+private channel melainkan pemisahan team per customer - konsekuensinya jauh lebih
 besar dan perlu dibahas tersendiri.
 
-### Masalah 2 — di mobile, anggota baru hanya melihat General
+### Masalah 2 - di mobile, anggota baru hanya melihat General
 
 Akibat langsung dari hal yang sama: channel tiket berstatus tersembunyi sampai
 anggotanya menekan **Show**. Di aplikasi mobile, membuka team langsung mendarat
 di *General*, dan channel tiket harus dicari lewat *See all channels*. Catatan
-lapangan 8 menutup jalan otomatisasinya — konektor tidak mengekspos properti
+lapangan 8 menutup jalan otomatisasinya - konektor tidak mengekspos properti
 "favorite by default".
 
 **Yang sebenarnya menjawab kebutuhan ini bukan daftar channel, melainkan
@@ -1499,14 +1502,14 @@ notifikasi.** Kartu yang diposting flow 4 tidak memberi notifikasi kepada
 siapa pun; hanya @mention yang melakukannya. Bandingkan dengan flow 2, di mana
 lead modul memang di-mention dan karena itu selalu menemukan channelnya.
 
-**Usulan yang BELUM dikerjakan** — dua aksi tambahan di flow 4, di dalam cabang
+**Usulan yang BELUM dikerjakan** - dua aksi tambahan di flow 4, di dalam cabang
 *If yes* milik *Channel ketemu*, **sesudah** Compose penyerap (wajib sesudah
 *Add a member to a team*: token mention hanya bisa dibuat untuk orang yang sudah
 jadi anggota team):
 
-1. **Teams → Get an @mention token for a user** — *User*:
+1. **Teams → Get an @mention token for a user** - *User*:
    `triggerBody()?['person']?['email']`
-2. **Teams → Post message in a chat or channel** — Post as *Flow bot*, Post in
+2. **Teams → Post message in a chat or channel** - Post as *Flow bot*, Post in
    *Channel*, Team *Support MO Team*, Channel
    `first(body('Filter_array'))?['id']`, Message: token dari aksi 1 diikuti teks
    pengantar.
@@ -1518,7 +1521,7 @@ memakukannya sekali lewat ⋯ → Pin.
 
 ---
 
-## Konfigurasi flow 7 — EcoSystem - Teams Post Message (Internal Note)
+## Konfigurasi flow 7 - EcoSystem - Teams Post Message (Internal Note)
 
 **Dibuat 17 September 2026, terbukti jalan ujung-ke-ujung hari itu juga.**
 Ini arah KELUAR sinkronisasi chat Teams: internal note yang ditulis di EcoSystem
@@ -1527,7 +1530,7 @@ diposting ke group chat tiket. Rancangannya:
 
 Kenapa lewat Power Automate padahal arah masuknya lewat Graph langsung:
 `POST /chats/{id}/messages` **tidak tersedia untuk izin aplikasi** (hanya
-`Teamwork.Migrate.All`, untuk migrasi). Asimetri itu bukan pilihan gaya — tidak
+`Teamwork.Migrate.All`, untuk migrasi). Asimetri itu bukan pilihan gaya - tidak
 ada alternatif app-only.
 
 Flow ini jauh lebih sederhana dari flow 5: tidak ada variabel, loop, maupun
@@ -1538,11 +1541,15 @@ membuat grupnya dan menyimpan id-nya.
 Trigger (When an HTTP request is received)
 └─ Condition "Cek Secret Ecosystem"
      └─ True: Condition "Payload bawa kartu?"
-                ├─ True  : Post card in a chat or channel     (jadwal meeting)
-                └─ False : Post message in a chat or channel  (internal note)
+                ├─ ada kartu : Post card in a chat or channel     (jadwal meeting)
+                └─ tidak     : Condition "Payload bawa berkas?"
+                     ├─ tidak : Post message in a chat or channel (internal note)
+                     └─ ada   : Send a Microsoft Graph HTTP request (note + kartu berkas)
+                                  └─ kalau gagal: Post message cadangan (versi tautan)
 ```
 
-Condition kedua ditambahkan **18 September 2026** — lihat langkah 3b.
+Condition kedua ditambahkan **18 September 2026** - lihat langkah 3b. Condition
+ketiga (kartu berkas) ditambahkan **13 Oktober 2026** - lihat langkah 3c.
 
 ### 1. Trigger
 
@@ -1551,14 +1558,14 @@ Condition kedua ditambahkan **18 September 2026** — lihat langkah 3b.
 | Request Body JSON Schema | **biarkan kosong** |
 | Who can trigger the flow? | **Anyone** |
 
-`Anyone` wajib — bawaannya *Any user in my tenant* menerbitkan URL tanpa
+`Anyone` wajib - bawaannya *Any user in my tenant* menerbitkan URL tanpa
 `sp`/`sv`/`sig` dan EcoSystem kena 401 (catatan lapangan 6).
 
 > Flow tidak bisa di-Save selama belum punya satu aksi pun, dan **HTTP URL baru
 > terbit setelah Save pertama**. Jadi urutannya: pasang Condition dulu, Save,
 > baru salin URL-nya.
 
-### 2. Condition — Cek Secret Ecosystem
+### 2. Condition - Cek Secret Ecosystem
 
 | Sisi | Isi |
 |---|---|
@@ -1568,7 +1575,7 @@ Condition kedua ditambahkan **18 September 2026** — lihat langkah 3b.
 
 Cabang **False** dibiarkan kosong. Tetap dipasang walau flow ini "cuma"
 memposting pesan: URL triggernya bisa dipanggil siapa saja yang tahu alamatnya,
-dan `chat.id` datang dari payload — tanpa cek secret, siapa pun yang punya URL
+dan `chat.id` datang dari payload - tanpa cek secret, siapa pun yang punya URL
 itu bisa menulis ke group chat tiket internal mana pun.
 
 ### 3. Microsoft Teams → **Post message in a chat or channel**
@@ -1588,7 +1595,7 @@ itu bisa menulis ke group chat tiket internal mana pun.
 **`Post as: User`, bukan Flow bot.** Note tampil atas nama akun koneksi
 (`EC Support`), konsisten dengan kartu tiket yang sudah ada di grup itu.
 
-**Koneksinya harus `support@eclectic.co.id`** — akun yang sama dengan flow 5.
+**Koneksinya harus `support@eclectic.co.id`** - akun yang sama dengan flow 5.
 EcoSystem kini memasukkan akun itu sebagai anggota tiap grup tiket secara
 otomatis (lihat design §8), jadi ia memang yang berhak memposting ke sana. Akun
 lain akan ditolak Teams karena bukan anggota grup.
@@ -1600,10 +1607,10 @@ versi ber-`<br>` (sudah di-escape) supaya designer tidak perlu ekspresi
 cadangan kalau suatu saat field itu berubah perilaku.
 
 **Sejak 18 September 2026 pesannya tidak lagi diakhiri baris `nomor → tautan`.**
-Tidak ada yang perlu diubah di designer — barisnya dirakit di EcoSystem dan kini
+Tidak ada yang perlu diubah di designer - barisnya dirakit di EcoSystem dan kini
 tidak dirakit lagi.
 
-### 3b. Condition — Payload bawa kartu? *(ditambahkan 18 September 2026)*
+### 3b. Condition - Payload bawa kartu? *(ditambahkan 18 September 2026)*
 
 Flow ini melayani **dua** jalur: internal note (pesan) dan pengumuman jadwal
 meeting (kartu, keputusan meeting 18 Sep 2026). Yang membedakan keduanya adalah
@@ -1612,7 +1619,7 @@ ada-tidaknya blok `card` di payload.
 **Kenapa tidak mengganti *Post message* jadi *Post card* saja?** Karena note ikut
 lewat flow ini, dan note sengaja berbentuk pesan: kartu tidak bisa di-quote-reply
 dan tampil buruk di HP, padahal diskusi tiket justru hidup dari balas-membalas.
-Mengganti aksinya akan mengubah bentuk note juga — bertentangan dengan catatan 3
+Mengganti aksinya akan mengubah bentuk note juga - bertentangan dengan catatan 3
 dari meeting yang sama.
 
 Bungkus aksi *Post message* langkah 3 ke dalam Condition baru, di dalam cabang
@@ -1636,7 +1643,7 @@ Bungkus aksi *Post message* langkah 3 ke dalam Condition baru, di dalam cabang
 | Adaptive Card | Expression: `triggerBody()?['card']` |
 
 **`Post as: User`, sama dengan cabang pesan** (diverifikasi di designer 18 Sep
-2026 — aksi *Post card* menyediakan pilihan ini). Kartu meeting jadi tampil atas
+2026 - aksi *Post card* menyediakan pilihan ini). Kartu meeting jadi tampil atas
 nama akun koneksi `EC Support`, bukan Flow bot, sehingga kedua cabang flow 7
 tampil dari pengirim yang sama di grup.
 
@@ -1649,6 +1656,79 @@ Kartunya **tidak** ditempel di designer: EcoSystem merakitnya dan mengirimkannya
 sebagai teks JSON di `card` (lihat `TeamsOutboxService::meetingCard()`), sehingga
 mengubah tampilan kartu meeting cukup dari sisi kode tanpa menyentuh flow.
 
+### 3c. Condition - Payload bawa berkas? *(ditambahkan 13 Oktober 2026)*
+
+> **Status: sisi EcoSystem selesai dan teruji; cabang flow ini BELUM pernah
+> dijalankan.** Yang belum terbukti hanya satu hal: apakah aksi *Send a
+> Microsoft Graph HTTP request* mau memposting ke group chat. Karena itu cabang
+> ini dipasang bersama aksi cadangan - kalau Graph menolak, note tetap sampai
+> dalam bentuk tautan seperti sebelumnya.
+
+Lampiran non-gambar kini bisa tampil sebagai **kartu berkas asli Teams** (ikon,
+nama, pratinjau), sama seperti berkas yang dilampirkan orang langsung di Teams.
+Aksi *Post message* tidak punya parameter lampiran, jadi note berlampiran berkas
+dikirim lewat Graph. Rancangannya:
+[`teams-sync-parity-design.md`](../teams-sync-parity-design.md) §6c.
+
+EcoSystem menandai note semacam itu dengan blok `graph_message` di payload.
+Note tanpa berkas (teks saja, atau hanya gambar) **tidak** membawanya dan tetap
+lewat *Post message* persis seperti sekarang.
+
+**Langkah 1 - Condition baru.** Di cabang "tidak ada kartu" dari langkah 3b,
+bungkus aksi *Post message* yang sudah ada ke dalam Condition baru:
+
+| Sisi | Isi |
+|---|---|
+| Kiri (Expression) | `empty(triggerBody()?['graph_message'])` |
+| Operator | **is equal to** |
+| Kanan (Expression) | `true` |
+
+* Cabang **If yes** → aksi *Post message* yang lama (pindahkan ke sini, jangan
+  diubah).
+* Cabang **If no** → dua aksi di bawah.
+
+Kanan Condition harus boolean lewat **fx**, alasan yang sama dengan langkah 3b.
+
+**Langkah 2 - Microsoft Teams → Send a Microsoft Graph HTTP request**, di cabang
+**If no**:
+
+| Field | Isi |
+|---|---|
+| URI | `https://graph.microsoft.com/v1.0/me/chats/@{triggerBody()?['chat']?['id']}/messages` |
+| Method | **POST** |
+| Body | Expression: `triggerBody()?['graph_message']` |
+| Content-Type | `application/json` |
+
+Koneksinya harus `support@eclectic.co.id`, sama dengan aksi lain di flow ini:
+pesannya terkirim atas nama akun itu, dan berkasnya tinggal di OneDrive akun
+yang sama.
+
+**URI harus diawali `/me`.** Aksi ini hanya menerima alamat yang segmen
+pertamanya `/teams`, `/me`, atau `/users`; alamat Graph yang biasa
+(`/v1.0/chats/{id}/messages`) ditolak konektornya sebelum sampai ke Graph. Kalau
+`/me/chats/…` ternyata ditolak, coba
+`https://graph.microsoft.com/v1.0/users/support@eclectic.co.id/chats/@{triggerBody()?['chat']?['id']}/messages`.
+
+**Langkah 3 - aksi cadangan.** Tepat di bawah aksi Graph, tambahkan
+**Microsoft Teams → Post message in a chat or channel** dengan isi yang sama
+persis dengan langkah 3 (`Post as: User`, `Group chat`, chat
+`triggerBody()?['chat']?['id']`, Message `triggerBody()?['message_html']`).
+Lalu buka **⋯ → Configure run after** pada aksi cadangan ini:
+
+* **hilangkan** centang *is successful*;
+* **centang** *has failed* dan *has timed out*.
+
+Dengan begitu aksi cadangan hanya jalan kalau Graph menolak, dan note tidak
+pernah hilang. `message_html` selalu berisi versi lengkap dengan tautan berkas,
+jadi cadangannya tidak kehilangan lampiran.
+
+> **Jangan lupa run after-nya.** Tanpa pengaturan itu aksi cadangan jalan
+> setelah Graph BERHASIL, dan tiap note berlampiran muncul dua kali di grup.
+
+**Di sisi EcoSystem** nyalakan `TEAMS_SYNC_NATIVE_FILES=true` lalu
+`php artisan optimize:clear`. Urutannya bebas: flow lama mengabaikan
+`graph_message`, dan EcoSystem yang belum dinyalakan tidak mengirimkannya.
+
 ### 4. Save → salin URL trigger → `.env`
 
 ```dotenv
@@ -1657,7 +1737,7 @@ POWER_AUTOMATE_FLOW_TEAMS_POST_MESSAGE=<HTTP POST URL flow 7>
 
 ### 5. Bentuk payload yang dikirim EcoSystem
 
-Internal note — tanpa `card`, jadi masuk cabang *Post message*:
+Internal note - tanpa `card`, jadi masuk cabang *Post message*:
 
 ```json
 {
@@ -1671,7 +1751,32 @@ Internal note — tanpa `card`, jadi masuk cabang *Post message*:
 }
 ```
 
-Jadwal meeting — membawa `card`, jadi masuk cabang *Post card*. Isi `card` adalah
+Internal note dengan berkas - membawa `graph_message`, jadi masuk cabang Graph.
+`message_html` tetap versi lengkap dengan tautan, untuk aksi cadangan:
+
+```json
+{
+  "event": "teams_post_message",
+  "chat":    { "id": "19:…@thread.v2" },
+  "message_html": "Tio Pramudya · EcoSystem<br>\nLog terlampir.<br><br><a href=\"https://eco…/teams/attachments/2665?signature=…\">zfir_bs_pl.txt</a>",
+  "graph_message": {
+    "body": {
+      "contentType": "html",
+      "content": "Tio Pramudya · EcoSystem<br>\nLog terlampir.<attachment id=\"2115455D-58E9-4045-8E2E-840C7B649192\"></attachment>"
+    },
+    "attachments": [
+      { "id": "2115455D-58E9-4045-8E2E-840C7B649192",
+        "contentType": "reference",
+        "contentUrl": "https://…-my.sharepoint.com/personal/support_eclectic_co_id/Documents/DELIVERY%20SUPPORT/TEAMS%20CHAT%20FILES/001%20ECLECTIC%20CONSULTING/TICKETING/26100294/zfir_bs_pl.txt",
+        "name": "zfir_bs_pl.txt" }
+    ]
+  },
+  "ticket":  { "…": "…" },
+  "note":    { "…": "…" }
+}
+```
+
+Jadwal meeting - membawa `card`, jadi masuk cabang *Post card*. Isi `card` adalah
 Adaptive Card **dalam bentuk teks JSON** supaya field *Adaptive Card* cukup diisi
 satu ekspresi:
 
@@ -1679,7 +1784,7 @@ satu ekspresi:
 {
   "event": "teams_post_message",
   "chat":    { "id": "19:…@thread.v2" },
-  "card": "{\"type\":\"AdaptiveCard\",\"version\":\"1.4\",\"body\":[{\"type\":\"TextBlock\",\"text\":\"Meeting dijadwalkan\",\"weight\":\"Bolder\",\"size\":\"Medium\"},{\"type\":\"FactSet\",\"facts\":[{\"title\":\"Waktu\",\"value\":\"Thu, 18 Sep 2026 14:00–15:00 WIB\"},{\"title\":\"Oleh\",\"value\":\"Tio Pramudya\"}]}],\"actions\":[{\"type\":\"Action.OpenUrl\",\"title\":\"Gabung Meeting\",\"url\":\"https://teams.microsoft.com/l/meetup-join/…\"}]}",
+  "card": "{\"type\":\"AdaptiveCard\",\"version\":\"1.4\",\"body\":[{\"type\":\"TextBlock\",\"text\":\"Meeting dijadwalkan\",\"weight\":\"Bolder\",\"size\":\"Medium\"},{\"type\":\"FactSet\",\"facts\":[{\"title\":\"Waktu\",\"value\":\"Thu, 18 Sep 2026 14:00-15:00 WIB\"},{\"title\":\"Oleh\",\"value\":\"Tio Pramudya\"}]}],\"actions\":[{\"type\":\"Action.OpenUrl\",\"title\":\"Gabung Meeting\",\"url\":\"https://teams.microsoft.com/l/meetup-join/…\"}]}",
   "message_html": "Meeting dijadwalkan · EcoSystem<br>…",
   "ticket":  { "id": 1378, "number": "26090199", "subject": "…", "url": "…",
                "submitted_by": { "name": "…", "email": "…" } },
@@ -1687,12 +1792,12 @@ satu ekspresi:
 }
 ```
 
-Tautan meeting jadi **tombol** *Gabung Meeting*, bukan baris teks — itu inti
+Tautan meeting jadi **tombol** *Gabung Meeting*, bukan baris teks - itu inti
 catatan 4: URL mentah di badan pesan panjang dan tidak terbaca. `message_html`
 tetap ikut sebagai cadangan kalau kartunya ditolak konektor.
 
 `ticket.submitted_by.email` ikut karena pagar staging
-`POWER_AUTOMATE_ALLOWED_SUBMITTERS` bersifat fail-closed — lihat bagian 7.0.
+`POWER_AUTOMATE_ALLOWED_SUBMITTERS` bersifat fail-closed - lihat bagian 7.0.
 Tanpa blok itu, seluruh note keluar diblokir diam-diam di server staging.
 
 ### 6. Hasil uji 17 September 2026
@@ -1706,7 +1811,7 @@ di grup yang benar atas nama `EC Support`, dengan baris terjaga:
 ```
 
 Lalu sinkron masuk dijalankan dengan kursor **sebelum** pesan itu: **0 pesan
-diserap**. Pagar anti-gema bekerja — tanpa itu, tiap note keluar akan terbaca
+diserap**. Pagar anti-gema bekerja - tanpa itu, tiap note keluar akan terbaca
 balik dan tersimpan dobel di tiketnya.
 
 ### Jebakan yang sudah memakan waktu

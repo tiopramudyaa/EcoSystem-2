@@ -15,7 +15,7 @@ class LiteApiAuth
      * Validasi request untuk Lite API.
      *
      * Mendukung dua jalur autentikasi:
-     * 1. Session cookie (web app — browser kirim cookie otomatis)
+     * 1. Session cookie (web app - browser kirim cookie otomatis)
      * 2. Bearer token dari header Authorization (SPA / mobile web tanpa cookie)
      *
      * Token format: base64(ECI|timestamp|employee)
@@ -96,6 +96,11 @@ class LiteApiAuth
 
             // Bangun user data pakai helper yang sama dengan login
             $sessionData = AuthController::buildEmployeeSessionData($employee->employee_id);
+
+            // System lock: a still-valid Bearer token must not get a non-admin in.
+            if ($sessionData && \App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
+                return null;
+            }
 
             return $sessionData ? $sessionData['userData'] : null;
 

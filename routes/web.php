@@ -29,6 +29,7 @@ use App\Http\Controllers\DeliveryProjectPlanningImportController;
 use App\Http\Controllers\DeliveryProjectPlanningResetController;
 use App\Http\Controllers\DeliveryProjectRiskController;
 use App\Http\Controllers\DeliveryProjectPaymentTermController;
+use App\Http\Controllers\DeliveryProjectContractLineItemController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TicketViewController;
@@ -69,18 +70,22 @@ Route::prefix('api/auth')->group(function () {
 // Login page
 Route::get('/auth/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/2fa/verify', [AuthController::class, 'showTwoFactorChallenge'])->name('2fa.verify');
+// Login dengan Microsoft (opsi tambahan; diaktifkan EC Administrator di Settings > Security).
+Route::get('/auth/microsoft', [\App\Http\Controllers\MicrosoftAuthController::class, 'redirect'])->name('microsoft.redirect')->middleware('throttle:20,1');
+Route::get('/auth/microsoft/callback', [\App\Http\Controllers\MicrosoftAuthController::class, 'callback'])->name('microsoft.callback')->middleware('throttle:30,1');
 
-// ==================== PASSWORD SETUP & RESET (public — tidak perlu auth) ====================
-// Halaman "Cek email Anda" — tampil setelah setup akun baru atau forgot password
+// ==================== PASSWORD SETUP & RESET (public - tidak perlu auth) ====================
+// Halaman "Cek email Anda" - tampil setelah setup akun baru atau forgot password
 Route::get('/verify-email', [PasswordSetupController::class, 'showCheckEmail'])->name('password-setup.check-email');
-// Halaman form atur/reset password — dari link di email
+// Halaman form atur/reset password - dari link di email
 Route::get('/change-password', [PasswordSetupController::class, 'showChangePassword'])->name('password-setup.change');
 // Proses submit password baru
 Route::post('/change-password', [PasswordSetupController::class, 'submitChangePassword'])->name('password-setup.submit');
-// Forgot password — halaman form input email
+// Forgot password - halaman form input email
 Route::get('/forgot-password', [PasswordSetupController::class, 'showForgotPassword'])->name('password-setup.forgot');
-// Forgot password — proses kirim email reset
-Route::post('/forgot-password', [PasswordSetupController::class, 'submitForgotPassword'])->name('password-setup.forgot.submit');
+// Forgot password - proses kirim email reset
+// throttle: tanpa batas, siapa pun bisa membanjiri satu karyawan dengan email reset dan menghabiskan kuota mailbox pengirim.
+Route::post('/forgot-password', [PasswordSetupController::class, 'submitForgotPassword'])->name('password-setup.forgot.submit')->middleware('throttle:5,1');
 
 // NOTE: /auth/login (POST) sudah didefinisikan di prefix group 'api/auth' di atas.
 // Route standalone ini dihapus untuk menghindari duplikasi.
@@ -105,8 +110,8 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // ==================== AI ASSISTANT ====================
     Route::get('/ai-assistant', [\App\Http\Controllers\AiAssistantController::class, 'index'])->name('ai-assistant')->middleware('menu:ai-assistant');
     Route::post('/ai-assistant/chat', [\App\Http\Controllers\AiAssistantController::class, 'chat'])->name('ai-assistant.chat')->middleware('menu:ai-assistant');
-    // Riwayat percakapan (arsip DB, per-employee — lihat AiAssistantController::
-    // conversations()) — inilah yang membuat history tetap muncul lintas
+    // Riwayat percakapan (arsip DB, per-employee - lihat AiAssistantController::
+    // conversations()) - inilah yang membuat history tetap muncul lintas
     // device/browser selama login sebagai employee yang sama, bukan cuma
     // tersimpan di sessionStorage device itu saja. Hapus memakai POST, bukan
     // DELETE: verb DELETE diblokir edge/WAF di production (sama seperti AI Research).
@@ -118,7 +123,7 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // Menu slug 'word-report-generator' didaftarkan lewat migration
     // add_word_report_generator_menu -- otomatis ikut `php artisan migrate`,
     // tidak perlu command seeder terpisah.
-    // Halaman uji coba sementara — bukan UI final, cuma form upload + poll status.
+    // Halaman uji coba sementara - bukan UI final, cuma form upload + poll status.
     Route::get('/reports/generate', [\App\Http\Controllers\ReportGeneratorController::class, 'index'])->name('reports.generate.page')->middleware('menu:word-report-generator');
     Route::get('/reports/templates', [\App\Http\Controllers\ReportGeneratorController::class, 'templates'])->name('reports.templates')->middleware('menu:word-report-generator');
     Route::get('/reports/history', [\App\Http\Controllers\ReportGeneratorController::class, 'history'])->name('reports.history')->middleware('menu:word-report-generator');
@@ -137,7 +142,7 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     Route::get('/ai-research/conversations', [\App\Http\Controllers\AiResearchController::class, 'conversations'])->name('ai-research.conversations')->middleware('menu:ai-research');
     Route::get('/ai-research/conversations/{conversation}', [\App\Http\Controllers\AiResearchController::class, 'conversation'])->name('ai-research.conversation')->middleware('menu:ai-research');
     Route::post('/ai-research/conversations/{conversation}/delete', [\App\Http\Controllers\AiResearchController::class, 'destroyConversation'])->name('ai-research.conversation.delete')->middleware('menu:ai-research');
-    // Ubah teks jawaban assistant jadi file .docx yang bisa diunduh — assistant
+    // Ubah teks jawaban assistant jadi file .docx yang bisa diunduh - assistant
     // sendiri tidak punya alat untuk membuat/melampirkan file, jadi konversinya
     // dilakukan di sini saat user menekan tombol Download.
     Route::post('/ai-research/export-docx', [\App\Http\Controllers\AiResearchController::class, 'exportDocx'])->name('ai-research.export-docx')->middleware('menu:ai-research');
@@ -151,11 +156,11 @@ Route::middleware(CheckAuthToken::class)->group(function () {
 
     // ==================== REPORTING ====================
     Route::get('/reporting',                  [\App\Http\Controllers\ReportingController::class, 'index'])->name('reporting')->middleware('menu:reporting.validation');
-    Route::get('/reporting/export-excel',     [\App\Http\Controllers\ReportingController::class, 'exportExcel'])->name('reporting.export');
+    Route::get('/reporting/export-excel',     [\App\Http\Controllers\ReportingController::class, 'exportExcel'])->name('reporting.export')->middleware('menu:reporting.export-excel');
     Route::get('/reporting/md-recap',         [\App\Http\Controllers\ReportingController::class, 'mdRecapIndex'])->name('reporting.md-recap')->middleware('menu:reporting.md-recap');
-    Route::get('/reporting/md-recap/export',           [\App\Http\Controllers\ReportingController::class, 'exportMdRecap'])->name('reporting.md-recap.export');
-    Route::get('/reporting/md-recap/export-summary',   [\App\Http\Controllers\ReportingController::class, 'exportMdRecapSummary'])->name('reporting.md-recap.export-summary');
-    Route::get('/reporting/resolution-days/export',    [\App\Http\Controllers\ReportingController::class, 'exportResolutionDays'])->name('reporting.resolution-days.export');
+    Route::get('/reporting/md-recap/export',           [\App\Http\Controllers\ReportingController::class, 'exportMdRecap'])->name('reporting.md-recap.export')->middleware('menu:reporting.md-recap');
+    Route::get('/reporting/md-recap/export-summary',   [\App\Http\Controllers\ReportingController::class, 'exportMdRecapSummary'])->name('reporting.md-recap.export-summary')->middleware('menu:reporting.md-recap');
+    Route::get('/reporting/resolution-days/export',    [\App\Http\Controllers\ReportingController::class, 'exportResolutionDays'])->name('reporting.resolution-days.export')->middleware('menu:reporting.resolution-days');
     Route::get('/reporting/collection-outlook',        [\App\Http\Controllers\ReportingController::class, 'collectionOutlookIndex'])->name('reporting.collection-outlook')->middleware('menu:reporting.collection-outlook');
     Route::get('/reporting/collection-outlook/export', [\App\Http\Controllers\ReportingController::class, 'exportCollectionOutlook'])->name('reporting.collection-outlook.export')->middleware('menu:reporting.collection-outlook');
     Route::get('/reporting/collection-outlook-support',        [\App\Http\Controllers\ReportingController::class, 'collectionOutlookSupportIndex'])->name('reporting.collection-outlook-support')->middleware('menu:reporting.collection-outlook-support');
@@ -233,13 +238,22 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // ==================== ADMIN ====================
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', function () {
-            if ((int) session('user.role.id') !== 1) abort(403);
             return view('admin.index');
         })->name('index')->middleware('menu:control-center.overview');
         Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log')->middleware('menu:control-center.activity-log');
         Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log')->middleware('menu:control-center.audit-log');
         Route::get('/login-log', [LoginLogController::class, 'index'])->name('login-log')->middleware('menu:control-center.login-log');
         Route::get('/security-center', [\App\Http\Controllers\SecurityCenterController::class, 'index'])->name('security-center')->middleware('menu:control-center.security');
+        Route::prefix('user-guide')->name('user-guide.')->middleware('menu:control-center.user-guide')->group(function () {
+            $c = \App\Http\Controllers\UserGuideAdminController::class;
+            Route::get('/', [$c, 'index'])->name('index');
+            Route::get('/create', [$c, 'create'])->name('create');
+            Route::post('/', [$c, 'store'])->name('store');
+            Route::post('/preview', [$c, 'preview'])->name('preview');
+            Route::get('/{key}', [$c, 'edit'])->name('edit')->where('key', '[a-z0-9\-]+');
+            Route::put('/{key}', [$c, 'update'])->name('update')->where('key', '[a-z0-9\-]+');
+            Route::delete('/{key}', [$c, 'destroy'])->name('destroy')->where('key', '[a-z0-9\-]+');
+        });
         Route::get('/sessions', [AdminSessionController::class, 'page'])->name('sessions')->middleware('menu:control-center.sessions');
         Route::get('/failed-jobs', [AdminJobController::class, 'page'])->name('failed-jobs')->middleware('menu:control-center.failed-jobs');
         Route::get('/schedule-monitor', [\App\Http\Controllers\ScheduleMonitorController::class, 'page'])->name('schedule-monitor')->middleware('menu:control-center.schedule-monitor');
@@ -266,19 +280,28 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::post('/sounds', [AdminNotificationSoundController::class, 'store'])->name('sounds.store');
         Route::delete('/sounds/{id}', [AdminNotificationSoundController::class, 'destroy'])->name('sounds.destroy');
 
-        // Model AI yang dipakai kedua asisten — dipegang super admin.
+        // Model AI yang dipakai kedua asisten - dipegang super admin.
         Route::get('/ai-settings', [\App\Http\Controllers\AiSettingsController::class, 'index'])->name('ai-settings')->middleware('menu:control-center.ai-settings');
         Route::post('/ai-settings', [\App\Http\Controllers\AiSettingsController::class, 'update'])->name('ai-settings.update')->middleware('menu:control-center.ai-settings');
 
-        // Tema musiman default untuk semua user (dashboard) + halaman login — dipegang super admin.
+        // Pemakaian token + estimasi sisa saldo AI - dipegang super admin.
+        Route::get('/ai-usage', [\App\Http\Controllers\AiUsageController::class, 'index'])->name('ai-usage')->middleware('menu:control-center.ai-usage');
+        Route::post('/ai-usage/balance', [\App\Http\Controllers\AiUsageController::class, 'saveBalance'])->name('ai-usage.balance')->middleware('menu:control-center.ai-usage');
+
+        // Tema musiman default untuk semua user (dashboard) + halaman login - dipegang super admin.
         Route::get('/seasonal-theme', [\App\Http\Controllers\SeasonalThemeSettingsController::class, 'index'])->name('seasonal-theme')->middleware('menu:control-center.seasonal-theme');
         Route::post('/seasonal-theme', [\App\Http\Controllers\SeasonalThemeSettingsController::class, 'update'])->name('seasonal-theme.update')->middleware('menu:control-center.seasonal-theme');
         Route::post('/seasonal-theme/upload-sound', [\App\Http\Controllers\SeasonalThemeSettingsController::class, 'uploadSound'])->name('seasonal-theme.upload-sound')->middleware('menu:control-center.seasonal-theme');
 
-        // Role mana yang wajib 2FA — admin-configurable, dibaca EnforceTwoFactorForAdmins.
+        // Role mana yang wajib 2FA - admin-configurable, dibaca EnforceTwoFactorForAdmins.
         Route::get('/two-factor-enforcement', [\App\Http\Controllers\TwoFactorEnforcementSettingsController::class, 'index'])->name('two-factor-enforcement')->middleware('menu:control-center.two-factor-enforcement');
         Route::post('/two-factor-enforcement', [\App\Http\Controllers\TwoFactorEnforcementSettingsController::class, 'update'])->name('two-factor-enforcement.update')->middleware('menu:control-center.two-factor-enforcement');
     });
+
+    // ==================== USER GUIDE ====================
+    // User Guide: semua pengguna yang masuk; isi disaring di server menurut izin menu (lihat UserGuideController).
+    Route::get('/user-guide', [\App\Http\Controllers\UserGuideController::class, 'index'])->name('user-guide.index');
+    Route::get('/user-guide/pdf', [\App\Http\Controllers\UserGuideController::class, 'pdf'])->name('user-guide.pdf')->middleware('throttle:20,1');
 
     // ==================== SLA ====================
     Route::get('/sla/config', [SlaController::class, 'configPage'])->name('sla.config')->middleware('menu:sla.config');
@@ -292,6 +315,11 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::post('/preferences', [SettingsController::class, 'updatePreferences'])->name('preferences');
         Route::post('/reset', [SettingsController::class, 'resetPreferences'])->name('reset');
 
+        // Akun Microsoft (Security). Hapus/lepas memakai POST, bukan DELETE: verb DELETE diblokir WAF di production.
+        Route::get('/microsoft/connect', [\App\Http\Controllers\MicrosoftAuthController::class, 'connect'])->name('microsoft.connect')->middleware('throttle:20,1');
+        Route::post('/microsoft/disconnect', [\App\Http\Controllers\MicrosoftAuthController::class, 'disconnect'])->name('microsoft.disconnect')->middleware('throttle:10,1');
+        Route::post('/microsoft/config', [\App\Http\Controllers\MicrosoftAuthController::class, 'saveConfig'])->name('microsoft.config')->middleware('throttle:10,1');
+
         Route::prefix('2fa')->name('2fa.')->group(function () {
             Route::post('/enable', [\App\Http\Controllers\TwoFactorController::class, 'enable'])->name('enable');
             Route::post('/confirm', [\App\Http\Controllers\TwoFactorController::class, 'confirm'])->name('confirm')->middleware('throttle:5,1');
@@ -300,16 +328,10 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         });
     });
 
-    // ==================== DASHBOARD API ====================
-    Route::get('/dashboard/monthly-trends', [DashboardController::class, 'getMonthlyTrends'])->name('dashboard.trends');
-    Route::get('/dashboard/project-progress', [DashboardController::class, 'getProjectProgress'])->name('dashboard.progress');
-    Route::post('/dashboard/clear-cache', [DashboardController::class, 'clearCache'])->name('dashboard.clear-cache');
-    Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
-
     // ==================== PROJECT DELIVERY ROUTES ====================
 
     // Project routes (CRUD)
-    // CATATAN: keyed-array middleware pada Route::resource() TIDAK per-method —
+    // CATATAN: keyed-array middleware pada Route::resource() TIDAK per-method -
     // Laravel menerapkan semua nilainya ke setiap route resource. Jadi begitu
     // tiap aksi butuh izin berbeda, route-nya harus didaftarkan eksplisit.
     // `projects/create` wajib didaftarkan sebelum `projects/{project}` agar
@@ -326,13 +348,23 @@ Route::middleware(CheckAuthToken::class)->group(function () {
 
     // Export daftar project ke Excel. Wajib didaftarkan sebelum
     // `projects/{project}` agar "export" tidak tertangkap sebagai {project}.
-    // Izinnya sama dengan halaman list — isinya memang data list yang sama.
+    // Izinnya sama dengan halaman list - isinya memang data list yang sama.
     Route::get('/projects/export', [DeliveryProjectController::class, 'export'])->name('projects.export')->middleware('menu:delivery.project');
+    // Export revenue seluruh project. Revenue/cost = data Delivery Information
+    // → butuh izin lihat Delivery Information juga.
+    Route::get('/projects/export-revenue', [DeliveryProjectController::class, 'exportRevenue'])
+        ->name('projects.exportRevenue')
+        ->middleware(['menu:delivery.project', 'menu:delivery-project.delivery-info.view']);
+    // Export global TOP ber-Invoice No (semua project). Data TOP → butuh izin
+    // lihat Delivery Information juga, sama seperti endpoint TOP per project.
+    Route::get('/projects/payment-terms/export-invoiced', [DeliveryProjectPaymentTermController::class, 'exportInvoiced'])
+        ->name('projects.paymentTerms.exportInvoiced')
+        ->middleware(['menu:delivery.project', 'menu:delivery-project.delivery-info.view']);
 
     Route::get('/projects', [DeliveryProjectController::class, 'index'])->name('projects.index')->middleware('menu:delivery.project');
     Route::get('/projects/{project}', [DeliveryProjectController::class, 'show'])->name('projects.show')->middleware('menu:delivery.project');
 
-    // Write endpoints per section — dipetakan ke function menu section-nya masing-masing
+    // Write endpoints per section - dipetakan ke function menu section-nya masing-masing
     // supaya sebuah role bisa dibatasi hanya boleh mengedit section tertentu.
     //
     // Konvensi slug: <modul>.<section>.<aksi>
@@ -357,31 +389,39 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::post('/projects/{project}/folder/delete', [DeliveryProjectController::class, 'deleteFolder'])->name('projects.deleteFolder.post');
     });
 
-    // Delivery Information & Delivery Data — dua section terpisah sekarang.
+    // Delivery Information & Delivery Data - dua section terpisah sekarang.
     Route::middleware(['menu:delivery-project.delivery-info.edit', 'project.editable'])->group(function () {
         Route::patch('/projects/{project}/delivery-info', [DeliveryProjectController::class, 'updateDeliveryInfo'])->name('projects.updateDeliveryInfo');
         Route::patch('/projects/{project}/financial-info', [DeliveryProjectController::class, 'updateFinancialInfo'])->name('projects.updateFinancialInfo');
         // Ubah termin TOP yang sudah ada
         Route::put('/projects/{project}/payment-terms/{term}', [DeliveryProjectPaymentTermController::class, 'update'])->name('projects.paymentTerms.update');
+        // Mode penagihan TOP (% dari Revenue ↔ Line Item) & ubah Contract Line Item
+        Route::post('/projects/{project}/top-mode', [DeliveryProjectPaymentTermController::class, 'updateMode'])->name('projects.topMode.update');
+        Route::post('/projects/{project}/contract-line-items/{lineItem}', [DeliveryProjectContractLineItemController::class, 'update'])->name('projects.contractLineItems.update');
     });
 
     Route::middleware(['menu:delivery-project.delivery-data.edit', 'project.editable'])->group(function () {
         Route::patch('/projects/{project}/delivery-data', [DeliveryProjectController::class, 'updateDeliveryData'])->name('projects.updateDeliveryData');
     });
 
-    // Tambah/hapus termin TOP (Term Of Payment) — tampil di dalam section Delivery Information.
+    // Tambah/hapus termin TOP (Term Of Payment) - tampil di dalam section Delivery Information.
     Route::middleware(['menu:delivery-project.delivery-info.manage', 'project.editable'])->group(function () {
         Route::post('/projects/{project}/payment-terms',        [DeliveryProjectPaymentTermController::class, 'store'])->name('projects.paymentTerms.store');
         Route::delete('/projects/{project}/payment-terms/{term}',[DeliveryProjectPaymentTermController::class, 'destroy'])->name('projects.paymentTerms.destroy');
         Route::post('/projects/{project}/payment-terms/{term}/delete',[DeliveryProjectPaymentTermController::class, 'destroy'])->name('projects.paymentTerms.destroy.post');
+        // Contract Line Item (mode TOP Line Item) - tambah/hapus & generate termin berulang
+        Route::post('/projects/{project}/contract-line-items', [DeliveryProjectContractLineItemController::class, 'store'])->name('projects.contractLineItems.store');
+        Route::post('/projects/{project}/contract-line-items/{lineItem}/delete', [DeliveryProjectContractLineItemController::class, 'destroy'])->name('projects.contractLineItems.destroy');
+        Route::post('/projects/{project}/contract-line-items/{lineItem}/generate-schedule', [DeliveryProjectContractLineItemController::class, 'generateSchedule'])->name('projects.contractLineItems.generateSchedule');
     });
 
-    // Term of Payment (TOP) Plan — read-only
+    // Term of Payment (TOP) Plan - read-only
     Route::get('/projects/{project}/payment-terms',         [DeliveryProjectPaymentTermController::class, 'index'])->name('projects.paymentTerms.index')->middleware('menu:delivery-project.delivery-info.view');
+    Route::get('/projects/{project}/payment-terms/export',  [DeliveryProjectPaymentTermController::class, 'export'])->name('projects.paymentTerms.export')->middleware('menu:delivery-project.delivery-info.view');
 
     // Risk Register routes
     //
-    // Pakai `menu.owner:` (bukan `menu:`) — Project Owner dari project ybs boleh
+    // Pakai `menu.owner:` (bukan `menu:`) - Project Owner dari project ybs boleh
     // isi/edit/hapus risk meski role-nya tidak punya slug risk.*. Grant ini
     // TIDAK lintas project: hanya berlaku di project tempat ia jadi owner.
     // Lock project closed (`project.editable`) tetap berlaku untuk semua.
@@ -398,11 +438,16 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // Plan Cost routes
     Route::middleware('menu:delivery-project.plan-cost.view')->group(function () {
         Route::get('/projects/{project}/costs',                                  [DeliveryProjectCostController::class, 'index'])->name('projects.costs.index');
+        Route::get('/projects/{project}/costs/export',                           [DeliveryProjectCostController::class, 'export'])->name('projects.costs.export');
+        Route::get('/projects/{project}/costs/monthly',                          [DeliveryProjectCostController::class, 'monthly'])->name('projects.costs.monthly');
         Route::get('/projects/{project}/costs/{cost}/items',                     [DeliveryProjectCostController::class, 'indexItems'])->name('projects.costs.items.index');
+        Route::get('/projects/{project}/costs/{cost}/releases',                  [DeliveryProjectCostController::class, 'indexReleases'])->name('projects.costs.releases.index');
     });
     Route::middleware(['menu:delivery-project.plan-cost.edit', 'project.editable'])->group(function () {
         Route::put('/projects/{project}/costs/{cost}',                           [DeliveryProjectCostController::class, 'update'])->name('projects.costs.update');
         Route::put('/projects/{project}/costs/{cost}/items/{item}',              [DeliveryProjectCostController::class, 'updateItem'])->name('projects.costs.items.update');
+        // Total release item (langkah 1 modal "Atur Release Cost")
+        Route::put('/projects/{project}/costs/{cost}/release',                   [DeliveryProjectCostController::class, 'updateRelease'])->name('projects.costs.release.update');
     });
     Route::middleware(['menu:delivery-project.plan-cost.manage', 'project.editable'])->group(function () {
         Route::post('/projects/{project}/costs',                                 [DeliveryProjectCostController::class, 'store'])->name('projects.costs.store');
@@ -413,6 +458,10 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::post('/projects/{project}/costs/{cost}/items',                    [DeliveryProjectCostController::class, 'storeItem'])->name('projects.costs.items.store');
         Route::delete('/projects/{project}/costs/{cost}/items/{item}',           [DeliveryProjectCostController::class, 'destroyItem'])->name('projects.costs.items.destroy');
         Route::post('/projects/{project}/costs/{cost}/items/{item}/delete',       [DeliveryProjectCostController::class, 'destroyItem'])->name('projects.costs.items.destroy.post');
+        // Jadwal release bulanan (langkah 2 modal "Atur Release Cost")
+        Route::post('/projects/{project}/costs/{cost}/releases',                 [DeliveryProjectCostController::class, 'storeRelease'])->name('projects.costs.releases.store');
+        Route::delete('/projects/{project}/costs/{cost}/releases/{schedule}',    [DeliveryProjectCostController::class, 'destroyRelease'])->name('projects.costs.releases.destroy');
+        Route::post('/projects/{project}/costs/{cost}/releases/{schedule}/delete', [DeliveryProjectCostController::class, 'destroyRelease'])->name('projects.costs.releases.destroy.post');
     });
 
     // Document management routes
@@ -441,7 +490,7 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // Hapus anggota tim punya slug sendiri (`...team.delete`), terpisah dari
     // `...team.manage` yang kini hanya berarti "boleh menambah".
     Route::middleware(['menu:delivery-project.team.delete', 'project.editable'])->group(function () {
-        // Per baris pivot — satu-satunya cara menghapus anggota vendor, yang
+        // Per baris pivot - satu-satunya cara menghapus anggota vendor, yang
         // tidak punya employee_id.
         Route::delete('/projects/{project}/team-rows/{row}', [DeliveryProjectController::class, 'destroyTeamRow'])->name('projects.team.rows.destroy');
         Route::post('/projects/{project}/team-rows/{row}/delete', [DeliveryProjectController::class, 'destroyTeamRow'])->name('projects.team.rows.destroy.post');
@@ -488,7 +537,7 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     Route::middleware(['menu:delivery-project.wricef.manage', 'project.editable'])->group(function () {
         Route::post('/projects/{project}/wricefs',                  [DeliveryProjectWricefController::class, 'store'])->name('projects.wricefs.store');
         Route::delete('/projects/{project}/wricefs/{wricef}',       [DeliveryProjectWricefController::class, 'destroy'])->name('projects.wricefs.destroy');
-        // Verb DELETE diblokir edge/WAF di production — sediakan jalur POST.
+        // Verb DELETE diblokir edge/WAF di production - sediakan jalur POST.
         Route::post('/projects/{project}/wricefs/{wricef}/delete',  [DeliveryProjectWricefController::class, 'destroy'])->name('projects.wricefs.destroy.post');
     });
 
@@ -500,7 +549,7 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     Route::middleware(['menu:delivery-project.stakeholder.manage', 'project.editable'])->group(function () {
         Route::post('/projects/{project}/stakeholders',                       [DeliveryProjectStakeholderController::class, 'store'])->name('projects.stakeholders.store');
         Route::delete('/projects/{project}/stakeholders/{stakeholder}',       [DeliveryProjectStakeholderController::class, 'destroy'])->name('projects.stakeholders.destroy');
-        // Verb DELETE diblokir edge/WAF di production — sediakan jalur POST.
+        // Verb DELETE diblokir edge/WAF di production - sediakan jalur POST.
         Route::post('/projects/{project}/stakeholders/{stakeholder}/delete',  [DeliveryProjectStakeholderController::class, 'destroy'])->name('projects.stakeholders.destroy.post');
     });
 
@@ -528,11 +577,9 @@ Route::middleware(CheckAuthToken::class)->group(function () {
 
         // Main planning page
         Route::get('/', [DeliveryProjectPlanningController::class, 'show'])->name('show');
-        Route::get('/gantt', [DeliveryProjectPlanningController::class, 'gantt'])->name('gantt');
-        Route::get('/scurve', [DeliveryProjectPlanningController::class, 'scurve'])->name('scurve');
         Route::get('/phases-list', [DeliveryProjectPlanningController::class, 'getPhases'])->name('phases-list');
 
-        // Phase Management — baca butuh Planning View, tulis dipecah edit vs manage
+        // Phase Management - baca butuh Planning View, tulis dipecah edit vs manage
         Route::prefix('phases')->name('phases.')->group(function () {
             Route::get('/', [DeliveryDynamicPhaseController::class, 'index'])->name('index')->middleware('menu:delivery-project.planning.view');
 
@@ -620,7 +667,7 @@ Route::middleware(CheckAuthToken::class)->group(function () {
             Route::post('/', [DeliveryProjectPlanningImportController::class, 'import'])->name('store')->middleware('menu:delivery-project.planning.manage');
         });
 
-        // Reset — wipe the whole planning structure (bad import / major restructure).
+        // Reset - wipe the whole planning structure (bad import / major restructure).
         // POST rather than DELETE: the production edge blocks the DELETE verb.
         Route::prefix('reset')->name('reset.')->middleware('menu:delivery-project.planning.manage')->group(function () {
             Route::get('/preview', [DeliveryProjectPlanningResetController::class, 'preview'])->name('preview');
@@ -634,7 +681,6 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // ==================== TICKET ====================
     Route::prefix('ticket')->name('ticket.')->group(function () {
         Route::get('/', [TicketViewController::class, 'index'])->name('index')->middleware('menu:tickets.inbox');
-        Route::get('/create', [TicketViewController::class, 'create'])->name('create');
         Route::get('/export', [TicketController::class, 'exportToExcel'])->name('export')->middleware('menu:ticket.export');
         Route::get('/consultant-workload', [ConsultantWorkloadController::class, 'index'])->name('consultant-workload')->middleware('menu:ticket.consultant-workload');
         Route::get('/consultant-workload/{id}/export', [ConsultantWorkloadController::class, 'exportTickets'])->name('consultant-workload.export')->middleware('menu:ticket.consultant-workload');
@@ -644,18 +690,18 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::post('/{id}/ai-summary', [\App\Http\Controllers\AiTicketSummaryController::class, 'stream'])
             ->name('ai-summary')
             ->middleware('menu:tickets.inbox');
-        // Tombol "Ask AI" — siapkan/temukan lagi conversation AI Research milik
+        // Tombol "Ask AI" - siapkan/temukan lagi conversation AI Research milik
         // employee ini tentang tiket ini, lalu redirect ke sana. Lihat
         // AiResearchController::openForTicket().
         Route::get('/{id}/ai-research', [\App\Http\Controllers\AiResearchController::class, 'openForTicket'])
             ->name('ai-research')
             ->middleware('menu:tickets.inbox');
-        // Tombol "Export Chat" di headbar room chat — unduh percakapan (tanpa internal note) sebagai PDF.
+        // Tombol "Export Chat" di headbar room chat - unduh percakapan (tanpa internal note) sebagai PDF.
         Route::get('/{id}/export-chat', [TicketMessageController::class, 'exportPdf'])
             ->name('export-chat')
             ->middleware('menu:ticket.export-chat');
         // Buka tiket berdasarkan NOMOR tiket (bukan id). Dipakai hyperlink "#NNNNNNNN"
-        // di internal note — di-resolve ke id lalu redirect ke halaman tiket.
+        // di internal note - di-resolve ke id lalu redirect ke halaman tiket.
         Route::get('/ref/{number}', [TicketViewController::class, 'showByNumber'])->name('ref');
         Route::get('/{id}', [TicketViewController::class, 'show'])->name('show');
     });
@@ -691,6 +737,16 @@ Route::middleware(CheckAuthToken::class)->group(function () {
                 ->name('document-type.index');
         });
 
+        // Flow: pengaturan alur approval. Customer Mandays = flow pertama.
+        Route::prefix('flow')->name('flow.')->group(function () {
+            Route::get('/customer-mandays', [\App\Http\Controllers\CustomerMandaysFlowController::class, 'page'])
+                ->middleware('menu:management.flow.customer-mandays')
+                ->name('customer-mandays.index');
+            Route::post('/customer-mandays', [\App\Http\Controllers\CustomerMandaysFlowController::class, 'sync'])
+                ->middleware('menu:management.flow.customer-mandays')
+                ->name('customer-mandays.sync');
+        });
+
         Route::prefix('delivery')->name('delivery.')->group(function () {
             Route::get('/project', [\App\Http\Controllers\DeliveryProjectTypeController::class, 'page'])
                 ->middleware('menu:management.delivery.project')
@@ -716,22 +772,25 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     });
 
     // ==================== ATTACHMENT PROXY ====================
-    // Fetch file dari Microsoft Graph on-demand — tidak disimpan lokal
+    // Fetch file dari Microsoft Graph on-demand - tidak disimpan lokal
     Route::get('/attachments/{id}', [AttachmentController::class, 'show'])
         ->name('attachments.show')
         ->where('id', '[0-9]+');
 });
 
-// ==================== ATTACHMENT PROXY — TAUTAN TEAMS ====================
+// ==================== ATTACHMENT PROXY - TAUTAN TEAMS ====================
 // Lampiran internal note yang ikut dikirim ke group chat tiket. Yang membukanya
 // klien Teams milik orang tanpa sesi EcoSystem, jadi route ini SENGAJA di luar
-// grup ber-CheckAuthToken — yang menjaganya middleware `signed`, bukan login.
+// grup ber-CheckAuthToken - yang menjaganya middleware `signed`, bukan login.
 //
 // Tanda tangan = kapabilitas: siapa pun yang memegang tautannya bisa membuka
 // berkasnya. Konsekuensi yang diterima sadar (23 Sep 2026) supaya gambar tetap
 // tampil di riwayat chat. Aksesnya dicatat di AttachmentController.
+// Tanda tangan divalidasi di AttachmentController::showForTeams, bukan lewat
+// middleware `signed`: di belakang proxy produksi request terbaca http://
+// walau tautannya https://, sehingga `signed` menolak semua tautan (gambar
+// rusak di Teams, 11 Nov 2026). Lihat TeamsOutboxService::teamsAttachmentUrl.
 Route::get('/teams/attachments/{id}', [AttachmentController::class, 'showForTeams'])
-    ->middleware('signed')
     ->name('attachments.teams')
     ->where('id', '[0-9]+');
 
@@ -743,10 +802,6 @@ Route::get('/', function () {
     }
     return redirect()->route('login');
 });
-
-// ==================== DELIVERY PLANNING ROUTES ====================
-// Include delivery planning module routes
-require __DIR__ . '/delivery.php';
 
 // ==================== DELIVERY SUPPORT ROUTES ====================
 // Include delivery support module routes

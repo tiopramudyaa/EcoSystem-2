@@ -3,13 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Enums\RoleId;
+use App\Models\Employee;
 use App\Models\Event;
+use App\Support\TimesheetApproval;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class CalendarController extends Controller
 {
+    use \App\Http\Controllers\Concerns\ChecksMenuAccess;
+
     /**
      * Display calendar index view
      */
@@ -37,7 +41,7 @@ class CalendarController extends Controller
 
         // ── Collect ALL role IDs (primary + pivot assignments) ────────────────
         // "Primary" role in session is just whichever pivot row the DB returns
-        // first (no ORDER BY at login) — an employee holding both Delivery
+        // first (no ORDER BY at login) - an employee holding both Delivery
         // Support Head and a lower-id role can end up with the wrong role as
         // "primary". So every check below must look at the full role set, not
         // just $roleId.
@@ -49,31 +53,30 @@ class CalendarController extends Controller
             $allRoleIds = $allRoleIds->merge($pivotRoles)->unique()->map(fn($id) => (int) $id);
         }
 
-        $isHead  = $allRoleIds->intersect(RoleId::HEAD_GROUP)->isNotEmpty()
-                || $allRoleIds->contains(RoleId::DELIVERY_RPMO_HEAD->value)
-                || $allRoleIds->contains(RoleId::EC_ADMINISTRATOR->value);
+        // ── Approval: one permission per timesheet type (Menu Access: timesheet.approve.*) ──
+        // Whoever holds at least one of them gets the approval page, limited to those types.
+        $employee   = $employeeId ? Employee::find($employeeId) : null;
+        $approvable = TimesheetApproval::approvableTypes($employee);
+
+        $isHead  = !empty($approvable);
         $isAdmin = $allRoleIds->contains(RoleId::EC_ADMINISTRATOR->value);
-        $isHoS   = $allRoleIds->contains(RoleId::DELIVERY_SUPPORT_HEAD->value);
+        // Approval of the Support type only = the support spreadsheet layout (the former "Head of Support" view).
+        $isHoS   = $approvable === ['support'];
 
-        // ── Map each role to the timesheet type(s) it allows ─────────────────
-        // Heads and RPMO are locked to their approval domain regardless of extra roles.
-        $headLock = match(true) {
-            $allRoleIds->contains(RoleId::DELIVERY_SUPPORT_HEAD->value) => 'support',
-            $allRoleIds->contains(RoleId::DELIVERY_PROJECT_HEAD->value) => 'project',
-            $allRoleIds->contains(RoleId::DELIVERY_RPMO_HEAD->value)    => 'office',
-            default                                                    => null,
-        };
-
-        if ($headLock !== null) {
-            // Approval roles: single-type lock, no multi-role expansion
-            $lockedType   = $headLock;
-            $allowedTypes = [$headLock];
+        if ($isHead) {
+            // Approvers see exactly the types they may approve or reject.
+            $allowedTypes = $approvable;
+            $lockedType   = count($allowedTypes) === 1 ? $allowedTypes[0] : null;
         } else {
-            // Regular users: compute allowed types from ALL assigned roles
+            // Everyone else logs their own timesheets: allowed types come from ALL assigned roles.
             $typeMap = [
                 RoleId::DELIVERY_SUPPORT_USER->value         => 'support',
                 RoleId::EC_USER->value       => 'office',
                 RoleId::DELIVERY_PROJECT_USER->value => 'project',
+                // Heads without the approval permission still log in their own domain
+                RoleId::DELIVERY_PROJECT_HEAD->value => 'project',
+                RoleId::DELIVERY_SUPPORT_HEAD->value => 'support',
+                RoleId::DELIVERY_RPMO_HEAD->value    => 'office',
                 // Admin and Helpdesk get all types
                 RoleId::EC_ADMINISTRATOR->value            => '*',
                 RoleId::DELIVERY_HELPDESK->value         => '*',
@@ -90,6 +93,12 @@ class CalendarController extends Controller
             $allowedTypes = $grantedAll
                 ? ['project', 'support', 'office']
                 : (count(array_unique($computed)) > 0 ? array_values(array_unique($computed)) : ['project', 'support', 'office']);
+
+            // Non Project timesheets are available wherever Project ones are (same roles), so it
+            // joins the allowed types right after 'project'.
+            if (in_array('project', $allowedTypes, true)) {
+                array_splice($allowedTypes, array_search('project', $allowedTypes, true) + 1, 0, ['non_project']);
+            }
 
             // Lock only when exactly one type is allowed
             $lockedType = count($allowedTypes) === 1 ? $allowedTypes[0] : null;
@@ -177,6 +186,14 @@ class CalendarController extends Controller
      */
     public function store(Request $request)
     {
+        // Izin murni dari Role Access (slug calendar.events.create), sama dengan tombol di UI.
+        if (!$this->menuAllowed('calendar.events.create')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create events.',
+            ], 403);
+        }
+
         try {
             $validated = $request->validate([
                 'title' => 'required|string|max:255',

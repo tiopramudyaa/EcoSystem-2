@@ -1,5 +1,5 @@
 {{--
-    Reusable single-line text prompt modal — replaces browser native prompt().
+    Reusable single-line text prompt modal - replaces browser native prompt().
 
     Usage (returns Promise<string|null>, null if cancelled):
         const code = await showPrompt('Enter your 2FA code', 'Verify Identity', { placeholder: '6-digit code', maxLength: 20 });

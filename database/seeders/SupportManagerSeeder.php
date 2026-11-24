@@ -11,7 +11,7 @@ use Carbon\Carbon;
 /**
  * Seeder untuk Delivery Support Manager (atasan dari MO Support team).
  *
- * Idempotent — kalau employee dengan ECI yang sama sudah ada, di-skip.
+ * Idempotent - kalau employee dengan ECI yang sama sudah ada, di-skip.
  * Jalankan dengan:
  *   php artisan db:seed --class=SupportManagerSeeder
  */
@@ -39,13 +39,13 @@ class SupportManagerSeeder extends Seeder
         ];
 
         foreach ($managers as $sm) {
-            // Idempotent — kalau employee sudah ada, masih lengkapi role assignment
+            // Idempotent - kalau employee sudah ada, masih lengkapi role assignment
             // (kasus migrasi lama: employee dibuat tanpa baris employee_role_assignment
             //  sehingga login gagal "no access to EcoSystem").
             $existing = DB::table('employee')->where('eci', $sm['eci'])->first();
             if ($existing) {
                 $this->ensureRoleAssignments((int) $existing->employee_id);
-                $this->command->info("• {$sm['eci']} — {$sm['first_name']} {$sm['last_name']} sudah ada, role assignments dipastikan lengkap.");
+                $this->command->info("• {$sm['eci']} - {$sm['first_name']} {$sm['last_name']} sudah ada, role assignments dipastikan lengkap.");
                 continue;
             }
 
@@ -93,7 +93,7 @@ class SupportManagerSeeder extends Seeder
                     'updated_at'          => Carbon::now(),
                 ]);
 
-                // auth_users — supaya bisa login. Idempotent: hanya insert kalau belum ada.
+                // auth_users - supaya bisa login. Idempotent: hanya insert kalau belum ada.
                 $authExists = DB::table('auth_users')
                     ->where('email', $sm['email'])
                     ->orWhere('username', $sm['eci'])
@@ -112,13 +112,13 @@ class SupportManagerSeeder extends Seeder
                     ]);
                 }
 
-                // employee_role_assignment — wajib supaya login lolos cek
+                // employee_role_assignment - wajib supaya login lolos cek
                 // 'User System Registered' (id=61). Tanpa ini, login dapat 403
                 // "Your account does not have access to EcoSystem".
                 $this->ensureRoleAssignments($employeeId);
 
                 DB::commit();
-                $this->command->info("✓ {$sm['eci']} — {$sm['first_name']} {$sm['last_name']} (Support Manager) created.");
+                $this->command->info("✓ {$sm['eci']} - {$sm['first_name']} {$sm['last_name']} (Support Manager) created.");
 
             } catch (\Throwable $e) {
                 DB::rollBack();
@@ -131,7 +131,7 @@ class SupportManagerSeeder extends Seeder
 
     /**
      * Pastikan employee_role_assignment punya 2 baris: role utama (Support Manager)
-     * dan 'User System Registered' (id=61). Idempotent — skip yang sudah ada.
+     * dan 'User System Registered' (id=61). Idempotent - skip yang sudah ada.
      */
     private function ensureRoleAssignments(int $employeeId): void
     {

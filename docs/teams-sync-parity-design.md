@@ -3,7 +3,7 @@
 > Status: **PEKERJAAN 3 (lampiran arah keluar) SELESAI & TERUJI 23 September
 > 2026.** Pekerjaan 1 dan 2 belum. Dokumen dibuat 23 September 2026.
 > Lanjutan dari [teams-chat-sync-design.md](teams-chat-sync-design.md) yang
-> langkah 0–5 sudah selesai dan kedua arahnya terbukti jalan.
+> langkah 0-5 sudah selesai dan kedua arahnya terbukti jalan.
 > Konfigurasi flow Power Automate: [power-automate/README.md](power-automate/README.md).
 
 ## 1. Yang diminta
@@ -13,9 +13,9 @@ sama". Tiga pekerjaan yang dipilih untuk mengejar itu:
 
 | # | Pekerjaan | Bobot | Nilai |
 |---|---|---|---|
-| 1 | **Edit & hapus arah MASUK** (Teams → EcoSystem) | ringan | tinggi — paling sering terjadi |
-| 2 | **Edit & hapus arah KELUAR** (EcoSystem → Teams) | berat | menengah — terbentur batas platform |
-| 3 | **Lampiran arah KELUAR** (EcoSystem → Teams) | menengah | tinggi — **SUDAH DIKERJAKAN** |
+| 1 | **Edit & hapus arah MASUK** (Teams → EcoSystem) | ringan | tinggi - paling sering terjadi |
+| 2 | **Edit & hapus arah KELUAR** (EcoSystem → Teams) | berat | menengah - terbentur batas platform |
+| 3 | **Lampiran arah KELUAR** (EcoSystem → Teams) | menengah | tinggi - **SUDAH DIKERJAKAN** |
 
 Urutan kerja yang disarankan semula **1 → 3 → 2**; atas permintaan (23 Sep 2026)
 **pekerjaan 3 dikerjakan lebih dulu**, pekerjaan 1 menyusul. Alasan urutan
@@ -30,7 +30,7 @@ aslinya tetap di §7.
 | Berkas (PDF/dokumen) | ⚠️ disimpan sebagai **tautan** SharePoint, diakses lewat proxy EcoSystem | ✅ tautan bertanda tangan ke proxy EcoSystem |
 | Edit | ❌ | ❌ |
 | Hapus | ❌ | ❌ |
-| Reply-thread | ❌ | ❌ (tidak mungkin — §8) |
+| Reply-thread | ❌ | ❌ (tidak mungkin - §8) |
 
 Tanda ❌ pada edit/hapus/reply **bukan bug**: semuanya tercatat di
 [§13 "Di luar scope (sengaja)"](teams-chat-sync-design.md) rancangan sebelumnya.
@@ -38,12 +38,12 @@ Dokumen ini yang mencabut dua di antaranya dari daftar itu.
 
 ## 3. Pagar yang tetap berlaku
 
-Diwarisi utuh dari [§2 rancangan sebelumnya](teams-chat-sync-design.md) — tidak
+Diwarisi utuh dari [§2 rancangan sebelumnya](teams-chat-sync-design.md) - tidak
 ada satu pun yang dilonggarkan oleh pekerjaan ini:
 
 - **`ticket` dan `ticket_message` tidak boleh ditambah kolom.** Keduanya dibagi
   dengan repo JARVIES. Semua metadata Teams tinggal di tabel pendamping
-  (`ticket_teams_chat`, `ticket_message_teams`, `teams_outbox`) — ketiganya milik
+  (`ticket_teams_chat`, `ticket_message_teams`, `teams_outbox`) - ketiganya milik
   repo ini sendiri, jadi bebas diubah.
 - **Byte gambar tidak pernah masuk DB.** Konvensi path `InlineImageService`
   (`ticket-inline-images/{ticket_id}/{uuid}.{ext}`), DB hanya menyimpan path.
@@ -57,7 +57,7 @@ ada satu pun yang dilonggarkan oleh pekerjaan ini:
 
 ---
 
-## 4. Pekerjaan 1 — edit & hapus arah MASUK
+## 4. Pekerjaan 1 - edit & hapus arah MASUK
 
 ### Yang sudah tersedia
 
@@ -71,7 +71,7 @@ Tiga hal membuat pekerjaan ini murah:
 2. **Pemetaan pesan sudah tersimpan.** `ticket_message_teams` memegang
    `teams_message_id` ↔ `ticket_message_id`, unik per `(chat_id, teams_message_id)`.
 3. **`ticket_message` sudah punya `is_deleted`** (boolean, sudah di `$fillable`
-   dan `$casts`) — penghapusan tidak butuh kolom baru di tabel terlarang itu.
+   dan `$casts`) - penghapusan tidak butuh kolom baru di tabel terlarang itu.
 
 ### Kenapa sekarang tidak jalan
 
@@ -88,7 +88,7 @@ Ini bagian terpenting dokumen ini, dan sudah terbukti di lapangan (17 Sep 2026,
 tercatat di migrasi `ticket_message_teams`):
 
 > Pesan bergambar punya `lastModifiedDateTime` **~7 detik sesudah**
-> `createdDateTime` — Teams memproses gambarnya belakangan. Yang terjadi bukan
+> `createdDateTime` - Teams memproses gambarnya belakangan. Yang terjadi bukan
 > edit oleh manusia.
 
 Kalau setiap perubahan `lastModifiedDateTime` diperlakukan sebagai edit, **setiap
@@ -107,18 +107,18 @@ lastEditedDateTime != null  DAN  lastEditedDateTime > yang tersimpan
 
 ### Perubahan yang dibutuhkan
 
-**Migrasi** — kolom baru di `ticket_message_teams` (tabel milik repo ini):
+**Migrasi** - kolom baru di `ticket_message_teams` (tabel milik repo ini):
 
 | Kolom | Tipe | Guna |
 |---|---|---|
 | `teams_last_edited_at` | `dateTime` nullable | pembanding "versi keberapa yang sudah diserap" |
 | `deleted_in_teams_at` | `dateTime` nullable | jejak penghapusan; berguna saat menelusuri kenapa sebuah note hilang |
 
-**`TeamsInboundService::syncChat()`** — ganti `continue` menjadi percabangan:
+**`TeamsInboundService::syncChat()`** - ganti `continue` menjadi percabangan:
 pesan yang id-nya sudah dikenal diperiksa `lastEditedDateTime`-nya; kalau lebih
 baru dari `teams_last_edited_at`, jalankan jalur update.
 
-**Penghapusan** harus ditangani **sebelum** `humanMessages()` membuangnya — kalau
+**Penghapusan** harus ditangani **sebelum** `humanMessages()` membuangnya - kalau
 tidak, pesan terhapus tidak pernah sampai ke logika mana pun. Jalur paling bersih:
 satu lintasan terpisah atas `$all` yang hanya mencari `deletedDateTime` + id yang
 dikenal, dijalankan sebelum penyaringan.
@@ -127,21 +127,21 @@ dikenal, dijalankan sebelum penyaringan.
 
 | Keputusan | Pilihan | Saran |
 |---|---|---|
-| Isi note saat diedit | (a) timpa; (b) timpa + penanda "(diedit di Teams)"; (c) simpan riwayat | **(b)** — timpa supaya isinya benar, penanda supaya orang tidak bingung melihat isi berubah sendiri |
-| Note saat pesannya dihapus | (a) `is_deleted = true`; (b) biarkan + penanda "(dihapus di Teams)" | **(a)** — perlakuan sama dengan note yang dihapus di EcoSystem |
-| Gambar pada pesan yang diedit | (a) unduh ulang, buang baris lama; (b) biarkan gambar lama | **(a)**, tapi hanya kalau daftar `<img>`-nya benar-benar berubah — mengunduh ulang tiap edit teks itu pemborosan |
+| Isi note saat diedit | (a) timpa; (b) timpa + penanda "(diedit di Teams)"; (c) simpan riwayat | **(b)** - timpa supaya isinya benar, penanda supaya orang tidak bingung melihat isi berubah sendiri |
+| Note saat pesannya dihapus | (a) `is_deleted = true`; (b) biarkan + penanda "(dihapus di Teams)" | **(a)** - perlakuan sama dengan note yang dihapus di EcoSystem |
+| Gambar pada pesan yang diedit | (a) unduh ulang, buang baris lama; (b) biarkan gambar lama | **(a)**, tapi hanya kalau daftar `<img>`-nya benar-benar berubah - mengunduh ulang tiap edit teks itu pemborosan |
 | Lampiran tautan pada pesan yang diedit | samakan dengan gambar | ikuti keputusan di atas |
 
 ### Risiko
 
 - **Regresi anti-duplikat.** Penyaring yang dilonggarkan inilah yang selama ini
-  menahan pesan bergambar agar tidak dobel. Uji regresi wajib — lihat §9 butir 1.
+  menahan pesan bergambar agar tidak dobel. Uji regresi wajib - lihat §9 butir 1.
 - **Note yang sudah dibalas orang lalu isinya berubah.** Tidak ada solusi teknis;
   penanda "(diedit di Teams)" adalah mitigasi sosialnya.
 
 ---
 
-## 5. Pekerjaan 2 — edit & hapus arah KELUAR
+## 5. Pekerjaan 2 - edit & hapus arah KELUAR
 
 ### Batas platform: edit/unsend sungguhan TIDAK MUNGKIN
 
@@ -157,14 +157,14 @@ Tiga pagar, semuanya di luar kendali kita:
    **baru**.
 
 Kesimpulannya: yang bisa dikerjakan adalah **pesan susulan**, bukan mengubah
-pesan yang sudah terkirim. Ini harus dikomunikasikan apa adanya ke tim — menjual
+pesan yang sudah terkirim. Ini harus dikomunikasikan apa adanya ke tim - menjual
 ini sebagai "edit tersinkron" akan menimbulkan harapan yang pasti meleset.
 
 ### Bentuk yang disarankan
 
 ```
 Tio Pramudya · EcoSystem (note diperbarui)
-Service sudah up — ternyata masih intermiten di node 2.
+Service sudah up - ternyata masih intermiten di node 2.
 ```
 
 dan untuk penghapusan:
@@ -191,7 +191,7 @@ dengan `kind` ∈ `note` | `meeting` | `edited` | `deleted`. Ini sekaligus merap
 jalur meeting yang sekarang menumpang tanpa penanda jenis.
 
 > Jangan sekadar membuang `unique`-nya. Constraint itu yang menahan note terkirim
-> dua kali kalau jalur antre kebetulan terpanggil ulang — pagar yang masih
+> dua kali kalau jalur antre kebetulan terpanggil ulang - pagar yang masih
 > dibutuhkan, hanya perlu diperhalus.
 
 ### Yang harus diputuskan sebelum koding
@@ -204,7 +204,7 @@ jalur meeting yang sekarang menumpang tanpa penanda jenis.
 
 ---
 
-## 6. Pekerjaan 3 — lampiran arah KELUAR
+## 6. Pekerjaan 3 - lampiran arah KELUAR
 
 > **DIKERJAKAN 23 September 2026.** Jalur A (tautan bertanda tangan) yang
 > dipakai, dengan dua keputusan: **lampiran inline ikut** dan **tautan tanpa
@@ -215,27 +215,27 @@ jalur meeting yang sekarang menumpang tanpa penanda jenis.
 
 | Berkas | Perubahan |
 |---|---|
-| [routes/web.php](../routes/web.php) | route baru `attachments.teams` — **di luar** grup ber-`CheckAuthToken`, dijaga middleware `signed` |
-| [AttachmentController.php](../app/Http/Controllers/AttachmentController.php) | badan `show()` dipindah ke `streamAttachment()`; `show()` (login) dan `showForTeams()` (bertanda tangan) sama-sama memakainya — logika streaming tidak digandakan |
+| [routes/web.php](../routes/web.php) | route baru `attachments.teams` - **di luar** grup ber-`CheckAuthToken`, dijaga middleware `signed` |
+| [AttachmentController.php](../app/Http/Controllers/AttachmentController.php) | badan `show()` dipindah ke `streamAttachment()`; `show()` (login) dan `showForTeams()` (bertanda tangan) sama-sama memakainya - logika streaming tidak digandakan |
 | [TeamsOutboxService.php](../app/Services/Teams/TeamsOutboxService.php) | `attachmentLinks()`, `attachmentHtml()`, `attachmentText()`; `wrap()` kini menerima tambahan HTML dan teks secara terpisah |
 | [config/services.php](../config/services.php) + `.env.example` | `TEAMS_ATTACHMENT_LINK_DAYS` (0 = tanpa batas) |
 
 **Tidak ada perubahan di Power Automate.** Flow 7 tetap mengirim
-`message_html` apa adanya — gambar dan tautan menumpang di field yang sudah
+`message_html` apa adanya - gambar dan tautan menumpang di field yang sudah
 dipakai.
 
 **Kenapa badan note dan blok lampiran dipisah di `wrap()`:** badan note
 di-escape (teks ketikan manusia), blok lampiran tidak (memang HTML). Kalau
 digabung lebih dulu, `<img>` ikut ter-escape dan tampil sebagai teks mentah.
 
-### Hasil uji 23 September 2026 — `<img>` JANGAN dibungkus `<a>`
+### Hasil uji 23 September 2026 - `<img>` JANGAN dibungkus `<a>`
 
 Teams **merender** `<img>` ber-URL eksternal di pesan chat. Tapi itu baru
 ketahuan di percobaan kedua, dan percobaan pertamanya menyesatkan:
 
 | Yang dikirim | Yang terjadi di Teams |
 |---|---|
-| `<a href="URL"><img src="URL"></a>` | **seluruh blok hilang** — bukan gambar rusak, tidak ada bekas apa pun |
+| `<a href="URL"><img src="URL"></a>` | **seluruh blok hilang** - bukan gambar rusak, tidak ada bekas apa pun |
 | `<img src="URL">` + baris URL telanjang | gambar dirender; URL jadi tautan yang bisa diklik |
 
 Blok pertama yang lenyap tanpa jejak sempat disimpulkan sebagai "Teams membuang
@@ -250,7 +250,7 @@ Dua pelajaran lain dari uji yang sama:
    blok HTML-nya dibuang, pesan yang sampai tidak menyisakan petunjuk apa pun
    bahwa note itu punya lampiran.
 2. **Entitas HTML ter-escape dua kali.** Kolom `message` menyimpan hasil
-   `strip_tags`, yang tidak menyentuh entitas — note berisi `->` tersimpan
+   `strip_tags`, yang tidak menyentuh entitas - note berisi `->` tersimpan
    sebagai `-&gt;`, lalu `e()` mengubahnya jadi `-&amp;gt;` di Teams. Diperbaiki
    dengan `html_entity_decode()` sebelum perakitan. Bug ini **sudah ada sejak
    sebelum pekerjaan ini**; baru terlihat karena belum pernah ada note yang
@@ -258,12 +258,86 @@ Dua pelajaran lain dari uji yang sama:
 
 **Yang belum diuji di lingkungan sebenarnya:** gambarnya baru terbukti *dirender*,
 belum terbukti *tampil*, karena uji dilakukan dari `127.0.0.1` yang tidak bisa
-dijangkau klien Teams — yang muncul kotak gambar rusak. Menjalankannya di server
+dijangkau klien Teams - yang muncul kotak gambar rusak. Menjalankannya di server
 yang bisa diakses dari internet semestinya melengkapi yang terakhir ini.
 
 **Jebakan lapangan:** tautan dibangun dari `APP_URL`. Server yang `APP_URL`-nya
 masih `http://localhost` akan mengirim tautan yang tidak bisa dibuka siapa pun,
 dan itu baru ketahuan setelah pesannya terlanjur sampai di grup.
+
+### 6c. Kartu berkas asli Teams - 13 Oktober 2026
+
+> **Sisi EcoSystem selesai dan teruji; cabang flow 7 belum pernah dijalankan.**
+> Diminta supaya berkas dari EcoSystem tampil sama dengan berkas yang
+> dilampirkan orang langsung di Teams. Ini "Jalur B" dari §6b, yang dulu
+> ditunda.
+
+**Kenapa tautan tidak akan pernah jadi kartu:** Teams hanya membuat kartu berkas
+(ikon, nama, pratinjau) untuk berkas yang tinggal di OneDrive/SharePoint dan
+dilampirkan sebagai `contentType: "reference"`. Tautan ke proxy EcoSystem
+selamanya hanya tautan.
+
+**Gambar tidak berubah.** Gambar tetap `<img>` ke proxy bertanda tangan (§6a):
+itu sudah tampil sebagai pratinjau, dan menyalinnya ke OneDrive justru
+mengubahnya jadi kartu berkas.
+
+**Alurnya:**
+
+1. `queue()` - saat note disimpan - hanya mencatat **bahan** di payload antrean
+   (`teams_files`: badan pesan tanpa baris berkas + daftar lampirannya). Tidak
+   ada panggilan ke OneDrive di sini, supaya user tidak ikut menunggu.
+2. `send()` - saat `teams:flush-outbox` - menyalin berkasnya ke OneDrive akun
+   pengirim, membagikan foldernya ke roster grup, lalu menambahkan
+   `graph_message` ke payload dan **menyimpannya** ke baris antrean. Percobaan
+   ulang memakai `graph_message` yang sama.
+3. Flow 7 melihat `graph_message` dan memposting lewat *Send a Microsoft Graph
+   HTTP request*; kalau ditolak, aksi cadangan memposting `message_html`.
+
+| Berkas | Perubahan |
+|---|---|
+| [TeamsFileService.php](../app/Services/Teams/TeamsFileService.php) | baru - folder per tiket, berbagi ke roster, penyalinan, GUID lampiran |
+| [TeamsOutboxService.php](../app/Services/Teams/TeamsOutboxService.php) | `nativeFileBlock()`, `withNativeFiles()`, `graphMessage()` |
+| [OneDriveService.php](../app/Services/OneDriveService.php) | `ensureFolderPath()`, `ensureSubFolder()`, `uploadStream()`, `getItem()`, `grantRead()` |
+| [TicketController.php](../app/Http/Controllers/TicketController.php) | member/PIC baru ikut diberi hak baca folder berkas tiket |
+| migrasi `2026_10_13_000001` | tabel `ticket_teams_file`; kolom `ticket_teams_chat.files_folder_id` |
+| [config/services.php](../config/services.php) + `.env.example` | `TEAMS_SYNC_NATIVE_FILES`, `TEAMS_SYNC_NATIVE_FILE_MAX_MB`, `ONEDRIVE_TEAMS_CHAT_FILES_PATH` |
+| [power-automate/README.md](power-automate/README.md) | flow 7 langkah 3c |
+
+**Keputusan dan alasannya:**
+
+- **Folder sendiri**, susunannya meniru deliverable
+  (`DELIVERY SUPPORT/TEAMS CHAT FILES/{id customer} {NAMA}/TICKETING/{nomor tiket}`), bukan
+  folder `TICKETING`. Folder tiket yang itu dibagikan ke customer; lampiran
+  internal note tidak boleh ikut terlihat.
+- **Izin di folder, bukan per berkas.** Izin folder diwarisi isinya. Roster
+  dibagikan ulang pada tiap kiriman (memberi izin yang sudah ada tidak berakibat
+  apa-apa), dan orang yang ditambahkan ke tiket diberi izin saat itu juga.
+- **Gagal = kembali ke tautan.** Berkas yang gagal disalin ikut sebagai tautan
+  di pesan yang sama; kalau folder tidak bisa dibagikan sama sekali, seluruh
+  note memakai bentuk tautan. Kartu yang tampil tapi tidak bisa dibuka lebih
+  buruk daripada tautan yang jalan.
+- **Kill switch sendiri** (`TEAMS_SYNC_NATIVE_FILES`, default mati), dan
+  menyalakannya sebelum flow diperbarui tetap aman: flow lama hanya mengenal
+  `message_html`.
+
+**Terbukti pada drive sungguhan (13 Okt 2026):** pembuatan folder idempoten,
+unggahan satu potong dan multi-potong (3,2 MB), nama bentrok di-rename (bukan
+ditimpa), GUID terbaca dari eTag, `webDavUrl` tersedia, dan pemberian izin baca
+idempoten. App registration sudah memegang `Files.ReadWrite.All`.
+
+**Belum terbukti - uji ini sebelum dianggap selesai:**
+
+1. Aksi *Send a Microsoft Graph HTTP request* mau memposting ke group chat lewat
+   `/me/chats/{id}/messages` (lihat README flow 7 langkah 3c).
+2. Note berisi **gambar dan berkas sekaligus**: gambarnya ikut di badan pesan
+   Graph sebagai `<img>` ber-URL eksternal. Lewat *Post message* itu terbukti
+   tampil; lewat Graph belum. Kalau gambarnya hilang, jalur perbaikannya
+   mengirim gambar sebagai `hostedContents`.
+3. Anggota yang ditambahkan **setelah** berkas dikirim bisa membuka kartunya.
+
+**Yang dibayar:** berkasnya kini ada di dua tempat (disk EcoSystem dan OneDrive
+akun pengirim). Tabel `ticket_teams_file` mencatat setiap salinan supaya bisa
+dibersihkan; pembersihan otomatisnya belum ada.
 
 ### 6b. Rancangan asli
 
@@ -274,7 +348,7 @@ dan itu baru ketahuan setelah pesannya terlanjur sampai di grup.
 menambahkan satu baris:
 
 ```
-(2 lampiran — lihat tiket)
+(2 lampiran - lihat tiket)
 ```
 
 **Ada utang kecil yang ikut dibereskan di sini.** Sejak baris `nomor → tautan`
@@ -287,22 +361,22 @@ lampirannya benar-benar ikut.
 ### Batasan
 
 Aksi *Post message in a chat or channel* **tidak punya parameter lampiran**. Jadi
-berkasnya tidak bisa dititipkan ke konektor — yang bisa dikirim hanya **tautan**
+berkasnya tidak bisa dititipkan ke konektor - yang bisa dikirim hanya **tautan**
 di dalam badan pesan, atau **gambar** di dalam Adaptive Card. Keduanya menuntut
 URL yang bisa diambil klien Teams **tanpa sesi login EcoSystem**.
 
 ### Dua jalur
 
-**Jalur A — tautan bertanda tangan ke EcoSystem (disarankan).**
+**Jalur A - tautan bertanda tangan ke EcoSystem (disarankan).**
 
 Cerminan dari arah masuk, yang juga menyimpan berkas sebagai tautan, bukan
 salinan. Butuh **route publik bertanda tangan** yang baru: `attachments.show`
 yang sekarang berada **di dalam grup ber-`CheckAuthToken`**
 ([routes/web.php:657](../routes/web.php#L657)), jadi tidak bisa dipakai apa
-adanya — orang di grup Teams akan mendapat layar login. Bentuknya
+adanya - orang di grup Teams akan mendapat layar login. Bentuknya
 `URL::temporarySignedRoute()` dengan masa berlaku terbatas.
 
-**Jalur B — unggah ke SharePoint lewat Graph app-only, kirim tautannya.**
+**Jalur B - unggah ke SharePoint lewat Graph app-only, kirim tautannya.**
 
 Lebih "asli" (berkasnya hidup di tempat yang sama dengan lampiran Teams lain),
 tapi menuntut permission baru (`Files.ReadWrite.All` atau `Sites.ReadWrite.All`),
@@ -313,35 +387,35 @@ satu lokasi penyimpanan yang harus disepakati, dan kebijakan retensinya sendiri.
 
 | Keputusan | Saran |
 |---|---|
-| Masa berlaku tautan | 7–14 hari. Jangan tanpa batas |
+| Masa berlaku tautan | 7-14 hari. Jangan tanpa batas |
 | Gambar: tautan biasa atau Adaptive Card `Image`? | Fase 1 tautan saja; kartu menyusul kalau memang diminta |
 | Ukuran maksimum | Ikuti pagar yang sudah ada (`TEAMS_SYNC_MAX_IMAGE_MB`), atau tetapkan sendiri untuk berkas |
-| Lampiran inline (gambar di badan note) | Fase 1 **lewati** — yang dikirim hanya lampiran non-inline, sama dengan penghitungan sekarang |
+| Lampiran inline (gambar di badan note) | Fase 1 **lewati** - yang dikirim hanya lampiran non-inline, sama dengan penghitungan sekarang |
 
 ### Risiko
 
 - **Tautan bertanda tangan itu kapabilitas, bukan izin.** Siapa pun yang
   meneruskannya bisa membuka berkasnya tanpa akun EcoSystem. Masa berlaku pendek
   adalah mitigasi utamanya; pertimbangkan juga mencatat aksesnya.
-- Grup chat tiket berisi karyawan internal, jadi risikonya menengah — tapi
+- Grup chat tiket berisi karyawan internal, jadi risikonya menengah - tapi
   lampiran tiket bisa memuat data customer.
 
 ---
 
 ## 7. Urutan kerja yang disarankan
 
-1. **Pekerjaan 1 (edit & hapus masuk)** — paling murah, paling sering terpakai,
+1. **Pekerjaan 1 (edit & hapus masuk)** - paling murah, paling sering terpakai,
    dan tidak menyentuh Power Automate sama sekali. Bisa selesai tanpa menunggu
    keputusan siapa pun kecuali empat butir di §4.
-2. **Pekerjaan 3 (lampiran keluar)** — menyelesaikan utang kalimat "lihat tiket"
+2. **Pekerjaan 3 (lampiran keluar)** - menyelesaikan utang kalimat "lihat tiket"
    sekaligus. Butuh satu route baru dan satu keputusan keamanan.
-3. **Pekerjaan 2 (edit & hapus keluar)** — terakhir, karena hasilnya paling tidak
+3. **Pekerjaan 2 (edit & hapus keluar)** - terakhir, karena hasilnya paling tidak
    memuaskan (susulan, bukan edit sungguhan) dan menuntut perubahan constraint
    `teams_outbox` yang sebaiknya dilakukan saat dua pekerjaan lain sudah stabil.
 
 ## 8. Yang TETAP di luar scope
 
-- **Reply-thread dua arah.** Arah masuk sebenarnya murah — `messageReference`
+- **Reply-thread dua arah.** Arah masuk sebenarnya murah - `messageReference`
   sudah tiba di payload (sekarang sengaja dilewati di `fileAttachments()`),
   `ticket_message` sudah punya `reply_to_id`, dan pemetaan id sudah ada di
   `ticket_message_teams`. Tapi arah keluar **tidak mungkin**: group chat Teams
@@ -354,7 +428,7 @@ satu lokasi penyimpanan yang harus disepakati, dan kebijakan retensinya sendiri.
 
 ## 9. Uji yang harus lulus sebelum dianggap selesai
 
-**Regresi — wajib, ini yang paling mudah rusak:**
+**Regresi - wajib, ini yang paling mudah rusak:**
 
 1. Pesan **bergambar** dari Teams → tunggu **dua** putaran polling penuh → tetap
    satu note, satu baris `TicketAttachment`, gambar tampil di gelembung tiket.
@@ -382,4 +456,4 @@ satu lokasi penyimpanan yang harus disepakati, dan kebijakan retensinya sendiri.
 | [TicketMessageTeams.php](../app/Models/TicketMessageTeams.php) | jembatan id; `existingIds()` yang perlu diperluas |
 | [TeamsOutboxItem.php](../app/Models/TeamsOutboxItem.php) | antrean; constraint `unique(ticket_message_id)` |
 | [AttachmentController.php](../app/Http/Controllers/AttachmentController.php) | `streamSharePointFile()` sebagai contoh proxy yang sudah ada |
-| [routes/web.php](../routes/web.php) | `attachments.show` (baris 657) — di dalam grup ber-auth |
+| [routes/web.php](../routes/web.php) | `attachments.show` (baris 657) - di dalam grup ber-auth |

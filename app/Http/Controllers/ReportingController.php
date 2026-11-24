@@ -26,9 +26,22 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Controllers\Concerns\ChecksMenuAccess;
 
 class ReportingController extends Controller
 {
+    use ChecksMenuAccess;
+
+    /**
+     * Batasan filter periode Collection Outlook (project & support). Dipakai juga oleh
+     * dropdown tahun & validasi klien di view, jadi server dan UI selalu sinkron.
+     * Rentang yang melewati batas ditolak dengan pesan jelas (bukan dipotong diam-diam
+     * seperti batas 36 bulan sebelumnya).
+     */
+    public const COLLECTION_OUTLOOK_PAST_YEARS   = 3;   // tahun ke belakang dari tahun berjalan
+    public const COLLECTION_OUTLOOK_FUTURE_YEARS = 15;  // tahun ke depan (kontrak s/d 2030+)
+    public const COLLECTION_OUTLOOK_MAX_MONTHS   = 240; // maks kolom bulan (20 tahun)
+
     // ── Web: Reporting page ───────────────────────────────────────────────
 
     public function index()
@@ -46,7 +59,7 @@ class ReportingController extends Controller
     public function currentPeriod()
     {
         try {
-            // The globally-open period (as RPMO's period management sees it) — not
+            // The globally-open period (as RPMO's period management sees it) - not
             // just "whatever month today's date falls in". RPMO can reopen an older
             // period (e.g. for late corrections) while the calendar-current month has
             // never been opened; the badge must reflect the former, not the latter.
@@ -85,7 +98,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Close period (legacy endpoint — delegates to PeriodService) ─────
+    // ── API: Close period (legacy endpoint - delegates to PeriodService) ─────
 
     public function closePeriod(Request $request)
     {
@@ -93,11 +106,11 @@ class ReportingController extends Controller
             $sessionUser = SessionUser::fromSession(session('user'));
             $employeeId  = $sessionUser->id;
 
-            // Only RPMO can close globally via the new system
-            if (!$sessionUser->hasRole(RoleId::DELIVERY_RPMO_HEAD->value)) {
+            // Menutup periode global kini dikelola dari Period Management dan memakai izin yang sama.
+            if (!$this->menuAllowed('rpmo.periods.manage-global')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Period closing is now managed from the Period Management page (RPMO only).',
+                    'message' => 'Period closing is managed from the Period Management page and needs its global permission.',
                 ], 403);
             }
 
@@ -108,7 +121,7 @@ class ReportingController extends Controller
 
             /** @var PeriodService $svc */
             $svc = app(PeriodService::class);
-            $svc->closeGlobal($period, $employeeId, RoleId::DELIVERY_RPMO_HEAD->value);
+            $svc->closeGlobal($period, $employeeId, (int) session('user.role.id'));
 
             return response()->json([
                 'success' => true,
@@ -152,8 +165,8 @@ class ReportingController extends Controller
                     DB::raw('COALESCE(timesheets.md_consumed, 0) as md_consumed')
                 );
 
-            $allowed = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-            if (!$sessionUser->hasAnyRole($allowed)) {
+            // Melihat entri semua orang = izin menu reporting.validation.view-all; selain itu hanya entri sendiri.
+            if (!$this->menuAllowed('reporting.validation.view-all')) {
                 $query->where('timesheets.employee_id', $currentEmployeeId);
             }
 
@@ -168,24 +181,7 @@ class ReportingController extends Controller
             $ticketIds = $rows->pluck('ticket_id')->unique()->values();
             $jatahMap  = []; // keyed as "ticketId_employeeId"
             if ($ticketIds->isNotEmpty()) {
-                $latestCMs = ConsultantMandays::whereIn('ticket_id', $ticketIds)
-                    ->where('status', 'approved')
-                    ->orderBy('approved_at', 'desc')
-                    ->get()
-                    ->groupBy('ticket_id')
-                    ->map(fn($g) => $g->first());
-
-                $cmIdToTicketId = $latestCMs->mapWithKeys(fn($cm) => [$cm->id => $cm->ticket_id]);
-
-                ConsultantMandaysDetail::whereIn('consultant_mandays_id', $cmIdToTicketId->keys())
-                    ->get()
-                    ->each(function ($detail) use (&$jatahMap, $cmIdToTicketId) {
-                        $ticketId = $cmIdToTicketId[$detail->consultant_mandays_id] ?? null;
-                        if ($ticketId) {
-                            $jatahMap[$ticketId . '_' . $detail->employee_id] =
-                                round((float)($detail->approved_mandays ?? 0) + (float)($detail->approved_additional ?? 0), 2);
-                        }
-                    });
+                $jatahMap = ConsultantMandaysDetail::approvedQuotas($ticketIds);
             }
 
             // Pre-load consumed from BEFORE the date range so the running total carries over
@@ -257,10 +253,9 @@ class ReportingController extends Controller
     {
         try {
             $sessionUser = SessionUser::fromSession(session('user'));
-            $allowed     = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
 
-            if (!$sessionUser->hasAnyRole($allowed)) {
-                abort(403, 'Access denied. Only Admins and Head of Support can export reports.');
+            if (!$this->menuAllowed('reporting.export-excel')) {
+                abort(403, 'Access denied. You do not have export permission for this report.');
             }
 
             // Column filters passed from the browser view
@@ -279,6 +274,11 @@ class ReportingController extends Controller
                 ->whereIn('timesheets.status', ['draft', 'submitted', 'approved'])
                 ->whereNotNull('timesheets.ticket_id')
                 ->whereNull('timesheets.deleted_at');
+
+            // Sama seperti halamannya: tanpa izin view-all, ekspor hanya berisi entri sendiri.
+            if (!$this->menuAllowed('reporting.validation.view-all')) {
+                $query->where('timesheets.employee_id', $sessionUser->id);
+            }
 
             if ($filterEmployee !== '') {
                 $query->whereRaw(
@@ -318,24 +318,7 @@ class ReportingController extends Controller
             $ticketIds = $rows->pluck('ticket_id')->unique()->values();
             $jatahMap  = []; // keyed as "ticketId_employeeId"
             if ($ticketIds->isNotEmpty()) {
-                $latestCMs = ConsultantMandays::whereIn('ticket_id', $ticketIds)
-                    ->where('status', 'approved')
-                    ->orderBy('approved_at', 'desc')
-                    ->get()
-                    ->groupBy('ticket_id')
-                    ->map(fn($g) => $g->first());
-
-                $cmIdToTicketId = $latestCMs->mapWithKeys(fn($cm) => [$cm->id => $cm->ticket_id]);
-
-                ConsultantMandaysDetail::whereIn('consultant_mandays_id', $cmIdToTicketId->keys())
-                    ->get()
-                    ->each(function ($detail) use (&$jatahMap, $cmIdToTicketId) {
-                        $ticketId = $cmIdToTicketId[$detail->consultant_mandays_id] ?? null;
-                        if ($ticketId) {
-                            $jatahMap[$ticketId . '_' . $detail->employee_id] =
-                                round((float)($detail->approved_mandays ?? 0) + (float)($detail->approved_additional ?? 0), 2);
-                        }
-                    });
+                $jatahMap = ConsultantMandaysDetail::approvedQuotas($ticketIds);
             }
 
             // Calculate running totals ASC (chronological), then reverse to newest-first
@@ -374,7 +357,7 @@ class ReportingController extends Controller
                 ];
             });
 
-            // Apply md_status filter (computed field — must filter after running totals)
+            // Apply md_status filter (computed field - must filter after running totals)
             if ($filterMdStatus !== '') {
                 $exportRows = $exportRows->filter(fn($r) => $r['status'] === $filterMdStatus);
             }
@@ -417,7 +400,7 @@ class ReportingController extends Controller
                 ->whereNotNull('delivery_support_id')
                 ->select('ticket_id', 'delivery_support_id')
                 ->get()
-                ->unique('ticket_id'); // one Delivery Support per ticket — first match wins
+                ->unique('ticket_id'); // one Delivery Support per ticket - first match wins
 
             $supportNames = DeliverySupport::whereIn('id', $activities->pluck('delivery_support_id')->unique())
                 ->pluck('name', 'id');
@@ -440,10 +423,8 @@ class ReportingController extends Controller
         $sessionUser = session('user');
         if (!$sessionUser) return redirect()->route('login');
 
-        $roleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-        $allowed = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-        if (empty(array_intersect($roleIds, $allowed))) {
-            abort(403, 'Access denied. Only Admins and Head of Support can view the MD recap.');
+        if (!$this->menuAllowed('reporting.md-recap')) {
+            abort(403, 'Access denied. You do not have access to the MD recap.');
         }
 
         return view('reporting.md-recap', ['user' => $sessionUser]);
@@ -454,11 +435,7 @@ class ReportingController extends Controller
     public function mdRecap(Request $request)
     {
         try {
-            $sessionUser   = session('user');
-            $currentRoleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-            $allowed        = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-
-            if (empty(array_intersect($currentRoleIds, $allowed))) {
+            if (!$this->menuAllowed('reporting.md-recap')) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
 
@@ -521,12 +498,8 @@ class ReportingController extends Controller
     public function exportMdRecap(Request $request)
     {
         try {
-            $sessionUser   = session('user');
-            $currentRoleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-            $allowed        = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-
-            if (empty(array_intersect($currentRoleIds, $allowed))) {
-                abort(403, 'Access denied. Only Admins and Head of Support can export the MD recap.');
+            if (!$this->menuAllowed('reporting.md-recap')) {
+                abort(403, 'Access denied. You do not have access to export the MD recap.');
             }
 
             $filterName  = trim($request->input('name', ''));
@@ -606,7 +579,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── Web: MD Recap export (Summary — no Delivery breakdown) ─────────────
+    // ── Web: MD Recap export (Summary - no Delivery breakdown) ─────────────
 
     /**
      * Same filters/access as exportMdRecap(), but grouped by employee + mode
@@ -618,12 +591,8 @@ class ReportingController extends Controller
     public function exportMdRecapSummary(Request $request)
     {
         try {
-            $sessionUser   = session('user');
-            $currentRoleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-            $allowed        = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-
-            if (empty(array_intersect($currentRoleIds, $allowed))) {
-                abort(403, 'Access denied. Only Admins and Head of Support can export the MD recap.');
+            if (!$this->menuAllowed('reporting.md-recap')) {
+                abort(403, 'Access denied. You do not have access to export the MD recap.');
             }
 
             $filterName  = trim($request->input('name', ''));
@@ -699,10 +668,7 @@ class ReportingController extends Controller
     public function exportResolutionDays(Request $request)
     {
         try {
-            $sessionUser   = session('user');
-            $currentRoleId = isset($sessionUser['role']['id']) ? (int) $sessionUser['role']['id'] : null;
-
-            if (!in_array($currentRoleId, [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value])) {
+            if (!$this->menuAllowed('reporting.resolution-days')) {
                 abort(403, 'Access denied.');
             }
 
@@ -752,7 +718,7 @@ class ReportingController extends Controller
 
             $exportRows = $rows->map(function ($r) {
                 $isApproved = $r->proposal_status === 'approved';
-                // Before Head approval there's nothing "approved" yet — fall back to the
+                // Before Head approval there's nothing "approved" yet - fall back to the
                 // raw proposed numbers so pending rows keep showing what they always showed,
                 // instead of suddenly reading as 0.
                 $total = $isApproved
@@ -810,18 +776,20 @@ class ReportingController extends Controller
 
     /**
      * Label tampilan status Customer Mandays untuk report ini. Hanya 5 status
-     * yang relevan — "approved" SENGAJA tidak termasuk: begitu Customer Mandays
+     * yang relevan - "approved" SENGAJA tidak termasuk: begitu Customer Mandays
      * disetujui, tiketnya dianggap selesai tahap proposal dan tidak lagi
      * ditampilkan di report tracking ini (lihat customerMdRows()).
      *
      * "Review by Module Lead" = label untuk status `pending_helpdesk` (proposal
      * sudah disubmit PIC/Ticket Lead, sedang direview sebelum dikirim ke
-     * customer) — penamaan mengikuti istilah yang dipakai user, bukan nama
+     * customer) - penamaan mengikuti istilah yang dipakai user, bukan nama
      * status di database.
      */
     private const CUSTOMER_MD_STATUS_LABELS = [
         'none'             => 'None',
         'pic_draft'        => 'Draft',
+        'pending_approval' => 'Waiting Internal Approval',
+        'rejected'         => 'Rejected',
         'pending_helpdesk' => 'Review by Module Lead',
         'sent_to_chat'     => 'Review by Customer',
         'canceled'         => 'Cancel',
@@ -833,7 +801,7 @@ class ReportingController extends Controller
      *
      * Cakupan: semua tiket yang type-nya Change Request DAN/ATAU sudah punya
      * Customer Mandays proposal (mandays_proposal_status bukan null/none),
-     * KECUALI yang sudah Approved — begitu disetujui, tiketnya keluar dari
+     * KECUALI yang sudah Approved - begitu disetujui, tiketnya keluar dari
      * tracking report ini (lihat CUSTOMER_MD_STATUS_LABELS).
      *
      * @return \Illuminate\Support\Collection<int, array<string, mixed>>
@@ -844,7 +812,7 @@ class ReportingController extends Controller
             ->whereNull('deleted_at')
             ->whereNull('is_hidden')
             ->where(function ($q) {
-                // "Punya Customer Mandays" berarti statusnya bukan 'none' — kolom ini
+                // "Punya Customer Mandays" berarti statusnya bukan 'none' - kolom ini
                 // TIDAK PERNAH benar-benar NULL di DB (defaultnya string 'none'), jadi
                 // whereNotNull() di sini akan salah menangkap SEMUA tiket. whereNull()
                 // tetap disertakan sebagai jaga-jaga kalau skema kolom berubah nullable.
@@ -864,7 +832,7 @@ class ReportingController extends Controller
         $ticketIds = $tickets->pluck('ticket_id');
 
         // Satu tiket cuma bisa punya satu Delivery Support aktif (lihat
-        // [[project_changes_2026_07_02]] — aturan "one-DS-per-ticket").
+        // [[project_changes_2026_07_02]] - aturan "one-DS-per-ticket").
         $deliveryMap = DeliverySupportActivity::with('deliverySupport')
             ->whereIn('ticket_id', $ticketIds)
             ->whereNotNull('ticket_id')
@@ -872,7 +840,7 @@ class ReportingController extends Controller
             ->keyBy('ticket_id');
 
         // Latest version's proposed total per ticket (a ticket can have several
-        // draft/revision versions — only the newest one reflects the current proposal).
+        // draft/revision versions - only the newest one reflects the current proposal).
         $mandaysMap = CustomerMandays::whereIn('ticket_id', $ticketIds)
             ->orderByDesc('version')
             ->get()
@@ -889,7 +857,7 @@ class ReportingController extends Controller
                 'ticket_type'   => $ticket->ticket_type,
                 'customer_name' => $ticket->customer?->basicData?->name_1 ?? $ticket->customer?->email,
                 'delivery_name' => $deliveryMap->get($ticket->ticket_id)?->deliverySupport?->name,
-                // ?: null (bukan cuma ?? null) — trim() bisa hasilkan '' kalau ticketLead
+                // ?: null (bukan cuma ?? null) - trim() bisa hasilkan '' kalau ticketLead
                 // ada tapi basicData-nya kosong; '' ?? 'Unassigned' di CustomerMdExport
                 // tidak akan trigger karena '' bukan null, jadi harus dinormalisasi di sini.
                 'lead_name'     => $ticket->ticketLead
@@ -958,10 +926,8 @@ class ReportingController extends Controller
         $sessionUser = session('user');
         if (!$sessionUser) return redirect()->route('login');
 
-        $roleIds = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-        $allowed = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-        if (empty(array_intersect($roleIds, $allowed))) {
-            abort(403, 'Access denied. Only Admins and Head of Support can view Resolution Days.');
+        if (!$this->menuAllowed('reporting.resolution-days')) {
+            abort(403, 'Access denied. You do not have access to Resolution Days.');
         }
 
         return view('reporting.resolution-days', ['user' => $sessionUser]);
@@ -969,17 +935,13 @@ class ReportingController extends Controller
 
     // ── API: Resolution Days (unapproved) list ─────────────────────────────
     // Tickets whose resolution_days_status is 'none' (never proposed) or
-    // 'pending_head' (submitted, awaiting Head approval) — i.e. everything
+    // 'pending_head' (submitted, awaiting Head approval) - i.e. everything
     // that isn't approved/rejected/draft yet, across all tickets company-wide.
 
     public function resolutionDays(Request $request)
     {
         try {
-            $sessionUser = session('user');
-            $roleIds     = array_map('intval', $sessionUser['role_ids'] ?? [$sessionUser['role']['id'] ?? 0]);
-            $allowed     = [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_HEAD->value];
-
-            if (empty(array_intersect($roleIds, $allowed))) {
+            if (!$this->menuAllowed('reporting.resolution-days')) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
 
@@ -1070,27 +1032,17 @@ class ReportingController extends Controller
                 return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
             }
 
-            $fromMonth = (int) $request->input('from_month', now()->month);
-            $fromYear  = (int) $request->input('from_year',  now()->year);
-            $toMonth   = (int) $request->input('to_month',   now()->month);
-            $toYear    = (int) $request->input('to_year',    now()->year);
-
-            // Guard bulan agar valid 1..12
-            $fromMonth = min(max($fromMonth, 1), 12);
-            $toMonth   = min(max($toMonth, 1), 12);
-
-            $start = Carbon::create($fromYear, $fromMonth, 1)->startOfMonth();
-            $end   = Carbon::create($toYear,  $toMonth,  1)->startOfMonth();
-            if ($start->gt($end)) {
-                [$start, $end] = [$end, $start];
+            [$start, $end, $rangeError] = $this->collectionOutlookRange($request);
+            if ($rangeError) {
+                return response()->json(['success' => false, 'message' => $rangeError], 422);
             }
 
-            // Bangun daftar kolom bulan (batasi maks 36 bulan agar tabel wajar)
+            // Bangun daftar kolom bulan (rentang sudah divalidasi ≤ MAX_MONTHS; guard hanya pengaman).
             $months    = [];
             $monthKeys = [];
             $cursor    = $start->copy();
             $guard     = 0;
-            while ($cursor->lte($end) && $guard < 36) {
+            while ($cursor->lte($end) && $guard < self::COLLECTION_OUTLOOK_MAX_MONTHS) {
                 $key         = $cursor->format('Y-m');
                 $months[]    = [
                     'key'         => $key,
@@ -1107,25 +1059,23 @@ class ReportingController extends Controller
             // Filter opsional berdasarkan Account Executive (nama AE di project).
             $filterAe = trim((string) $request->input('ae', ''));
 
-            $terms = DB::table('delivery_project_payment_terms as pt')
-                ->join('delivery_projects as p', 'pt.delivery_projects_id', '=', 'p.id')
-                ->leftJoin('customer_basic_data as cbd', 'p.client_id', '=', 'cbd.customer_id')
-                ->when($filterAe !== '', fn($q) => $q->where('p.ae_name', $filterAe))
-                ->select(
-                    'pt.*',
-                    'p.name as project_name',
-                    'p.io_number as io_number',
-                    'p.ae_name as ae_name',
-                    'p.revenue as project_revenue',
-                    DB::raw("COALESCE(cbd.name_1, '') as client_name")
-                )
-                ->get();
+            $terms = $this->collectionOutlookTerms($filterAe);
 
-            $rows = [];
+            $rows    = [];
+            $undated = [];
             foreach ($terms as $t) {
                 $placementRaw = $t->estimated_date ?: $t->paid_date ?: $t->submit_invoice_date;
                 if (!$placementRaw) {
-                    continue; // tanpa tanggal → tidak bisa ditempatkan di kolom bulan
+                    // Tanpa tanggal → tidak bisa ditempatkan di kolom bulan. Dilaporkan
+                    // terpisah supaya user tahu TOP mana yang belum masuk outlook.
+                    $undated[] = [
+                        'project_id'   => (int) $t->delivery_projects_id,
+                        'project_name' => $t->project_name ?? '-',
+                        'term_number'  => (int) $t->term_number,
+                        'payment_term' => $t->payment_term,
+                        'amount'       => \App\Models\DeliveryProjectPaymentTerm::amountFor($t->basis, $t->payment_percentage, $t->amount, $t->project_revenue),
+                    ];
+                    continue;
                 }
 
                 $key = Carbon::parse($placementRaw)->format('Y-m');
@@ -1142,13 +1092,17 @@ class ReportingController extends Controller
                     'term_id'             => (int) $t->id,
                     'term_number'         => (int) $t->term_number,
                     'month_key'           => $key,
-                    // Amount = nilai turunan (revenue x % / 100). Dihitung ulang di sini
-                    // supaya laporan tidak ikut menampilkan nilai tersimpan yang basi
-                    // (term yang dibuat sebelum revenue diisi tersimpan 0).
-                    'amount'              => round(((float) $t->project_revenue) * ((float) $t->payment_percentage) / 100, 2),
+                    // Amount basis % = nilai turunan (revenue x % / 100), dihitung ulang di
+                    // sini supaya laporan tidak ikut menampilkan nilai tersimpan yang basi
+                    // (term yang dibuat sebelum revenue diisi tersimpan 0). Basis Contract
+                    // Line Item (fixed / % of line item) memakai nilai tersimpan, yang
+                    // selalu disinkronkan ke nilai line item (ProjectTopPlan).
+                    'amount'              => \App\Models\DeliveryProjectPaymentTerm::amountFor($t->basis, $t->payment_percentage, $t->amount, $t->project_revenue),
                     'status'              => $t->status,
                     'payment_term'        => $t->payment_term,
-                    'payment_percentage'  => (float) $t->payment_percentage,
+                    'payment_percentage'  => $t->basis === 'fixed' ? null : (float) $t->payment_percentage,
+                    'basis'               => $t->basis,
+                    'line_item_name'      => $t->line_item_name,
                     'requirements'        => $t->requirements,
                     'estimated_date'      => $t->estimated_date ? Carbon::parse($t->estimated_date)->format('d M Y') : null,
                     'submit_invoice_date' => $t->submit_invoice_date ? Carbon::parse($t->submit_invoice_date)->format('d M Y') : null,
@@ -1177,10 +1131,16 @@ class ReportingController extends Controller
                 ->pluck('ae_name')
                 ->values();
 
+            usort($undated, function ($a, $b) {
+                $c = strcasecmp($a['project_name'], $b['project_name']);
+                return $c !== 0 ? $c : ($a['term_number'] <=> $b['term_number']);
+            });
+
             return response()->json([
                 'success'    => true,
                 'months'     => $months,
                 'rows'       => $rows,
+                'undated'    => $undated,
                 'ae_options' => $aeOptions,
             ]);
 
@@ -1190,7 +1150,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Collection Outlook — ubah status penagihan sebuah TOP ────────
+    // ── API: Collection Outlook - ubah status penagihan sebuah TOP ────────
     //
     // Hanya menyentuh field pelunasan (status, paid date, submit invoice date,
     // invoice number). Nominal/percentage tetap dikelola dari Delivery Info
@@ -1211,13 +1171,15 @@ class ReportingController extends Controller
             }
 
             $validated = $request->validate([
-                'status'              => 'required|string|in:Open,Paid,Delay',
-                // Konsisten dengan TOP Plan di Delivery Info: Paid wajib punya tanggal.
+                'status'              => ['required', 'string', \Illuminate\Validation\Rule::in(\App\Models\DeliveryProjectPaymentTerm::STATUSES)],
+                // Konsisten dengan TOP Plan di Delivery Info: Paid wajib punya tanggal,
+                // Invoiced wajib punya Submit Invoice Date.
                 'paid_date'           => 'nullable|required_if:status,Paid|date',
-                'submit_invoice_date' => 'nullable|date',
+                'submit_invoice_date' => 'nullable|required_if:status,Invoiced|date',
                 'invoice_number'      => 'nullable|required_with:submit_invoice_date|string|max:255',
             ], [
-                'paid_date.required_if'        => 'Paid Date is required when Status is Paid.',
+                'paid_date.required_if'           => 'Paid Date is required when Status is Paid.',
+                'submit_invoice_date.required_if' => 'Submit Invoice Date is required when Status is Invoiced.',
                 'invoice_number.required_with' => 'Invoice Number is required when Submit Invoice Date is filled.',
             ]);
 
@@ -1255,7 +1217,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── Web: Collection Outlook — Excel export (list rincian per termin) ──────
+    // ── Web: Collection Outlook - Excel export (list rincian per termin) ──────
     //
     // Satu baris per Term Of Payment dalam range bulan terpilih (placement =
     // estimated_date → paid_date → submit_invoice_date, sama seperti tampilan).
@@ -1274,40 +1236,22 @@ class ReportingController extends Controller
                 abort(403, 'Access denied.');
             }
 
-            $fromMonth = min(max((int) $request->input('from_month', now()->month), 1), 12);
-            $fromYear  = (int) $request->input('from_year',  now()->year);
-            $toMonth   = min(max((int) $request->input('to_month',   now()->month), 1), 12);
-            $toYear    = (int) $request->input('to_year',    now()->year);
-            $filterAe  = trim((string) $request->input('ae', ''));
-
-            $start = Carbon::create($fromYear, $fromMonth, 1)->startOfMonth();
-            $end   = Carbon::create($toYear,  $toMonth,  1)->startOfMonth();
-            if ($start->gt($end)) {
-                [$start, $end] = [$end, $start];
+            [$start, $end, $rangeError] = $this->collectionOutlookRange($request);
+            if ($rangeError) {
+                return back()->with('error', $rangeError);
             }
+            $filterAe  = trim((string) $request->input('ae', ''));
 
             $monthKeys = [];
             $cursor    = $start->copy();
             $guard     = 0;
-            while ($cursor->lte($end) && $guard < 36) {
+            while ($cursor->lte($end) && $guard < self::COLLECTION_OUTLOOK_MAX_MONTHS) {
                 $monthKeys[] = $cursor->format('Y-m');
                 $cursor->addMonth();
                 $guard++;
             }
 
-            $terms = DB::table('delivery_project_payment_terms as pt')
-                ->join('delivery_projects as p', 'pt.delivery_projects_id', '=', 'p.id')
-                ->leftJoin('customer_basic_data as cbd', 'p.client_id', '=', 'cbd.customer_id')
-                ->when($filterAe !== '', fn($q) => $q->where('p.ae_name', $filterAe))
-                ->select(
-                    'pt.*',
-                    'p.name as project_name',
-                    'p.io_number as io_number',
-                    'p.ae_name as ae_name',
-                    'p.revenue as project_revenue',
-                    DB::raw("COALESCE(cbd.name_1, '') as client_name")
-                )
-                ->get();
+            $terms = $this->collectionOutlookTerms($filterAe);
 
             $rows = [];
             foreach ($terms as $t) {
@@ -1327,11 +1271,11 @@ class ReportingController extends Controller
                     'ae_name'             => $t->ae_name ?: '-',
                     'term_number'         => (int) $t->term_number,
                     'payment_term'        => $t->payment_term ?: '-',
-                    'payment_percentage'  => (float) $t->payment_percentage,
-                    // Amount = nilai turunan (revenue x % / 100). Dihitung ulang di sini
-                    // supaya laporan tidak ikut menampilkan nilai tersimpan yang basi
-                    // (term yang dibuat sebelum revenue diisi tersimpan 0).
-                    'amount'              => round(((float) $t->project_revenue) * ((float) $t->payment_percentage) / 100, 2),
+                    'line_item_name'      => $t->line_item_name ?: '',
+                    'payment_percentage'  => $t->basis === 'fixed' ? null : (float) $t->payment_percentage,
+                    'basis'               => $t->basis,
+                    // Sama dengan tampilan halaman - lihat collectionOutlook().
+                    'amount'              => \App\Models\DeliveryProjectPaymentTerm::amountFor($t->basis, $t->payment_percentage, $t->amount, $t->project_revenue),
                     'status'              => $t->status,
                     'estimated_date'      => $t->estimated_date ? Carbon::parse($t->estimated_date)->format('d M Y') : '',
                     'submit_invoice_date' => $t->submit_invoice_date ? Carbon::parse($t->submit_invoice_date)->format('d M Y') : '',
@@ -1355,8 +1299,70 @@ class ReportingController extends Controller
         }
     }
 
+    /**
+     * Parse & validasi filter periode Collection Outlook (project & support, halaman & export).
+     * Return [Carbon $start, Carbon $end, null] bila valid, atau [null, null, string $error]
+     * berisi alasan penolakan yang siap ditampilkan ke user.
+     */
+    private function collectionOutlookRange(Request $request): array
+    {
+        $minYear = now()->year - self::COLLECTION_OUTLOOK_PAST_YEARS;
+        $maxYear = now()->year + self::COLLECTION_OUTLOOK_FUTURE_YEARS;
+
+        $input = [
+            'From' => [$request->input('from_month', now()->month), $request->input('from_year', now()->year)],
+            'To'   => [$request->input('to_month', now()->month), $request->input('to_year', now()->year)],
+        ];
+
+        $dates = [];
+        foreach ($input as $label => [$month, $year]) {
+            if (!is_numeric($month) || (int) $month < 1 || (int) $month > 12) {
+                return [null, null, "Invalid {$label} month \"{$month}\". Month must be between January (1) and December (12)."];
+            }
+            if (!is_numeric($year) || (int) $year < $minYear || (int) $year > $maxYear) {
+                return [null, null, "{$label} year \"{$year}\" is outside the allowed range. Choose a year between {$minYear} and {$maxYear} ("
+                    . self::COLLECTION_OUTLOOK_PAST_YEARS . ' years back up to ' . self::COLLECTION_OUTLOOK_FUTURE_YEARS . ' years ahead).'];
+            }
+            $dates[$label] = Carbon::create((int) $year, (int) $month, 1)->startOfMonth();
+        }
+
+        [$start, $end] = [$dates['From'], $dates['To']];
+        if ($start->gt($end)) {
+            return [null, null, "From period ({$start->format('M Y')}) is after To period ({$end->format('M Y')}). "
+                . 'Choose a From period that is the same as or earlier than To.'];
+        }
+
+        $monthCount = ($end->year - $start->year) * 12 + ($end->month - $start->month) + 1;
+        if ($monthCount > self::COLLECTION_OUTLOOK_MAX_MONTHS) {
+            return [null, null, "Selected period {$start->format('M Y')} - {$end->format('M Y')} spans {$monthCount} months, exceeding the maximum of "
+                . self::COLLECTION_OUTLOOK_MAX_MONTHS . ' months (' . intdiv(self::COLLECTION_OUTLOOK_MAX_MONTHS, 12) . ' years). Please narrow the period.'];
+        }
+
+        return [$start, $end, null];
+    }
+
+    /** Sumber baris Collection Outlook (halaman & export) - semua TOP project + konteksnya. */
+    private function collectionOutlookTerms(string $filterAe): \Illuminate\Support\Collection
+    {
+        return DB::table('delivery_project_payment_terms as pt')
+            ->join('delivery_projects as p', 'pt.delivery_projects_id', '=', 'p.id')
+            ->leftJoin('customer_basic_data as cbd', 'p.client_id', '=', 'cbd.customer_id')
+            ->leftJoin('delivery_project_contract_line_items as li', 'pt.contract_line_item_id', '=', 'li.id')
+            ->when($filterAe !== '', fn($q) => $q->where('p.ae_name', $filterAe))
+            ->select(
+                'pt.*',
+                'p.name as project_name',
+                'p.io_number as io_number',
+                'p.ae_name as ae_name',
+                'p.revenue as project_revenue',
+                'li.name as line_item_name',
+                DB::raw("COALESCE(cbd.name_1, '') as client_name")
+            )
+            ->get();
+    }
+
     // =========================================================================
-    // COLLECTION OUTLOOK — DELIVERY SUPPORT
+    // COLLECTION OUTLOOK - DELIVERY SUPPORT
     // Mirror halaman Collection Outlook (project) untuk sumber Term Of Payment
     // milik Delivery Support. Filter memakai "Type" support (bukan Account
     // Executive), dan tidak memanggil ProjectReminderService.
@@ -1385,22 +1391,16 @@ class ReportingController extends Controller
                 return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
             }
 
-            $fromMonth = min(max((int) $request->input('from_month', now()->month), 1), 12);
-            $fromYear  = (int) $request->input('from_year',  now()->year);
-            $toMonth   = min(max((int) $request->input('to_month',   now()->month), 1), 12);
-            $toYear    = (int) $request->input('to_year',    now()->year);
-
-            $start = Carbon::create($fromYear, $fromMonth, 1)->startOfMonth();
-            $end   = Carbon::create($toYear,  $toMonth,  1)->startOfMonth();
-            if ($start->gt($end)) {
-                [$start, $end] = [$end, $start];
+            [$start, $end, $rangeError] = $this->collectionOutlookRange($request);
+            if ($rangeError) {
+                return response()->json(['success' => false, 'message' => $rangeError], 422);
             }
 
             $months    = [];
             $monthKeys = [];
             $cursor    = $start->copy();
             $guard     = 0;
-            while ($cursor->lte($end) && $guard < 36) {
+            while ($cursor->lte($end) && $guard < self::COLLECTION_OUTLOOK_MAX_MONTHS) {
                 $key         = $cursor->format('Y-m');
                 $months[]    = [
                     'key'         => $key,
@@ -1417,24 +1417,22 @@ class ReportingController extends Controller
             // Filter opsional berdasarkan Type support (analog filter AE di project).
             $filterType = trim((string) $request->input('type', ''));
 
-            $terms = DB::table('delivery_support_payment_terms as pt')
-                ->join('delivery_support as s', 'pt.delivery_support_id', '=', 's.id')
-                ->leftJoin('customer_basic_data as cbd', 's.client_id', '=', 'cbd.customer_id')
-                ->when($filterType !== '', fn($q) => $q->where('s.type', $filterType))
-                ->select(
-                    'pt.*',
-                    's.name as support_name',
-                    's.io_number as io_number',
-                    's.type as support_type',
-                    's.revenue as support_revenue',
-                    DB::raw("COALESCE(cbd.name_1, '') as client_name")
-                )
-                ->get();
+            $terms = $this->collectionOutlookSupportTerms($filterType);
 
-            $rows = [];
+            $rows    = [];
+            $undated = [];
             foreach ($terms as $t) {
                 $placementRaw = $t->estimated_date ?: $t->paid_date ?: $t->submit_invoice_date;
                 if (!$placementRaw) {
+                    // Tanpa tanggal → tidak bisa ditempatkan di kolom bulan. Dilaporkan
+                    // terpisah supaya user tahu TOP mana yang belum masuk outlook.
+                    $undated[] = [
+                        'support_id'   => (int) $t->delivery_support_id,
+                        'support_name' => $t->support_name ?? '-',
+                        'term_number'  => (int) $t->term_number,
+                        'payment_term' => $t->payment_term,
+                        'amount'       => \App\Models\DeliveryProjectPaymentTerm::amountFor($t->basis, $t->payment_percentage, $t->amount, $t->support_revenue),
+                    ];
                     continue;
                 }
                 $key = Carbon::parse($placementRaw)->format('Y-m');
@@ -1451,13 +1449,17 @@ class ReportingController extends Controller
                     'term_id'             => (int) $t->id,
                     'term_number'         => (int) $t->term_number,
                     'month_key'           => $key,
-                    // Amount = nilai turunan (revenue x % / 100). Dihitung ulang di sini
-                    // supaya laporan tidak ikut menampilkan nilai tersimpan yang basi
-                    // (term yang dibuat sebelum revenue diisi tersimpan 0).
-                    'amount'              => round(((float) $t->support_revenue) * ((float) $t->payment_percentage) / 100, 2),
+                    // Amount basis % = nilai turunan (revenue x % / 100), dihitung ulang di
+                    // sini supaya laporan tidak ikut menampilkan nilai tersimpan yang basi
+                    // (term yang dibuat sebelum revenue diisi tersimpan 0). Basis Contract
+                    // Line Item (fixed / % of line item) memakai nilai tersimpan, yang
+                    // selalu disinkronkan ke nilai line item (SupportTopPlan).
+                    'amount'              => \App\Models\DeliveryProjectPaymentTerm::amountFor($t->basis, $t->payment_percentage, $t->amount, $t->support_revenue),
                     'status'              => $t->status,
                     'payment_term'        => $t->payment_term,
-                    'payment_percentage'  => (float) $t->payment_percentage,
+                    'payment_percentage'  => $t->basis === 'fixed' ? null : (float) $t->payment_percentage,
+                    'basis'               => $t->basis,
+                    'line_item_name'      => $t->line_item_name,
                     'requirements'        => $t->requirements,
                     'estimated_date'      => $t->estimated_date ? Carbon::parse($t->estimated_date)->format('d M Y') : null,
                     'submit_invoice_date' => $t->submit_invoice_date ? Carbon::parse($t->submit_invoice_date)->format('d M Y') : null,
@@ -1482,10 +1484,16 @@ class ReportingController extends Controller
                 ->pluck('type')
                 ->values();
 
+            usort($undated, function ($a, $b) {
+                $c = strcasecmp($a['support_name'], $b['support_name']);
+                return $c !== 0 ? $c : ($a['term_number'] <=> $b['term_number']);
+            });
+
             return response()->json([
                 'success'      => true,
                 'months'       => $months,
                 'rows'         => $rows,
+                'undated'      => $undated,
                 'type_options' => $typeOptions,
             ]);
 
@@ -1509,13 +1517,16 @@ class ReportingController extends Controller
             }
 
             $validated = $request->validate([
-                'status'              => 'required|string|in:Open,Paid,Delay',
+                'status'              => ['required', 'string', \Illuminate\Validation\Rule::in(\App\Models\DeliverySupportPaymentTerm::STATUSES)],
+                // Konsisten dengan TOP Plan di Financial Information: Paid wajib punya
+                // tanggal, Invoiced wajib punya Submit Invoice Date.
                 'paid_date'           => 'nullable|required_if:status,Paid|date',
-                'submit_invoice_date' => 'nullable|date',
+                'submit_invoice_date' => 'nullable|required_if:status,Invoiced|date',
                 'invoice_number'      => 'nullable|required_with:submit_invoice_date|string|max:255',
             ], [
-                'paid_date.required_if'        => 'Paid Date is required when Status is Paid.',
-                'invoice_number.required_with' => 'Invoice Number is required when Submit Invoice Date is filled.',
+                'paid_date.required_if'           => 'Paid Date is required when Status is Paid.',
+                'submit_invoice_date.required_if' => 'Submit Invoice Date is required when Status is Invoiced.',
+                'invoice_number.required_with'    => 'Invoice Number is required when Submit Invoice Date is filled.',
             ]);
 
             if ($validated['status'] !== 'Paid') {
@@ -1561,40 +1572,22 @@ class ReportingController extends Controller
                 abort(403, 'Access denied.');
             }
 
-            $fromMonth = min(max((int) $request->input('from_month', now()->month), 1), 12);
-            $fromYear  = (int) $request->input('from_year',  now()->year);
-            $toMonth   = min(max((int) $request->input('to_month',   now()->month), 1), 12);
-            $toYear    = (int) $request->input('to_year',    now()->year);
-            $filterType = trim((string) $request->input('type', ''));
-
-            $start = Carbon::create($fromYear, $fromMonth, 1)->startOfMonth();
-            $end   = Carbon::create($toYear,  $toMonth,  1)->startOfMonth();
-            if ($start->gt($end)) {
-                [$start, $end] = [$end, $start];
+            [$start, $end, $rangeError] = $this->collectionOutlookRange($request);
+            if ($rangeError) {
+                return back()->with('error', $rangeError);
             }
+            $filterType = trim((string) $request->input('type', ''));
 
             $monthKeys = [];
             $cursor    = $start->copy();
             $guard     = 0;
-            while ($cursor->lte($end) && $guard < 36) {
+            while ($cursor->lte($end) && $guard < self::COLLECTION_OUTLOOK_MAX_MONTHS) {
                 $monthKeys[] = $cursor->format('Y-m');
                 $cursor->addMonth();
                 $guard++;
             }
 
-            $terms = DB::table('delivery_support_payment_terms as pt')
-                ->join('delivery_support as s', 'pt.delivery_support_id', '=', 's.id')
-                ->leftJoin('customer_basic_data as cbd', 's.client_id', '=', 'cbd.customer_id')
-                ->when($filterType !== '', fn($q) => $q->where('s.type', $filterType))
-                ->select(
-                    'pt.*',
-                    's.name as support_name',
-                    's.io_number as io_number',
-                    's.type as support_type',
-                    's.revenue as support_revenue',
-                    DB::raw("COALESCE(cbd.name_1, '') as client_name")
-                )
-                ->get();
+            $terms = $this->collectionOutlookSupportTerms($filterType);
 
             $rows = [];
             foreach ($terms as $t) {
@@ -1614,11 +1607,11 @@ class ReportingController extends Controller
                     'support_type'        => $t->support_type ?: '-',
                     'term_number'         => (int) $t->term_number,
                     'payment_term'        => $t->payment_term ?: '-',
-                    'payment_percentage'  => (float) $t->payment_percentage,
-                    // Amount = nilai turunan (revenue x % / 100). Dihitung ulang di sini
-                    // supaya laporan tidak ikut menampilkan nilai tersimpan yang basi
-                    // (term yang dibuat sebelum revenue diisi tersimpan 0).
-                    'amount'              => round(((float) $t->support_revenue) * ((float) $t->payment_percentage) / 100, 2),
+                    'line_item_name'      => $t->line_item_name ?: '',
+                    'payment_percentage'  => $t->basis === 'fixed' ? null : (float) $t->payment_percentage,
+                    'basis'               => $t->basis,
+                    // Sama dengan tampilan halaman - lihat collectionOutlookSupport().
+                    'amount'              => \App\Models\DeliveryProjectPaymentTerm::amountFor($t->basis, $t->payment_percentage, $t->amount, $t->support_revenue),
                     'status'              => $t->status,
                     'estimated_date'      => $t->estimated_date ? Carbon::parse($t->estimated_date)->format('d M Y') : '',
                     'submit_invoice_date' => $t->submit_invoice_date ? Carbon::parse($t->submit_invoice_date)->format('d M Y') : '',
@@ -1640,6 +1633,26 @@ class ReportingController extends Controller
             Log::error('exportCollectionOutlookSupport error: ' . $e->getMessage());
             abort(500, $e->getMessage());
         }
+    }
+
+    /** Sumber baris Collection Outlook Support (halaman & export) - semua TOP support + konteksnya. */
+    private function collectionOutlookSupportTerms(string $filterType): \Illuminate\Support\Collection
+    {
+        return DB::table('delivery_support_payment_terms as pt')
+            ->join('delivery_support as s', 'pt.delivery_support_id', '=', 's.id')
+            ->leftJoin('customer_basic_data as cbd', 's.client_id', '=', 'cbd.customer_id')
+            ->leftJoin('delivery_support_contract_line_items as li', 'pt.contract_line_item_id', '=', 'li.id')
+            ->when($filterType !== '', fn($q) => $q->where('s.type', $filterType))
+            ->select(
+                'pt.*',
+                's.name as support_name',
+                's.io_number as io_number',
+                's.type as support_type',
+                's.revenue as support_revenue',
+                'li.name as line_item_name',
+                DB::raw("COALESCE(cbd.name_1, '') as client_name")
+            )
+            ->get();
     }
 
     // ── Web: Ticketing Overview page ────────────────────────────────────────
@@ -1666,10 +1679,10 @@ class ReportingController extends Controller
         return view('reporting.diagram-report', ['user' => session('user'), 'customers' => $customers]);
     }
 
-    // ── API: Diagram Report — Chart 1 (Ticket qty per month, from start
+    // ── API: Diagram Report - Chart 1 (Ticket qty per month, from start
     // to current period) ────────────────────────────────────────────────────
     //
-    // Period (date_from/date_to) is required — there is no default range.
+    // Period (date_from/date_to) is required - there is no default range.
     // Tickets are counted into a month based on created_at, all statuses included.
 
     public function diagramTicketQty(Request $request)
@@ -1723,12 +1736,12 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 2 (Tickets per Module, grouped into
+    // ── API: Diagram Report - Chart 2 (Tickets per Module, grouped into
     // Incident/Error, Request/Konsultasi, Request/CR, Other) ────────────────
     //
     // Incident→Incident/Error, Consult→Request/Konsultasi, Change Request→
     // Request/CR. All other ticket_type values (Service Request, EWA, RISE,
-    // etc. — including null) fall into "Other" so the total stays consistent
+    // etc. - including null) fall into "Other" so the total stays consistent
     // with Chart 1 (all statuses/types counted). X-axis = all active modules
     // from the modules table + a "No Modul Assign" bucket. Period is required.
 
@@ -1811,7 +1824,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 3 (Ticket Type per month: Incident/Error,
+    // ── API: Diagram Report - Chart 3 (Ticket Type per month: Incident/Error,
     // Request/Konsultasi, Request/CR + TOTAL row) ───────────────────────────
     //
     // Month columns follow the Period (date_from/date_to) range picked in the
@@ -1907,13 +1920,13 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 4 (Ticket Type per Module: Incident/Error,
-    // Request/Konsultasi, Request/CR — no "Other") ──────────────────────────
+    // ── API: Diagram Report - Chart 4 (Ticket Type per Module: Incident/Error,
+    // Request/Konsultasi, Request/CR - no "Other") ──────────────────────────
     //
     // X-axis = active modules (ordered by id/creation order) + an "ALL MODULE"
     // bucket for tickets not tied to any specific module. Modules with zero
     // tickets are hidden entirely (same as Chart 2). Only the 3 ticket_type
-    // values above are counted — other types don't appear in this chart at all.
+    // values above are counted - other types don't appear in this chart at all.
 
     public function diagramTicketByModuleType(Request $request)
     {
@@ -1995,7 +2008,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 5 (Ticket Type x Module table, with a
+    // ── API: Diagram Report - Chart 5 (Ticket Type x Module table, with a
     // per-row Total Tickets column) ─────────────────────────────────────────
     //
     // Rows = Incident/Error, Request/Konsultasi, Request/CR. Columns = every
@@ -2090,10 +2103,10 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 6 (Ticket count per module) ────────────
+    // ── API: Diagram Report - Chart 6 (Ticket count per module) ────────────
     //
     // Follows the same Customer & Period (Start/End Date) filters as Charts
-    // 1-5 — Period is required, same as the others. Counts ALL ticket_type
+    // 1-5 - Period is required, same as the others. Counts ALL ticket_type
     // values (not just Incident/Konsultasi/CR). Modules with zero tickets are
     // hidden.
 
@@ -2161,10 +2174,10 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 7 (Ticket count by Ticket Type) ────────
+    // ── API: Diagram Report - Chart 7 (Ticket count by Ticket Type) ────────
     //
     // Follows the same Customer & Period (Start/End Date) filters as the
-    // other charts — Period is required. All 3 ticket types (Incident/Error,
+    // other charts - Period is required. All 3 ticket types (Incident/Error,
     // Request/Konsultasi, Request/CR) are always shown, even if a type has
     // 0 tickets in the filtered range.
 
@@ -2218,14 +2231,14 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 8 (CR vs Non-CR by Close/Open status) ──
+    // ── API: Diagram Report - Chart 8 (CR vs Non-CR by Close/Open status) ──
     //
     // Follows the same Customer & Period (Start/End Date) filters as the
-    // other charts — Period is required. X-axis = Non CR (every ticket_type
+    // other charts - Period is required. X-axis = Non CR (every ticket_type
     // except Change Request) vs Request CR (ticket_type = Change Request).
     // Series = Close (status: closed, cancelled) vs Open (status: inprocess,
     // waiting_on_customer, waiting_to_confirmation, hold, waiting_on_3rd_party).
-    // Tickets still at the raw 'open' status are intentionally excluded —
+    // Tickets still at the raw 'open' status are intentionally excluded -
     // per explicit confirmation, this chart only covers the 7 statuses above.
 
     public function diagramTicketByCrStatus(Request $request)
@@ -2291,14 +2304,14 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 9 (CR vs Non-CR per month, from start
+    // ── API: Diagram Report - Chart 9 (CR vs Non-CR per month, from start
     // to current period) ─────────────────────────────────────────────────────
     //
     // Same month-bucketing as Chart 1 (all statuses included, one column per
     // month across the whole date_from/date_to range), but split into two
     // series: Non CR (every ticket_type except Change Request) and
     // Request / CR (ticket_type = Change Request). Follows the same
-    // Customer & Period filters as the other charts — Period is required.
+    // Customer & Period filters as the other charts - Period is required.
 
     public function diagramTicketByCrPerMonth(Request $request)
     {
@@ -2365,13 +2378,13 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Diagram Report — Chart 10 (Closed tickets per month, from start
+    // ── API: Diagram Report - Chart 10 (Closed tickets per month, from start
     // to current period) ─────────────────────────────────────────────────────
     //
     // Same month-bucketing as Chart 1, filtered to status = 'closed' only
-    // (not 'cancelled' — the title specifically says "status closed").
+    // (not 'cancelled' - the title specifically says "status closed").
     // Bucketed by created_at, same convention as the rest of this page.
-    // Follows the same Customer & Period filters as the other charts —
+    // Follows the same Customer & Period filters as the other charts -
     // Period is required.
 
     public function diagramTicketClosedPerMonth(Request $request)
@@ -2475,7 +2488,7 @@ class ReportingController extends Controller
 
             $data = $rows->map(fn($r) => [
                 'customer_id'        => $r->customer_id,
-                'customer_name'      => $r->customer_name ?: '—',
+                'customer_name'      => $r->customer_name ?: '-',
                 'total_mandays'      => (int) ($mandaysByCustomer[$r->customer_id] ?? 0),
                 'open_tickets'       => (int) $r->open_tickets,
                 'inprocess_tickets'  => (int) $r->inprocess_tickets,
@@ -2492,7 +2505,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Ticketing Overview — tickets for one customer ─────────────────
+    // ── API: Ticketing Overview - tickets for one customer ─────────────────
 
     public function ticketingOverviewDetail(Request $request, $customerId)
     {
@@ -2570,7 +2583,7 @@ class ReportingController extends Controller
                 return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
             }
 
-            // select() dibatasi ke kolom yang benar-benar dipakai di response bawah — tabel
+            // select() dibatasi ke kolom yang benar-benar dipakai di response bawah - tabel
             // `ticket` punya puluhan kolom (SLA, mandays, confirmation, dst) yang kalau ikut
             // ter-hydrate untuk SETIAP tiket (endpoint ini load seluruh tabel, tanpa filter
             // tanggal/pagination) jadi biaya memori & waktu terbesar di endpoint ini.
@@ -2683,7 +2696,7 @@ class ReportingController extends Controller
         return view('reporting.log-shifting', ['user' => session('user')]);
     }
 
-    // ── API: Log Shifting — tickets that have at least one SLA message ─────
+    // ── API: Log Shifting - tickets that have at least one SLA message ─────
 
     public function logShifting(Request $request)
     {
@@ -2736,7 +2749,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── API: Log Shifting — SLA message detail rows for one ticket ─────────
+    // ── API: Log Shifting - SLA message detail rows for one ticket ─────────
 
     public function logShiftingDetail($ticketId)
     {
@@ -2799,11 +2812,11 @@ class ReportingController extends Controller
         }
     }
 
-    // ── Log Shifting export — SLA notes flat, filtered by date(+optional hour) range ──
+    // ── Log Shifting export - SLA notes flat, filtered by date(+optional hour) range ──
     //
     // "Tanggal" yang dipakai adalah created_at bubble chat itu sendiri (sama seperti
     // logShiftingDetail), bukan tanggal tiket dibuat. Kalau time_from/time_to kosong,
-    // batasnya jadi awal/akhir hari penuh untuk tanggal tsb — jadi semua jam ikut.
+    // batasnya jadi awal/akhir hari penuh untuk tanggal tsb - jadi semua jam ikut.
     private function logShiftingDateRange(Request $request): array
     {
         $dateFrom = $request->query('date_from');
@@ -2843,8 +2856,8 @@ class ReportingController extends Controller
 
             return [
                 'ticket_id'     => $msg->ticket->ticket_id ?? null,
-                'ticket_number' => $msg->ticket->ticket_number ?? '—',
-                'description'   => $msg->ticket->description ?? '—',
+                'ticket_number' => $msg->ticket->ticket_number ?? '-',
+                'description'   => $msg->ticket->description ?? '-',
                 'bubble_date'   => $msg->created_at,
                 'sla_message'   => $msg->sla_message,
                 'pic'           => $byName,
@@ -2852,7 +2865,7 @@ class ReportingController extends Controller
         })->values();
     }
 
-    // ── API: Log Shifting — flat SLA notes for the export/report table ─────
+    // ── API: Log Shifting - flat SLA notes for the export/report table ─────
     public function logShiftingNotes(Request $request)
     {
         try {
@@ -2879,7 +2892,7 @@ class ReportingController extends Controller
         }
     }
 
-    // ── Web: Log Shifting — export flat SLA notes to Excel ─────────────────
+    // ── Web: Log Shifting - export flat SLA notes to Excel ─────────────────
     public function exportLogShifting(Request $request)
     {
         try {
@@ -2934,7 +2947,7 @@ class ReportingController extends Controller
      *
      * Satu baris = satu penugasan (satu baris pivot `delivery_project_employee`),
      * jadi orang yang memegang dua peran/modul di project yang sama muncul dua
-     * kali — sama seperti tabel Team Members di halaman project.
+     * kali - sama seperti tabel Team Members di halaman project.
      */
     public function consultantAssignment(Request $request)
     {
@@ -3045,7 +3058,7 @@ class ReportingController extends Controller
      * Guard bersama untuk endpoint API Consultant Assignment.
      *
      * Izin diresolve lewat Menu Access (`canAccessMenu`), BUKAN daftar RoleId
-     * hardcode — supaya keputusan admin di Control Center benar-benar berlaku.
+     * hardcode - supaya keputusan admin di Control Center benar-benar berlaku.
      *
      * @return \App\Models\Employee|\Illuminate\Http\JsonResponse
      */
@@ -3068,7 +3081,7 @@ class ReportingController extends Controller
      * Bangun baris laporan Consultant Assignment + ringkasannya.
      *
      * Seluruh filter dikerjakan di sini (server-side) supaya halaman dan tombol
-     * Export memakai hasil yang sama persis — tidak ada logika filter kembar di
+     * Export memakai hasil yang sama persis - tidak ada logika filter kembar di
      * JavaScript yang bisa menyimpang.
      *
      * `stats` dihitung SEBELUM filter Assignment Status diterapkan, karena kartu
@@ -3121,7 +3134,7 @@ class ReportingController extends Controller
                 'dpe.role',
                 'dpe.employee_type',
                 'dpe.vendor_name',
-                // Anggota vendor tidak ada di master employee — identitasnya di pivot.
+                // Anggota vendor tidak ada di master employee - identitasnya di pivot.
                 'dpe.member_name',
                 'dpe.member_position',
                 'dpe.start_date',
@@ -3337,7 +3350,7 @@ class ReportingController extends Controller
         // ── Facet Internal / External ─────────────────────────────────────────
         // Kartu Internal & External/Vendor DI RINGKASAN sekaligus jadi kontrol
         // filter employee_type. Angkanya karena itu dihitung SEBELUM filter
-        // employee_type diterapkan — kalau ikut dipersempit oleh pilihannya
+        // employee_type diterapkan - kalau ikut dipersempit oleh pilihannya
         // sendiri, kartu External akan menampilkan 0 padahal mengkliknya
         // memunculkan baris. Filter lain (project, periode, dst.) tetap ikut.
         $facet = collect($rows);
@@ -3355,7 +3368,7 @@ class ReportingController extends Controller
         $collection = collect($rows);
         $stats = [
             'assignments'  => $collection->count(),
-            // Anggota vendor tidak punya employee_id — dihitung per nama supaya
+            // Anggota vendor tidak punya employee_id - dihitung per nama supaya
             // tidak semuanya melebur jadi satu "konsultan null".
             'consultants'  => $collection
                 ->map(fn (array $r) => $r['employee_id'] !== null
@@ -3446,7 +3459,7 @@ class ReportingController extends Controller
         $start = $r->start_date ? Carbon::parse($r->start_date)->format('Y-m-d') : null;
         $end   = $r->end_date   ? Carbon::parse($r->end_date)->format('Y-m-d')   : null;
 
-        // Status penugasan murni turunan tanggal — tidak dipersist, jadi tidak
+        // Status penugasan murni turunan tanggal - tidak dipersist, jadi tidak
         // bisa jadi basi. Tanpa start_date tidak ada yang bisa disimpulkan.
         if (!$start) {
             $assignmentStatus = 'No Period';

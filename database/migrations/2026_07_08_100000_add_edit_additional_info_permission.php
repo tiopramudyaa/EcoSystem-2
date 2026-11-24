@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\DB;
  * Adds a dedicated, configurable permission for editing a ticket's "Additional Info"
  * (Contact Name, Phone, Module, Client). Previously this was gated together with
  * Status/Priority/Type via `ui.ticket.edit-fields` on the UI and hardcoded to
- * admin/helpdesk on the server. Splitting it out lets admins control — via the
- * Management → Roles/Permissions screen — exactly which roles may edit Additional Info.
+ * admin/helpdesk on the server. Splitting it out lets admins control - via the
+ * Management → Roles/Permissions screen - exactly which roles may edit Additional Info.
  *
  * Default grant = the roles that can effectively edit Additional Info today
  * (TICKET_MANAGER_GROUP: EC Administrator, Delivery Support Head, Helpdesk, RPMO Head)

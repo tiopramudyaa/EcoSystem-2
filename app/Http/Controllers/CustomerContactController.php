@@ -220,7 +220,7 @@ class CustomerContactController extends Controller
                 auditableId: $contactId,
                 event: 'created',
                 recordLabel: $request->full_name,
-                description: "added Customer Contact: {$request->full_name} — Customer #{$customerId}",
+                description: "added Customer Contact: {$request->full_name} - Customer #{$customerId}",
                 old: null,
                 new: $contactData,
             );
@@ -292,7 +292,7 @@ class CustomerContactController extends Controller
         }
 
         try {
-            // Snapshot before update — needed for the audit log entry below.
+            // Snapshot before update - needed for the audit log entry below.
             $existingContact = DB::table('customer_contact')
                 ->where('customer_id', $customerId)
                 ->where('contact_id', $contactId)
@@ -341,7 +341,7 @@ class CustomerContactController extends Controller
                 auditableId: $contactId,
                 event: 'updated',
                 recordLabel: $request->full_name,
-                description: "updated Customer Contact: {$request->full_name} — Customer #{$customerId}",
+                description: "updated Customer Contact: {$request->full_name} - Customer #{$customerId}",
                 old: (array) $existingContact,
                 new: $updateData,
             );
@@ -377,14 +377,14 @@ class CustomerContactController extends Controller
         ]);
 
         try {
-            // Snapshot before delete — needed for the audit log entry below.
+            // Snapshot before delete - needed for the audit log entry below.
             $existingContact = DB::table('customer_contact')
                 ->where('customer_id', $customerId)
                 ->where('contact_id', $contactId)
                 ->first();
 
             // Explicitly remove any linked login account first. Don't rely
-            // solely on the auth_users.contact_id ON DELETE CASCADE FK —
+            // solely on the auth_users.contact_id ON DELETE CASCADE FK -
             // it has been observed not to fire in production, leaving an
             // orphaned auth_users row still bound to this customer.
             DB::table('auth_users')
@@ -411,7 +411,7 @@ class CustomerContactController extends Controller
                 auditableId: $contactId,
                 event: 'deleted',
                 recordLabel: $label,
-                description: "deleted Customer Contact: {$label} — Customer #{$customerId}",
+                description: "deleted Customer Contact: {$label} - Customer #{$customerId}",
                 old: (array) $existingContact,
                 new: null,
             );
@@ -476,7 +476,7 @@ class CustomerContactController extends Controller
         try {
             $customer = DB::table('customer')->where('customer_id', $customerId)->first();
 
-            // Jarvies adalah portal sisi customer — contact person milik business
+            // Jarvies adalah portal sisi customer - contact person milik business
             // partner bertipe Vendor tidak boleh diberi akses login.
             if ($customer && ($customer->type ?? \App\Models\Customer::TYPE_CUSTOMER) !== \App\Models\Customer::TYPE_CUSTOMER) {
                 DB::rollBack();
@@ -561,7 +561,7 @@ class CustomerContactController extends Controller
             ->update(['can_view_all_tickets' => $newValue, 'updated_at' => now()]);
 
         // Admin sees every company ticket already, so a contact group would be
-        // redundant for them — and grouping is only meant for Member-level
+        // redundant for them - and grouping is only meant for Member-level
         // contacts. Promoting to Admin drops them out of whatever group they're in.
         $removedFromGroup = false;
         if ($newValue) {
@@ -651,7 +651,7 @@ class CustomerContactController extends Controller
             auditableId: $groupId,
             event: 'created',
             recordLabel: $request->name,
-            description: "created Contact Group: {$request->name} — Customer #{$customerId}",
+            description: "created Contact Group: {$request->name} - Customer #{$customerId}",
             old: null,
             new: ['group_id' => $groupId, 'customer_id' => $customerId, 'name' => $request->name],
         );
@@ -698,7 +698,7 @@ class CustomerContactController extends Controller
             auditableId: $groupId,
             event: 'updated',
             recordLabel: $request->name,
-            description: "renamed Contact Group #{$groupId} to: {$request->name} — Customer #{$customerId}",
+            description: "renamed Contact Group #{$groupId} to: {$request->name} - Customer #{$customerId}",
             old: ['name' => $group->name],
             new: ['name' => $request->name],
         );
@@ -729,7 +729,7 @@ class CustomerContactController extends Controller
             auditableId: $groupId,
             event: 'deleted',
             recordLabel: $group->name,
-            description: "deleted Contact Group: {$group->name} — Customer #{$customerId}",
+            description: "deleted Contact Group: {$group->name} - Customer #{$customerId}",
             old: (array) $group,
             new: null,
         );
@@ -740,7 +740,7 @@ class CustomerContactController extends Controller
     /**
      * Add a contact to a group.
      * Rejected if the contact belongs to a different customer, is an Admin
-     * (can_view_all_tickets = true — Admin already sees everything company-wide,
+     * (can_view_all_tickets = true - Admin already sees everything company-wide,
      * so grouping would be meaningless for them), or already belongs to a group.
      */
     public function addGroupMember(Request $request, $customerId, $groupId)
@@ -813,7 +813,7 @@ class CustomerContactController extends Controller
             auditableId: $groupId,
             event: 'updated',
             recordLabel: $group->name,
-            description: "added {$contact->full_name} to Contact Group: {$group->name} — Customer #{$customerId}",
+            description: "added {$contact->full_name} to Contact Group: {$group->name} - Customer #{$customerId}",
             old: null,
             new: ['contact_id' => $contactId, 'full_name' => $contact->full_name],
         );
@@ -852,12 +852,68 @@ class CustomerContactController extends Controller
             auditableId: $groupId,
             event: 'updated',
             recordLabel: $group->name,
-            description: 'removed ' . ($contact->full_name ?? "Contact #{$contactId}") . " from Contact Group: {$group->name} — Customer #{$customerId}",
+            description: 'removed ' . ($contact->full_name ?? "Contact #{$contactId}") . " from Contact Group: {$group->name} - Customer #{$customerId}",
             old: ['contact_id' => $contactId],
             new: null,
         );
 
         return response()->json(['success' => true, 'message' => 'Contact removed from group successfully']);
+    }
+
+    /**
+     * Send a password reset link to a contact person's Jarvies login email.
+     * Admin never sees or sets the password; the customer chooses it via the link.
+     */
+    public function sendResetLink($customerId, $contactId)
+    {
+        $contact = DB::table('customer_contact')
+            ->where('customer_id', $customerId)
+            ->where('contact_id', $contactId)
+            ->first();
+
+        if (!$contact) {
+            return response()->json(['success' => false, 'message' => 'Contact not found'], 404);
+        }
+
+        $authUser = DB::table('auth_users')->where('contact_id', $contactId)->first();
+        if (!$authUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No login account found for this contact'
+            ], 404);
+        }
+
+        if (!$authUser->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This login account is inactive'
+            ], 422);
+        }
+
+        if (empty($authUser->email)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This login account has no email address'
+            ], 422);
+        }
+
+        PasswordSetupController::generateAndSendToken($authUser, 'reset');
+
+        AuditLog::recordAction(
+            module: 'Customer',
+            auditableType: 'CustomerContact',
+            auditableId: $contactId,
+            event: 'updated',
+            recordLabel: $contact->full_name ?? (string) $contactId,
+            description: "sent Jarvies password reset link to contact: " . ($contact->full_name ?? $contactId) . " ({$authUser->email}) - Customer #{$customerId}",
+            old: null,
+            new: ['contact_id' => $contactId, 'customer_id' => $customerId, 'email' => $authUser->email],
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset link has been sent to ' . $authUser->email,
+        ]);
     }
 
     /**

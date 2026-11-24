@@ -512,7 +512,7 @@ class Customer extends Authenticatable
      * Konversi nama perusahaan ke kode inisial tepat 4 karakter.
      * Menggunakan pendekatan round-robin: ambil 1 karakter dari tiap kata per putaran
      * hingga terkumpul 4 karakter. Jika kurang, pad dengan 'X'.
-     * Angka romawi (I–XV) → digit Arab.
+     * Angka romawi (I-XV) → digit Arab.
      * Contoh:
      *   "Perum Jasa Tirta I"    → round-0: P,J,T,1      → "PJT1"
      *   "Bank Mandiri"          → round-0: B,M → round-1: A,A → "BMAA"
@@ -529,7 +529,7 @@ class Customer extends Authenticatable
             return 'CUST';
         }
 
-        // Peta Roman numeral — paling panjang dulu agar matching tepat
+        // Peta Roman numeral - paling panjang dulu agar matching tepat
         $romanMap = [
             'XV'   => '15', 'XIV'  => '14', 'XIII' => '13', 'XII' => '12',
             'VIII' => '8',  'VII'  => '7',  'XI'   => '11', 'VI'  => '6',
@@ -597,7 +597,7 @@ class Customer extends Authenticatable
             return $base;
         }
 
-        // Collision: ganti char terakhir dengan counter (2–9, A–Z)
+        // Collision: ganti char terakhir dengan counter (2-9, A-Z)
         $prefix      = substr($base, 0, 3);
         $suffixChars = array_merge(range('2', '9'), range('A', 'Z'));
         foreach ($suffixChars as $char) {
@@ -891,7 +891,7 @@ class Customer extends Authenticatable
             $query->search($filters['search']);
         }
 
-        // Filter `customer` (input "Search by email or company name") — frontend
+        // Filter `customer` (input "Search by email or company name") - frontend
         // mengirim key `customer`, jadi alias-kan ke scopeSearch yang sudah meng-cover
         // email + name_1 + name_2 + customer_code + search_term_*. Tetap pakai scope
         // yang sama supaya logic search konsisten.
@@ -903,12 +903,38 @@ class Customer extends Authenticatable
             $query->where('is_active', $filters['is_active']);
         }
 
-        // Business Partner type ('Customer' / 'Vendor'). Kosong = tampilkan semua.
-        if (!empty($filters['type']) && in_array($filters['type'], self::TYPES, true)) {
-            $query->ofType($filters['type']);
+        // Filter kolom di header tabel (sama seperti Employee Management): nilai multi-select
+        // dikirim dipisah koma. Kosong = tampilkan semua.
+        $csv = fn ($value) => array_values(array_filter(
+            array_map('trim', explode(',', (string) $value)),
+            fn ($v) => $v !== ''
+        ));
+
+        // Business Partner type ('Customer' / 'Vendor'), boleh lebih dari satu.
+        if (!empty($filters['type'])) {
+            $types = array_values(array_intersect($csv($filters['type']), self::TYPES));
+            if (!empty($types)) {
+                $query->whereIn('type', $types);
+            }
         }
 
-        // Filter status — derive dari kolom `block` & `deletion_flag` di
+        // Kolom Email: keyword LIKE pada email saja.
+        if (!empty($filters['email'])) {
+            $query->where('email', 'like', '%' . $filters['email'] . '%');
+        }
+
+        // Kolom Company Name: keyword LIKE pada name_1 / name_2.
+        if (!empty($filters['name'])) {
+            $term = $filters['name'];
+            $query->whereHas('basicData', function ($q) use ($term) {
+                $q->where(function ($qq) use ($term) {
+                    $qq->where('name_1', 'like', '%' . $term . '%')
+                       ->orWhere('name_2', 'like', '%' . $term . '%');
+                });
+            });
+        }
+
+        // Filter status - derive dari kolom `block` & `deletion_flag` di
         // customer_basic_data (sumber yang sama dengan logika status di
         // CustomerController@getData baris 137-143).
         if (!empty($filters['status'])) {
@@ -931,19 +957,20 @@ class Customer extends Authenticatable
             });
         }
 
-        // Customer Group: pakai LIKE (bukan exact match scopeByGroup) supaya
-        // input bertahap "cor" → match "Corporate". Konsisten dengan UX text
-        // search di frontend. byGroup scope tetap dipertahankan untuk caller
-        // lain yang butuh exact match.
-        if (!empty($filters['customer_group'])) {
-            $term = $filters['customer_group'];
-            $query->whereHas('basicData', function ($q) use ($term) {
-                $q->where('customer_group', 'like', "%{$term}%");
-            });
-        }
-
-        if (!empty($filters['customer_category'])) {
-            $query->byCategory($filters['customer_category']);
+        // Customer Group / Customer Category / Industry Sector: dropdown multi-select
+        // (nilai persis dari daftar opsi), jadi exact match whereIn, bukan LIKE.
+        foreach ([
+            'customer_group'    => 'customer_group',
+            'customer_category' => 'customer_category',
+            'industry_sector'   => 'industry_sector',
+        ] as $filterKey => $column) {
+            if (empty($filters[$filterKey])) {
+                continue;
+            }
+            $values = $csv($filters[$filterKey]);
+            if (!empty($values)) {
+                $query->whereHas('basicData', fn ($q) => $q->whereIn($column, $values));
+            }
         }
 
         if (!empty($filters['active_only']) && $filters['active_only']) {

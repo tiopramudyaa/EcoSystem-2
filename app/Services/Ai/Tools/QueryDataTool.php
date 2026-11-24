@@ -13,7 +13,7 @@ use Throwable;
  * get_tickets / get_sla_summary / get_delivery_projects, without a bespoke
  * tool per table.
  *
- * Current state: NO per-table permission check — any authenticated employee
+ * Current state: NO per-table permission check - any authenticated employee
  * can query any non-excluded table (see TableAccess::EXCLUDED_TABLES for the
  * technical-only exclusions: session/token/queue/migration tables). This is
  * intentional for now; business-data access restrictions are a deliberately
@@ -36,11 +36,11 @@ class QueryDataTool implements AiTool
         return [
             'name' => 'query_data',
             'description' => 'Read-only row lookup against any database table not already covered by get_tickets, '
-                . 'get_sla_summary, or get_delivery_projects. Returns at most 100 rows — for "how many" / "total" / '
+                . 'get_sla_summary, or get_delivery_projects. Returns at most 100 rows - for "how many" / "total" / '
                 . '"average" questions use aggregate_data instead, which gives an exact number via SQL rather than '
-                . 'a capped row list. If you are not sure of the exact table name, call list_tables first — table '
+                . 'a capped row list. If you are not sure of the exact table name, call list_tables first - table '
                 . 'names are snake_case and don\'t always match the obvious English word (e.g. tickets live in '
-                . '"ticket", not "tickets"). This tool never writes data — it only reads.',
+                . '"ticket", not "tickets"). This tool never writes data - it only reads.',
             'input_schema' => [
                 'type' => 'object',
                 'properties' => [
@@ -51,7 +51,7 @@ class QueryDataTool implements AiTool
                     'filters' => [
                         'type' => 'array',
                         'description' => 'Conditions to narrow the results. "field" must be a real column on the '
-                            . 'chosen table — if a filter is rejected for an unknown column, the error lists the '
+                            . 'chosen table - if a filter is rejected for an unknown column, the error lists the '
                             . 'real columns so you can retry.',
                         'items' => [
                             'type' => 'object',

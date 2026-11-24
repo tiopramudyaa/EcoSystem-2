@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Http\Controllers\Concerns\ChecksMenuAccess;
 
 /**
  * StagingTicketController
@@ -33,8 +34,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class StagingTicketController extends Controller
 {
+    use ChecksMenuAccess;
+
     /**
-     * Ambang "terlantar" untuk klaim ai_analysis_status='pending' — lihat
+     * Ambang "terlantar" untuk klaim ai_analysis_status='pending' - lihat
      * docblock analyze(). Margin di atas set_time_limit(630) (~10.5 menit)
      * yang dipasang di bawah untuk pemanggilan AI itu sendiri, supaya baris
      * yang MEMANG masih berjalan wajar tidak ikut ke-reclaim.
@@ -52,9 +55,8 @@ class StagingTicketController extends Controller
     {
         $user = SessionUser::fromSession(session('user'));
 
-        // Admin, Helpdesk, dan Head of Support yang boleh akses
-        $allowed = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP);
-        if (!$user || !$user->hasAnyRole($allowed)) {
+        // Siapa yang boleh akses ditentukan Menu Access (tickets.staging), bukan daftar role di kode.
+        if (!$user || !$this->canManageStagingTicket(null)) {
             abort(403, 'Unauthorized');
         }
 
@@ -91,8 +93,7 @@ class StagingTicketController extends Controller
     {
         $user = SessionUser::fromSession(session('user'));
 
-        $allowed = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP);
-        if (!$user || !$user->hasAnyRole($allowed)) {
+        if (!$user || !$this->canManageStagingTicket(null)) {
             abort(403, 'Unauthorized');
         }
 
@@ -109,7 +110,7 @@ class StagingTicketController extends Controller
     {
         $sessionUser = session('user');
         if (!$sessionUser) {
-            Log::warning('StagingTicketController@index: unauthorized — no session user', [
+            Log::warning('StagingTicketController@index: unauthorized - no session user', [
                 'session_id' => session()->getId(),
                 'ip'         => $request->ip(),
             ]);
@@ -128,10 +129,10 @@ class StagingTicketController extends Controller
 
         $isCustomerViewer = RoleId::EC_USER->value === $roleId;
 
-        if (in_array($roleId, array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value, RoleId::EC_USER->value], RoleId::STAGING_GROUP), true)) {
+        if ($isCustomerViewer || $this->canManageStagingTicket($roleId)) {
             $query = StagingTicket::query();
         } else {
-            Log::warning('StagingTicketController@index: forbidden — role not allowed', [
+            Log::warning('StagingTicketController@index: forbidden - role not allowed', [
                 'user_id' => $sessionUser['id'] ?? null,
                 'role_id' => $roleId,
             ]);
@@ -143,7 +144,7 @@ class StagingTicketController extends Controller
             $query->where('status', $request->status);
         }
         // Customer (EC_USER): SELALU dipaksa ke customer_id sesi sendiri, tidak
-        // pernah percaya customer_id dari request — supaya satu akun customer
+        // pernah percaya customer_id dari request - supaya satu akun customer
         // tidak bisa mengintip staging ticket customer lain sekadar dengan
         // mengganti/menghapus parameter query-nya. Staff internal boleh filter
         // customer_id manapun seperti biasa.
@@ -174,7 +175,7 @@ class StagingTicketController extends Controller
             'user_id' => $sessionUser['id'] ?? null,
         ]);
 
-        // Gerbang credential/ai_analysis TIDAK perlu dihitung di sini — list ini
+        // Gerbang credential/ai_analysis TIDAK perlu dihitung di sini - list ini
         // dipanggil dengan includeHeavyFields: false, jadi ai_analysis tidak
         // pernah ikut terkirim untuk baris manapun (lihat formatStaging()).
         // Menghitungnya di sini hanya akan jadi query CustomerCredential yang
@@ -202,13 +203,12 @@ class StagingTicketController extends Controller
 
         // Sama seperti index(): role harus salah satu yang boleh melihat staging
         // ticket sama sekali. Dulu endpoint ini TIDAK punya gerbang role apa pun
-        // (cuma cek login) — siapa pun yang sudah login (termasuk akun customer
+        // (cuma cek login) - siapa pun yang sudah login (termasuk akun customer
         // lain) bisa membaca detail staging ticket manapun lewat ID sekadar
         // dengan menebak angka di URL.
         $roleId = $sessionUser['role']['id'] ?? null;
         $isCustomerViewer = RoleId::EC_USER->value === $roleId;
-        $allowedRoles = array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value, RoleId::EC_USER->value], RoleId::STAGING_GROUP);
-        if (!in_array($roleId, $allowedRoles, true)) {
+        if (!$isCustomerViewer && !$this->canManageStagingTicket($roleId)) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -216,7 +216,7 @@ class StagingTicketController extends Controller
             $staging = StagingTicket::with(['customer.basicData', 'endCustomer.basicData', 'validator.basicData', 'ticket', 'attachments'])
                 ->findOrFail($id);
 
-            // Customer hanya boleh lihat staging ticket miliknya sendiri —
+            // Customer hanya boleh lihat staging ticket miliknya sendiri -
             // tanpa ini, EC_USER yang tahu/menebak ID staging ticket customer
             // lain bisa membaca seluruh detailnya (email, body, attachment).
             if ($isCustomerViewer && (int) $staging->customer_id !== (int) $sessionUser['id']) {
@@ -385,8 +385,8 @@ class StagingTicketController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $roleId = $sessionUser['role']['id'];
-        if (!in_array($roleId, array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP), true)) {
+        // Izin murni dari Role Access (slug staging.approve), sama dengan tombol di UI.
+        if (!$this->menuAllowed('staging.approve')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -413,11 +413,11 @@ class StagingTicketController extends Controller
 
         $staging = StagingTicket::findOrFail($id);
 
-        // Approve HANYA boleh kalau AI Analyzer sudah selesai — bukan cuma
+        // Approve HANYA boleh kalau AI Analyzer sudah selesai - bukan cuma
         // preferensi UI, ini prasyarat keras: room AI Research BERSAMA yang
         // dibuat di bawah (createSharedAiResearchRoom()) di-seed dari hasil
         // analisa ini, jadi tanpa analisa yang selesai tidak ada apa pun yang
-        // bisa di-seed. Tidak ada jalur manual untuk melewati ini — validator
+        // bisa di-seed. Tidak ada jalur manual untuk melewati ini - validator
         // harus menunggu/mencoba ulang (tombol Re-analyze) sampai berhasil.
         if ('completed' !== $staging->ai_analysis_status || !$staging->ai_analysis) {
             return response()->json([
@@ -455,7 +455,7 @@ class StagingTicketController extends Controller
             }
         }
 
-        // "For customer" — saat tiket masuk via email & ter-route ke parent customer
+        // "For customer" - saat tiket masuk via email & ter-route ke parent customer
         // (lewat domain), helpdesk dapat memilih end-customer (anak) tujuan tiket.
         // Hanya terima child yang benar-benar milik parent ini agar tidak salah assign.
         if ($request->has('end_customer_id')) {
@@ -492,7 +492,7 @@ class StagingTicketController extends Controller
                             $ticket->ticket_id
                         );
                 } catch (\Exception $e) {
-                    // Attachment gagal tidak membatalkan approve — ticket sudah dibuat
+                    // Attachment gagal tidak membatalkan approve - ticket sudah dibuat
                     Log::warning('StagingTicketController@approve: gagal proses attachment email', [
                         'staging_id' => $staging->id,
                         'error'      => $e->getMessage(),
@@ -511,7 +511,7 @@ class StagingTicketController extends Controller
             // Sync ke JARVIES DB (staging update + ticket upsert)
             $this->syncApprovalToJarvies($staging, $ticket);
 
-            // Notifikasi bell Jarvies — ticket berhasil dibuat
+            // Notifikasi bell Jarvies - ticket berhasil dibuat
             if ($staging->customer_id) {
                 \App\Services\CustomerNotificationService::notify(
                     customerId: (int) $staging->customer_id,
@@ -527,13 +527,13 @@ class StagingTicketController extends Controller
             // chat pribadi ke lead modul. Dikirim setelah response supaya validator
             // tidak menunggu Power Automate, dan kegagalannya tidak pernah
             // membatalkan approve yang sudah tersimpan.
-            $this->notifyTeamsTicketValidated($ticket, $sessionUser);
+            $this->notifyTeamsTicketValidated($ticket, $sessionUser, $firstMessage);
 
-            // Room AI Research BERSAMA — dibuat SEKARANG (bukan saat tombol
+            // Room AI Research BERSAMA - dibuat SEKARANG (bukan saat tombol
             // "Ask AI Research" diklik) supaya semua anggota tim tiket
             // langsung dapat konteks hasil AI Analyzer, bukan ringkasan
             // generik. Gagal di sini TIDAK boleh membatalkan approve yang
-            // sudah tersimpan — sama seperti side-effect lain di atas.
+            // sudah tersimpan - sama seperti side-effect lain di atas.
             $this->createSharedAiResearchRoom($ticket, $staging, (int) $sessionUser['id']);
 
             return response()->json([
@@ -565,115 +565,43 @@ class StagingTicketController extends Controller
      *
      * Payload sudah memuat daftar lead modul beserta email kerjanya, jadi flow di
      * Power Automate cukup melakukan dua hal (post kartu ke channel, kirim chat
-     * ke tiap lead) tanpa perlu menebak siapa penerimanya — pemetaan modul ->
+     * ke tiap lead) tanpa perlu menebak siapa penerimanya - pemetaan modul ->
      * lead adalah pengetahuan EcoSystem, bukan pengetahuan flow.
      *
      * Tiket yang modulnya belum punya lead tetap dikirim: kartunya masih berguna
      * di channel tim, dan flow bisa memilih melewati bagian chat pribadi dengan
      * memeriksa `lead_emails` yang kosong.
      */
-    private function notifyTeamsTicketValidated(Ticket $ticket, array $sessionUser): void
+    private function notifyTeamsTicketValidated(Ticket $ticket, array $sessionUser, ?TicketMessage $firstMessage = null): void
     {
-        try {
-            $powerAutomate = app(\App\Services\PowerAutomateService::class);
-
-            if (!$powerAutomate->isFlowReady(\App\Services\PowerAutomateService::FLOW_TICKET_VALIDATED)) {
-                return;
-            }
-
-            $payloadTicket = $powerAutomate->ticketPayload($ticket);
-            $leads         = $powerAutomate->moduleLeads($payloadTicket['module_id'], $payloadTicket['module']);
-
-            $leadEmails    = $powerAutomate->leadEmails($leads);
-
-            $chatPayload = $powerAutomate->ticketChatPayload(
-                $payloadTicket,
-                $leadEmails,
-                $sessionUser['email'] ?? null
-            );
-
-            // Group chat dibuat EcoSystem sendiri lewat Graph, bukan oleh flow 5.
-            // Gunanya kita MEMEGANG chat_id: tanpa itu, sinkronisasi pesan masuk
-            // mustahil dan flow 6 terpaksa mencari chatnya lagi dengan mencocokkan
-            // nama grup. Lihat docs/teams-chat-sync-design.md §4.
-            //
-            // try/catch sendiri, terpisah dari dispatch di bawah: Teams yang
-            // bermasalah tidak boleh ikut membatalkan notifikasi Power Automate
-            // yang selama ini sudah jalan.
-            try {
-                $teamsChat = app(\App\Services\Teams\TeamsChatService::class)->createForTicket(
-                    (int) $ticket->ticket_id,
-                    $chatPayload['topic'],
-                    $chatPayload['members']
-                );
-
-                if ($teamsChat) {
-                    $chatPayload['id'] = $teamsChat->chat_id;
-
-                    // Penanda untuk flow 5: chatnya SUDAH ada, jangan bikin lagi.
-                    // Tanpa Condition atas flag ini di sisi Power Automate, satu
-                    // tiket akan punya DUA grup — satu dari sini, satu dari flow.
-                    $chatPayload['created_by_ecosystem'] = true;
-                }
-            } catch (\Throwable $e) {
-                Log::warning('StagingTicketController@approve: gagal membuat group chat Teams lewat Graph (non-fatal)', [
-                    'ticket_id' => $ticket->ticket_id,
-                    'error'     => $e->getMessage(),
-                ]);
-            }
-
-            $powerAutomate->dispatchAfterResponse(
-                \App\Services\PowerAutomateService::FLOW_TICKET_VALIDATED,
-                [
-                    'ticket'       => $payloadTicket,
-                    'module_leads' => $leads,
-                    'lead_emails'  => $leadEmails,
-                    // Bahan group chat tiket (aksi Teams "Create a chat"):
-                    // `chat.topic` jadi nama grup sekaligus kunci yang dipakai
-                    // flow "ticket member added" untuk menemukan grup ini lagi
-                    // lewat aksi "List chats". `chat.members_csv` berisi lead
-                    // modul PLUS tim Delivery Support tiket ini (Delivery Owner,
-                    // Support Manager, CO PM, Support Admin) PLUS pemegang role
-                    // penjaga (Delivery Support Head dan Delivery Support
-                    // Service Helpdesk).
-                    'chat'         => $chatPayload,
-                    // Identitas delivery support tiket + timnya, untuk baris
-                    // "Delivery Support" di Adaptive Card. Emailnya sendiri
-                    // sudah ikut lewat chat.members_csv di atas.
-                    'delivery_support' => $powerAutomate->deliverySupportPayload(
-                        (int) $ticket->ticket_id
-                    ),
-                    'validated_by' => [
-                        'id'    => $sessionUser['id'] ?? null,
-                        'name'  => $sessionUser['name'] ?? null,
-                        'email' => $sessionUser['email'] ?? null,
-                    ],
-                ]
-            );
-        } catch (\Throwable $e) {
-            Log::warning('StagingTicketController@approve: gagal menyiapkan notifikasi Teams (non-fatal)', [
-                'ticket_id' => $ticket->ticket_id,
-                'error'     => $e->getMessage(),
-            ]);
-        }
+        // Logikanya dipindah ke service bersama supaya tiket yang dibuat
+        // langsung dari EcoSystem (TicketController::store / storeFromHelpdesk)
+        // mendapat group chat Teams dengan cara yang sama persis.
+        app(\App\Services\Teams\TicketTeamsOnboardingService::class)->onboard(
+            $ticket,
+            $sessionUser,
+            $firstMessage,
+            \App\Services\Teams\TicketTeamsOnboardingService::FIRST_MESSAGE_CUSTOMER,
+            'StagingTicketController@approve'
+        );
     }
 
     /**
-     * Room AI Research BERSAMA untuk tiket ini — bisa diakses (baca+tulis)
+     * Room AI Research BERSAMA untuk tiket ini - bisa diakses (baca+tulis)
      * oleh SEMUA anggota tim tiket (lead + member aktif, lihat
      * TicketTeamAccess::canAccessAiResearch()), bukan privat per-employee
      * seperti jalur PALING lama (sebelum room bersama ada sama sekali).
      * AiResearchController::openForTicket() SEKARANG JUGA membuat room
-     * bersama yang sama bentuknya (bukan privat) — bedanya cuma pemicunya:
+     * bersama yang sama bentuknya (bukan privat) - bedanya cuma pemicunya:
      * di sini dipicu approve(), di sana dipicu klik tombol untuk tiket yang
      * approve()-nya terjadi sebelum method ini ada.
      *
-     * conversation_id pakai pola BARU ("ticket-team-{id}") — beda dari pola
-     * lama ("ticket-{id}") yang dulu dipakai room privat — supaya TIDAK
+     * conversation_id pakai pola BARU ("ticket-team-{id}") - beda dari pola
+     * lama ("ticket-{id}") yang dulu dipakai room privat - supaya TIDAK
      * PERNAH bentrok dengan unique constraint (employee_id, assistant,
      * conversation_id) milik room privat lama; tidak perlu ubah constraint
      * itu sama sekali. employee_id di baris ini cuma metadata "siapa yang
-     * approve", BUKAN penentu akses — lihat AiResearchController::
+     * approve", BUKAN penentu akses - lihat AiResearchController::
      * resolveConversation().
      *
      * approve() sudah menggerbang: method ini TIDAK dipanggil kalau
@@ -717,24 +645,24 @@ class StagingTicketController extends Controller
      * dugaan akar masalah, saran klasifikasi, dan saran assignee.
      *
      * Dipanggil OTOMATIS oleh frontend begitu admin membuka satu staging
-     * ticket unvalidated (bukan tombol manual) — dan secara default cuma
+     * ticket unvalidated (bukan tombol manual) - dan secara default cuma
      * benar-benar memanggil AI SEKALI (ditegakkan lewat klaim atomic di
      * kolom ai_analysis_status: baris klaim di bawah cuma sukses kalau
      * statusnya masih NULL, jadi walau dua admin buka tiket yang sama
      * bersamaan, cuma satu yang benar-benar sampai memanggil provider AI).
      *
      * Admin/validator bisa memicu ulang secara sengaja lewat tombol
-     * "Re-analyze" di panel — itu mengirim `force: true` di body request,
+     * "Re-analyze" di panel - itu mengirim `force: true` di body request,
      * yang mengizinkan klaim ulang selama status SAAT INI bukan 'pending'
      * (supaya tidak menabrak request lain yang sedang berjalan). Hasil
      * re-analyze menimpa ai_analysis/ai_analysis_generated_at/_by yang lama.
      *
      * 'pending' yang TERLANTAR (baris ini diklaim, lalu proses yang
-     * mengklaimnya mati di tengah jalan — timeout, worker di-recycle, PHP
-     * fatal error yang lolos dari try/catch di bawah — sebelum sempat
+     * mengklaimnya mati di tengah jalan - timeout, worker di-recycle, PHP
+     * fatal error yang lolos dari try/catch di bawah - sebelum sempat
      * menulis 'completed'/'failed') SEBALIKNYA HARUS bisa diklaim ulang,
      * oleh auto-trigger maupun Re-analyze, atau tiket itu terkunci selamanya
-     * — insiden nyata: staging #316 macet di 'pending' >6 jam karena ini.
+     * - insiden nyata: staging #316 macet di 'pending' >6 jam karena ini.
      * Lihat STALE_PENDING_MINUTES.
      */
     public function analyze(Request $request, $id, \App\Services\Ai\AiTicketAnalyzerService $analyzer)
@@ -754,7 +682,7 @@ class StagingTicketController extends Controller
         if ($staging->isProcessed()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ticket has already been validated/rejected — analysis is no longer relevant.',
+                'message' => 'Ticket has already been validated/rejected - analysis is no longer relevant.',
             ], 422);
         }
 
@@ -767,7 +695,7 @@ class StagingTicketController extends Controller
         // boleh dipicu ulang KECUALI 'pending' yang masih segar).
         //
         // Semua kondisi dibungkus SATU closure di bawah supaya AND id=? tetap
-        // mengikat SELURUH sisi OR — tanpa ini, salah satu orWhere() lepas
+        // mengikat SELURUH sisi OR - tanpa ini, salah satu orWhere() lepas
         // dari scope id dan bisa ikut meng-klaim baris staging ticket lain.
         $claimed = StagingTicket::where('id', $id)
             ->where(function ($q) use ($forceReanalyze, $staleBefore) {
@@ -786,13 +714,13 @@ class StagingTicketController extends Controller
         if (!$claimed) {
             // Sudah pernah diklaim sebelumnya (oleh request ini sendiri yang
             // dipanggil dobel, request lain yang sedang berjalan, atau memang
-            // sudah selesai/gagal dan ini bukan re-analyze) — jangan panggil
+            // sudah selesai/gagal dan ini bukan re-analyze) - jangan panggil
             // AI lagi, cukup laporkan state yang ada sekarang.
             $staging->refresh();
 
             if ('completed' === $staging->ai_analysis_status && $staging->ai_analysis) {
                 // Cache ini bisa saja dibuat oleh actor LAIN (siapa pun yang
-                // memicu analyze() pertama kali) yang punya izin credential —
+                // memicu analyze() pertama kali) yang punya izin credential -
                 // gerbang yang sama dengan canViewAiAnalysis()/formatStaging()
                 // supaya jalur "sudah completed, tinggal kembalikan cache" ini
                 // tidak jadi jalan belakang buat actor yang tidak punya izin.
@@ -804,7 +732,7 @@ class StagingTicketController extends Controller
                 if (!$this->canViewAiAnalysis(false, $hasCredentialPermission, $staging->customer_id, $customerIdsWithCredentials)) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'This ticket already has an AI analysis, but it references this customer\'s stored credential notes. You need "Customer Credential" view access to see it — ask an admin, or fill in the classification manually.',
+                        'message' => 'This ticket already has an AI analysis, but it references this customer\'s stored credential notes. You need "Customer Credential" view access to see it - ask an admin, or fill in the classification manually.',
                         'status'  => 'restricted',
                     ], 403);
                 }
@@ -817,7 +745,7 @@ class StagingTicketController extends Controller
                     'success' => false,
                     'message' => 'AI analysis for this ticket is already running, please wait a moment and try '
                         . 'again. (If this message keeps appearing for several minutes, the previous attempt likely '
-                        . 'stalled — it will automatically become retryable after '
+                        . 'stalled - it will automatically become retryable after '
                         . self::STALE_PENDING_MINUTES . ' minutes.)',
                     'status'  => 'pending',
                 ], 409);
@@ -830,37 +758,37 @@ class StagingTicketController extends Controller
             ], 409);
         }
 
-        // $staging di atas (baris findOrFail) dimuat SEBELUM klaim di atas —
+        // $staging di atas (baris findOrFail) dimuat SEBELUM klaim di atas -
         // klaimnya sendiri jalan lewat query builder terpisah (StagingTicket::
         // where(...)->update(...)), yang mengubah barisnya di DB tapi TIDAK
         // pernah menyentuh object $staging yang sudah telanjur ada di memori.
         // Tanpa refresh ini, atribut ai_analysis_status di $staging masih versi
-        // LAMA (mis. 'completed' dari analisa sebelumnya, pada re-analyze) —
+        // LAMA (mis. 'completed' dari analisa sebelumnya, pada re-analyze) -
         // dan saat AiTicketAnalyzerService::analyze() nanti memanggil
         // $staging->update(['ai_analysis_status' => 'completed', ...]),
         // Eloquent membandingkan ke atribut lama itu, melihat 'completed' →
         // 'completed' TIDAK berubah, dan diam-diam MEMBUANG kolom itu dari
-        // SQL UPDATE yang sungguhan dijalankan — kolom lain (ai_analysis,
+        // SQL UPDATE yang sungguhan dijalankan - kolom lain (ai_analysis,
         // generated_at/_by) tetap tersimpan karena isinya memang beda, tapi
         // status-nya nyangkut di 'pending' hasil klaim di atas SELAMANYA
         // (baris berhasil dianalisa AI-nya, tapi UI tidak pernah tahu).
-        // Insiden nyata: staging #316 & #317 — audit log membuktikan
+        // Insiden nyata: staging #316 & #317 - audit log membuktikan
         // analisanya sukses, tapi ai_analysis_status tetap 'pending' berjam-
         // jam sesudahnya, tepat pola bug ini.
         $staging->refresh();
 
         // Agent Skill via code-execution container bisa makan waktu beberapa menit
         // (provisioning container + Claude baca file skill + reasoning effort tinggi)
-        // — jauh di atas 60s yang tadinya dipasang di sini, yang bikin PHP fatal
+        // - jauh di atas 60s yang tadinya dipasang di sini, yang bikin PHP fatal
         // duluan sebelum respons Anthropic sempat balik. Dibatasi 630s (bukan
         // unlimited) supaya selaras dengan timeout HTTP client di
-        // AppServiceProvider (600s) — kalau Guzzle-nya sendiri gagal timeout
+        // AppServiceProvider (600s) - kalau Guzzle-nya sendiri gagal timeout
         // karena sebab lain, PHP tetap punya batas keras dan tidak menggantung
         // worker selamanya.
         set_time_limit(630);
 
         // Lepas kunci file session sebelum stream panjang, supaya tab lain
-        // milik user yang sama tidak ikut menunggu — pola sama AiTicketSummaryController.
+        // milik user yang sama tidak ikut menunggu - pola sama AiTicketSummaryController.
         $request->session()->save();
 
         return response()->stream(function () use ($analyzer, $staging, $id, $sessionUser, $roleId) {
@@ -892,7 +820,7 @@ class StagingTicketController extends Controller
                      \Anthropic\Core\Exceptions\PermissionDeniedException |
                      \Anthropic\Core\Exceptions\BadRequestException |
                      \Anthropic\Core\Exceptions\NotFoundException $e) {
-                // Konfigurasi/kredit/otentikasi bermasalah di sisi provider — mencoba
+                // Konfigurasi/kredit/otentikasi bermasalah di sisi provider - mencoba
                 // lagi TIDAK akan membantu sampai penyebabnya dibenahi (mis. saldo
                 // Anthropic/OpenAI habis, API key dicabut, skill ID salah). Dibedakan
                 // dari error transient di bawah supaya log-nya bisa dipantau/
@@ -909,14 +837,14 @@ class StagingTicketController extends Controller
                      \OpenAI\Exceptions\RateLimitException |
                      \OpenAI\Exceptions\ServerException |
                      \OpenAI\Exceptions\TransporterException $e) {
-                // Rate limit / server sibuk / koneksi terputus — genuinely transient,
+                // Rate limit / server sibuk / koneksi terputus - genuinely transient,
                 // retry (termasuk retry otomatis bawaan SDK) punya peluang berhasil.
                 $this->logAndMarkAnalyzeFailure($id, $e, retryable: true);
                 $send('error', ['message' => self::ANALYZE_FAILURE_MESSAGE]);
             } catch (\RuntimeException $e) {
                 // Guard rail internal AiTicketAnalyzerService sendiri (skill ID belum
                 // diisi di .env, jawaban AI gagal di-parse sebagai JSON valid, atau
-                // koneksi ditutup user di tengah stream) — bukan outage provider,
+                // koneksi ditutup user di tengah stream) - bukan outage provider,
                 // tapi tetap bukan sesuatu yang pasti akan beda hasilnya kalau
                 // di-retry begitu saja.
                 $this->logAndMarkAnalyzeFailure($id, $e, retryable: true);
@@ -935,11 +863,11 @@ class StagingTicketController extends Controller
         ]);
     }
 
-    /** Pesan yang dilihat admin yang lagi validasi tiket — SAMA di semua jenis kegagalan analyze(). */
+    /** Pesan yang dilihat admin yang lagi validasi tiket - SAMA di semua jenis kegagalan analyze(). */
     private const ANALYZE_FAILURE_MESSAGE = 'AI analysis failed for this ticket. Use the Re-analyze button to try again, or fill in the classification (Type/Priority/Scale/Module) manually.';
 
     /**
-     * Satu titik keluar untuk semua kegagalan analyze() — menandai
+     * Satu titik keluar untuk semua kegagalan analyze() - menandai
      * ai_analysis_status='failed' (admin masih bisa memicu ulang lewat tombol
      * Re-analyze, tapi TIDAK ada retry otomatis dari sisi sistem), lalu log
      * level & pesan diagnostik dibedakan berdasarkan apakah penyebabnya
@@ -947,7 +875,7 @@ class StagingTicketController extends Controller
      * tangan admin sistem (billing/config).
      *
      * Dulu method ini juga membentuk response JSON (analyzeFailureResponse(),
-     * dengan status HTTP 503/502 dibedakan by $retryable) — sejak analyze()
+     * dengan status HTTP 503/502 dibedakan by $retryable) - sejak analyze()
      * jadi SSE, badan responsnya sudah dikirim (event `error`) SEBELUM
      * exception ini ditangani, jadi status code HTTP tidak relevan lagi di
      * sini; frontend sudah lama tidak membedakan 409/502/503 sama sekali,
@@ -971,33 +899,31 @@ class StagingTicketController extends Controller
     }
 
     /**
-     * Peran yang boleh mengelola staging ticket secara umum — SAMA PERSIS
+     * Peran yang boleh mengelola staging ticket secara umum - SAMA PERSIS
      * dengan gerbang role di view() (halaman /staging-tickets sendiri), jadi
      * siapa pun yang bisa membuka halaman ini otomatis lolos di semua endpoint
      * di bawah, tidak ada yang diam-diam ter-403 padahal sedang lihat halamannya.
      * Dipakai bersama oleh:
-     *   - analyze() & ask()   — dua pintu masuk fitur AI Analyzer (memicu
+     *   - analyze() & ask()   - dua pintu masuk fitur AI Analyzer (memicu
      *                           analisa AI / bertanya lewat panelnya)
-     *   - statistics()        — badge Pending/Approved/Rejected
-     *   - latestUpdate()      — polling ringan (cuma cek ada perubahan atau tidak)
+     *   - statistics()        - badge Pending/Approved/Rejected
+     *   - latestUpdate()      - polling ringan (cuma cek ada perubahan atau tidak)
      * Kalau daftar peran ini berubah, keempat fitur di atas ikut berubah
-     * bersamaan — itu yang diinginkan, bukan efek samping.
+     * bersamaan - itu yang diinginkan, bukan efek samping.
      */
     private function canManageStagingTicket(?int $roleId): bool
     {
-        return in_array($roleId, array_merge(
-            [RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value],
-            RoleId::STAGING_GROUP,
-        ), true);
+        // $roleId dipertahankan agar pemanggil lama tetap jalan; izin kini murni dari Menu Access.
+        return $this->menuAllowed('tickets.staging');
     }
 
     /**
      * POST /api/staging-tickets/{id}/ask
      * Tanya-jawab interaktif atas staging ticket yang sedang divalidasi (lihat
-     * AiTicketQaService) — SSE, bentuknya sama persis dengan
+     * AiTicketQaService) - SSE, bentuknya sama persis dengan
      * AiAssistantController::chat(). Beda dari analyze(): endpoint ini boleh
      * dipanggil berkali-kali per tiket (satu giliran chat per request), dan
-     * tidak butuh klaim atomic seperti ai_analysis_status — tidak ada state
+     * tidak butuh klaim atomic seperti ai_analysis_status - tidak ada state
      * bersama yang diperebutkan, tiap sesi (session_id, dibuat baru oleh
      * frontend setiap modal validasi dibuka) sudah terisolasi sendiri-sendiri
      * lewat AiTicketQaService::cacheKey().
@@ -1024,7 +950,7 @@ class StagingTicketController extends Controller
         if ($staging->isProcessed()) {
             return response()->json([
                 'success' => false,
-                'message' => 'This ticket has already been validated/rejected — asking about it is no longer relevant.',
+                'message' => 'This ticket has already been validated/rejected - asking about it is no longer relevant.',
             ], 422);
         }
 
@@ -1034,7 +960,7 @@ class StagingTicketController extends Controller
         }
 
         // Lepas lock session sebelum stream panjang, supaya tab/request lain
-        // milik user yang sama tidak ikut terblokir — sama seperti analyze().
+        // milik user yang sama tidak ikut terblokir - sama seperti analyze().
         $request->session()->save();
 
         return response()->stream(function () use ($employee, $staging, $validated, $qa, $sessionUser, $roleId) {
@@ -1092,8 +1018,8 @@ class StagingTicketController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $roleId = $sessionUser['role']['id'];
-        if (!in_array($roleId, array_merge([RoleId::EC_ADMINISTRATOR->value, RoleId::DELIVERY_SUPPORT_USER->value], RoleId::STAGING_GROUP), true)) {
+        // Izin murni dari Role Access (slug staging.reject), sama dengan tombol di UI.
+        if (!$this->menuAllowed('staging.reject')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -1109,7 +1035,7 @@ class StagingTicketController extends Controller
             // Sync penolakan ke JARVIES DB
             $this->syncRejectionToJarvies($staging);
 
-            // Notifikasi bell Jarvies — ticket request ditolak
+            // Notifikasi bell Jarvies - ticket request ditolak
             if ($staging->customer_id) {
                 \App\Services\CustomerNotificationService::notify(
                     customerId: (int) $staging->customer_id,
@@ -1165,7 +1091,7 @@ class StagingTicketController extends Controller
             $attachments = app(EmailController::class)
                 ->listNonInlineAttachments($staging->graph_message_id);
 
-            // Map ke format yang dipakai modal — tambahkan proxy URL per item
+            // Map ke format yang dipakai modal - tambahkan proxy URL per item
             // Gunakan API endpoint agar bisa diakses oleh Jarvies (bukan web route)
             $data = array_map(fn ($att) => [
                 'id'            => $att['id'],
@@ -1192,7 +1118,7 @@ class StagingTicketController extends Controller
     /**
      * GET /api/staging-tickets/{id}/attachment-download?attId={graphAttachmentId}
      * Stream attachment langsung dari Graph API ke browser.
-     * API endpoint — dapat diakses oleh Jarvies maupun EcoSystem.
+     * API endpoint - dapat diakses oleh Jarvies maupun EcoSystem.
      */
     public function emailAttachmentDownload(\Illuminate\Http\Request $request, $id)
     {
@@ -1232,7 +1158,7 @@ class StagingTicketController extends Controller
             $name      = $data['name'] ?? 'attachment';
             $asciiName = str_replace(['"', '\\', "\r", "\n"], '', preg_replace('/[^\x20-\x7E]/', '_', $name));
 
-            // Browser hanya punya viewer bawaan untuk image/PDF — tipe lain (docx, xlsx, zip, dst)
+            // Browser hanya punya viewer bawaan untuk image/PDF - tipe lain (docx, xlsx, zip, dst)
             // yang dipaksa 'inline' membuat browser fallback ke auto-download tanpa menghormati
             // nama file dari Content-Disposition, sehingga nama file berubah jadi acak/rusak.
             $isInline    = $data['isInline'] ?? (str_starts_with($contentType, 'image/') || $contentType === 'application/pdf');
@@ -1298,7 +1224,7 @@ class StagingTicketController extends Controller
             $name      = $data['name'] ?? 'attachment';
             $asciiName = str_replace(['"', '\\', "\r", "\n"], '', preg_replace('/[^\x20-\x7E]/', '_', $name));
 
-            // Browser hanya punya viewer bawaan untuk image/PDF — tipe lain (docx, xlsx, zip, dst)
+            // Browser hanya punya viewer bawaan untuk image/PDF - tipe lain (docx, xlsx, zip, dst)
             // yang dipaksa 'inline' membuat browser fallback ke auto-download tanpa menghormati
             // nama file dari Content-Disposition, sehingga nama file berubah jadi acak/rusak.
             $isInline    = $data['isInline'] ?? (str_starts_with($contentType, 'image/') || $contentType === 'application/pdf');
@@ -1379,12 +1305,12 @@ class StagingTicketController extends Controller
     /**
      * GET /api/staging-tickets/latest-update
      *
-     * Endpoint ringan untuk polling — cuma satu MAX(updated_at), tidak
+     * Endpoint ringan untuk polling - cuma satu MAX(updated_at), tidak
      * menyentuh Graph API atau eager-load relasi apa pun. Pola yang sama
      * dengan TicketController::latestUpdate() untuk daftar tiket utama.
      * Frontend (staging/index.blade.php) memanggil ini tiap beberapa detik
      * dan HANYA menarik ulang list/stats penuh kalau nilainya berubah dari
-     * polling sebelumnya — supaya polling 30 detik tidak selalu re-fetch
+     * polling sebelumnya - supaya polling 30 detik tidak selalu re-fetch
      * seluruh halaman walau tidak ada perubahan sama sekali.
      */
     public function latestUpdate()
@@ -1412,7 +1338,7 @@ class StagingTicketController extends Controller
         }
 
         // Satu query GROUP BY, bukan 4 COUNT terpisah (unvalidated/approved/
-        // rejected/total) — status hanya punya 3 nilai yang mungkin (lihat
+        // rejected/total) - status hanya punya 3 nilai yang mungkin (lihat
         // scopeUnvalidated/Approved/Rejected), jadi cukup satu pass lalu
         // dijumlah di PHP untuk total.
         $counts = StagingTicket::selectRaw('status, COUNT(*) as total')
@@ -1647,7 +1573,7 @@ class StagingTicketController extends Controller
      */
     private function sendApprovalNotification(StagingTicket $staging, Ticket $ticket, array $sessionUser, ?TicketMessage $firstMessage = null): void
     {
-        // Pastikan PHP tidak timeout — Graph API bisa memakan 20-60 detik di server production
+        // Pastikan PHP tidak timeout - Graph API bisa memakan 20-60 detik di server production
         // (token fetch + attachment download + createReply + send = banyak HTTP round trips)
         set_time_limit(180);
 
@@ -1669,7 +1595,7 @@ class StagingTicketController extends Controller
             }
             $signatureName = $nickName ?? explode(' ', $sessionUser['name'] ?? 'Helpdesk')[0];
 
-            $ticketNumber = $ticket->ticket_number ?? '—';
+            $ticketNumber = $ticket->ticket_number ?? '-';
 
             // Bangun detail tiket (metadata: phone, module, client, description)
             // agar email approval berisi isi tiket yang sama seperti tampilan Jarvies
@@ -1729,8 +1655,8 @@ class StagingTicketController extends Controller
                 <tr>
                     <td style="background-color:#f9fafb;padding:14px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 6px 6px;">
                         <p style="color:#9ca3af;font-size:11px;margin:0;line-height:1.6;">
-                            Sent by <strong style="color:#6b7280;">{$safeAgent}</strong> &mdash; PT Eclectic Consulting<br>
-                            Ticket: <strong style="color:#6b7280;">#{$safeNum}</strong> &mdash; {$safeDesc}
+                            Sent by <strong style="color:#6b7280;">{$safeAgent}</strong> - PT Eclectic Consulting<br>
+                            Ticket: <strong style="color:#6b7280;">#{$safeNum}</strong> - {$safeDesc}
                         </p>
                     </td>
                 </tr>
@@ -1787,7 +1713,7 @@ class StagingTicketController extends Controller
                 'raw_att_count'   => count($rawAttachments),
             ]);
 
-            // ── Simpan TicketMessage (tampil di semua channel — termasuk Jarvies web) ──
+            // ── Simpan TicketMessage (tampil di semua channel - termasuk Jarvies web) ──
             $message = TicketMessage::create([
                 'ticket_id'           => $ticket->ticket_id,
                 'sender_type'         => 'employee',
@@ -1836,7 +1762,7 @@ class StagingTicketController extends Controller
                 $inReplyTo = $staging->email_message_id; // null untuk web-only → buat thread baru
                 $threadId  = $staging->email_thread_id;   // conversationId fallback
 
-                // Ambil CC dari staging — handle keduanya: PHP array (normal) dan JSON string (legacy/double-encode)
+                // Ambil CC dari staging - handle keduanya: PHP array (normal) dan JSON string (legacy/double-encode)
                 $rawCc  = $staging->cc_emails;
                 if (is_string($rawCc)) {
                     $rawCc = json_decode($rawCc, true) ?? [];
@@ -1918,7 +1844,7 @@ class StagingTicketController extends Controller
                     $e->getTrace()), 0, 8
                 ),
             ]);
-            // Tidak throw — gagal notifikasi tidak membatalkan approval yang sudah berhasil
+            // Tidak throw - gagal notifikasi tidak membatalkan approval yang sudah berhasil
         }
     }
 
@@ -1940,7 +1866,7 @@ class StagingTicketController extends Controller
     {
         $toEmail = $staging->submitted_by_email ?? ($validated['submitted_by_email'] ?? null);
         if (!$toEmail) {
-            Log::info('StagingTicketController@sendSubmissionEmail: skip — no customer email', [
+            Log::info('StagingTicketController@sendSubmissionEmail: skip - no customer email', [
                 'staging_id' => $staging->id,
             ]);
             return;
@@ -1961,10 +1887,10 @@ class StagingTicketController extends Controller
                 $toEmail,
                 $subject,
                 $bodyHtml,
-                null,    // $inReplyTo — email baru, bukan reply
+                null,    // $inReplyTo - email baru, bukan reply
                 $files,  // attachment dari form (UploadedFile[])
                 $ccList,
-                true,    // $noRePrefix — pakai subject apa adanya (sudah ada [PENDING])
+                true,    // $noRePrefix - pakai subject apa adanya (sudah ada [PENDING])
                 null     // $threadId
             );
 
@@ -1991,7 +1917,7 @@ class StagingTicketController extends Controller
                 'to'         => $toEmail,
                 'error'      => $e->getMessage(),
             ]);
-            // Tidak throw — gagal email tidak membatalkan staging yang sudah dibuat
+            // Tidak throw - gagal email tidak membatalkan staging yang sudah dibuat
         }
     }
 
@@ -2139,7 +2065,7 @@ class StagingTicketController extends Controller
 
     /**
      * Siapa boleh benar-benar membaca isi staging_tickets.ai_analysis:
-     *   - Customer (bukan employee): TIDAK PERNAH — itu catatan kerja internal
+     *   - Customer (bukan employee): TIDAK PERNAH - itu catatan kerja internal
      *     validator (termasuk saran assignee, dugaan akar masalah), bukan
      *     sesuatu yang ditujukan untuk customer baca sendiri.
      *   - Staff internal: boleh, KECUALI staging ticket ini milik customer yang
@@ -2148,13 +2074,13 @@ class StagingTicketController extends Controller
      *     AiTicketAnalyzerService::resolveCredentialContext() bisa menyerap
      *     catatan credential itu ke dalam ai_analysis berdasarkan izin siapa
      *     pun yang MEMICU analisa-nya (lihat CustomerCredential::contextNotesFor())
-     *     — bukan siapa yang MEMBACA hasilnya sekarang. Tanpa gerbang ini,
+     *     - bukan siapa yang MEMBACA hasilnya sekarang. Tanpa gerbang ini,
      *     validator lain yang sebenarnya tidak punya izin credential bisa
      *     membaca cache ai_analysis itu dan diam-diam melihat info credential
      *     lewat jalan belakang.
      *
      * @param array<int, int> $customerIdsWithCredentials customer_id yang PUNYA
-     *        baris di customer_credential — dihitung SEKALI per request (lihat
+     *        baris di customer_credential - dihitung SEKALI per request (lihat
      *        index()/show()), bukan query per baris, supaya tidak N+1.
      */
     private function canViewAiAnalysis(bool $isCustomerViewer, bool $hasCredentialPermission, ?int $customerId, array $customerIdsWithCredentials): bool
@@ -2171,11 +2097,11 @@ class StagingTicketController extends Controller
     }
 
     /**
-     * @param bool $includeHeavyFields false untuk list (index()) — body/
+     * @param bool $includeHeavyFields false untuk list (index()) - body/
      *        email_body_html/ai_analysis bisa besar (email lengkap, JSON
      *        analisa AI) dan list cuma menampilkan potongan description
      *        (lihat renderTable() di staging/index.blade.php maupun
-     *        staging/rejected.blade.php) — tidak ada baris tabel yang benar-benar
+     *        staging/rejected.blade.php) - tidak ada baris tabel yang benar-benar
      *        membaca field ini. Detail lengkap tetap diambil terpisah lewat
      *        show() saat validator benar-benar buka satu tiket (openModal()).
      *        true (default) dipakai show()/store() yang memang butuh detail penuh.
@@ -2208,7 +2134,7 @@ class StagingTicketController extends Controller
             $validatorName = $bd ? trim(($bd->first_name ?? '') . ' ' . ($bd->last_name ?? '')) : null;
         }
 
-        // Attachments (dari staging_attachments — web/Jarvies uploads)
+        // Attachments (dari staging_attachments - web/Jarvies uploads)
         $attachments = [];
         if ($s->relationLoaded('attachments')) {
             $attachments = $s->attachments->map(fn ($a) => [
@@ -2255,17 +2181,17 @@ class StagingTicketController extends Controller
             'module_id'           => $s->module_id,
             'client'              => $s->client,
         ]
-        // Field "berat" (body email lengkap + JSON analisa AI) — cuma disertakan
+        // Field "berat" (body email lengkap + JSON analisa AI) - cuma disertakan
         // untuk show()/store() yang memang butuh detail penuh satu tiket. List
         // (index()) tidak pernah menampilkan isinya (cuma potongan description),
-        // jadi tidak perlu ikut terkirim untuk tiap baris — lihat renderTable()
+        // jadi tidak perlu ikut terkirim untuk tiap baris - lihat renderTable()
         // di staging/index.blade.php & staging/rejected.blade.php (keduanya
         // fetch ulang lewat show($id) baru baca field-field ini, via openModal()).
         + ($includeHeavyFields ? [
             'body'            => $s->body,           // ← full message body dari Jarvies/web form
             'email_body_html' => $s->email_body_html,
-            // Analisa AI (cache — lihat AiTicketAnalyzerService). Digerbangi
-            // canViewAiAnalysis() — lihat docblock method itu. ai_analysis_restricted
+            // Analisa AI (cache - lihat AiTicketAnalyzerService). Digerbangi
+            // canViewAiAnalysis() - lihat docblock method itu. ai_analysis_restricted
             // biar frontend bisa kasih pesan yang jelas ("ada hasil tapi disembunyikan
             // dari Anda"), bukan cuma diam-diam kosong seperti "belum pernah dianalisa".
             'ai_analysis'              => $canViewAi ? $s->ai_analysis : null,
@@ -2278,7 +2204,7 @@ class StagingTicketController extends Controller
 
     /**
      * True kalau staging ticket ini diperbarui SETELAH analisis AI-nya dibuat
-     * — beda dari AI Summarize (yang auto-invalidate lewat sidik jari isi
+     * - beda dari AI Summarize (yang auto-invalidate lewat sidik jari isi
      * tiket), analisis AI di sini TIDAK auto-refresh karena panggilan Opus-5
      * + Agent Skill mahal untuk dipicu ulang otomatis tiap kali staging
      * ticket-nya diedit. Ini cukup jadi PERINGATAN pasif buat validator,
@@ -2287,7 +2213,7 @@ class StagingTicketController extends Controller
      * Toleransi 3 detik menyerap selisih mikro-waktu wajar antara
      * ai_analysis_generated_at (di-set eksplisit di
      * AiTicketAnalyzerService::analyze()) dan updated_at (di-set Eloquent
-     * otomatis pada UPDATE query yang SAMA) — tanpa ini, hasil yang baru saja
+     * otomatis pada UPDATE query yang SAMA) - tanpa ini, hasil yang baru saja
      * selesai dianalisis akan langsung tertandai basi oleh selisih milidetik.
      */
     private function isAiAnalysisStale(StagingTicket $s): bool

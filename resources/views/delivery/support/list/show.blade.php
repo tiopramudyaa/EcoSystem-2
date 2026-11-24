@@ -14,7 +14,7 @@
 
     html { scroll-behavior: smooth; }
 
-    /* ── Sticky section nav — pola identik dengan Delivery Project detail ────── */
+    /* ── Sticky section nav - pola identik dengan Delivery Project detail ────── */
     #sectionNav {
         position: fixed;
         top: 90px;            /* tepat di bawah header */
@@ -41,7 +41,7 @@
     .section-tab:hover { background-color: #f9fafb; color: #1f2937; }
     .section-tab.active { font-weight: 600; color: #991b1b; }
 
-    /* Indikator underline aktif — bar primary-color tebal sehingga mudah dilihat */
+    /* Indikator underline aktif - bar primary-color tebal sehingga mudah dilihat */
     .section-tab.active::after {
         content: '';
         position: absolute;
@@ -307,7 +307,7 @@
             </div>
             @endif
 
-            {{-- Documents & Updates — handler-nya masih stub (lihat openDocumentsModal/openUpdatesModal) --}}
+            {{-- Documents & Updates - handler-nya masih stub (lihat openDocumentsModal/openUpdatesModal) --}}
             @if($can('delivery-support.documents.view'))
             <button type="button" onclick="openDocumentsModal()"
                     class="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all duration-200">
@@ -351,7 +351,7 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
-{{-- GENERAL — Support Information + Overall Progress                           --}}
+{{-- GENERAL - Support Information + Overall Progress                           --}}
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
 @if($can('delivery-support.general.view'))
 <section id="general" class="mb-6 card-hover section-animate" data-perm-edit="{{ $can('delivery-support.general.edit') ? '1' : '0' }}">
@@ -427,7 +427,7 @@
                             <label class="block text-sm font-medium text-gray-900 mb-1">Service Window</label>
                             <div class="display-box" id="display-service_window">
                                 @if($support->service_window_start && $support->service_window_end)
-                                    {{ \Illuminate\Support\Str::substr($support->service_window_start, 0, 5) }} – {{ \Illuminate\Support\Str::substr($support->service_window_end, 0, 5) }}
+                                    {{ \Illuminate\Support\Str::substr($support->service_window_start, 0, 5) }} - {{ \Illuminate\Support\Str::substr($support->service_window_end, 0, 5) }}
                                 @else
                                     N/A
                                 @endif
@@ -497,7 +497,7 @@
 @endif
 
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
-{{-- FINANCIAL — Sales Data + IO Number + Term Of Payment Plan                  --}}
+{{-- FINANCIAL - Sales Data + IO Number + Term Of Payment Plan                  --}}
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
 @if($can('delivery-support.financial.view'))
 <section id="financial" class="mb-6 card-hover section-animate" data-perm-edit="{{ $can('delivery-support.financial.edit') ? '1' : '0' }}" data-perm-manage="{{ $can('delivery-support.financial.manage') ? '1' : '0' }}">
@@ -944,7 +944,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Total Mandays</label>
                         <input type="number" name="total_mandays" id="edit-total_mandays" min="0"
-                               value="{{ $support->total_mandays }}"
+                               value="{{ \App\Support\Md::format($support->total_mandays, '') }}"
                                class="block w-full border-gray-300 rounded-md shadow-sm primary-focus text-sm">
                     </div>
                     <div>
@@ -1144,7 +1144,7 @@ const clientsData = @json($clients ?? []);
 const modulesData = @json($modules ?? []);
 
 // ============================================================================
-// DELETE SUPPORT (uses global showConfirm modal — no browser confirm())
+// DELETE SUPPORT (uses global showConfirm modal - no browser confirm())
 // ============================================================================
 async function confirmDeleteSupport() {
     const ok = await showConfirm(
@@ -1270,7 +1270,7 @@ function updateDisplayValues(section, data) {
         if (swEl) {
             const swStart = data.service_window_start || '';
             const swEnd   = data.service_window_end   || '';
-            swEl.textContent = (swStart && swEnd) ? `${swStart} – ${swEnd}` : 'N/A';
+            swEl.textContent = (swStart && swEnd) ? `${swStart} - ${swEnd}` : 'N/A';
         }
     }
     else if (section === 'approval-info') {
@@ -1365,7 +1365,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // =========================================================================
-// CUSTOMER DELIVERABLE FOLDER — DROPDOWN
+// CUSTOMER DELIVERABLE FOLDER - DROPDOWN
 // =========================================================================
 
 let _dlvDropdownOpen   = false;
@@ -1497,7 +1497,7 @@ async function openDeliverableLink(folderId, row) {
         if (data.success && data.url) {
             if (tab) { tab.location.href = data.url; }
             else { window.open(data.url, '_blank', 'noopener'); }
-            // Link bisa saja diturunkan ke scope internal oleh kebijakan tenant —
+            // Link bisa saja diturunkan ke scope internal oleh kebijakan tenant -
             // beri tahu sekarang, jangan sampai baru ketahuan dari keluhan customer.
             if (data.link_warning) showToast(data.link_warning, 'error');
         } else {
@@ -1557,12 +1557,12 @@ async function copyDeliverableLink(folderId, row) {
 
         if (data.link_warning) {
             // Jangan klaim "anyone with this link" kalau scope-nya ternyata internal.
-            if (!copied) window.prompt('Copy this link:', data.url);
+            if (!copied) showAlert('Copy this link manually:\n\n' + data.url, 'Shareable Link');
             showToast(data.link_warning, 'error');
         } else if (copied) {
-            showToast('Shareable link copied — anyone with this link can open the folder.', 'success');
+            showToast('Shareable link copied - anyone with this link can open the folder.', 'success');
         } else {
-            window.prompt('Copy this shareable link:', data.url);
+            showAlert('Copy this shareable link manually:\n\n' + data.url, 'Shareable Link');
         }
     } catch (err) {
         showToast('Failed to copy link: ' + err.message, 'error');
@@ -1692,7 +1692,7 @@ function renderSlaPolicies(policies) {
     tbody.innerHTML = policies.map(p => {
         const pc  = SLA_PRIO_CFG[p.priority] || { bg:'bg-gray-100', text:'text-gray-600', dot:'bg-gray-400' };
         const breakLabel = (p.break_start_time && p.break_end_time) ? ` (break ${p.break_start_time}-${p.break_end_time})` : '';
-        const workHoursLabel = (p.work_start_time && p.work_end_time) ? ` ${p.work_start_time}–${p.work_end_time}${breakLabel}` : '';
+        const workHoursLabel = (p.work_start_time && p.work_end_time) ? ` ${p.work_start_time}-${p.work_end_time}${breakLabel}` : '';
         const modeCell = p.is_24_hours
             ? `<span class="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full"><i class="fas fa-infinity text-[9px]"></i> 24/7</span>`
             : `<span class="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Business${workHoursLabel}</span>`;
@@ -1732,11 +1732,37 @@ function openSlaAddModal() {
     document.getElementById('slaAddForm').reset();
     document.getElementById('slaAddError').classList.add('hidden');
     document.getElementById('slaAddWorkEnd').setCustomValidity('');
+    respUnitAttrs(document.getElementById('slaAddResponse'), 'hours');
     slaUpdateAdd24h();
     document.getElementById('slaAddModal').classList.remove('hidden');
 }
 function closeSlaAddModal() {
     document.getElementById('slaAddModal').classList.add('hidden');
+}
+
+// ── Response unit (hours / minutes) - always sent to the API in hours ─────────
+function respUnitAttrs(inp, unit) {
+    inp.step = inp.min = unit === 'minutes' ? '1' : '0.01';
+    inp.placeholder = unit === 'minutes' ? 'e.g. 30' : 'e.g. 4';
+}
+function respUnitChange(inputId, unitId) {
+    const inp  = document.getElementById(inputId);
+    const unit = document.getElementById(unitId).value;
+    const v    = parseFloat(inp.value);
+    if (!isNaN(v)) inp.value = unit === 'minutes' ? Math.round(v * 60) : +(v / 60).toFixed(2);
+    respUnitAttrs(inp, unit);
+}
+function respSetHours(inputId, unitId, hours) {
+    const inp  = document.getElementById(inputId);
+    const h    = parseFloat(hours);
+    const unit = h < 1 ? 'minutes' : 'hours';
+    document.getElementById(unitId).value = unit;
+    inp.value = unit === 'minutes' ? Math.round(h * 60) : h;
+    respUnitAttrs(inp, unit);
+}
+function respGetHours(inputId, unitId) {
+    const v = parseFloat(document.getElementById(inputId).value);
+    return document.getElementById(unitId).value === 'minutes' ? Math.round(v / 60 * 100) / 100 : v;
 }
 function slaUpdateAdd24h() {
     const prio   = document.getElementById('slaAddPriority').value;
@@ -1747,7 +1773,7 @@ function slaUpdateAdd24h() {
         el.checked = true; el.disabled = true;
         label.classList.add('opacity-75','cursor-not-allowed');
         label.classList.remove('cursor-pointer','hover:bg-gray-100');
-        note.textContent = 'Required 24/7 — Very High priority always uses full calendar hours.';
+        note.textContent = 'Required 24/7 - Very High priority always uses full calendar hours.';
     } else {
         el.disabled = false;
         label.classList.remove('opacity-75','cursor-not-allowed');
@@ -1776,6 +1802,7 @@ async function submitSlaAddPolicy(e) {
     const fd = new FormData(form);
     fd.set('delivery_support_id', SLA_DS_ID);
     const payload = Object.fromEntries(fd.entries());
+    payload.response_hours = respGetHours('slaAddResponse', 'slaAddResponseUnit');
     payload.is_24_hours = form.querySelector('[name=is_24_hours]').checked;
     payload.work_start_time  = payload.work_start_time || null;
     payload.work_end_time    = payload.work_end_time || null;
@@ -1810,7 +1837,7 @@ function openSlaEditModal(p) {
     document.getElementById('slaEditId').value         = p.id;
     document.getElementById('slaEditPriority').value   = p.priority;
     document.getElementById('slaEditScale').value      = p.scale;
-    document.getElementById('slaEditResponse').value   = p.response_hours;
+    respSetHours('slaEditResponse', 'slaEditResponseUnit', p.response_hours);
     document.getElementById('slaEditResolution').value = p.resolution_hours;
     document.getElementById('slaEdit24h').checked      = p.is_24_hours;
     document.getElementById('slaEditWorkStart').value  = p.work_start_time || '';
@@ -1836,7 +1863,7 @@ function slaUpdateEdit24h() {
         el.checked = true; el.disabled = true;
         label.classList.add('opacity-75','cursor-not-allowed');
         label.classList.remove('cursor-pointer','hover:bg-gray-100');
-        note.textContent = 'Required 24/7 — Very High priority always uses full calendar hours.';
+        note.textContent = 'Required 24/7 - Very High priority always uses full calendar hours.';
     } else {
         el.disabled = false;
         label.classList.remove('opacity-75','cursor-not-allowed');
@@ -1868,7 +1895,7 @@ async function submitSlaEditPolicy(e) {
     const payload = {
         priority:         document.getElementById('slaEditPriority').value,
         scale:            document.getElementById('slaEditScale').value,
-        response_hours:   document.getElementById('slaEditResponse').value,
+        response_hours:   respGetHours('slaEditResponse', 'slaEditResponseUnit'),
         resolution_hours: document.getElementById('slaEditResolution').value,
         is_24_hours:      document.getElementById('slaEdit24h').checked,
         work_start_time:  document.getElementById('slaEditWorkStart').value || null,
@@ -1965,17 +1992,22 @@ document.addEventListener('DOMContentLoaded', loadSlaPolicies);
                         </select>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Response (Hours) <span class="text-red-500">*</span></label>
-                        <input type="number" name="response_hours" step="0.5" min="0.5" required placeholder="e.g. 4"
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Response <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" name="response_hours" id="slaAddResponse" step="0.01" min="0.01" required placeholder="e.g. 4"
                             class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-300">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Resolution (Hours) <span class="text-red-500">*</span></label>
-                        <input type="number" name="resolution_hours" step="0.5" min="0.5" required placeholder="e.g. 24"
+                        <select id="slaAddResponseUnit" onchange="respUnitChange('slaAddResponse', 'slaAddResponseUnit')"
                             class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-300">
+                            <option value="hours">Hours</option>
+                            <option value="minutes">Minutes</option>
+                        </select>
                     </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Resolution (Hours) <span class="text-red-500">*</span></label>
+                    <input type="number" name="resolution_hours" step="0.5" min="0.5" required placeholder="e.g. 24"
+                        class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-300">
                 </div>
                 <label id="slaAdd24hLabel" class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50/80 cursor-pointer hover:bg-gray-100 transition">
                     <input type="checkbox" name="is_24_hours" id="slaAdd24h" onchange="slaUpdateAdd24h()" class="mt-0.5 w-4 h-4 rounded accent-red-700">
@@ -2062,17 +2094,22 @@ document.addEventListener('DOMContentLoaded', loadSlaPolicies);
                         </select>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Response (Hours)</label>
-                        <input type="number" id="slaEditResponse" step="0.5" min="0.5" required
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Response</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" id="slaEditResponse" step="0.01" min="0.01" required
                             class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Resolution (Hours)</label>
-                        <input type="number" id="slaEditResolution" step="0.5" min="0.5" required
+                        <select id="slaEditResponseUnit" onchange="respUnitChange('slaEditResponse', 'slaEditResponseUnit')"
                             class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                            <option value="hours">Hours</option>
+                            <option value="minutes">Minutes</option>
+                        </select>
                     </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Resolution (Hours)</label>
+                    <input type="number" id="slaEditResolution" step="0.5" min="0.5" required
+                        class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300">
                 </div>
                 <label id="slaEdit24hLabel" class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50/80 cursor-pointer hover:bg-gray-100 transition">
                     <input type="checkbox" id="slaEdit24h" onchange="slaUpdateEdit24h()" class="mt-0.5 w-4 h-4 rounded accent-blue-600">
@@ -2211,7 +2248,7 @@ function renderCustomerPicPanel(pics) {
                 ${(p.full_name || '?').charAt(0).toUpperCase()}
             </div>
             <div class="min-w-0">
-                <p class="text-sm font-medium text-gray-900 truncate">${escHtml(p.full_name ?? '—')}</p>
+                <p class="text-sm font-medium text-gray-900 truncate">${escHtml(p.full_name ?? '-')}</p>
                 <p class="text-xs text-gray-400 truncate">${escHtml(p.email_work ?? '')}${p.position ? ' · ' + escHtml(p.position) : ''}</p>
             </div>
         </div>
@@ -2263,7 +2300,7 @@ function renderCpicList(contacts) {
                 class="cpic-checkbox w-4 h-4 rounded border-gray-300 text-gray-800 focus:ring-gray-700"
                 onchange="toggleCpic(${c.contact_id}, this.checked)">
             <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-gray-900">${escHtml(c.full_name ?? '—')}</p>
+                <p class="text-sm font-medium text-gray-900">${escHtml(c.full_name ?? '-')}</p>
                 <p class="text-xs text-gray-400">${escHtml(c.email_work ?? '')}${c.position ? ' · ' + escHtml(c.position) : ''}</p>
             </div>
         </label>`;
@@ -2422,11 +2459,11 @@ document.getElementById('removeTicketModal').addEventListener('click', function(
 </script>
 @endif
 
-{{-- Financial / TOP / Plan Cost — modals & scripts --}}
+{{-- Financial / TOP / Plan Cost - modals & scripts --}}
 @include('delivery.support.list.partials.financial-plancost-modals')
 @include('delivery.support.list.partials.financial-plancost-scripts')
 
-{{-- Recons — scripts section (hanya dimuat kalau section-nya tampil) --}}
+{{-- Recons - scripts section (hanya dimuat kalau section-nya tampil) --}}
 @if($can('delivery-support.recons.view'))
 @include('delivery.support.list.partials.recons-scripts')
 @endif

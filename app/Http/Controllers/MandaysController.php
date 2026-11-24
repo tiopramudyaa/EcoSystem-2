@@ -19,6 +19,7 @@ use App\Models\Employee;
 use App\Models\EmployeeQualification;
 use App\Models\Timesheet;
 use App\Models\TicketMessage;
+use App\Services\CustomerMandaysApprovalService;
 
 class MandaysController extends Controller
 {
@@ -30,12 +31,36 @@ class MandaysController extends Controller
      * Can this employee review/approve Resolution Days regardless of ticket participation?
      * 'ticket.head-mandays' = Head of Support (also grants the ticket-detail review UI).
      * 'ticket.approve-resolution-days' = separate slug for the Resolution Days report list
-     * (granted to Admin) — kept distinct so granting it doesn't also surface the
+     * (granted to Admin) - kept distinct so granting it doesn't also surface the
      * Head-only ticket-detail sidebar sections for roles that shouldn't see those.
      */
     private function canReviewResolutionDays(?Employee $employee): bool
     {
         return (bool) ($employee?->canAccessMenu('ticket.head-mandays') || $employee?->canAccessMenu('ticket.approve-resolution-days'));
+    }
+
+    /**
+     * Return 403 unless the session user's roles hold at least one of the given Role Access slugs.
+     * Izin murni dari Role Access; sama dengan tombol yang ditampilkan di ticket/show.blade.php.
+     *
+     * @param string|string[] $slugs
+     */
+    private function denyUnlessPermission(string|array $slugs, string $msg): ?\Illuminate\Http\JsonResponse
+    {
+        $empId = session('user')['id'] ?? null;
+
+        if (!$empId) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $employee = Employee::find($empId);
+        foreach ((array) $slugs as $slug) {
+            if ($employee?->canAccessMenu($slug)) {
+                return null;
+            }
+        }
+
+        return response()->json(['success' => false, 'message' => $msg], 403);
     }
 
     /** Return 403 if session user is not a PIC or member of $ticket. Head-level permission bypasses this check. */
@@ -142,7 +167,7 @@ class MandaysController extends Controller
     }
 
     // =========================================================================
-    // CUSTOMER MANDAYS — PIC ENDPOINTS
+    // CUSTOMER MANDAYS - PIC ENDPOINTS
     // =========================================================================
 
     /**
@@ -173,6 +198,10 @@ class MandaysController extends Controller
     {
         $ticket = Ticket::where('ticket_id', $ticketId)->firstOrFail();
 
+        if ($deny = $this->denyUnlessPermission('ticket.propose-mandays-customer', 'You do not have permission to propose customer mandays.')) {
+            return $deny;
+        }
+
         if ($deny = $this->denyUnlessParticipant($ticket, 'Only the ticket PIC or a member can edit the customer mandays draft.')) {
             return $deny;
         }
@@ -195,8 +224,8 @@ class MandaysController extends Controller
 
         $existing = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
 
-        // Blokir edit saat sedang dalam proses (pending_helpdesk / sent_to_chat)
-        if ($existing && in_array($existing->status, ['pending_helpdesk', 'sent_to_chat'])) {
+        // Blokir edit saat sedang dalam proses (approval internal / pending_helpdesk / sent_to_chat)
+        if ($existing && in_array($existing->status, ['pending_approval', 'pending_helpdesk', 'sent_to_chat'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cannot edit while proposal is being reviewed.',
@@ -213,8 +242,8 @@ class MandaysController extends Controller
 
         DB::beginTransaction();
         try {
-            if (!$existing || in_array($existing->status, ['canceled', 'approved'])) {
-                // Buat versi baru
+            if (!$existing || in_array($existing->status, ['canceled', 'approved', 'rejected'])) {
+                // Buat versi baru (termasuk revisi setelah ditolak di approval internal)
                 $latestVersion = CustomerMandays::where('ticket_id', $ticketId)->max('version') ?? 0;
                 $proposal = CustomerMandays::create([
                     'ticket_id'           => $ticketId,
@@ -270,9 +299,13 @@ class MandaysController extends Controller
      * POST /api/tickets/{ticketId}/mandays/pic-draft/submit
      * PIC submit ke Helpdesk.
      */
-    public function submitCustomerDraft($ticketId)
+    public function submitCustomerDraft($ticketId, CustomerMandaysApprovalService $approvalService)
     {
         $ticket   = Ticket::where('ticket_id', $ticketId)->firstOrFail();
+
+        if ($deny = $this->denyUnlessPermission('ticket.propose-mandays-customer', 'You do not have permission to propose customer mandays.')) {
+            return $deny;
+        }
 
         if ($deny = $this->denyUnlessParticipant($ticket, 'Only the ticket PIC or a member can submit the customer mandays proposal.')) {
             return $deny;
@@ -288,29 +321,135 @@ class MandaysController extends Controller
             return response()->json(['success' => false, 'message' => 'No draft to submit.'], 422);
         }
 
-        $proposal->update([
-            'status'                  => 'pending_helpdesk',
-            'submitted_to_customer_at'=> now(),
-        ]);
-        $ticket->update(['mandays_proposal_status' => 'pending_helpdesk']);
-
+        // Approval bertingkat: snapshot Level 1 & 2 disalin, proposal menunggu Level 1.
         $sessionUser = session('user');
-        $fromName    = $sessionUser['name'] ?? 'PIC';
-        $fromId      = $sessionUser['id'] ?? null;
-        $ticketNum   = $ticket->ticket_number ?? $ticketId;
-        $this->notifyRoles(
-            [RoleId::DELIVERY_HELPDESK->value],
-            'customer_mandays_proposed',
-            $fromName,
-            $fromId,
-            "Ticket #{$ticketNum} — Customer mandays proposal submitted for review",
-            "/ticket/{$ticketId}"
+        $result = $approvalService->submit(
+            $proposal,
+            $ticket,
+            (int) ($sessionUser['id'] ?? 0),
+            $sessionUser['name'] ?? 'PIC'
         );
+
+        if (!$result['allowed']) {
+            return response()->json(['success' => false, 'message' => $result['reason']], 422);
+        }
 
         return response()->json([
             'success'               => true,
-            'message'               => 'Proposal submitted to Helpdesk.',
-            'ticket_mandays_status' => 'pending_helpdesk',
+            'message'               => 'Proposal submitted for approval.',
+            'ticket_mandays_status' => CustomerMandays::STATUS_PENDING_APPROVAL,
+        ]);
+    }
+
+    // =========================================================================
+    // CUSTOMER MANDAYS — APPROVAL BERTINGKAT (Level 1 → Level 2)
+    // =========================================================================
+
+    /**
+     * GET /api/tickets/{ticketId}/mandays/approval
+     * Proposal terbaru + jejak approval + apakah user ini boleh bertindak sekarang.
+     */
+    public function getApproval($ticketId, CustomerMandaysApprovalService $approvalService)
+    {
+        $ticket   = Ticket::where('ticket_id', $ticketId)->firstOrFail();
+        $proposal = CustomerMandays::where('ticket_id', $ticketId)
+            ->latestVersion()
+            ->with(['details', 'canceledBy.basicData', 'proposedByAgent.basicData'])
+            ->first();
+
+        $gate = $proposal
+            ? $approvalService->canAct($proposal, (int) (session('user')['id'] ?? 0))
+            : ['allowed' => false, 'reason' => 'No proposal found.'];
+
+        return response()->json([
+            'success'               => true,
+            'data'                  => $proposal ? $this->formatCustomerProposal($proposal) : null,
+            'can_act'               => $gate['allowed'],
+            'can_act_reason'        => $gate['allowed'] ? null : $gate['reason'],
+            'ticket_mandays_status' => $ticket->mandays_proposal_status ?? 'none',
+        ]);
+    }
+
+    /**
+     * POST /api/tickets/{ticketId}/mandays/approval/approve
+     * Penyetuju level aktif menyetujui (boleh menyertakan angka MD yang diubah).
+     */
+    public function approveLevel(Request $request, $ticketId, CustomerMandaysApprovalService $approvalService)
+    {
+        $validated = $request->validate([
+            'details'            => 'nullable|array|min:1',
+            'details.*.activity' => 'nullable|string|max:255',
+            'details.*.module'   => 'required_with:details|string|max:100',
+            'details.*.mandays'  => 'required_with:details|numeric|min:0',
+            'notes'              => 'nullable|string|max:1000',
+        ]);
+
+        $ticket   = Ticket::where('ticket_id', $ticketId)->firstOrFail();
+        $proposal = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
+        if (!$proposal) {
+            return response()->json(['success' => false, 'message' => 'No proposal found.'], 422);
+        }
+
+        $sessionUser = session('user');
+        $result = $approvalService->approve(
+            $proposal,
+            $ticket,
+            (int) ($sessionUser['id'] ?? 0),
+            $sessionUser['name'] ?? 'Approver',
+            $validated['details'] ?? null,
+            $validated['notes'] ?? null
+        );
+
+        if (!$result['allowed']) {
+            return response()->json(['success' => false, 'message' => $result['reason']], 422);
+        }
+
+        $status = $ticket->fresh()->mandays_proposal_status;
+
+        return response()->json([
+            'success'               => true,
+            'message'               => $result['completed']
+                ? 'Approved. The proposal is ready for Helpdesk to send to the customer.'
+                : 'Approved. The proposal moves to the next approval level.',
+            'completed'             => $result['completed'],
+            'ticket_mandays_status' => $status,
+        ]);
+    }
+
+    /**
+     * POST /api/tickets/{ticketId}/mandays/approval/reject
+     * Penyetuju level aktif menolak dengan catatan wajib; proposal kembali ke PIC.
+     */
+    public function rejectLevel(Request $request, $ticketId, CustomerMandaysApprovalService $approvalService)
+    {
+        $validated = $request->validate(
+            ['notes' => 'required|string|min:5|max:1000'],
+            ['notes.required' => 'Please explain why the proposal is rejected.', 'notes.min' => 'The reason must be at least 5 characters.']
+        );
+
+        $ticket   = Ticket::where('ticket_id', $ticketId)->firstOrFail();
+        $proposal = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
+        if (!$proposal) {
+            return response()->json(['success' => false, 'message' => 'No proposal found.'], 422);
+        }
+
+        $sessionUser = session('user');
+        $result = $approvalService->reject(
+            $proposal,
+            $ticket,
+            (int) ($sessionUser['id'] ?? 0),
+            $sessionUser['name'] ?? 'Approver',
+            $validated['notes']
+        );
+
+        if (!$result['allowed']) {
+            return response()->json(['success' => false, 'message' => $result['reason']], 422);
+        }
+
+        return response()->json([
+            'success'               => true,
+            'message'               => 'Proposal rejected and returned to the PIC.',
+            'ticket_mandays_status' => CustomerMandays::STATUS_REJECTED,
         ]);
     }
 
@@ -321,6 +460,10 @@ class MandaysController extends Controller
     public function deleteCustomerDraft($ticketId)
     {
         $ticket = Ticket::where('ticket_id', $ticketId)->firstOrFail();
+
+        if ($deny = $this->denyUnlessPermission('ticket.propose-mandays-customer', 'You do not have permission to propose customer mandays.')) {
+            return $deny;
+        }
 
         if ($deny = $this->denyUnlessParticipant($ticket, 'Only the ticket PIC or a member can delete the customer mandays draft.')) {
             return $deny;
@@ -342,7 +485,7 @@ class MandaysController extends Controller
             $proposal->delete();
 
             // If an earlier (canceled/approved) version still exists, that version
-            // becomes latest again — reflect its status instead of wiping history.
+            // becomes latest again - reflect its status instead of wiping history.
             $previous = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
             $newStatus = $previous ? ($previous->status === 'draft' ? 'pic_draft' : $previous->status) : 'none';
             $ticket->update(['mandays_proposal_status' => $newStatus]);
@@ -362,14 +505,14 @@ class MandaysController extends Controller
     }
 
     // =========================================================================
-    // CUSTOMER MANDAYS — HELPDESK ENDPOINTS
+    // CUSTOMER MANDAYS - HELPDESK ENDPOINTS
     // =========================================================================
 
     /**
      * GET /api/tickets/{ticketId}/mandays/hd-draft
      * Helpdesk ambil proposal terbaru untuk direview.
      */
-    public function getHelpdeskDraft($ticketId)
+    public function getHelpdeskDraft($ticketId, CustomerMandaysApprovalService $approvalService)
     {
         $ticket = Ticket::where('ticket_id', $ticketId)->firstOrFail();
 
@@ -378,9 +521,17 @@ class MandaysController extends Controller
             ->with(['details', 'canceledBy.basicData', 'proposedByAgent.basicData'])
             ->first();
 
+        // Modal Review juga dipakai approver Level 1/2: beri tahu apakah user ini boleh
+        // bertindak pada level yang sedang menunggu (keputusan final tetap di approveLevel/rejectLevel).
+        $gate = $proposal && $proposal->status === CustomerMandays::STATUS_PENDING_APPROVAL
+            ? $approvalService->canAct($proposal, (int) (session('user')['id'] ?? 0))
+            : ['allowed' => false, 'reason' => null];
+
         return response()->json([
             'success'               => true,
             'data'                  => $proposal ? $this->formatCustomerProposal($proposal) : null,
+            'can_act'               => $gate['allowed'],
+            'can_act_reason'        => $gate['allowed'] ? null : $gate['reason'],
             'ticket_mandays_status' => $ticket->mandays_proposal_status ?? 'none',
         ]);
     }
@@ -395,6 +546,16 @@ class MandaysController extends Controller
         $employee = $sessionUserId ? Employee::find($sessionUserId) : null;
         if (!$employee?->canAccessMenu('ticket.review-mandays')) {
             return response()->json(['success' => false, 'message' => 'You do not have permission to edit the customer mandays proposal.'], 403);
+        }
+
+        // Menyimpan perubahan adalah bagian dari Save Draft dan Send to Customer (UI menyimpan
+        // dulu sebelum mengirim), jadi salah satu dari keduanya cukup. "Approve" Helpdesk sudah
+        // dihapus (approval bertingkat), jadi slug ticket.review-mandays.approve tidak lagi berlaku.
+        if ($deny = $this->denyUnlessPermission(
+            ['ticket.review-mandays.save-draft', 'ticket.review-mandays.send-to-customer'],
+            'You do not have permission to save the customer mandays proposal.'
+        )) {
+            return $deny;
         }
 
         $request->validate([
@@ -511,7 +672,7 @@ class MandaysController extends Controller
             'last_agent_reply_at' => now(),
         ]);
 
-        // Coba kirim email ke customer (non-fatal jika gagal — pesan sudah tersimpan di chat)
+        // Coba kirim email ke customer (non-fatal jika gagal - pesan sudah tersimpan di chat)
         $emailSent    = false;
         $emailWarning = null;
         $emailTo      = null;
@@ -617,45 +778,10 @@ class MandaysController extends Controller
     }
 
     /**
-     * POST /api/tickets/{ticketId}/mandays/hd-draft/approve
-     * Helpdesk approve → update man_days ticket.
-     */
-    public function approveCustomerMandays($ticketId)
-    {
-        $sessionUserId = session('user')['id'] ?? null;
-        $employee = $sessionUserId ? Employee::find($sessionUserId) : null;
-        if (!$employee?->canAccessMenu('ticket.review-mandays.approve')) {
-            return response()->json(['success' => false, 'message' => 'You do not have permission to approve the customer mandays proposal.'], 403);
-        }
-
-        $ticket   = Ticket::where('ticket_id', $ticketId)->firstOrFail();
-        $proposal = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
-
-        // Sending to the customer chat is no longer required before approving —
-        // Helpdesk can approve directly from pending_helpdesk, or from sent_to_chat
-        // if it was sent anyway.
-        if (!$proposal || !in_array($proposal->status, ['pending_helpdesk', 'sent_to_chat'])) {
-            return response()->json(['success' => false, 'message' => 'No proposal ready to approve.'], 422);
-        }
-
-        $proposal->update(['status' => 'approved']);
-        $ticket->update([
-            'mandays_proposal_status' => 'approved',
-            'man_days'                => $proposal->total_mandays,
-        ]);
-
-        return response()->json([
-            'success'               => true,
-            'message'               => 'Customer mandays approved.',
-            'ticket_mandays_status' => 'approved',
-        ]);
-    }
-
-    /**
      * POST /api/tickets/{ticketId}/mandays/hd-draft/cancel
      * Helpdesk cancel proposal (with optional notes for PIC).
      */
-    public function cancelCustomerMandays(Request $request, $ticketId)
+    public function cancelCustomerMandays(Request $request, $ticketId, CustomerMandaysApprovalService $approvalService)
     {
         $sessionUserId = session('user')['id'] ?? null;
         $employee = $sessionUserId ? Employee::find($sessionUserId) : null;
@@ -668,24 +794,24 @@ class MandaysController extends Controller
         $latestProposal = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
 
         // Target a specific (possibly already-superseded) version via mandays_id, or
-        // default to the latest version — covers both "cancel the current draft/
+        // default to the latest version - covers both "cancel the current draft/
         // pending proposal" and "cancel an older version a newer one has since
         // superseded" (that older version, since it's superseded, is always already
-        // 'approved' — a version only gets superseded once the prior one was
+        // 'approved' - a version only gets superseded once the prior one was
         // approved or canceled).
         $mandaysId = $request->input('mandays_id');
         $proposal  = $mandaysId
             ? CustomerMandays::where('ticket_id', $ticketId)->where('id', $mandaysId)->first()
             : $latestProposal;
 
-        if (!$proposal || !in_array($proposal->status, ['pending_helpdesk', 'sent_to_chat', 'approved'])) {
+        if (!$proposal || !in_array($proposal->status, ['pending_approval', 'pending_helpdesk', 'sent_to_chat', 'approved'])) {
             return response()->json(['success' => false, 'message' => 'No active proposal to cancel.'], 422);
         }
 
         $isLatest = $latestProposal && $proposal->id === $latestProposal->id;
 
         // Cancelling an already-approved proposal reverses something the customer
-        // already signed off on (approval happens on their side via JARVIES) — gated
+        // already signed off on (approval happens on their side via JARVIES) - gated
         // behind a separate permission on top of the base cancel permission. Also
         // required whenever a non-latest version is targeted, since that version is
         // always already-approved by definition. No automated customer notification
@@ -698,14 +824,20 @@ class MandaysController extends Controller
         $sessionUser    = session('user');
         $canceledById   = $sessionUser['id'] ?? null;
 
-        $proposal->update([
-            'status'          => 'canceled',
-            'notes'           => $cancelNotes ?: null,
-            'canceled_by_id'  => $canceledById,
-            'canceled_at'     => now(),
-        ]);
+        DB::transaction(function () use ($proposal, $approvalService, $cancelNotes, $canceledById) {
+            // Level approval yang belum diputuskan tidak boleh tampak masih menunggu.
+            $approvalService->skipRemaining($proposal);
 
-        // ticket.mandays_proposal_status mirrors the LATEST version's status only —
+            $proposal->update([
+                'status'             => 'canceled',
+                'current_step_order' => null,
+                'notes'              => $cancelNotes ?: null,
+                'canceled_by_id'     => $canceledById,
+                'canceled_at'        => now(),
+            ]);
+        });
+
+        // ticket.mandays_proposal_status mirrors the LATEST version's status only -
         // cancelling an older, already-superseded version must not overwrite it with
         // a stale 'canceled' while the actual latest version is still active/approved.
         if ($isLatest) {
@@ -716,7 +848,7 @@ class MandaysController extends Controller
         $fromName  = $sessionUser['name'] ?? 'Helpdesk';
         $ticketNum = $ticket->ticket_number ?? $ticketId;
         $versionNote = !$isLatest ? " (Version {$proposal->version})" : '';
-        $preview   = "Ticket #{$ticketNum} — Customer mandays proposal{$versionNote} has been canceled"
+        $preview   = "Ticket #{$ticketNum}: Customer mandays proposal{$versionNote} has been canceled"
                    . ($cancelNotes ? ': ' . mb_substr($cancelNotes, 0, 80) : '');
         $link      = "/ticket/{$ticketId}";
 
@@ -746,7 +878,7 @@ class MandaysController extends Controller
     }
 
     // =========================================================================
-    // RESOLUTION MANDAYS — PIC + HEAD OF SUPPORT
+    // RESOLUTION MANDAYS - PIC + HEAD OF SUPPORT
     // =========================================================================
 
     /**
@@ -787,6 +919,10 @@ class MandaysController extends Controller
     public function saveResolutionProposal(Request $request, $ticketId)
     {
         $ticket = Ticket::where('ticket_id', $ticketId)->firstOrFail();
+
+        if ($deny = $this->denyUnlessPermission('ticket.propose-mandays-resolution', 'You do not have permission to propose resolution days.')) {
+            return $deny;
+        }
 
         if ($deny = $this->denyUnlessParticipant($ticket, 'Only the ticket PIC or a member can save the resolution days proposal.')) {
             return $deny;
@@ -848,7 +984,7 @@ class MandaysController extends Controller
                 ]);
             } else {
                 $proposal = $existing;
-                // PIC can keep refining the proposal while it's pending Head approval —
+                // PIC can keep refining the proposal while it's pending Head approval -
                 // status stays pending_head so it's still visible in the Head's queue
                 // without needing to resubmit. An already-approved proposal that gets
                 // edited falls back to draft (needs re-approval); draft/needs_revision/
@@ -877,7 +1013,7 @@ class MandaysController extends Controller
                     $existingDetail = $existingDetails->get($empId);
 
                     if ($existingDetail) {
-                        // Update mandays saja — progress_percentage/progress_note tetap
+                        // Update mandays saja - progress_percentage/progress_note tetap
                         $existingDetail->update([
                             'module'             => $d['module'] ?? null,
                             'mandays'            => $d['mandays'] ?? 0,
@@ -915,7 +1051,7 @@ class MandaysController extends Controller
 
         $message = match (true) {
             !$dataChanged                       => 'Saved. No changes detected.',
-            $ticketStatus === 'pending_head'    => 'Updated — still pending Head approval, no need to resubmit.',
+            $ticketStatus === 'pending_head'    => 'Updated - still pending Head approval, no need to resubmit.',
             default                              => 'Draft saved. Submit to Head Support for approval.',
         };
 
@@ -965,20 +1101,25 @@ class MandaysController extends Controller
     {
         $ticket   = Ticket::where('ticket_id', $ticketId)->firstOrFail();
 
+        if ($deny = $this->denyUnlessPermission('ticket.propose-mandays-resolution', 'You do not have permission to propose resolution days.')) {
+            return $deny;
+        }
+
         if ($deny = $this->denyUnlessParticipant($ticket, 'Only the ticket PIC or a member can submit the resolution days proposal.')) {
             return $deny;
         }
 
         // Resolution Days can be drafted freely, but on Change Request tickets, submitting
-        // to Head requires the Customer Mandays proposal to already be approved by Helpdesk
-        // first — customer's own approval is not required at this point, only Helpdesk's.
+        // to Head requires the latest Customer Mandays proposal to be 'approved'. Since the
+        // multi-level approval flow removed Helpdesk's direct approve, this now means the
+        // customer has approved it.
         // Other ticket types keep the original unrestricted flow.
         if ($ticket->ticket_type === 'Change Request') {
             $customerProposal = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
             if (!$customerProposal || $customerProposal->status !== 'approved') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Customer Mandays proposal must be approved by Helpdesk before submitting Resolution Days.',
+                    'message' => 'Customer Mandays proposal must be approved before submitting Resolution Days.',
                 ], 422);
             }
         }
@@ -997,11 +1138,11 @@ class MandaysController extends Controller
         $fromId      = $sessionUser['id'] ?? null;
         $ticketNum   = $ticket->ticket_number ?? $ticketId;
         $this->notifyRoles(
-            [RoleId::DELIVERY_SUPPORT_HEAD->value, RoleId::DELIVERY_PROJECT_HEAD->value],
+            ['ticket.head-mandays', 'ticket.approve-resolution-days'],
             'resolution_days_proposed',
             $fromName,
             $fromId,
-            "Ticket #{$ticketNum} — Resolution days proposal submitted for your review",
+            "Ticket #{$ticketNum}: Resolution days proposal submitted for your review",
             "/ticket/{$ticketId}"
         );
 
@@ -1024,7 +1165,7 @@ class MandaysController extends Controller
             return response()->json(['success' => false, 'message' => 'Only Head of Support or Admin can approve resolution days proposals.'], 403);
         }
 
-        // approved_details is required (not just nullable) — Approved Days is a per-employee
+        // approved_details is required (not just nullable) - Approved Days is a per-employee
         // judgment call the Head must actually make, so approval can't go through with no
         // numbers submitted at all (mirrors the "must be filled" check on the review modal).
         $request->validate([
@@ -1047,7 +1188,7 @@ class MandaysController extends Controller
         }
 
         // On Change Request tickets only: Head can only approve Resolution Days once the
-        // Customer Mandays proposal has been approved — either by the customer via chat,
+        // Customer Mandays proposal has been approved - either by the customer via chat,
         // or directly by Helpdesk. Team lead can keep editing the resolution proposal
         // freely up until this point (saveResolutionProposal has no status gate), this
         // only blocks the final Head approval action.
@@ -1063,7 +1204,7 @@ class MandaysController extends Controller
 
         // PIC can keep editing this proposal right up until approval (see
         // saveResolutionProposal()), so the numbers Head is about to lock in here may
-        // already have outpaced what employees logged. Warn before finalizing —
+        // already have outpaced what employees logged. Warn before finalizing -
         // require an explicit confirm_negative=true resend to proceed anyway.
         if (!$request->boolean('confirm_negative')) {
             $warnings = $this->findNegativeRemainingWarnings($ticket, $proposal, $request->input('approved_details', []));
@@ -1079,7 +1220,7 @@ class MandaysController extends Controller
 
         // Snapshot "before" approved_mandays/approved_additional for every detail about to be
         // touched. The update below is an Eloquent mass update via query builder
-        // ($proposal->details()->where(...)->update(...)) — Laravel never fires model events
+        // ($proposal->details()->where(...)->update(...)) - Laravel never fires model events
         // for that (only single-instance $model->save() does), so AuditObserver (wired via
         // ConsultantMandaysDetail's Auditable trait) never sees it. This is the actual
         // approved-mandays billing number, so it's logged manually below once the
@@ -1131,12 +1272,12 @@ class MandaysController extends Controller
         }
 
         // Audit trail: one row per employee whose approved_mandays/approved_additional was
-        // just locked in — recordAction() is fire-and-forget, so a logging hiccup here can
+        // just locked in - recordAction() is fire-and-forget, so a logging hiccup here can
         // never affect the approval that already committed above.
         foreach ($request->approved_details as $ad) {
             $beforeDetail = $detailsBeforeUpdate->get((int) $ad['employee_id']);
             if (!$beforeDetail) {
-                continue; // employee_id isn't part of this proposal's details — the update above was a no-op
+                continue; // employee_id isn't part of this proposal's details - the update above was a no-op
             }
 
             $employeeName = trim(
@@ -1483,6 +1624,10 @@ class MandaysController extends Controller
             'sent_to_chat_at'      => $p->sent_to_chat_at?->toISOString(),
             'customer_response_at' => $p->customer_response_at?->toISOString(),
             'last_update'          => ($p->updated_at ?? $p->proposed_at)?->toISOString(),
+            // Approval bertingkat: level yang sedang menunggu + jejak per level.
+            'current_step_order'   => $p->current_step_order,
+            'current_step_name'    => app(CustomerMandaysApprovalService::class)->currentStepName($p),
+            'approvals'            => app(CustomerMandaysApprovalService::class)->trail($p),
             'details'              => $p->details->map(fn($d) => [
                 'id'       => $d->id,
                 'activity' => $d->activity,
@@ -1526,7 +1671,7 @@ class MandaysController extends Controller
 
         // PIC
         if ($ticket->ticket_lead_id) {
-            $pic = Employee::with(['basicData', 'qualifications'])->find($ticket->ticket_lead_id);
+            $pic = Employee::with(['basicData', 'qualifications.module'])->find($ticket->ticket_lead_id);
             if ($pic) {
                 $people[$ticket->ticket_lead_id] = [
                     'employee_id' => $ticket->ticket_lead_id,
@@ -1538,7 +1683,7 @@ class MandaysController extends Controller
         }
 
         // Active members
-        $members = $ticket->members()->with(['basicData', 'qualifications'])->get();
+        $members = $ticket->members()->with(['basicData', 'qualifications.module'])->get();
         foreach ($members as $m) {
             if (!isset($people[$m->employee_id])) {
                 $people[$m->employee_id] = [
@@ -1557,7 +1702,7 @@ class MandaysController extends Controller
                 ->unique();
             $missingIds = $pastIds->reject(fn($empId) => isset($people[$empId]));
             if ($missingIds->isNotEmpty()) {
-                $pastEmployees = Employee::with(['basicData', 'qualifications'])
+                $pastEmployees = Employee::with(['basicData', 'qualifications.module'])
                     ->whereIn('employee_id', $missingIds)
                     ->get()
                     ->keyBy('employee_id');
@@ -1578,10 +1723,26 @@ class MandaysController extends Controller
         return array_values($people);
     }
 
-    private function notifyRoles(array $roleIds, string $type, string $fromName, ?int $fromId, string $preview, string $link): void
+    /**
+     * Kirim notifikasi ke semua karyawan aktif yang salah satu role-nya diberi izin
+     * (can_view) atas salah satu slug menu di $menuSlugs (Control Center > Role Access),
+     * bukan daftar role yang di-hardcode. Nama method dipertahankan agar pemanggil tetap sama.
+     *
+     * @param string[] $menuSlugs
+     */
+    private function notifyRoles(array $menuSlugs, string $type, string $fromName, ?int $fromId, string $preview, string $link): void
     {
         try {
-            Employee::withAnyRole($roleIds)
+            Employee::query()
+                ->where(function ($q) use ($menuSlugs) {
+                    foreach ($menuSlugs as $slug) {
+                        $q->orWhereHas('roles.menus', function ($m) use ($slug) {
+                            $m->where('menu.slug', $slug)
+                              ->where('menu.is_active', true)
+                              ->where('role_menu.can_view', true);
+                        });
+                    }
+                })
                 ->where('is_active', true)
                 ->pluck('employee_id')
                 ->each(function ($empId) use ($type, $fromName, $fromId, $preview, $link) {
@@ -1630,7 +1791,7 @@ class MandaysController extends Controller
     }
 
     /**
-     * Format mandays value — up to 2 decimal places, trailing zeros stripped.
+     * Format mandays value - up to 2 decimal places, trailing zeros stripped.
      * 0.25 → "0.25", 0.5 → "0.5", 1.0 → "1"
      */
     private function fmtMd(float $val): string

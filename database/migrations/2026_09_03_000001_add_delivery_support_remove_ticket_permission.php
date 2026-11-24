@@ -8,7 +8,7 @@ use Illuminate\Database\Migrations\Migration;
  *
  * Sebelumnya tombol "Remove Ticket" di halaman detail Delivery Support
  * di-hardcode ke role EC Administrator (RoleId::EC_ADMINISTRATOR) langsung di
- * Blade (`$isEcAdmin`) + controller (`removeTicketLink`) — tidak bisa diatur
+ * Blade (`$isEcAdmin`) + controller (`removeTicketLink`) - tidak bisa diatur
  * lewat Control Center → Menu Access.
  *
  * Slug ini menggantikan hardcode itu. Keadaan awalnya PERSIS sama dengan

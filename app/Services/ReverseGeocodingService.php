@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Koordinat GPS → alamat, via OpenStreetMap Nominatim (gratis, tanpa API key).
- * Kebijakan Nominatim mewajibkan User-Agent yang jelas dan maks. ~1 request/detik —
+ * Kebijakan Nominatim mewajibkan User-Agent yang jelas dan maks. ~1 request/detik -
  * aman karena dipanggil sekali per timesheet yang dibuat.
  * Gagal = null (non-fatal); UI approval tetap menampilkan koordinat + link Maps.
  */

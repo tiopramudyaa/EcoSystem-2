@@ -74,7 +74,7 @@ class MenuSeeder extends Seeder
                         'slug'        => $section['base'] . '.' . $action,
                         // Label boleh dioverride per section (mis. Team Members
                         // memakai "Create" karena "Delete"-nya slug terpisah).
-                        'name'        => $section['name'] . ' — ' . ($section['labels'][$action] ?? self::ACTION_LABEL[$action]),
+                        'name'        => $section['name'] . ' - ' . ($section['labels'][$action] ?? self::ACTION_LABEL[$action]),
                         'type'        => 'function',
                         'parent_slug' => $parent,
                         'route_name'  => null,
@@ -123,12 +123,18 @@ class MenuSeeder extends Seeder
             ['slug' => 'calendar.events.create',       'name' => 'Create Event',            'type' => 'function', 'parent_slug' => 'calendar.events', 'route_name' => null,                      'icon' => null,                   'order_seq' => 1],
             ['slug' => 'calendar.timesheets',          'name' => 'Timesheets',              'type' => 'page',     'parent_slug' => 'calendar',    'route_name' => 'calendar.timesheets',          'icon' => null,                   'order_seq' => 2],
             ['slug' => 'timesheet.create',             'name' => 'Create Timesheet',        'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null,                  'icon' => null,                   'order_seq' => 1],
+            ['slug' => 'timesheet.approve.project',      'name' => 'Approve or Reject Project Timesheet', 'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 2],
+            ['slug' => 'timesheet.approve.non-project',  'name' => 'Approve or Reject Non Project Timesheet', 'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 3],
+            ['slug' => 'timesheet.approve.support',      'name' => 'Approve or Reject Support Timesheet', 'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 4],
+            ['slug' => 'timesheet.approve.office',       'name' => 'Approve or Reject Office Timesheet', 'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 5],
+            ['slug' => 'timesheet.delete.any-status',    'name' => 'Delete Timesheet in Any Status',     'type' => 'function', 'parent_slug' => 'calendar.timesheets', 'route_name' => null, 'icon' => null, 'order_seq' => 6],
 
             // ── Reporting ─────────────────────────────────────────────────────────
             ['slug' => 'reporting',                    'name' => 'Reporting',               'type' => 'group',    'parent_slug' => null,          'route_name' => null,                           'icon' => 'fa-chart-bar',         'order_seq' => 3],
             ['slug' => 'reporting.validation',         'name' => 'MD Validation',           'type' => 'page',     'parent_slug' => 'reporting',   'route_name' => 'reporting',                    'icon' => null,                   'order_seq' => 1],
             ['slug' => 'reporting.export-excel',       'name' => 'Export Excel',            'type' => 'function', 'parent_slug' => 'reporting.validation', 'route_name' => null,                 'icon' => null,                   'order_seq' => 1],
             ['slug' => 'reporting.close-period',       'name' => 'Close Period',            'type' => 'function', 'parent_slug' => 'reporting.validation', 'route_name' => null,                 'icon' => null,                   'order_seq' => 2],
+            ['slug' => 'reporting.validation.view-all', 'name' => 'MD Validation: View All Employees', 'type' => 'function', 'parent_slug' => 'reporting.validation', 'route_name' => null,          'icon' => null,                   'order_seq' => 20],
             ['slug' => 'reporting.md-recap',           'name' => 'MD Recap',                'type' => 'page',     'parent_slug' => 'reporting',   'route_name' => 'reporting.md-recap',           'icon' => null,                   'order_seq' => 2],
             ['slug' => 'reporting.collection-outlook', 'name' => 'Collection Outlook',      'type' => 'page',     'parent_slug' => 'reporting',   'route_name' => 'reporting.collection-outlook', 'icon' => null,                   'order_seq' => 3],
             ['slug' => 'reporting.collection-outlook.edit', 'name' => 'Edit Payment Status', 'type' => 'function', 'parent_slug' => 'reporting.collection-outlook', 'route_name' => null,           'icon' => null,                   'order_seq' => 1],
@@ -216,6 +222,7 @@ class MenuSeeder extends Seeder
             ['slug' => 'delivery-support.add-new',     'name' => 'Add Delivery Support',    'type' => 'function', 'parent_slug' => 'delivery.support', 'route_name' => null,                     'icon' => null,                   'order_seq' => 1],
             ['slug' => 'delivery-support.delete-support', 'name' => 'Delete Delivery Support', 'type' => 'function', 'parent_slug' => 'delivery.support', 'route_name' => null,                  'icon' => null,                   'order_seq' => 10],
             ['slug' => 'delivery-support.remove-ticket',  'name' => 'Remove Ticket from DS',   'type' => 'function', 'parent_slug' => 'delivery.support', 'route_name' => null,                  'icon' => null,                   'order_seq' => 11],
+            ['slug' => 'delivery-support.export',         'name' => 'Export Delivery Support', 'type' => 'function', 'parent_slug' => 'delivery.support', 'route_name' => null,                  'icon' => null,                   'order_seq' => 12],
 
             // ── Control Center (Admin) ────────────────────────────────────────────
             ['slug' => 'control-center',               'name' => 'Control Center',          'type' => 'group',    'parent_slug' => null,          'route_name' => null,                           'icon' => 'fa-server',            'order_seq' => 12],
@@ -231,7 +238,9 @@ class MenuSeeder extends Seeder
             ['slug' => 'control-center.sounds',        'name' => 'Notif Sounds',            'type' => 'page',     'parent_slug' => 'control-center', 'route_name' => 'admin.sounds',             'icon' => null,                   'order_seq' => 6],
             ['slug' => 'control-center.ai-settings',   'name' => 'AI Settings',             'type' => 'page',     'parent_slug' => 'control-center', 'route_name' => 'admin.ai-settings',        'icon' => null,                   'order_seq' => 8],
             ['slug' => 'control-center.seasonal-theme', 'name' => 'Seasonal Theme',         'type' => 'page',     'parent_slug' => 'control-center', 'route_name' => 'admin.seasonal-theme',     'icon' => null,                   'order_seq' => 9],
+            ['slug' => 'control-center.ai-usage',      'name' => 'AI Usage',                'type' => 'page',     'parent_slug' => 'control-center', 'route_name' => 'admin.ai-usage',           'icon' => null,                   'order_seq' => 11],
             ['slug' => 'control-center.two-factor-enforcement', 'name' => 'Two-Factor Enforcement', 'type' => 'page', 'parent_slug' => 'control-center', 'route_name' => 'admin.two-factor-enforcement', 'icon' => null,               'order_seq' => 10],
+            ['slug' => 'control-center.user-guide',    'name' => 'User Guide Editor',       'type' => 'page',     'parent_slug' => 'control-center', 'route_name' => 'admin.user-guide.index',   'icon' => null,                   'order_seq' => 12],
 
             // ── SLA ───────────────────────────────────────────────────────────────
             ['slug' => 'sla',                          'name' => 'SLA',                     'type' => 'group',    'parent_slug' => null,          'route_name' => null,                           'icon' => 'fa-stopwatch',         'order_seq' => 13],
@@ -242,6 +251,9 @@ class MenuSeeder extends Seeder
             ['slug' => 'rpmo',                         'name' => 'RPMO',                    'type' => 'group',    'parent_slug' => null,          'route_name' => null,                           'icon' => 'fa-building',          'order_seq' => 14],
             ['slug' => 'rpmo.overview',                'name' => 'Overview',                'type' => 'page',     'parent_slug' => 'rpmo',        'route_name' => 'rpmo',                         'icon' => null,                   'order_seq' => 1],
             ['slug' => 'rpmo.periods',                 'name' => 'Period Management',       'type' => 'page',     'parent_slug' => 'rpmo',        'route_name' => 'rpmo.periods.index',           'icon' => null,                   'order_seq' => 2],
+            ['slug' => 'rpmo.periods.manage-global',   'name' => 'Period Management: Manage Global (create, open, close, force close, RPMO decisions)', 'type' => 'function', 'parent_slug' => 'rpmo.periods', 'route_name' => null, 'icon' => null, 'order_seq' => 10],
+            ['slug' => 'rpmo.periods.manage-project',  'name' => 'Period Management: Manage Project Domain', 'type' => 'function', 'parent_slug' => 'rpmo.periods', 'route_name' => null, 'icon' => null, 'order_seq' => 11],
+            ['slug' => 'rpmo.periods.manage-support',  'name' => 'Period Management: Manage Support Domain', 'type' => 'function', 'parent_slug' => 'rpmo.periods', 'route_name' => null, 'icon' => null, 'order_seq' => 12],
 
             // ── Legal ─────────────────────────────────────────────────────────────
             ['slug' => 'legal',                        'name' => 'Legal',                   'type' => 'page',     'parent_slug' => null,          'route_name' => 'legal',                        'icon' => 'fa-balance-scale',     'order_seq' => 15],
@@ -272,7 +284,7 @@ class MenuSeeder extends Seeder
 
         // ── Upsert menus (idempotent) ────────────────────────────────────────────
         $inserted = [];
-        $newSlugs = []; // slug yang baru lahir di run ini — cuma ini yang boleh dapat default matrix di bawah
+        $newSlugs = []; // slug yang baru lahir di run ini - cuma ini yang boleh dapat default matrix di bawah
         foreach ($menus as $menu) {
             $parentId = isset($menu['parent_slug']) && $menu['parent_slug']
                 ? ($inserted[$menu['parent_slug']] ?? null)
@@ -323,11 +335,11 @@ class MenuSeeder extends Seeder
         $matrix = [
             // Home
             'dashboard'                   => [self::ADMIN=>$v,    self::EMPLOYEE=>$v,   self::INTERN=>$v,   self::HOP=>$v,    self::HOS=>$v,    self::HELPDESK=>$v,   self::RPMO=>$v],
-            // AI Assistant — menu baru: admin saja, role lain lewat Menu Access.
+            // AI Assistant - menu baru: admin saja, role lain lewat Menu Access.
             'ai-assistant'                => [self::ADMIN=>$v],
-            // AI Research — menu baru: admin saja, role lain lewat Menu Access.
+            // AI Research - menu baru: admin saja, role lain lewat Menu Access.
             'ai-research'                 => [self::ADMIN=>$v],
-            // Word Report Generator — menu baru: admin saja, role lain lewat Menu Access.
+            // Word Report Generator - menu baru: admin saja, role lain lewat Menu Access.
             'word-report-generator'       => [self::ADMIN=>$v],
             // Calendar
             'calendar'              => [self::ADMIN=>$vced, self::EMPLOYEE=>$v,   self::INTERN=>$v,   self::HOP=>$v,    self::HOS=>$v,    self::HELPDESK=>$v,   self::RPMO=>$v],
@@ -335,11 +347,19 @@ class MenuSeeder extends Seeder
             'calendar.events.create'      => [self::ADMIN=>$v],
             'calendar.timesheets'         => [self::ADMIN=>$vced, self::EMPLOYEE=>$vce, self::INTERN=>$vc,  self::HOP=>$vce,  self::HOS=>$vce],
             'timesheet.create'            => [self::ADMIN=>$v,    self::EMPLOYEE=>$v,   self::HOP=>$v,      self::HOS=>$v],
+            // Approve / reject timesheet: satu izin per tipe, awalnya mengikuti pembagian yang berjalan.
+            'timesheet.approve.project'     => [self::ADMIN=>$v, self::HOP=>$v],
+            'timesheet.approve.non-project' => [self::ADMIN=>$v, self::HOP=>$v],
+            'timesheet.approve.support'     => [self::ADMIN=>$v, self::HOS=>$v],
+            'timesheet.approve.office'      => [self::ADMIN=>$v, self::RPMO=>$v],
+            // Hapus timesheet di status apa pun (termasuk Approved): hanya Admin, role lain lewat Menu Access.
+            'timesheet.delete.any-status'   => [self::ADMIN=>$v],
             // Reporting
             'reporting'                   => [self::ADMIN=>$v,    self::EMPLOYEE=>$v,   self::HOP=>$v,      self::HOS=>$v,    self::HELPDESK=>$v,   self::RPMO=>$v],
             'reporting.validation'        => [self::ADMIN=>$vced, self::EMPLOYEE=>$v,   self::HOP=>$v,      self::HOS=>$vce,  self::HELPDESK=>$v,   self::RPMO=>$v],
             'reporting.export-excel'      => [self::ADMIN=>$v,    self::HOS=>$v],
             'reporting.close-period'      => [self::ADMIN=>$v,    self::HOS=>$v],
+            'reporting.validation.view-all' => [self::ADMIN=>$v,  self::HOS=>$v],
             'reporting.md-recap'          => [self::ADMIN=>$vced, self::HOS=>$vce],
             'reporting.collection-outlook' => [self::ADMIN=>$v, self::HOP=>$v, self::RPMO=>$v],
             'reporting.collection-outlook.edit' => [self::ADMIN=>$v, self::HOP=>$v, self::RPMO=>$v],
@@ -349,7 +369,7 @@ class MenuSeeder extends Seeder
             'reporting.ticket-by-module'   => [self::ADMIN=>$v, self::EMPLOYEE=>$v, self::HOP=>$v, self::HOS=>$v, self::HELPDESK=>$v, self::RPMO=>$v],
             'reporting.log-shifting'       => [self::ADMIN=>$vced, self::HOS=>$vce, self::HELPDESK=>$vce, self::RPMO=>$vce],
             // Employee ikut diberi akses (bukan cuma Admin/HOS/Helpdesk/RPMO) karena
-            // module lead yang mengisi recon ini biasanya role Delivery Support User —
+            // module lead yang mengisi recon ini biasanya role Delivery Support User -
             // pembatasan "hanya modul yang dia pimpin" dilakukan di
             // WeeklyConsolidationController (data-driven), bukan di sini.
             'reporting.weekly-consolidation' => [self::ADMIN=>$vced, self::EMPLOYEE=>$vce, self::HOS=>$vce, self::HELPDESK=>$vce, self::RPMO=>$vce, self::MODUL_LEAD=>$vce],
@@ -390,7 +410,7 @@ class MenuSeeder extends Seeder
             'ticket.approve-resolution-days'    => [self::ADMIN=>$v, self::HOS=>$v],
             'ticket.eligible-ticket-lead'       => [self::EMPLOYEE=>$v],
             'ticket.eligible-ticket-member'     => [self::EMPLOYEE=>$v],
-            // Tombol shortcut di headbar room chat — Helpdesk saja (+ Admin).
+            // Tombol shortcut di headbar room chat - Helpdesk saja (+ Admin).
             'ticket.sla-log'                    => [self::ADMIN=>$v, self::HELPDESK=>$v],
             'ticket.shifting-log'               => [self::ADMIN=>$v, self::HELPDESK=>$v],
             // Room Chat
@@ -415,6 +435,7 @@ class MenuSeeder extends Seeder
             'delivery-support.add-new'    => [self::ADMIN=>$v,    self::HOS=>$v,        self::HELPDESK=>$v, self::RPMO=>$v],
             'delivery-support.delete-support' => [self::ADMIN=>$v, self::HOS=>$v,       self::RPMO=>$v],
             'delivery-support.remove-ticket'  => [self::ADMIN=>$v],
+            'delivery-support.export'         => [self::ADMIN=>$v],
             // Control Center
             'control-center'              => [self::ADMIN=>$v],
             'control-center.overview'     => [self::ADMIN=>$v],
@@ -428,8 +449,10 @@ class MenuSeeder extends Seeder
             'control-center.backup'       => [self::ADMIN=>$v],
             'control-center.sounds'       => [self::ADMIN=>$v],
             'control-center.ai-settings'  => [self::ADMIN=>$v],
+            'control-center.ai-usage'      => [self::ADMIN=>$v],
             'control-center.seasonal-theme' => [self::ADMIN=>$v],
             'control-center.two-factor-enforcement' => [self::ADMIN=>$v],
+            'control-center.user-guide'   => [self::ADMIN=>$v],
             // SLA
             'sla'                         => [self::ADMIN=>$v,    self::HOS=>$v,        self::HELPDESK=>$v],
             'sla.report'                  => [self::ADMIN=>$v,    self::HOS=>$v,        self::HELPDESK=>$v],
@@ -438,6 +461,9 @@ class MenuSeeder extends Seeder
             'rpmo'                        => [self::ADMIN=>$v,    self::HOP=>$v,        self::HOS=>$v,      self::RPMO=>$v],
             'rpmo.overview'               => [self::ADMIN=>$v,    self::RPMO=>$v],
             'rpmo.periods'                => [self::ADMIN=>$v,    self::HOP=>$v,        self::HOS=>$v,      self::RPMO=>$v],
+            'rpmo.periods.manage-global'  => [self::ADMIN=>$v,    self::RPMO=>$v],
+            'rpmo.periods.manage-project' => [self::ADMIN=>$v,    self::HOP=>$v],
+            'rpmo.periods.manage-support' => [self::ADMIN=>$v,    self::HOS=>$v],
             // Legal
             'legal'                       => [self::ADMIN=>$v],
             // Manajemen
@@ -488,13 +514,13 @@ class MenuSeeder extends Seeder
         // Seeder ini rutin dijalankan ulang di production tiap kali ada slug baru
         // (lihat MULTI_ROLE_SYSTEM.md). Matrix di atas cuma boleh diterapkan untuk
         // slug yang BARU LAHIR di run ini ($newSlugs). Slug yang sudah ada sebelum
-        // run ini SAMA SEKALI tidak disentuh lagi — bukan cuma soal tidak menimpa
+        // run ini SAMA SEKALI tidak disentuh lagi - bukan cuma soal tidak menimpa
         // baris yang ada, tapi juga tidak mengisi baris yang HILANG karena role
         // tersebut sengaja "Revoke Access" via Control Center → Menu Access.
         // Revoke di UI itu men-detach() baris role_menu (dihapus, bukan
         // can_view=false), jadi kalau matrix tetap diterapkan ke slug lama,
         // baris yang hilang itu akan dianggap "belum ada" dan diisi ulang dengan
-        // nilai baku — persis gejala "slug balik ke default padahal sudah
+        // nilai baku - persis gejala "slug balik ke default padahal sudah
         // dicabut" yang dilaporkan. Aturannya sama seperti App\Support\
         // MenuRegistrar: sekali sebuah slug lahir, Control Center adalah satu-
         // satunya sumber kebenaran untuk role_menu-nya.

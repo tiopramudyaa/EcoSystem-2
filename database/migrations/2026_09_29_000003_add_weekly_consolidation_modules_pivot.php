@@ -9,12 +9,12 @@ use Illuminate\Support\Facades\Schema;
  * Dukungan multi-modul untuk Weekly Consolidation: satu batch recon kini bisa
  * mencakup lebih dari satu modul (mis. gabungan ABAP+BASIS), atau seluruh
  * modul aktif ("All"). Kapabilitas ini dibatasi ke role privileged saja
- * (lihat WeeklyConsolidationController::canCombineModules()) — module lead
+ * (lihat WeeklyConsolidationController::canCombineModules()) - module lead
  * biasa tetap satu modul per batch seperti semula.
  *
  * `weekly_consolidations.module_id` TETAP ADA sebagai modul utama/representatif
  * (yang pertama secara alfabet) supaya semua kode single-module lama tidak
- * perlu berubah — persis pola `Ticket::module_id` (utama) + `ticket_module`
+ * perlu berubah - persis pola `Ticket::module_id` (utama) + `ticket_module`
  * (daftar lengkap) yang sudah dipakai di Ticket::syncModules().
  *
  * `is_all_modules` disimpan eksplisit (bukan diturunkan dari "jumlah modul

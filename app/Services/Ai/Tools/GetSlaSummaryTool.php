@@ -21,7 +21,7 @@ class GetSlaSummaryTool implements AiTool
             'description' => 'Look up SLA (response/resolution due dates, breach status) for one specific ticket, or list '
                 . 'tickets that are close to or past their SLA resolution deadline. Use this for any question about SLA '
                 . 'due dates, "first resolved" dates, or whether a ticket is breaching/at risk of breaching SLA. All dates '
-                . 'and breach calculations here are computed by the same service the official SLA Report page uses — do '
+                . 'and breach calculations here are computed by the same service the official SLA Report page uses - do '
                 . 'not attempt to compute SLA timing yourself from raw ticket timestamps.',
             'input_schema' => [
                 'type' => 'object',
@@ -63,7 +63,7 @@ class GetSlaSummaryTool implements AiTool
     private function singleTicket(Employee $employee, int $ticketId): array
     {
         // whereNull('is_hidden') SEKALIAN di query find, bukan dicek belakangan
-        // — ticket hidden harus tampak "tidak ada" persis seperti ticket_id
+        // - ticket hidden harus tampak "tidak ada" persis seperti ticket_id
         // yang salah, bukan tampak ada lalu ditolak (itu masih membocorkan
         // keberadaannya).
         $ticket = Ticket::whereNull('is_hidden')

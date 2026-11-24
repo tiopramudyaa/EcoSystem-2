@@ -3,6 +3,7 @@
 namespace App\Services\Ai\Drivers;
 
 use App\Services\Ai\Drivers\Concerns\TranslatesCanonicalMessages;
+use App\Services\Ai\AiUsageRecorder;
 use App\Services\Ai\Drivers\Contracts\ResearchDriver;
 use Closure;
 use OpenAI\Client;
@@ -14,8 +15,8 @@ use RuntimeException;
 
 /**
  * GPT side of AiResearchService's turn, via the Responses API's built-in
- * `web_search` tool. Unlike Claude, OpenAI has no 'pause_turn' concept — a
- * turn either completes or comes back 'incomplete' (hit max_output_tokens) —
+ * `web_search` tool. Unlike Claude, OpenAI has no 'pause_turn' concept - a
+ * turn either completes or comes back 'incomplete' (hit max_output_tokens) -
  * so there is no internal resume loop here, just one request per ask() call.
  */
 class OpenAiResearchDriver implements ResearchDriver
@@ -42,12 +43,12 @@ class OpenAiResearchDriver implements ResearchDriver
             'input' => $this->toResponsesInput($messages),
             'max_output_tokens' => $maxTokens,
             // Sama alasannya dengan OpenAiChatDriver: percakapan AI Research
-            // TIDAK PERNAH masuk database di sisi kita — store:false menjaga
+            // TIDAK PERNAH masuk database di sisi kita - store:false menjaga
             // janji yang sama berlaku di sisi OpenAI.
             'store' => false,
             'tools' => [
                 // search_context_size ditulis eksplisit ('medium' = default
-                // OpenAI kalau tidak diisi, jadi TIDAK mengubah perilaku) —
+                // OpenAI kalau tidak diisi, jadi TIDAK mengubah perilaku) -
                 // supaya trade-off ini terlihat & gampang di-tuning di satu
                 // tempat kalau nanti dibutuhkan: 'low' lebih cepat/murah tapi
                 // konten per hasil pencarian lebih sedikit, 'high' sebaliknya.
@@ -83,6 +84,8 @@ class OpenAiResearchDriver implements ResearchDriver
                 case 'response.completed':
                 case 'response.incomplete':
                 case 'response.failed':
+                    AiUsageRecorder::recordOpenAi($model, 'research', $event->response->response->usage ?? null);
+
                     return $this->finalize($event->response->response);
 
                 case 'error':

@@ -42,13 +42,13 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         </div>
 
         {{-- `overflow-y-auto` + `max-height` here (in addition to the existing horizontal
-             scroll) gives the header row its own scroll container to stick to — so
+             scroll) gives the header row its own scroll container to stick to - so
              `sticky top-0` on the <th> cells below freezes the header while the body
              scrolls, without having to offset against the app's own sticky top bar. --}}
         <div id="employeeTableWrapper" class="overflow-auto border border-gray-200 rounded-lg" style="max-height:75vh;">
             {{-- `border-collapse: separate; border-spacing: 0` overrides Tailwind Preflight's
                  default `border-collapse: collapse` on this table specifically. `position: sticky`
-                 on a table cell that needs to stick on BOTH axes at once (top AND left — the ECI/
+                 on a table cell that needs to stick on BOTH axes at once (top AND left - the ECI/
                  Full Name header cells, which are simultaneously the frozen header row AND the
                  frozen left columns) is documented as unreliable across browsers when the table is
                  border-collapsed; single-axis sticky cells (every other header/column here) aren't
@@ -60,7 +60,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                         {{-- ECI: keyword search filter (ECI or name) --}}
                         {{-- z-index for this cell is governed by the `#employeeTableWrapper thead
                              th:nth-child(1)` rule below (higher CSS specificity than a `z-*` utility
-                             class here would have) — see the comment on that rule. --}}
+                             class here would have) - see the comment on that rule. --}}
                         <th class="p-0 text-left whitespace-nowrap border-b border-gray-200 sticky top-0 left-0 bg-gray-50" style="min-width:100px;">
                             <button type="button" id="empFilterBtn" onclick="toggleEmpFilter(event)"
                                 class="w-full flex items-center gap-1.5 px-3 py-2 cursor-pointer hover:bg-gray-100 transition-colors">
@@ -79,7 +79,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                                 </div>
                             </div>
                         </th>
-                        {{-- FULL NAME: keyword search filter — same pattern as ECI, but scoped to
+                        {{-- FULL NAME: keyword search filter - same pattern as ECI, but scoped to
                              name fields only (see applyFullNameSearch() in the controller). z-index
                              for this cell comes from the nth-child(2) CSS rule (see note on ECI). --}}
                         <th class="p-0 text-left whitespace-nowrap border-b border-gray-200 sticky top-0 bg-gray-50" style="min-width:200px;left:100px;">
@@ -101,8 +101,8 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                             </div>
                         </th>
                         {{-- POSITION: column filter dropdown (multi-select). `data-fixed="true"` detaches
-                             the panel to <body> while open — same technique the ECI/Department panels use
-                             manually — so it escapes the horizontally-scrollable table wrapper's clipping
+                             the panel to <body> while open - same technique the ECI/Department panels use
+                             manually - so it escapes the horizontally-scrollable table wrapper's clipping
                              instead of being cut off / overlapping the row below it. --}}
                         <th class="p-0 text-left whitespace-nowrap border-b border-gray-200 bg-gray-50 sticky top-0 z-10">
                             <div class="custom-dd relative w-full" id="ddFilterPosition" data-multi="true" data-fixed="true" data-onchange="applyFilters">
@@ -125,7 +125,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                         {{-- MODULE: column filter dropdown (populated dynamically from /api/modules) --}}
                         <th class="p-0 text-left whitespace-nowrap border-b border-gray-200 bg-gray-50 sticky top-0 z-10">
                             {{-- `data-searchable="true"` forces the search box on regardless of
-                                 item count — Module's items are populated later via AJAX
+                                 item count - Module's items are populated later via AJAX
                                  (loadModuleFilterOptions(), after initCustomDropdowns() already
                                  ran), so the panel has 0 items at the moment custom-dropdown.js's
                                  usual ">7 items" auto-detect threshold runs and would otherwise
@@ -138,7 +138,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                                 <input type="hidden" id="filterModules" value="">
                                 <div class="custom-dd-panel hidden absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] pt-1.5 overflow-y-auto" style="max-height:260px;min-width:200px;">
                                     <button type="button" class="custom-dd-item w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50" data-value="">All Modules</button>
-                                    <!-- Module items populated dynamically from /api/modules — inserted
+                                    <!-- Module items populated dynamically from /api/modules - inserted
                                          before #moduleFilterClearFooter so they land above the Clear button. -->
                                     <div id="moduleFilterClearFooter" class="sticky bottom-0 bg-white border-t border-gray-100 px-3 py-2 flex justify-end">
                                         <button type="button" onclick="clearCustomDropdownMulti('filterModules'); applyFilters();" class="px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50">Clear</button>
@@ -184,7 +184,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                                 </div>
                             </div>
                         </th>
-                        {{-- DEPARTMENT: column filter dropdown — search box (auto-injected once the
+                        {{-- DEPARTMENT: column filter dropdown - search box (auto-injected once the
                              option count passes the threshold) + multi-select list, same pattern as
                              Position/Division rather than a bespoke free-text-only search. --}}
                         <th class="p-0 text-left whitespace-nowrap border-b border-gray-200 bg-gray-50 sticky top-0 z-10" style="min-width:220px;">
@@ -227,7 +227,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                         {{-- SINCE DATE: no filter --}}
                         <th class="text-center px-3 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 sticky top-0 bg-gray-50 z-10">Since Date</th>
                         {{-- Remaining Employee Information columns (from the "Organizational Data" section
-                             of the employee record) — everything except `block` and `deletion_flag` (those
+                             of the employee record) - everything except `block` and `deletion_flag` (those
                              only drive the Status column, moved to just before Actions below), and except
                              Title/Nick Name/Gender/Religion/Marital Status/Birth Date/Birth Place (not
                              needed in this table per request). --}}
@@ -292,7 +292,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                         <th class="text-center px-3 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 sticky top-0 bg-gray-50 z-10">Current Assignment</th>
                         <th class="text-center px-3 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 sticky top-0 bg-gray-50 z-10">Direct Supervision</th>
                         <th class="text-center px-3 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 sticky top-0 bg-gray-50 z-10">Manager</th>
-                        {{-- STATUS: column filter dropdown (single-select) — moved to right before
+                        {{-- STATUS: column filter dropdown (single-select) - moved to right before
                              Actions, per request. --}}
                         <th class="p-0 text-left whitespace-nowrap border-b border-gray-200 bg-gray-50 sticky top-0 z-10" style="min-width:170px;">
                             <div class="custom-dd relative w-full" id="ddFilterStatus" data-fixed="true" data-onchange="applyFilters">
@@ -315,7 +315,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                         <th class="text-center px-3 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 sticky top-0 bg-gray-50 z-10">Actions</th>
                     </tr>
                 </thead>
-                {{-- `uppercase` here is CSS-only (text-transform) — display formatting, the
+                {{-- `uppercase` here is CSS-only (text-transform) - display formatting, the
                      underlying data in the database is left untouched. --}}
                 <tbody id="employeeTableBody" class="bg-white divide-y divide-gray-100 uppercase">
                     <!-- Dynamic rows will be inserted here by JavaScript -->
@@ -355,11 +355,11 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                         <div class="flex flex-col">
                             <label class="text-xs font-semibold text-gray-600 mb-1">Employee <span class="text-red-600">*</span></label>
                             <input type="text" id="eci" placeholder="e.g., ECI001" required class="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-red-800 read-only:bg-gray-100 read-only:text-gray-500 read-only:cursor-not-allowed">
-                            {{-- ECI juga dipakai sebagai username login — begitu employee sudah dibuat, field
+                            {{-- ECI juga dipakai sebagai username login - begitu employee sudah dibuat, field
                                  ini dikunci (readonly) di sini dan hanya bisa diubah lewat "Change Employee ID"
                                  di menu aksi (⋮) baris karyawan, yang punya alur konfirmasi + re-auth khusus.
                                  Lihat empMenuChangeEci()/changeEciModal di bawah. --}}
-                            <small id="eciReadonlyHint" class="hidden text-xs text-gray-400 mt-1">Locked — use "Change Employee ID" from the row menu to edit.</small>
+                            <small id="eciReadonlyHint" class="hidden text-xs text-gray-400 mt-1">Locked - use "Change Employee ID" from the row menu to edit.</small>
                         </div>
 
                         <div class="flex flex-col">
@@ -727,7 +727,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
     </div>
 </div>
 
-<!-- Modal Change Employee ID (ECI) — separate from the general edit form because
+<!-- Modal Change Employee ID (ECI) - separate from the general edit form because
      ECI doubles as the login username (see AuthController::login, auth_users.username).
      Requires: re-type the new ECI + the acting admin's own password, and force-logs-out
      the affected employee's existing sessions once changed. -->
@@ -750,7 +750,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                 </svg>
-                <p class="text-xs text-amber-800">This ID is also the employee's <strong>login username</strong>. Changing it will sign them out of any active session — they'll need to log in again with the new ID.</p>
+                <p class="text-xs text-amber-800">This ID is also the employee's <strong>login username</strong>. Changing it will sign them out of any active session - they'll need to log in again with the new ID.</p>
             </div>
             <div class="flex flex-col">
                 <label class="text-xs font-semibold text-gray-600 mb-1">Current Employee ID</label>
@@ -775,7 +775,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                         </svg>
                     </button>
                 </div>
-                <small class="text-xs text-gray-400 mt-1">Confirms it's really you making this change — not the employee's password.</small>
+                <small class="text-xs text-gray-400 mt-1">Confirms it's really you making this change - not the employee's password.</small>
             </div>
         </div>
         <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
@@ -822,7 +822,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
             <p class="text-xs font-semibold text-gray-600 mb-3">Select Roles <span class="text-red-600">*</span> <span class="font-normal text-gray-400">(pilih satu atau lebih)</span></p>
         </div>
 
-        <!-- Role grid — 2 kolom -->
+        <!-- Role grid - 2 kolom -->
         <div class="px-6 pb-2 max-h-72 overflow-y-auto">
             <div id="crRoleCheckboxes" class="grid grid-cols-2 gap-2">
                 <p class="col-span-2 text-sm text-gray-400">Loading roles...</p>
@@ -905,7 +905,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
     #employeeTableWrapper thead th:nth-child(2) {
         background: #f9fafb;
         /* Must outrank every other header cell's z-index (the column filter
-           `<th>`s use Tailwind `z-10`) — otherwise, since this ID-selector
+           `<th>`s use Tailwind `z-10`) - otherwise, since this ID-selector
            rule's specificity already wins over those cells' `z-*` utility
            classes, ECI/Full Name would paint BELOW them and get visually
            covered while scrolling horizontally, defeating the whole point
@@ -924,7 +924,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
     @if(session('user_preferences.theme','light') === 'dark')
     /* Kolom sticky (ECI + Full Name) memakai warna terang HARDCODED yang tak ikut
        ter-tema. Karena kolom ini di-freeze & mengambang di atas kolom lain saat
-       scroll horizontal, latarnya wajib OPAQUE gelap — samakan dengan permukaan
+       scroll horizontal, latarnya wajib OPAQUE gelap - samakan dengan permukaan
        tema: header = bg-gray-50 (#0b1120), body = bg-white (#1f2937), hover =
        .employee-row:hover global (#374151). */
     #employeeTableWrapper thead th:nth-child(1),
@@ -1002,7 +1002,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
             if (data.success) {
                 // Jika halaman saat ini melampaui jumlah halaman hasil (mis. setelah
                 // filter/hapus membuat data menyusut), mundur ke halaman terakhir
-                // yang valid lalu fetch ulang — cegah tampilan kosong.
+                // yang valid lalu fetch ulang - cegah tampilan kosong.
                 if (data.pagination && data.pagination.total > 0
                     && data.pagination.current_page > data.pagination.last_page) {
                     currentPage = data.pagination.last_page;
@@ -1031,7 +1031,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         if (showingEl) {
             showingEl.textContent = last_page <= 1
                 ? `Showing ${total} employee${total !== 1 ? 's' : ''}`
-                : `Showing ${from}–${to} of ${total} employees`;
+                : `Showing ${from}-${to} of ${total} employees`;
         }
 
         if (last_page <= 1) {
@@ -1109,7 +1109,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
             return; // Jangan navigate jika klik tombol action
         }
 
-        // Simpan filter + halaman aktif — dipulihkan lagi kalau user balik dari
+        // Simpan filter + halaman aktif - dipulihkan lagi kalau user balik dari
         // halaman detail ini (lihat DOMContentLoaded handler di bawah).
         saveEmployeeFilterState();
 
@@ -1126,7 +1126,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         }));
     }
 
-    // Map untuk menyimpan data employee — hindari embedding data di HTML onclick attribute
+    // Map untuk menyimpan data employee - hindari embedding data di HTML onclick attribute
     // yang rentan terhadap karakter spesial (", ', `, \) dalam nama karyawan
     const _empRowData = new Map();
 
@@ -1155,7 +1155,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         }
 
         // Simpan data di Map (bukan di HTML attribute) agar aman dari karakter spesial
-        // Gunakan Number() sebagai key agar konsisten — PDO di production kadang
+        // Gunakan Number() sebagai key agar konsisten - PDO di production kadang
         // mengembalikan integer column sebagai string sehingga Map.get(123) tidak
         // menemukan key "123". Normalisasi ke Number menghindari mismatch ini.
         _empRowData.clear();
@@ -1188,7 +1188,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                 <td class="px-3 py-2 text-xs text-gray-600">${emp.department || '-'}</td>
                 <td class="px-3 py-2 text-xs text-gray-600">${emp.home_base || '-'}</td>
                 <td class="px-3 py-2 text-xs text-gray-600">${emp.since_date || '-'}</td>
-                {{-- Remaining Employee Information columns — everything from the employee
+                {{-- Remaining Employee Information columns - everything from the employee
                      record except `block` and `deletion_flag` (those only drive the Status
                      column, moved below to sit right before Actions), and except
                      Title/Nick Name/Gender/Religion/Marital Status/Birth Date/Birth Place
@@ -1221,7 +1221,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
     }
 
     /**
-     * Employee Group (INTERNAL / EXTERNAL / INTERNSHIP) — penanda jenis employee
+     * Employee Group (INTERNAL / EXTERNAL / INTERNSHIP) - penanda jenis employee
      * yang menggantikan pemakaian Home Base "Others" sebagai indikator lama.
      */
     function renderEmployeeGroup(group) {
@@ -1362,7 +1362,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         document.getElementById('employeeForm').reset();
         document.getElementById('employeeId').value = '';
 
-        // New employee — ECI is still being decided here, so keep it editable.
+        // New employee - ECI is still being decided here, so keep it editable.
         document.getElementById('eci').readOnly = false;
         document.getElementById('eciReadonlyHint').classList.add('hidden');
 
@@ -1422,7 +1422,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                 currentEmployeeId = id;
                 
                 // SECTION 1: GENERAL DATA
-                // ECI is locked here once the employee exists — it's also the login
+                // ECI is locked here once the employee exists - it's also the login
                 // username, so it only changes through the dedicated Change Employee
                 // ID flow (empMenuChangeEci), not this general edit form.
                 document.getElementById('eci').value = emp.eci || '';
@@ -1482,7 +1482,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                     setCustomDropdownValue('division', emp.division || '');
                     setCustomDropdownValue('homeBase', emp.home_base || '');
                 } else {
-                    // Optional chaining — a field whose dropdown config is inactive
+                    // Optional chaining - a field whose dropdown config is inactive
                     // isn't rendered (see dropdownFieldActive), so its element is null.
                     if (document.getElementById('personnelArea')) document.getElementById('personnelArea').value = emp.personnel_area || '';
                     if (document.getElementById('position')) document.getElementById('position').value = emp.position || '';
@@ -1552,7 +1552,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
             cell_phone: document.getElementById('cellPhone').value,
             
             // SECTION 3: ORGANIZATIONAL DATA
-            // Optional chaining here on purpose — a field whose dropdown config is
+            // Optional chaining here on purpose - a field whose dropdown config is
             // inactive (see DropdownConfig/dropdownFieldActive) isn't rendered at
             // all, so document.getElementById() returns null for it.
             personnel_area: document.getElementById('personnelArea')?.value || '',
@@ -1654,7 +1654,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         fetchEmployees(getCurrentFilters());
     }
 
-    // Export Excel — filter yang dikirim persis sama dengan getCurrentFilters() yang
+    // Export Excel - filter yang dikirim persis sama dengan getCurrentFilters() yang
     // dipakai fetchEmployees(), jadi hasil export selalu konsisten dengan filter aktif.
     function exportEmployees() {
         const params = new URLSearchParams();
@@ -1702,7 +1702,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
 
     // ── Column Header Filters: ECI/Name & Department (keyword, debounced) ──────
     // Mirrors the ticket list's per-column filter pattern (button in <th> that
-    // toggles a floating panel) — replaces the old filter box above the table.
+    // toggles a floating panel) - replaces the old filter box above the table.
     let _empFilterTimer = null;
 
     function toggleEmpFilter(ev) {
@@ -1712,8 +1712,8 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         const open = !panel.classList.contains('hidden');
         closeFullNameFilter();
         // Also close any open column filter dropdown (Position/Module/Division/
-        // Department/Home Base/Personnel Subarea/Employee Type/Status — the
-        // `.custom-dd` panels are a separate system with their own close-all —
+        // Department/Home Base/Personnel Subarea/Employee Type/Status - the
+        // `.custom-dd` panels are a separate system with their own close-all -
         // without this they stayed open behind this panel instead of closing
         // together, like two menus open at once).
         if (typeof _closeAllDropdowns === 'function') _closeAllDropdowns();
@@ -1754,7 +1754,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         }
     }
 
-    // ── Full Name filter — same bespoke floating-panel pattern as ECI, scoped
+    // ── Full Name filter - same bespoke floating-panel pattern as ECI, scoped
     // to name fields only server-side (applyFullNameSearch()). ────────────────
     let _fullNameFilterTimer = null;
 
@@ -1802,7 +1802,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
     }
 
     // Department is now a `.custom-dd` multi-select dropdown (search + pick list,
-    // same as Position/Division/Home Base) instead of a bespoke free-text panel —
+    // same as Position/Division/Home Base) instead of a bespoke free-text panel -
     // its open/close/search/clear is handled generically by custom-dropdown.js,
     // so the old toggleDeptFilter/closeDeptFilter/onDeptFilterInput/clearDeptFilter/
     // updateDeptFilterIndicator functions and #deptFilterPanel/#deptFilterBtn/
@@ -1825,9 +1825,9 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         const fb = document.getElementById('fullNameFilterBtn');
         if (fp && !fp.classList.contains('hidden') && !fp.contains(e.target) && !fb.contains(e.target)) fp.classList.add('hidden');
         // Opening any column filter dropdown (`.custom-dd-btn`, handled by
-        // custom-dropdown.js — Position/Module/Employee Group/Division/Department/
+        // custom-dropdown.js - Position/Module/Employee Group/Division/Department/
         // Home Base/Personnel Area/Personnel Subarea/Employee Type/Status) should
-        // also close the ECI/Full Name panels — otherwise they stayed open behind
+        // also close the ECI/Full Name panels - otherwise they stayed open behind
         // it instead of the column filters behaving consistently with one another.
         if (e.target.closest('.custom-dd-btn')) {
             closeEmpFilter();
@@ -1841,7 +1841,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         }
     });
     // Table body/wrapper scroll (horizontal or vertical, now that the wrapper
-    // scrolls independently for the frozen header) — close the ECI/Full Name
+    // scrolls independently for the frozen header) - close the ECI/Full Name
     // panels so they don't stay floating at their old screen position while
     // the column they belong to has scrolled away underneath them. `.custom-dd`
     // panels close themselves on scroll too (see custom-dropdown.js).
@@ -1923,7 +1923,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
     }
 
     // ── Change Employee ID (ECI) ────────────────────────────────────────────────
-    // Separate flow from the general edit form — see comment on #changeEciModal.
+    // Separate flow from the general edit form - see comment on #changeEciModal.
     function openChangeEciModal(employeeId, employeeName, currentEci) {
         document.getElementById('ceEmployeeId').value = employeeId;
         document.getElementById('ceEmployeeName').textContent = employeeName;
@@ -1944,7 +1944,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
     }
 
     // Enables Submit only once: new ID filled, confirm matches it exactly, and a
-    // password was entered — cheap client-side guard, backend re-validates all of it.
+    // password was entered - cheap client-side guard, backend re-validates all of it.
     function onCeInputChange() {
         const newEci     = document.getElementById('ceNewEci').value.trim();
         const confirmEci = document.getElementById('ceConfirmEci').value.trim();
@@ -2011,7 +2011,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
                 showNotification(data.message || 'Failed to load roles', 'error');
             }
         } catch (e) {
-            showNotification('Failed to load roles — please refresh the page', 'error');
+            showNotification('Failed to load roles - please refresh the page', 'error');
         }
     }
 
@@ -2130,7 +2130,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
             try {
                 data = await response.json();
             } catch (_) {
-                showNotification(`Server error (HTTP ${response.status}) — please refresh and try again`, 'error');
+                showNotification(`Server error (HTTP ${response.status}) - please refresh and try again`, 'error');
                 return;
             }
 
@@ -2151,7 +2151,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
 
             showApiErrors(data, 'Failed to update role');
         } catch (error) {
-            showNotification('Network error — please check your connection and try again', 'error');
+            showNotification('Network error - please check your connection and try again', 'error');
         }
     }
 
@@ -2178,7 +2178,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
 
     // Initialize on page load.
     // Filter dipulihkan HANYA kalau user balik dari halaman detail employee (dicek
-    // lewat document.referrer) — supaya klik salah satu baris → lihat detail → balik
+    // lewat document.referrer) - supaya klik salah satu baris → lihat detail → balik
     // tetap mempertahankan filter, tapi pindah ke menu lain lalu balik lagi ke
     // Employee Management dari sidebar/link lain akan selalu mulai fresh (tanpa filter).
     document.addEventListener('DOMContentLoaded', async function() {
@@ -2239,7 +2239,7 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         if (menu) document.body.appendChild(menu);
     });
 
-    // Populate Module filter panel dari /api/modules — dinamis karena daftar module
+    // Populate Module filter panel dari /api/modules - dinamis karena daftar module
     // bisa berubah kapan saja lewat Master Module, jadi tidak di-hardcode di blade.
     // Item ditambahkan setelah initCustomDropdowns() jalan; klik tetap kepegang karena
     // custom-dropdown.js pakai event delegation di level panel (lihat custom-dropdown.js).
@@ -2315,6 +2315,61 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         closeEmpMenu();
         openChangeRoleModal(_empMenuId, _empMenuName, _empMenuRoles);
     }
+    // Reset 2FA: izin sendiri (master.employee.reset-two-factor). Server meminta kode 2FA
+    // baru milik admin (HTTP 428), jadi tombol ini mencoba dulu lalu bertanya hanya bila diminta.
+    async function empMenuResetTwoFactor() {
+        closeEmpMenu();
+        const id = _empMenuId, name = _empMenuName;
+        const ok = await showConfirm(
+            `Reset two-factor authentication for ${name}? Their key and recovery codes are removed and they sign in with their password only until they set it up again. They are told by email and in the app.`,
+            'Reset two-factor authentication?',
+            'danger'
+        );
+        if (!ok) return;
+        await submitResetTwoFactor(id, null);
+    }
+
+    async function submitResetTwoFactor(employeeId, twoFactorCode) {
+        try {
+            const body = {};
+            if (twoFactorCode) body.two_factor_code = twoFactorCode;
+
+            const response = await fetch(`/api/employees/${employeeId}/reset-two-factor`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(body),
+            });
+
+            let data;
+            try { data = await response.json(); } catch (_) {
+                showNotification(`Server error (HTTP ${response.status}), please refresh and try again`, 'error');
+                return;
+            }
+
+            if (data.success) {
+                showNotification(data.message, data.data && data.data.email_sent === false ? 'warning' : 'success');
+                return;
+            }
+
+            if (response.status === 428 && data.requires_step_up && !twoFactorCode) {
+                const code = await showPrompt('Enter your own 2FA code to confirm this reset.', 'Verify Identity', { placeholder: '6-digit code or recovery code', maxLength: 20 });
+                if (code === null) return;
+                await submitResetTwoFactor(employeeId, code);
+                return;
+            }
+
+            showApiErrors(data, 'Failed to reset two-factor authentication');
+        } catch (error) {
+            showNotification('Network error, please check your connection and try again', 'error');
+        }
+    }
+
     function empMenuDelete() {
         closeEmpMenu();
         deleteEmployee(_empMenuId);
@@ -2344,6 +2399,14 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         </svg>
         Change Role
     </button>
+    @if($can('master.employee.reset-two-factor'))
+    <button onclick="empMenuResetTwoFactor()" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5 text-orange-500">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
+        </svg>
+        Reset 2FA
+    </button>
+    @endif
     <div class="border-t border-gray-100 my-1"></div>
     <button onclick="empMenuDelete()" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-all">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">

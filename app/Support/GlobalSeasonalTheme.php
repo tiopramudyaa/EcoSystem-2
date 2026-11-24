@@ -9,13 +9,13 @@ use Throwable;
 /**
  * Setting tema musiman yang dikontrol admin, berlaku sebagai DEFAULT untuk
  * seluruh user (dashboard) dan halaman login (pre-auth, lewat AppConfig
- * karena belum ada session). Bukan dipaksakan — tiap user tetap bisa
+ * karena belum ada session). Bukan dipaksakan - tiap user tetap bisa
  * menimpa untuk dirinya sendiri lewat preferensi pribadinya (lihat
  * SeasonalThemeResolver, yang menggabungkan nilai ini dengan preferensi
  * per-user).
  *
  * Ditulis oleh Control Center → Seasonal Theme (SeasonalThemeSettingsController,
- * belum dibuat — kelas ini scaffolding yang aman dipakai lebih dulu: bila
+ * belum dibuat - kelas ini scaffolding yang aman dipakai lebih dulu: bila
  * belum ada admin yang pernah menyimpan apa pun, active() jatuh ke 'none'
  * sehingga tidak ada perubahan visual yang muncul tiba-tiba untuk siapa pun).
  *
@@ -28,18 +28,18 @@ final class GlobalSeasonalTheme
 {
     public const KEY = 'seasonal_theme.global';
 
-    /** File musik latar harus ada di public/sounds/ — validasi lihat sanitizeSound(). */
+    /** File musik latar harus ada di public/sounds/ - validasi lihat sanitizeSound(). */
     private const SOUND_DIR = 'sounds';
 
     private const DEFAULTS = [
         'theme' => SeasonalThemes::NONE,
-        // null = tidak ada musik latar. BUKAN preferensi per-user — ini murni
+        // null = tidak ada musik latar. BUKAN preferensi per-user - ini murni
         // wewenang admin (lihat App\Http\Controllers\SeasonalThemeSettingsController),
         // dashboard.blade.php cuma boleh mute/unmute LOKAL demi aksesibilitas
         // (WCAG 1.4.2), tidak pernah menyimpan pilihan lagu.
         'sound' => null,
         // 0-100 (persen), disimpan bulat demi UI slider admin. BUKAN preferensi
-        // per-user juga — berlaku sama untuk semua user, sama seperti 'sound'.
+        // per-user juga - berlaku sama untuk semua user, sama seperti 'sound'.
         // 50 = default kalau admin belum pernah mengatur, supaya begitu admin
         // nyalakan musik untuk pertama kali tidak langsung full volume.
         'volume' => 50,
@@ -53,7 +53,7 @@ final class GlobalSeasonalTheme
 
     /**
      * URL musik latar yang dipasang admin, atau null kalau tidak ada.
-     * Dipakai dashboard.blade.php (semua halaman setelah login) — BUKAN
+     * Dipakai dashboard.blade.php (semua halaman setelah login) - BUKAN
      * halaman login (itu pakai #seasonalJingle terpisah, klip loading screen
      * singkat, konsepnya beda dari musik latar berkelanjutan ini).
      */
@@ -78,7 +78,7 @@ final class GlobalSeasonalTheme
         try {
             $stored = AppConfig::getJson(self::KEY, []);
         } catch (Throwable $e) {
-            // Tabel app_configs belum ada / DB bermasalah — jangan jatuhkan
+            // Tabel app_configs belum ada / DB bermasalah - jangan jatuhkan
             // dashboard/login siapa pun, cukup jatuh ke default 'none'.
             Log::warning('Global seasonal theme unreadable, falling back to default', [
                 'error' => $e->getMessage(),
@@ -92,7 +92,7 @@ final class GlobalSeasonalTheme
      * @param array<string, mixed> $input
      *
      * PENTING: $input harus selalu membawa KETIGA field ('theme', 'sound',
-     * 'volume') bersamaan, bukan cuma yang berubah — sanitize() menjatuhkan
+     * 'volume') bersamaan, bukan cuma yang berubah - sanitize() menjatuhkan
      * field yang hilang ke default (null untuk sound, 50 untuk volume), jadi
      * save(['theme'=>'natal']) SAJA akan diam-diam MENGHAPUS musik latar/reset
      * volume yang sudah diset sebelumnya. Form admin
@@ -129,7 +129,7 @@ final class GlobalSeasonalTheme
 
     /**
      * Whitelist KETAT: cuma nama file polos (basename, bukan path) berekstensi
-     * audio yang BENAR-BENAR ADA di public/sounds/ — admin memilih dari daftar
+     * audio yang BENAR-BENAR ADA di public/sounds/ - admin memilih dari daftar
      * yang sudah ada (lihat SeasonalThemeSettingsController::index()), bukan
      * mengetik bebas, tapi tetap disanitasi ulang di sini (bukan cuma saat
      * simpan) karena baris app_configs bisa diedit manual/menyebut file yang

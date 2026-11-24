@@ -11,7 +11,7 @@ namespace App\Support;
  *   - the classification <select> options in resources/views/staging/index.blade.php
  *
  * Previously each of those hardcoded its own copy with no compiler or runtime
- * check keeping them in sync — a value added/renamed in one place would
+ * check keeping them in sync - a value added/renamed in one place would
  * silently drift from the others (AiTicketAnalyzerService::sanitizeEnum()
  * would just start returning null for it) instead of failing loudly.
  */

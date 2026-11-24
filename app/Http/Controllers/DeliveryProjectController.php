@@ -25,12 +25,12 @@ class DeliveryProjectController extends Controller
 {
     public function index()
     {
-        $projects = DeliveryProject::with('client.basicData')->latest()->get();
+        $projects = DeliveryProject::with('client.basicData')->orderByLastUpdate()->get();
         return view('delivery.project.projects.index', compact('projects'));
     }
 
     /**
-     * Export daftar project ke Excel — satu baris per project, lengkap dengan
+     * Export daftar project ke Excel - satu baris per project, lengkap dengan
      * angka progres (aktual, rencana, deviasi, SPI) dan ringkasan tiap section.
      *
      * Filter & sort tabel di halaman list dikerjakan client-side, jadi tombol
@@ -46,11 +46,11 @@ class DeliveryProjectController extends Controller
             ->values();
 
         // `plannings.stages` + `phases` di-eager load karena dipakai perhitungan
-        // progres (weightedProgressRaw) untuk SETIAP project — tanpa ini export
+        // progres (weightedProgressRaw) untuk SETIAP project - tanpa ini export
         // memicu query per project per group.
         $projects = DeliveryProject::with(['client.basicData', 'plannings.stages', 'phases'])
             ->when($ids->isNotEmpty(), fn ($q) => $q->whereIn('id', $ids))
-            ->latest()
+            ->orderByLastUpdate()
             ->get();
 
         $projectIds = $projects->pluck('id');
@@ -94,7 +94,7 @@ class DeliveryProjectController extends Controller
         $riskStats   = $this->openTotalStats('delivery_project_risks', $projectIds);
         $wricefStats = $this->openTotalStats('delivery_project_wricefs', $projectIds);
 
-        // TOP: amount TIDAK dibaca dari kolom tersimpan — nilai turunan itu bisa
+        // TOP: amount TIDAK dibaca dari kolom tersimpan - nilai turunan itu bisa
         // basi kalau revenue berubah lewat jalur lain. Dihitung ulang di sini,
         // sama seperti resyncAmount() di DeliveryProjectPaymentTermController.
         $paymentTerms = DeliveryProjectPaymentTerm::whereIn('delivery_projects_id', $projectIds)
@@ -109,14 +109,14 @@ class DeliveryProjectController extends Controller
             $actualCost = (float) ($actualCosts[$project->id] ?? 0);
             $actualGp   = $revenue - $actualCost;
 
-            // Sekali hitung untuk keempat angka progres — lihat progressSnapshot().
+            // Sekali hitung untuk keempat angka progres - lihat progressSnapshot().
             $progress = $project->progressSnapshot();
 
             $activities   = $project->plannings->where('is_group', false);
             $activityDone = $activities->filter(fn ($a) => (float) ($a->progress_percentage ?? 0) >= 100)->count();
 
             $terms       = $paymentTerms[$project->id] ?? collect();
-            $termAmount  = fn ($t) => round($revenue * ((float) $t->payment_percentage) / 100, 2);
+            $termAmount  = fn ($t) => $t->effectiveAmount($revenue);
             $topAmount   = $terms->sum($termAmount);
             $topPaid     = $terms->where('status', 'Paid')->sum($termAmount);
 
@@ -201,6 +201,70 @@ class DeliveryProjectController extends Controller
     }
 
     /**
+     * Export revenue SELURUH Delivery Project (tidak ikut filter tabel) -
+     * satu baris per project: revenue, plan/actual cost, gross profit, dan
+     * posisi penagihan TOP. Lihat DeliveryProjectRevenueExport.
+     */
+    public function exportRevenue()
+    {
+        $projects = DeliveryProject::with('client.basicData')->get();
+        $projectIds = $projects->pluck('id');
+
+        // Sama dengan export(): Actual Cost = SUM actual_amount seluruh cost item.
+        $actualCosts = DeliveryProjectCost::whereIn('delivery_projects_id', $projectIds)
+            ->selectRaw('delivery_projects_id, SUM(actual_amount) AS total')
+            ->groupBy('delivery_projects_id')
+            ->pluck('total', 'delivery_projects_id');
+
+        // Amount TOP dihitung ulang dari revenue terkini (effectiveAmount), bukan
+        // kolom tersimpan yang bisa basi.
+        $paymentTerms = DeliveryProjectPaymentTerm::whereIn('delivery_projects_id', $projectIds)
+            ->get()
+            ->groupBy('delivery_projects_id');
+
+        $rows = $projects
+            ->map(function (DeliveryProject $project) use ($actualCosts, $paymentTerms) {
+                $revenue = (float) ($project->revenue ?? 0);
+                $terms   = $paymentTerms[$project->id] ?? collect();
+                $amount  = fn ($t) => $t->effectiveAmount($revenue);
+                // Invoiced = termin ber-Invoice No (sama dengan export Invoiced TOP).
+                $invoiced = $terms->filter(fn ($t) => trim((string) $t->invoice_number) !== '');
+
+                return [
+                    'io_number'           => $project->io_number,
+                    'customer'            => $project->client->basicData->name_1 ?? null,
+                    'project_type'        => $project->project_type,
+                    'project_name'        => $project->name,
+                    'ae_name'             => $project->ae_name,
+                    'project_owner'       => $project->project_owner,
+                    'category'            => $project->category,
+                    'status'              => $project->status,
+                    'contract_start_date' => $project->contract_start_date,
+                    'contract_end_date'   => $project->contract_end_date,
+                    'revenue'             => $revenue,
+                    'plan_cost'           => (float) ($project->plan_cost ?? 0),
+                    'actual_cost'         => (float) ($actualCosts[$project->id] ?? 0),
+                    'top_terms'           => $terms->count(),
+                    'top_amount'          => $terms->sum($amount),
+                    'invoiced'            => $invoiced->sum($amount),
+                    'paid'                => $terms->where('status', 'Paid')->sum($amount),
+                ];
+            })
+            ->sortBy([
+                fn ($a, $b) => strnatcasecmp((string) $a['customer'], (string) $b['customer']),
+                fn ($a, $b) => strnatcasecmp((string) $a['io_number'], (string) $b['io_number']),
+                fn ($a, $b) => strnatcasecmp((string) $a['project_name'], (string) $b['project_name']),
+            ])
+            ->values()
+            ->all();
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\DeliveryProjectRevenueExport($rows),
+            'Delivery_Project_Revenue_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
+
+    /**
      * Hitung jumlah baris total & yang belum Closed per project untuk salah satu
      * tabel section (issue/risk/WRICEF) dalam satu query.
      *
@@ -239,11 +303,11 @@ class DeliveryProjectController extends Controller
         // selain "Sales Operation User" (lihat salesRoleEmployees()).
         $aeEmployees = $this->salesRoleEmployees();
 
-        // IO number existing per company (client) — dipakai form Body Hire untuk
+        // IO number existing per company (client) - dipakai form Body Hire untuk
         // memilih IO yang sudah ada; hanya IO milik company yang sama yang muncul.
         $iosByClient = $this->existingIosByClient();
 
-        // Dropdown "Project Type" — master data (menu Management > Master
+        // Dropdown "Project Type" - master data (menu Management > Master
         // Delivery Settings > Project Type), bukan hardcode lagi.
         $projectTypes = DeliveryProjectType::active()->orderBy('order_seq')->orderBy('name')->pluck('name');
 
@@ -252,14 +316,9 @@ class DeliveryProjectController extends Controller
 
     public function store(Request $request)
     {
-        // Body Hire boleh berbagi satu IO number lintas delivery — tapi HANYA dalam
-        // company yang sama. Type lain tetap wajib unik global.
-        $ioNumberRule = ['required', 'string', 'max:255'];
-        if ($request->input('project_type') === 'Body Hire') {
-            $ioNumberRule[] = $this->sameCompanyIoRule($request->input('client_id'));
-        } else {
-            $ioNumberRule[] = Rule::unique('delivery_projects', 'io_number');
-        }
+        // Semua project type boleh berbagi satu IO number lintas delivery - tapi
+        // HANYA dalam company (client) yang sama.
+        $ioNumberRule = ['required', 'string', 'max:255', $this->sameCompanyIoRule($request->input('client_id'))];
 
         $request->validate([
             'client_id' => ['required', Rule::exists('customer', 'customer_id')->where('type', Customer::TYPE_CUSTOMER)],
@@ -294,9 +353,11 @@ class DeliveryProjectController extends Controller
             'location_region' => 'nullable|string',
             'location_city' => 'nullable|string',
             'location_street' => 'nullable|string',
+            'location_latitude' => 'nullable|numeric|between:-90,90|required_with:location_longitude',
+            'location_longitude' => 'nullable|numeric|between:-180,180|required_with:location_latitude',
             // Anggota tim punya dua jalur: "employee" (master Employee) dan
             // "vendor" (orang vendor di luar master). Kelengkapan tiap jalur
-            // diperiksa saat baris diproses — lihat loop attach di bawah.
+            // diperiksa saat baris diproses - lihat loop attach di bawah.
             'team_members'                    => 'nullable|array',
             'team_members.*.member_source'    => 'nullable|in:employee,vendor',
             'team_members.*.employee_id'      => 'nullable|exists:employee,employee_id',
@@ -338,8 +399,15 @@ class DeliveryProjectController extends Controller
             'revenue', 'plan_cost', 'gross_profit', 'gross_profit_percentage',
             'delivery_method', 'warranty_period', 'total_mandays',
             'location_name', 'location_type', 'location_country',
-            'location_geographical', 'location_region', 'location_city', 'location_street'
+            'location_geographical', 'location_region', 'location_city', 'location_street',
+            'location_latitude', 'location_longitude'
         ]));
+
+        foreach (['location_latitude', 'location_longitude'] as $coord) {
+            if (($projectData[$coord] ?? null) === '') {
+                $projectData[$coord] = null;
+            }
+        }
 
         try {
             $project = DeliveryProject::create($projectData);
@@ -383,7 +451,7 @@ class DeliveryProjectController extends Controller
                             'updated_at'           => now(),
                         ]);
 
-                        // Kolom FK project-role menunjuk master employee — dilewati.
+                        // Kolom FK project-role menunjuk master employee - dilewati.
                         continue;
                     }
 
@@ -438,12 +506,12 @@ class DeliveryProjectController extends Controller
             'closedBy.basicData',
             'documents',
             'teamMembers.basicData',
-            'plannings.phase'
+            'plannings.phase',
+            'plannings.activity'
         ]);
 
-        $planning = $project->plannings()
-            ->whereNotNull('start_date')
-            ->get();
+        // Pakai plannings yang sudah di-eager-load di atas (bukan query ulang).
+        $planning = $project->plannings->filter(fn ($p) => $p->start_date !== null);
 
         $firstStartDate = null;
         $lastEndDate = null;
@@ -481,7 +549,7 @@ class DeliveryProjectController extends Controller
             $project->location_valid_to = $lastEndDate->toDateString();
         }
 
-        // Sinkronisasi otomatis saat halaman dibuka — bukan aktivitas user, jadi
+        // Sinkronisasi otomatis saat halaman dibuka - bukan aktivitas user, jadi
         // tidak boleh menggeser "Last Update Date" (last_activity_at).
         try {
             DeliveryProject::withoutActivityTracking(function () use ($project) {
@@ -505,11 +573,11 @@ class DeliveryProjectController extends Controller
 
         $clients = Customer::with('basicData')->customers()->get()->sortBy(fn($c) => strtolower($c->basicData->name_1 ?? ''))->values();
 
-        // Dropdown "Vendor" pada Add Team Member — master-nya sama dengan customer
+        // Dropdown "Vendor" pada Add Team Member - master-nya sama dengan customer
         // (tabel `customer`), dibedakan kolom `type` = Vendor.
         $vendors = Customer::with('basicData')->vendors()->get()->sortBy(fn($v) => strtolower($v->basicData->name_1 ?? $v->customer_code ?? 'zzz'))->values();
 
-        // IO number existing milik company yang sama (untuk pilihan Body Hire).
+        // IO number existing milik company yang sama (pilihan di field IO/Number Order).
         $sameCompanyIos = DeliveryProject::where('client_id', $project->client_id)
             ->where('id', '!=', $project->id)
             ->whereNotNull('io_number')
@@ -553,7 +621,7 @@ class DeliveryProjectController extends Controller
             $finalPhaseWeights = $phaseWeights + $defaultPhaseWeights;
         }
 
-        // Raw pivot rows — one entry per row in the junction table.
+        // Raw pivot rows - one entry per row in the junction table.
         // belongsToMany deduplicates by employee_id, so this is the only
         // reliable way to surface every role entry (including multiple roles
         // for the same employee).
@@ -572,10 +640,10 @@ class DeliveryProjectController extends Controller
 
         // Project Owner project ini dapat izin tambahan pada section tertentu
         // (mis. Risk Register) walau role-nya tidak punya slug-nya. Grant ini
-        // hanya berlaku di project ini — lihat CheckMenuOrProjectOwner.
+        // hanya berlaku di project ini - lihat CheckMenuOrProjectOwner.
         $isProjectOwner = $project->isOwnedByEmployee(session('user.id'));
 
-        // Dropdown "Project Type" (modal-general-info partial) — master data,
+        // Dropdown "Project Type" (modal-general-info partial) - master data,
         // bukan hardcode lagi. Nilai project_type project ini tetap dipastikan
         // muncul di daftar walau tipenya sudah dinonaktifkan di master data,
         // supaya form edit tidak diam-diam "menghilangkan" pilihan yang sedang
@@ -620,13 +688,8 @@ class DeliveryProjectController extends Controller
         } elseif ($field === 'high_level_risk') {
             $rules['value'] = ['nullable', Rule::in(['Low', 'Moderate', 'High'])];
         } elseif ($field === 'io_number') {
-            // Body Hire: IO boleh dipakai ulang dalam company yang sama; type lain unik.
-            $rules['value'] = ['required', 'string', 'max:255'];
-            if ($project->project_type === 'Body Hire') {
-                $rules['value'][] = $this->sameCompanyIoRule($project->client_id, $project->id);
-            } else {
-                $rules['value'][] = Rule::unique('delivery_projects', 'io_number')->ignore($project->id);
-            }
+            // IO boleh dipakai ulang dalam company yang sama (semua project type).
+            $rules['value'] = ['required', 'string', 'max:255', $this->sameCompanyIoRule($project->client_id, $project->id)];
         } elseif ($field === 'description') {
             $rules['value'] = 'nullable|string|max:5000';
         } elseif ($field === 'name') {
@@ -674,16 +737,10 @@ class DeliveryProjectController extends Controller
 
     public function updateGeneralInfo(Request $request, DeliveryProject $project)
     {
-        // Body Hire: IO boleh dipakai ulang dalam company yang sama; type lain unik.
-        // Pakai type/client yang dikirim; fallback ke nilai project saat ini.
-        $incomingType   = $request->input('project_type', $project->project_type);
+        // IO boleh dipakai ulang dalam company yang sama (semua project type).
+        // Pakai client yang dikirim; fallback ke client project saat ini.
         $incomingClient = $request->input('client_id', $project->client_id);
-        $ioNumberRule   = ['required', 'string', 'max:255'];
-        if ($incomingType === 'Body Hire') {
-            $ioNumberRule[] = $this->sameCompanyIoRule($incomingClient, $project->id);
-        } else {
-            $ioNumberRule[] = Rule::unique('delivery_projects', 'io_number')->ignore($project->id);
-        }
+        $ioNumberRule   = ['required', 'string', 'max:255', $this->sameCompanyIoRule($incomingClient, $project->id)];
 
         $validated = $request->validate([
             'client_id'           => ['nullable', Rule::exists('customer', 'customer_id')->where('type', Customer::TYPE_CUSTOMER)],
@@ -752,13 +809,13 @@ class DeliveryProjectController extends Controller
         }
 
         $items = $offenders->map(function ($p) {
-            $s = $p->start_date ? Carbon::parse($p->start_date)->format('d M Y') : '—';
-            $e = $p->end_date ? Carbon::parse($p->end_date)->format('d M Y') : '—';
+            $s = $p->start_date ? Carbon::parse($p->start_date)->format('d M Y') : '-';
+            $e = $p->end_date ? Carbon::parse($p->end_date)->format('d M Y') : '-';
             return ($p->name ?: 'Planning #' . $p->id) . ' (' . $s . ' → ' . $e . ')';
         })->values()->all();
 
-        $window = ($cStart ? Carbon::parse($cStart)->format('d M Y') : '—')
-                . ' → ' . ($cEnd ? Carbon::parse($cEnd)->format('d M Y') : '—');
+        $window = ($cStart ? Carbon::parse($cStart)->format('d M Y') : '-')
+                . ' → ' . ($cEnd ? Carbon::parse($cEnd)->format('d M Y') : '-');
 
         return [
             'count'  => $offenders->count(),
@@ -791,7 +848,7 @@ class DeliveryProjectController extends Controller
 
         // Normalize AE name against AE type. When no type is selected the AE Name
         // input is disabled and not submitted, so without this guard a previously
-        // stored name would linger without a type — causing confusion on next edit.
+        // stored name would linger without a type - causing confusion on next edit.
         // Tying the name to the type keeps the record consistent whether the user
         // clears the type intentionally or by accident.
         if (empty($validatedData['ae_type'])) {
@@ -802,7 +859,7 @@ class DeliveryProjectController extends Controller
         $project->update($validatedData);
 
         // Payment term amounts are derived (amount = revenue × % / 100). We resync on
-        // every save — not just when revenue changes on this request — so terms that
+        // every save - not just when revenue changes on this request - so terms that
         // went stale from an earlier revenue edit are corrected too. It's idempotent.
         $this->syncPaymentTermAmounts($project);
 
@@ -861,7 +918,7 @@ class DeliveryProjectController extends Controller
      */
     /**
      * IO number yang sudah ada, dikelompokkan per company (client_id):
-     * [client_id => ['IO-1', 'IO-2', ...]]. Dipakai form Body Hire agar user
+     * [client_id => ['IO-1', 'IO-2', ...]]. Dipakai form create agar user
      * bisa memilih IO existing milik company yang sama.
      */
     private function existingIosByClient(): array
@@ -875,20 +932,23 @@ class DeliveryProjectController extends Controller
     }
 
     /**
-     * Rule IO number untuk project Body Hire: IO boleh dipakai ulang, TETAPI hanya
+     * Rule IO number (semua project type): IO boleh dipakai ulang, TETAPI hanya
      * dalam company (client) yang sama. Gagal bila IO yang sama sudah dipakai oleh
-     * project company lain. $ignoreId mengecualikan project yang sedang diedit.
+     * project company lain - termasuk project tanpa company, atau bila project ini
+     * sendiri belum punya company. $ignoreId mengecualikan project yang sedang diedit.
      */
     private function sameCompanyIoRule($clientId, $ignoreId = null): \Closure
     {
         return function ($attribute, $value, $fail) use ($clientId, $ignoreId) {
-            $query = DeliveryProject::where('io_number', $value)
-                ->where('client_id', '!=', $clientId);
+            $query = DeliveryProject::where('io_number', $value);
+            if ($clientId) {
+                $query->where(fn($q) => $q->where('client_id', '!=', $clientId)->orWhereNull('client_id'));
+            }
             if ($ignoreId) {
                 $query->where('id', '!=', $ignoreId);
             }
             if ($query->exists()) {
-                $fail('IO Number tersebut sudah digunakan company lain. Untuk Body Hire, IO Number hanya boleh dipakai ulang dalam company yang sama.');
+                $fail('IO Number tersebut sudah digunakan company lain. IO Number hanya boleh dipakai ulang dalam company yang sama.');
             }
         };
     }
@@ -909,15 +969,17 @@ class DeliveryProjectController extends Controller
      * Hitung ulang amount setiap payment term dari revenue project terkini,
      * mengikuti rumus amount = revenue × payment_percentage / 100 yang juga dipakai
      * saat term dibuat/diedit (lihat DeliveryProjectPaymentTermController::computeAmount).
+     * Termin nominal tetap (mode Line Item) tidak diturunkan dari revenue → dilewati.
      */
     private function syncPaymentTermAmounts(DeliveryProject $project): void
     {
         $revenue = (float) ($project->revenue ?? 0);
 
         DeliveryProjectPaymentTerm::where('delivery_projects_id', $project->id)
+            ->where('basis', 'percentage')
             ->get()
             ->each(function (DeliveryProjectPaymentTerm $term) use ($revenue) {
-                $amount = round($revenue * ((float) $term->payment_percentage) / 100, 2);
+                $amount = $term->effectiveAmount($revenue);
                 if (abs((float) $term->amount - $amount) > 0.001) {
                     $term->update(['amount' => $amount]);
                 }
@@ -934,9 +996,18 @@ class DeliveryProjectController extends Controller
             'location_region' => 'nullable|string',
             'location_city' => 'nullable|string',
             'location_street' => 'nullable|string',
+            'location_latitude' => 'nullable|numeric|between:-90,90|required_with:location_longitude',
+            'location_longitude' => 'nullable|numeric|between:-180,180|required_with:location_latitude',
             'location_valid_from' => 'nullable|date',
             'location_valid_to' => 'nullable|date|after_or_equal:location_valid_from',
         ]);
+
+        // Blank coordinates mean "not set"; never write '' into a decimal column.
+        foreach (['location_latitude', 'location_longitude'] as $coord) {
+            if (($validatedData[$coord] ?? null) === '') {
+                $validatedData[$coord] = null;
+            }
+        }
 
         $project->update($validatedData);
 
@@ -1064,7 +1135,7 @@ class DeliveryProjectController extends Controller
             ]);
 
         $teamMembers = $rows->map(function ($r) {
-            // Anggota vendor tidak ada di master employee — namanya dari member_name.
+            // Anggota vendor tidak ada di master employee - namanya dari member_name.
             $name = trim(($r->first_name ?? '') . ' ' . ($r->last_name ?? ''));
             if ($name === '') {
                 $name = trim((string) ($r->member_name ?? ''));
@@ -1122,9 +1193,9 @@ class DeliveryProjectController extends Controller
      * after a team-member role change.
      *
      * @param DeliveryProject $project
-     * @param string|int      $oldEmpId  – employee that previously held the URL param slot
-     * @param string|int      $newEmpId  – employee that will now be attached
-     * @param string          $newRole   – new role value
+     * @param string|int      $oldEmpId  - employee that previously held the URL param slot
+     * @param string|int      $newEmpId  - employee that will now be attached
+     * @param string          $newRole   - new role value
      */
     private function syncRoleColumns(DeliveryProject $project, $oldEmpId, $newEmpId, string $newRole): void
     {
@@ -1206,7 +1277,7 @@ class DeliveryProjectController extends Controller
                 return $this->teamMemberError($request, 'This vendor person already has the same active role. Please set an end date on the previous entry first.');
             }
 
-            // Module vendor bebas diketik — hanya dirapikan formatnya.
+            // Module vendor bebas diketik - hanya dirapikan formatnya.
             $moduleValue = collect(explode(',', (string) $request->module))
                 ->map(fn ($m) => trim($m))->filter()->unique()->values();
 
@@ -1224,7 +1295,7 @@ class DeliveryProjectController extends Controller
             ]);
 
             // Kolom FK project-role (project_manager_id dkk) menunjuk ke master
-            // employee, jadi TIDAK bisa diisi orang vendor — sengaja dilewati.
+            // employee, jadi TIDAK bisa diisi orang vendor - sengaja dilewati.
 
             // Pivot ditulis via query builder (tanpa event) → catat manual.
             $project->touchActivity();
@@ -1329,7 +1400,7 @@ class DeliveryProjectController extends Controller
      * Hapus SATU baris pivot team member berdasarkan ID barisnya.
      *
      * Identifikasinya lewat ID baris (bukan employee_id) karena anggota vendor
-     * tidak punya entri di master employee — employee_id-nya NULL. Kolom FK
+     * tidak punya entri di master employee - employee_id-nya NULL. Kolom FK
      * project-role (project_manager_id dkk) ikut dibersihkan kalau baris yang
      * dihapus adalah baris yang sedang dirujuk kolom tersebut.
      *
@@ -1409,7 +1480,7 @@ class DeliveryProjectController extends Controller
     /**
      * Update satu baris penugasan tim (identifikasi via ID baris pivot).
      *
-     * Baris diidentifikasi lewat ID pivot — bukan employee_id — karena anggota
+     * Baris diidentifikasi lewat ID pivot - bukan employee_id - karena anggota
      * vendor tidak punya employee_id sama sekali (lihat storeTeamMember).
      * Hanya role, end_date, dan notes yang boleh berubah.
      */
@@ -1524,7 +1595,7 @@ class DeliveryProjectController extends Controller
             $project->closed_by = null;
             $project->save();
 
-            // Category was pinned to 'Closed' while locked — recompute from planning now.
+            // Category was pinned to 'Closed' while locked - recompute from planning now.
             $project->updateFromPlanning();
         }
 
@@ -1871,7 +1942,7 @@ class DeliveryProjectController extends Controller
             $folderName = trim($request->input('folder_name') ?: ($project->name ?? 'Project-' . $project->id));
 
             if ($project->onedrive_folder_id) {
-                // Folder already exists — just recreate the share link
+                // Folder already exists - just recreate the share link
                 $link = $oneDrive->createShareLink($project->onedrive_folder_id);
                 $project->applyOneDriveShareLink($link);
             } else {
@@ -1983,7 +2054,7 @@ class DeliveryProjectController extends Controller
 
     /**
      * Create a OneDrive upload session so the client can upload the file directly.
-     * Returns only an uploadUrl — no file data passes through this server.
+     * Returns only an uploadUrl - no file data passes through this server.
      */
     public function createDocumentUploadSession(Request $request, DeliveryProject $project)
     {

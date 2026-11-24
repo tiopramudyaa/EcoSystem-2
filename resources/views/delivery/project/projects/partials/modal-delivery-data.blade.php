@@ -1,5 +1,5 @@
 {{-- ══════════════════════════════════════════════════════════════════════════
-     MODAL — EDIT DELIVERY DATA
+     MODAL - EDIT DELIVERY DATA
      Field-nya dipindah apa adanya dari section inline lama; id, name, dan
      data-* dipertahankan supaya seluruh JS terkait (custom-dd, flatpickr,
      kalkulasi finansial, attachSectionForm) tetap terikat tanpa perubahan.
@@ -40,7 +40,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-900 mb-1">Total Mandays</label>
-                    <input type="number" name="total_mandays" value="{{ $project->total_mandays }}"
+                    <input type="number" name="total_mandays" value="{{ \App\Support\Md::format($project->total_mandays, '') }}"
                            class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm text-sm primary-focus">
                 </div>
             </div>

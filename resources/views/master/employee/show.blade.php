@@ -9,7 +9,7 @@
 {{-- ── Loading state ────────────────────────────────────────────────────────
      Halaman ini dirender server-side, TAPI isi form (Basic Data) baru diisi
      setelah fetch /api/employees/{id}/basic-data selesai. Tanpa placeholder,
-     user melihat form kosong dulu lalu tiba-tiba terisi — terbaca seperti
+     user melihat form kosong dulu lalu tiba-tiba terisi - terbaca seperti
      "data hilang". Skeleton di bawah tampil lebih dulu, konten asli baru
      dimunculkan setelah data awal masuk (lihat revealProfilePage()). --}}
 <style>
@@ -142,7 +142,7 @@
                             $statusLabel = 'Inactive';
                         }
                     @endphp
-                    {{-- Grouped so both badges act as ONE flex item next to the name block —
+                    {{-- Grouped so both badges act as ONE flex item next to the name block -
                          previously they were two separate siblings under `justify-between`,
                          which spread all three (name block, Active, Internal) apart instead
                          of keeping the badges together on the right. --}}
@@ -191,7 +191,7 @@
         // Dipakai dua halaman: /profile (my-profile.section.*) dan Master >
         // Employee > detail (employee.section.*). Controller masing-masing yang
         // memutuskan slug mana yang dipakai; view cukup memakai hasilnya.
-        // Jangan kembalikan ke pola "$isOwn ? ... : []" — itu membuat halaman
+        // Jangan kembalikan ke pola "$isOwn ? ... : []" - itu membuat halaman
         // Master selalu editable penuh berapa pun izin yang dicentang.
         $hidden   = $profileSectionHidden   ?? [];
         $ro       = $profileSectionReadonly ?? [];
@@ -595,7 +595,7 @@
 
     // showNotification tersedia secara global dari dashboard.blade.php
 
-    // Ganti skeleton dengan konten asli. Idempotent — boleh dipanggil berkali-kali
+    // Ganti skeleton dengan konten asli. Idempotent - boleh dipanggil berkali-kali
     // (dipanggil normal setelah data awal masuk, dan oleh safety timeout).
     function revealProfilePage() {
         const skeleton = document.getElementById('profileSkeleton');

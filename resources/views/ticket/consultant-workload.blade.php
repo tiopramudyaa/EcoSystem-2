@@ -260,7 +260,7 @@
     // ── Panel filter di header tabel ───────────────────────────────────
     // Wrapper tabel punya overflow (rounded-xl overflow-hidden + overflow-x-auto),
     // yang memotong panel absolute begitu barisnya sedikit. Jadi saat dibuka panel
-    // dilepas ke <body> dan diposisikan fixed di bawah tombolnya — pola yang sama
+    // dilepas ke <body> dan diposisikan fixed di bawah tombolnya - pola yang sama
     // dipakai dropdown header halaman Ticket (data-fixed, custom-dropdown.js).
     function openHeaderPanel(btn, panel, arrow) {
         if (panel.parentElement !== document.body) document.body.appendChild(panel);
@@ -581,13 +581,13 @@
         filterTable();
     }
 
-    // Status yang dianggap "aktif" — dasar SEMUA angka di baris tabel.
+    // Status yang dianggap "aktif" - dasar SEMUA angka di baris tabel.
     const ACTIVE_STATUSES = ['open', 'inprocess', 'waiting_on_customer', 'waiting_on_3rd_party', 'waiting_to_confirmation', 'hold'];
 
     // Metrik baris tabel. Dipakai bareng oleh consultantRows() (yang menampilkan)
     // dan applySortTo() (yang mengurutkan) supaya urutan selalu cocok dengan angka
     // yang dilihat user. Sebelumnya sort memakai calcInProgress() yang hanya
-    // menghitung tiket 'inprocess', sementara baris menghitung 6 status aktif —
+    // menghitung tiket 'inprocess', sementara baris menghitung 6 status aktif -
     // hasilnya kolom Tickets tampak acak (0, 1, lalu 0 lagi).
     function calcActive(c) {
         const tickets = c.tickets.filter(t => ACTIVE_STATUSES.includes(t.status));
@@ -620,7 +620,7 @@
     }
 
     // Khusus kartu ringkasan di atas ("Active Tickets" berlabel In-progress tickets,
-    // Busy/Moderate/Light) — sengaja hanya menghitung tiket 'inprocess', beda
+    // Busy/Moderate/Light) - sengaja hanya menghitung tiket 'inprocess', beda
     // cakupan dari baris tabel di atas.
     function calcInProgress(c) {
         const tickets = c.tickets.filter(t => t.status === 'inprocess');
@@ -742,12 +742,12 @@
             <div class="font-semibold text-gray-900 text-sm">${c.name}</div>
             <div class="text-xs text-gray-400 mt-0.5">${c.eci}</div>
         </td>
-        <td class="px-4 py-3 text-sm text-gray-700">${c.personnel_subarea || '<span class="text-gray-300">—</span>'}</td>
-        <td class="px-4 py-3 text-sm text-gray-700">${c.current_assignment || '<span class="text-gray-300">—</span>'}</td>
+        <td class="px-4 py-3 text-sm text-gray-700">${c.personnel_subarea || '<span class="text-gray-300">-</span>'}</td>
+        <td class="px-4 py-3 text-sm text-gray-700">${c.current_assignment || '<span class="text-gray-300">-</span>'}</td>
         <td class="px-4 py-3">
             ${c.modules && c.modules !== '-'
                 ? `<span class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded font-medium">${c.modules}</span>`
-                : `<span class="text-xs text-gray-300">—</span>`}
+                : `<span class="text-xs text-gray-300">-</span>`}
         </td>
         <td class="px-4 py-3 text-center">
             <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold
@@ -755,7 +755,7 @@
                 ${ticketCount}
             </span>
         </td>
-        <td class="px-4 py-3 text-right font-semibold text-gray-800 tabular-nums">${totalAllocMdMain.toFixed(2)} days</td>
+        <td class="px-4 py-3 text-right font-semibold text-gray-800 tabular-nums">${formatMd(totalAllocMdMain)} days</td>
         <td class="px-4 py-3 text-right font-semibold text-orange-600 tabular-nums">
             ${wDays} d
             <span class="ml-1 text-xs font-bold bg-orange-100 text-orange-700 rounded px-1 py-0.5">↑${Math.ceil(wDays)} d</span>
@@ -770,7 +770,7 @@
                         <span class="text-xs font-bold ${workloadTextColor(wPct)}">${wPct}%</span>
                         <span class="text-xs text-gray-400 ml-1">${wDays} d</span>
                     </div>
-                    <div class="text-[10px] text-gray-400">${wDays.toFixed(2)} / ${totalEffectiveMdMain.toFixed(2)} md</div>
+                    <div class="text-[10px] text-gray-400">${formatMd(wDays)} / ${formatMd(totalEffectiveMdMain)} md</div>
                 </div>
             </div>
         </td>
@@ -800,7 +800,7 @@
         <td colspan="10" class="p-0 border-b-2 border-blue-200" style="background:#f0f5ff">
             <div class="mx-4 my-3 rounded-xl overflow-hidden border border-blue-200 shadow-sm">
             <div class="flex items-center justify-between px-4 py-2" style="background:#dbeafe">
-                <span class="text-xs font-semibold text-blue-800 uppercase tracking-wide">${c.name} — ${visibleTickets.length} ticket${visibleTickets.length > 1 ? 's' : ''}</span>
+                <span class="text-xs font-semibold text-blue-800 uppercase tracking-wide">${c.name} - ${visibleTickets.length} ticket${visibleTickets.length > 1 ? 's' : ''}</span>
                 <a href="/ticket/consultant-workload/${c.employee_id}/export"
                    onclick="event.stopPropagation()"
                    class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition">
@@ -834,13 +834,13 @@
                             Total (${visibleTickets.length} ticket${visibleTickets.length > 1 ? 's' : ''})
                         </td>
                         <td class="px-3 py-2.5 text-right text-xs font-bold text-gray-700">
-                            ${totalAllocMdMain.toFixed(1)} days
+                            ${formatMd(totalAllocMdMain)} days
                         </td>
                         <td class="px-3 py-2.5 text-right text-xs font-bold text-indigo-600">
-                            ${totalAddMdMain.toFixed(1)} days
+                            ${formatMd(totalAddMdMain)} days
                         </td>
                         <td class="px-3 py-2.5 text-right text-xs font-bold text-orange-600">
-                            ${totalRemainMain.toFixed(2)} d
+                            ${formatMd(totalRemainMain)} d
                         </td>
                         <td colspan="1"></td>
                     </tr>
@@ -876,12 +876,12 @@
         // Hanya ambil mandays milik consultant ini (bukan total semua consultant)
         const myDetail    = (t.consultant_details ?? []).find(d => d.employee_id == empId);
         const myApproved  = myDetail ? !!myDetail.is_approved : false;
-        // Alloc Days memakai mandays yang diajukan (draft) selama belum approved —
+        // Alloc Days memakai mandays yang diajukan (draft) selama belum approved -
         // backend sudah mengembalikan cmd.mandays untuk kasus ini, jadi ikut masuk ke
         // total & remain di baris konsultan, bukan cuma placeholder.
         const myAllocMd   = myDetail ? parseFloat(myDetail.mandays) || 0 : 0;
         // Sama seperti Alloc Days: sebelum approve, backend sudah mengisi field ini dengan
-        // additional_mandays yang diajukan (bukan cuma approved_additional) — beberapa proposal
+        // additional_mandays yang diajukan (bukan cuma approved_additional) - beberapa proposal
         // murni top-up (mandays=0, additional_mandays>0), jadi kalau digate approval dulu
         // kolom Add. Days akan tampak kosong padahal ada draft yang menunggu approval.
         const myAddMd     = myDetail ? parseFloat(myDetail.approved_additional) || 0 : 0;
@@ -901,26 +901,26 @@
                 hour: '2-digit',
                 minute: '2-digit'
             }) :
-            '—';
+            '-';
 
         const dayOnClose = dayOnCloseValue(t);
 
         const remainCell = myAllocMd > 0
-            ? `<span class="font-semibold ${myRemainMd > 0 ? 'text-orange-600' : 'text-green-600'}">${myRemainMd.toFixed(2)} d</span>
+            ? `<span class="font-semibold ${myRemainMd > 0 ? 'text-orange-600' : 'text-green-600'}">${formatMd(myRemainMd)} d</span>
                <span class="ml-1 text-xs font-bold bg-orange-100 text-orange-700 rounded px-1 py-0.5">↑${Math.ceil(myRemainMd)} d</span>`
-            : `<span class="text-gray-300">—</span>`;
+            : `<span class="text-gray-300">-</span>`;
 
         return `
     <tr class="border-t border-blue-100 hover:bg-blue-50/60 transition-colors" style="background:#ffffff">
         <td class="pl-6 pr-3 py-2.5 text-xs text-gray-400">${num}</td>
         <td class="px-3 py-2.5 font-mono text-xs text-gray-500 hover:underline cursor-pointer whitespace-nowrap"
-            onclick="event.stopPropagation(); window.location='/ticket/${t.ticket_id}'">${t.ticket_number ?? '—'}</td>
+            onclick="event.stopPropagation(); window.location='/ticket/${t.ticket_id}'">${t.ticket_number ?? '-'}</td>
         <td class="px-3 py-2.5 text-xs text-gray-700 hover:underline cursor-pointer max-w-xs"
             onclick="event.stopPropagation(); window.location='/ticket/${t.ticket_id}'">
-            <span class="line-clamp-2">${t.subject || '—'}</span>
+            <span class="line-clamp-2">${t.subject || '-'}</span>
         </td>
         <td class="px-3 py-2.5 text-xs text-gray-600 max-w-xs">
-            <span class="line-clamp-2">${t.customer_name || '—'}</span>
+            <span class="line-clamp-2">${t.customer_name || '-'}</span>
         </td>
         <td class="px-3 py-2.5">
             <span class="px-1.5 py-0.5 rounded text-xs font-semibold ${roleCls}">${roleLabel}</span>
@@ -929,23 +929,23 @@
             <span class="px-1.5 py-0.5 rounded text-xs font-medium ${st.cls}">${st.text}</span>
         </td>
         <td class="px-3 py-2.5">
-            <span class="px-1.5 py-0.5 rounded text-xs font-medium ${prCls}">${t.ticket_priority ?? '—'}</span>
+            <span class="px-1.5 py-0.5 rounded text-xs font-medium ${prCls}">${t.ticket_priority ?? '-'}</span>
         </td>
-        <td class="px-3 py-2.5 text-xs font-semibold text-gray-700">${dayOnClose !== null ? dayOnClose : '<span class="text-gray-300 font-normal">—</span>'}</td>
+        <td class="px-3 py-2.5 text-xs font-semibold text-gray-700">${dayOnClose !== null ? dayOnClose : '<span class="text-gray-300 font-normal">-</span>'}</td>
         <td class="px-3 py-2.5 text-right text-xs font-semibold text-gray-700">${!myDetail
             ? '<span class="text-gray-400 italic font-normal">Not determined</span>'
             : (myApproved
-                ? myAllocMd.toFixed(2) + ' days'
+                ? formatMd(myAllocMd) + ' days'
                 : `<span class="inline-flex items-center gap-1 text-amber-600 italic font-normal" title="Proposed, awaiting approval">
                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m0 3h.008v.008H12v-.008zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                       ${myAllocMd.toFixed(2)} days
+                       ${formatMd(myAllocMd)} days
                    </span>`)}</td>
         <td class="px-3 py-2.5 text-right text-xs text-gray-500">
             ${myAddMd > 0
                 ? (myApproved
-                    ? `<span class="text-indigo-600 font-semibold">${myAddMd.toFixed(2)} days</span>`
-                    : `<span class="text-amber-600 italic font-normal" title="Proposed additional, awaiting approval">${myAddMd.toFixed(2)} days</span>`)
-                : '<span class="text-gray-300">—</span>'}
+                    ? `<span class="text-indigo-600 font-semibold">${formatMd(myAddMd)} days</span>`
+                    : `<span class="text-amber-600 italic font-normal" title="Proposed additional, awaiting approval">${formatMd(myAddMd)} days</span>`)
+                : '<span class="text-gray-300">-</span>'}
         </td>
         <td class="px-3 py-2.5 text-right">${remainCell}</td>
         <td class="px-3 py-2.5">
@@ -1021,7 +1021,7 @@
                 <tr class="border-t border-gray-100" data-detail-id="${d.detail_id ?? 'null'}" data-mandays="${d.mandays ?? ''}">
                     <td class="py-3 pr-4">
                         <p class="font-semibold text-gray-800 text-sm">${d.emp_name}</p>
-                        <p class="text-gray-400 text-xs font-mono">${d.mandays != null ? d.mandays + ' md' : 'No Resolution Days proposed yet'}</p>
+                        <p class="text-gray-400 text-xs font-mono">${d.mandays != null ? formatMd(d.mandays) + ' md' : 'No Resolution Days proposed yet'}</p>
                     </td>
                     <td class="py-3 pr-2 w-52">
                         <div class="flex items-center gap-2">

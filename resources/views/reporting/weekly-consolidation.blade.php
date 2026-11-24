@@ -6,7 +6,7 @@
 @section('content')
 
 {{-- ============================================================ --}}
-{{-- Recon history — di atas supaya siapa pun yang buka halaman ini untuk
+{{-- Recon history - di atas supaya siapa pun yang buka halaman ini untuk
      cek status recon yang sudah ada bisa langsung lihat tanpa scroll dulu
      lewat panel Generate/Edit di bawahnya. --}}
 {{-- ============================================================ --}}
@@ -79,7 +79,7 @@
     <div id="wcGenerateBar" class="hidden mt-4 flex flex-wrap items-end gap-3 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
         <div class="text-xs text-yellow-800 flex items-center gap-1.5 mr-2">
             <i class="fas fa-triangle-exclamation"></i>
-            <span>Preview only — nothing is saved yet.</span>
+            <span>Preview only - nothing is saved yet.</span>
         </div>
         <div>
             <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Period Start <span class="text-red-500">*</span></label>
@@ -128,11 +128,11 @@
         </div>
     </div>
 
-    {{-- Step 3b: edit-mode bar (period fields + Save/Cancel) — module chips above stay interactive while this is open --}}
+    {{-- Step 3b: edit-mode bar (period fields + Save/Cancel) - module chips above stay interactive while this is open --}}
     <div id="wcEditBar" class="hidden mt-4 flex flex-wrap items-end gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200">
         <div class="text-xs text-blue-800 flex items-center gap-1.5 mr-2 basis-full">
             <i class="fas fa-pen"></i>
-            <span>Editing this recon — add/remove modules above, adjust the period, then Save. Removing a module deletes its ticket rows and Notes from this recon.</span>
+            <span>Editing this recon - add/remove modules above, adjust the period, then Save. Removing a module deletes its ticket rows and Notes from this recon.</span>
         </div>
         <div>
             <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Period Start <span class="text-red-500">*</span></label>
@@ -166,17 +166,17 @@
         <table class="w-full" id="wcTicketTable">
             <thead>
                 <tr>
-                    <th class="wc-th text-left" data-filter-key="last_update" style="min-width:150px;">Last Update</th>
+                    <th class="wc-th text-left" data-filter-key="last_update" style="width:100px;min-width:100px;">Last Update</th>
                     <th class="wc-th text-left" data-filter-key="ticket_number" style="min-width:130px;">Ticket</th>
+                    <th class="wc-th text-left" data-filter-key="customer_name" style="min-width:160px;">Customer</th>
                     <th class="wc-th text-left" data-filter-key="description" style="min-width:220px;">Description</th>
-                    <th class="wc-th text-left" data-filter-key="start_date" style="min-width:150px;">Start Date</th>
+                    <th class="wc-th text-left" data-filter-key="start_date" style="width:100px;min-width:100px;">Start Date</th>
                     <th class="wc-th text-left" data-filter-key="ticket_type" style="min-width:120px;">Type</th>
                     <th class="wc-th text-left" data-filter-key="status" style="min-width:140px;">Status</th>
                     <th class="wc-th text-left" data-filter-key="module_name" style="min-width:110px;">Module</th>
                     <th class="wc-th text-left" data-filter-key="lead_member" style="min-width:160px;">Lead &amp; Member</th>
                     <th class="wc-th text-left" data-filter-key="pic" style="min-width:120px;">PIC</th>
                     <th class="wc-th text-left" data-filter-key="progress" style="min-width:100px;">Progress</th>
-                    <th class="wc-th text-left" data-filter-key="deliverable" style="min-width:110px;">Deliverable</th>
                     <th class="wc-th text-left" data-filter-key="notes" style="min-width:220px;">Notes</th>
                 </tr>
             </thead>
@@ -192,7 +192,7 @@
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <div>
-                <h3 class="text-base font-bold text-gray-900" id="wcModalTicketNumber">—</h3>
+                <h3 class="text-base font-bold text-gray-900" id="wcModalTicketNumber">-</h3>
                 <div id="wcModalStatusBadge" class="mt-1"></div>
             </div>
             <button onclick="wcCloseTicketModal()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:bg-red-800 hover:text-white transition-all">
@@ -212,7 +212,7 @@
 <div id="wcNoteModal" class="hidden fixed inset-0 bg-black/50 z-[60] items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h3 class="text-base font-bold text-gray-900">Notes — <span id="wcNoteModalTicketNumber">—</span></h3>
+            <h3 class="text-base font-bold text-gray-900">Notes - <span id="wcNoteModalTicketNumber">-</span></h3>
             <button onclick="wcCloseNoteModal()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:bg-red-800 hover:text-white transition-all">
                 <i class="fas fa-times text-xs"></i>
             </button>
@@ -367,7 +367,7 @@ async function wcLoadModules() {
 
 // Viewing a saved batch (wcState === 'batch') WITHOUT having clicked Edit
 // first must never let a stray click silently start building a brand-new
-// recon from scratch — that's exactly the trap that bit a user testing this:
+// recon from scratch - that's exactly the trap that bit a user testing this:
 // opened an existing recon, clicked a module chip out of curiosity, and it
 // quietly began a new preview instead of editing the one they had open.
 function wcModuleFieldLocked() {
@@ -383,7 +383,7 @@ function wcRenderModuleField() {
         return;
     }
 
-    const lockedHint = locked ? `<p class="text-xs text-gray-400 mt-1.5"><i class="fas fa-lock mr-1"></i>Viewing a saved recon — click Edit to change modules.</p>` : '';
+    const lockedHint = locked ? `<p class="text-xs text-gray-400 mt-1.5"><i class="fas fa-lock mr-1"></i>Viewing a saved recon - click Edit to change modules.</p>` : '';
 
     if (!wcCanCombine) {
         // Role biasa: satu modul per batch, dropdown polos seperti sebelumnya.
@@ -397,7 +397,7 @@ function wcRenderModuleField() {
 
     // Role privileged: search box (muncul kalau modulnya banyak) + chip
     // multi-select + All Modules. Search murni client-side, filter chip yang
-    // sudah dirender — dibutuhkan karena atasan kesulitan mencari modul di
+    // sudah dirender - dibutuhkan karena atasan kesulitan mencari modul di
     // tengah rapat saat daftar modul panjang.
     const searchBox = wcAllModules.length > 6 ? `
         <input type="text" id="wcModuleSearch" placeholder="Search module..." oninput="wcFilterModuleChips(this.value)"
@@ -422,7 +422,7 @@ function wcFilterModuleChips(query) {
 }
 
 // Shared confirm dialog for "this will remove a module (+ its ticket rows
-// and Notes) from an already-saved recon" — used by both the single-select
+// and Notes) from an already-saved recon" - used by both the single-select
 // dropdown and the chip grid's edit-mode removal path.
 function wcConfirmModuleRemoval(moduleName) {
     return Swal.fire({
@@ -493,7 +493,7 @@ async function wcToggleModuleChip(id) {
 
 // Dipanggil setiap kali pilihan modul berubah (select maupun chip). Auto-load
 // preview setelah jeda singkat, supaya centang beberapa chip berturut-turut
-// tidak menembak API berkali-kali — tombol "View Tickets" tetap ada untuk
+// tidak menembak API berkali-kali - tombol "View Tickets" tetap ada untuk
 // re-trigger manual.
 function wcOnSelectionChange() {
     wcClearMsg();
@@ -529,7 +529,7 @@ const STATUS_BADGE_COLOR = {
 
 function wcStatusBadge(status, label) {
     const [bg, fg] = STATUS_BADGE_COLOR[status] || ['#f3f4f6', '#4b5563'];
-    return `<span class="wc-status-badge" style="background:${bg};color:${fg};">${escHtml(label || status || '—')}</span>`;
+    return `<span class="wc-status-badge" style="background:${bg};color:${fg};">${escHtml(label || status || '-')}</span>`;
 }
 
 function wcBuildModuleParams() {
@@ -706,7 +706,7 @@ function wcApplyBatch(data) {
 
     const moduleLabel = data.module_names || data.module_name;
     const refreshedStr = data.last_refreshed_at
-        ? `Last refreshed ${new Date(data.last_refreshed_at).toLocaleString('en-US')} by ${escHtml(data.last_refreshed_by || '—')}`
+        ? `Last refreshed ${new Date(data.last_refreshed_at).toLocaleString('en-US')} by ${escHtml(data.last_refreshed_by || '-')}`
         : 'Never refreshed yet';
     document.getElementById('wcBatchBarText').textContent =
         `${moduleLabel} · ${data.period_label || '-'} · ${data.rows.length} ticket(s) · ${refreshedStr}`;
@@ -787,7 +787,7 @@ async function wcSaveEdit() {
     }
 }
 
-// Shared reset back to "pick a module and start fresh" — used after Delete
+// Shared reset back to "pick a module and start fresh" - used after Delete
 // succeeds, and by the Close button (view a saved recon, then back out
 // without touching it). Also clears the module selection and re-renders the
 // field, since it stays locked/pre-filled from whatever batch was open
@@ -827,8 +827,9 @@ async function wcDeleteBatch() {
     if (!result.isConfirmed) return;
 
     try {
-        const res = await fetch(`/api/reporting/weekly-consolidation/${wcCurrentBatchId}`, {
-            method: 'DELETE',
+        // POST variant: production WAF blocks the DELETE method.
+        const res = await fetch(`/api/reporting/weekly-consolidation/${wcCurrentBatchId}/delete`, {
+            method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
@@ -840,14 +841,14 @@ async function wcDeleteBatch() {
 
         wcResetToIdle('Recon deleted. Select a module and click View Tickets to start a new one.');
         wcLoadHistory();
-        showNotification('Recon deleted — recoverable from "Show Deleted".', 'success');
+        showNotification('Recon deleted - recoverable from "Show Deleted".', 'success');
     } catch (e) {
         console.error(e);
         showNotification(e.message, 'error');
     }
 }
 
-// Dipanggil setiap kali batch/preview baru dimuat — set ulang "sumber data"
+// Dipanggil setiap kali batch/preview baru dimuat - set ulang "sumber data"
 // lengkap (belum difilter), reset filter kolom yang mungkin masih aktif dari
 // sesi sebelumnya, lalu render lewat wcApplyColumnFilters() supaya konsisten
 // dengan satu jalur render (tidak ada dua tempat yang bisa beda hasil).
@@ -864,6 +865,13 @@ function wcLoadRowsIntoState(rows, editable) {
     wcApplyColumnFilters();
 }
 
+// Date on the first line, time below it, so the date columns stay narrow.
+function wcDateCell(v) {
+    if (!v) return '-';
+    const d = new Date(v);
+    return `<span class="whitespace-nowrap">${d.toLocaleDateString('en-US')}</span><br><span class="whitespace-nowrap text-gray-400">${d.toLocaleTimeString('en-US')}</span>`;
+}
+
 function wcRenderRows(rows, editable) {
     const body = document.getElementById('wcTableBody');
 
@@ -875,22 +883,22 @@ function wcRenderRows(rows, editable) {
 
     body.innerHTML = rows.map(r => `
         <tr>
-            <td class="wc-td text-xs text-gray-500 whitespace-nowrap">${r.last_update ? new Date(r.last_update).toLocaleString('en-US') : '—'}</td>
+            <td class="wc-td text-xs text-gray-500">${wcDateCell(r.last_update)}</td>
             <td class="wc-td">
                 <a href="/ticket/${r.ticket_id}" onclick="return wcTicketClick(event, ${r.ticket_id})" class="font-semibold text-red-800 hover:underline">${escHtml(r.ticket_number)}</a>
             </td>
-            <td class="wc-td wc-td-desc">${r.description ? escHtml(r.description) : '<span class="text-gray-300 italic">—</span>'}</td>
-            <td class="wc-td text-xs text-gray-500 whitespace-nowrap">${r.start_date ? new Date(r.start_date).toLocaleString('en-US') : '—'}</td>
-            <td class="wc-td">${r.ticket_type ? escHtml(r.ticket_type) : '<span class="text-gray-300 italic">—</span>'}</td>
+            <td class="wc-td">${r.customer_name ? escHtml(r.customer_name) : '<span class="text-gray-300 italic">-</span>'}</td>
+            <td class="wc-td wc-td-desc">${r.description ? escHtml(r.description) : '<span class="text-gray-300 italic">-</span>'}</td>
+            <td class="wc-td text-xs text-gray-500">${wcDateCell(r.start_date)}</td>
+            <td class="wc-td">${r.ticket_type ? escHtml(r.ticket_type) : '<span class="text-gray-300 italic">-</span>'}</td>
             <td class="wc-td">${wcStatusBadge(r.status, r.status_label)}</td>
-            <td class="wc-td">${r.module_name ? escHtml(r.module_name) : '<span class="text-gray-300 italic">—</span>'}</td>
-            <td class="wc-td">${r.lead_member ? escHtml(r.lead_member) : '<span class="text-gray-300 italic">—</span>'}</td>
-            <td class="wc-td">${r.pic ? escHtml(r.pic) : '<span class="text-gray-300 italic">—</span>'}</td>
+            <td class="wc-td">${r.module_name ? escHtml(r.module_name) : '<span class="text-gray-300 italic">-</span>'}</td>
+            <td class="wc-td">${r.lead_member ? escHtml(r.lead_member) : '<span class="text-gray-300 italic">-</span>'}</td>
+            <td class="wc-td">${r.pic ? escHtml(r.pic) : '<span class="text-gray-300 italic">-</span>'}</td>
             <td class="wc-td">
-                ${r.progress_percentage !== null && r.progress_percentage !== undefined ? Math.round(r.progress_percentage) + '%' : '—'}
+                ${r.progress_percentage !== null && r.progress_percentage !== undefined ? Math.round(r.progress_percentage) + '%' : '-'}
                 ${r.progress_note ? `<div class="wc-progress-note">${escHtml(r.progress_note)}</div>` : ''}
             </td>
-            <td class="wc-td">${wcDeliverableBadge(r.deliverable_status)}</td>
             <td class="wc-td">
                 ${editable ? `
                     <div class="wc-note-wrap">
@@ -917,16 +925,10 @@ function wcAutoResizeNote(el) {
     el.style.height = el.scrollHeight + 'px';
 }
 
-function wcDeliverableBadge(status) {
-    if (status === 'ok') return '<span class="wc-status-badge" style="background:#dcfce7;color:#166534;">OK</span>';
-    if (status === 'not_ok') return '<span class="wc-status-badge" style="background:#fee2e2;color:#991b1b;">Not OK</span>';
-    return '<span class="text-gray-300 italic">—</span>';
-}
-
 // ── Per-column header filters (satu filter teks per kolom, sama pola dengan
 // tabel "Ringkasan per Tiket" di Log Shifting) ──────────────────────────────
 
-const WC_FILTER_KEYS = ['last_update', 'ticket_number', 'description', 'start_date', 'ticket_type', 'status', 'module_name', 'lead_member', 'pic', 'progress', 'deliverable', 'notes'];
+const WC_FILTER_KEYS = ['last_update', 'ticket_number', 'customer_name', 'description', 'start_date', 'ticket_type', 'status', 'module_name', 'lead_member', 'pic', 'progress', 'notes'];
 
 function wcInitColumnFilters() {
     document.querySelectorAll('#wcTicketTable thead th[data-filter-key]').forEach(th => {
@@ -1013,6 +1015,7 @@ function wcUpdateFilterIndicators() {
 function wcGetFilterText(row, key) {
     switch (key) {
         case 'ticket_number': return row.ticket_number || '';
+        case 'customer_name': return row.customer_name || '';
         case 'description':   return row.description || '';
         case 'start_date':    return row.start_date ? new Date(row.start_date).toLocaleString('en-US') : '';
         case 'last_update':   return row.last_update ? new Date(row.last_update).toLocaleString('en-US') : '';
@@ -1022,7 +1025,6 @@ function wcGetFilterText(row, key) {
         case 'lead_member':   return row.lead_member || '';
         case 'pic':           return row.pic || '';
         case 'progress':      return (row.progress_percentage !== null && row.progress_percentage !== undefined) ? Math.round(row.progress_percentage) + '%' : '';
-        case 'deliverable':   return row.deliverable_status === 'ok' ? 'OK' : (row.deliverable_status === 'not_ok' ? 'Not OK' : '');
         case 'notes':         return row.notes || '';
         default:              return '';
     }
@@ -1086,21 +1088,21 @@ function wcOpenTicketModal(ticketId) {
     const r = wcRowsById[ticketId];
     if (!r) return;
 
-    document.getElementById('wcModalTicketNumber').textContent = r.ticket_number || '—';
+    document.getElementById('wcModalTicketNumber').textContent = r.ticket_number || '-';
     document.getElementById('wcModalStatusBadge').innerHTML = wcStatusBadge(r.status, r.status_label);
     document.getElementById('wcModalFullLink').href = `/ticket/${ticketId}`;
 
     document.getElementById('wcModalBody').innerHTML = `
         ${r.description ? `<p class="text-gray-600">${escHtml(r.description)}</p>` : ''}
         <div class="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Start Date</span>${r.start_date ? new Date(r.start_date).toLocaleString('en-US') : '—'}</div>
-            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Last Update</span>${r.last_update ? new Date(r.last_update).toLocaleString('en-US') : '—'}</div>
-            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Type</span>${r.ticket_type ? escHtml(r.ticket_type) : '<span class="text-gray-300 italic">—</span>'}</div>
-            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Module</span>${r.module_name ? escHtml(r.module_name) : '<span class="text-gray-300 italic">—</span>'}</div>
-            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Lead &amp; Member</span>${r.lead_member ? escHtml(r.lead_member) : '<span class="text-gray-300 italic">—</span>'}</div>
-            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">PIC</span>${r.pic ? escHtml(r.pic) : '<span class="text-gray-300 italic">—</span>'}</div>
-            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Progress</span>${r.progress_percentage !== null && r.progress_percentage !== undefined ? Math.round(r.progress_percentage) + '%' : '—'}</div>
-            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Deliverable</span>${wcDeliverableBadge(r.deliverable_status)}</div>
+            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Start Date</span>${r.start_date ? new Date(r.start_date).toLocaleString('en-US') : '-'}</div>
+            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Last Update</span>${r.last_update ? new Date(r.last_update).toLocaleString('en-US') : '-'}</div>
+            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Customer</span>${r.customer_name ? escHtml(r.customer_name) : '<span class="text-gray-300 italic">-</span>'}</div>
+            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Type</span>${r.ticket_type ? escHtml(r.ticket_type) : '<span class="text-gray-300 italic">-</span>'}</div>
+            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Module</span>${r.module_name ? escHtml(r.module_name) : '<span class="text-gray-300 italic">-</span>'}</div>
+            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Lead &amp; Member</span>${r.lead_member ? escHtml(r.lead_member) : '<span class="text-gray-300 italic">-</span>'}</div>
+            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">PIC</span>${r.pic ? escHtml(r.pic) : '<span class="text-gray-300 italic">-</span>'}</div>
+            <div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Progress</span>${r.progress_percentage !== null && r.progress_percentage !== undefined ? Math.round(r.progress_percentage) + '%' : '-'}</div>
         </div>
         ${r.progress_note ? `<div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Progress Note</span>${escHtml(r.progress_note)}</div>` : ''}
         ${r.notes ? `<div><span class="block text-[11px] font-semibold text-gray-400 uppercase">Notes</span>${escHtml(r.notes)}</div>` : ''}
@@ -1120,7 +1122,7 @@ function wcCloseTicketModal() {
 // ── Note editor modal: dibuka dari ikon expand di sebelah textarea Notes
 // inline, dipakai untuk notes panjang atau saat mau menulis lebih leluasa.
 // Menyimpan lewat wcSaveNote() yang sama dengan autosave inline, supaya tidak
-// ada dua jalur simpan yang bisa saling menimpa — textarea inline di tabel
+// ada dua jalur simpan yang bisa saling menimpa - textarea inline di tabel
 // ikut disinkronkan begini modal ditutup, jadi tidak perlu render ulang baris.
 let wcNoteModalTicketId = null;
 
@@ -1128,7 +1130,7 @@ function wcOpenNoteModal(ticketId) {
     wcNoteModalTicketId = ticketId;
     const row = wcRowsById[ticketId];
 
-    document.getElementById('wcNoteModalTicketNumber').textContent = row?.ticket_number || '—';
+    document.getElementById('wcNoteModalTicketNumber').textContent = row?.ticket_number || '-';
     document.getElementById('wcNoteModalTextarea').value = row?.notes || '';
     document.getElementById('wcNoteModalStatus').textContent = '';
 
@@ -1170,7 +1172,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 let wcShowDeleted = false;
-// Persists across toggles — re-deriving "can I see Show Deleted?" from just
+// Persists across toggles - re-deriving "can I see Show Deleted?" from just
 // the CURRENT list's first row breaks the moment that list is empty (e.g. no
 // deleted recons yet), which hid the only way back to History. Once we've
 // seen it's true from any load, it stays true for the rest of the session.
@@ -1181,7 +1183,7 @@ function wcToggleShowDeleted() {
     document.getElementById('wcShowDeletedLabel').textContent = wcShowDeleted ? 'Back to History' : 'Show Deleted';
     document.getElementById('wcHistoryTitle').textContent = wcShowDeleted ? 'Deleted Recons' : 'Recon History';
     document.getElementById('wcHistorySubtitle').textContent = wcShowDeleted
-        ? 'Soft-deleted batches — Restore to bring one back, or delete permanently.'
+        ? 'Soft-deleted batches - Restore to bring one back, or delete permanently.'
         : 'All Weekly Consolidation batches ever generated. Click "Open" to view or continue editing.';
     wcLoadHistory();
 }
@@ -1206,7 +1208,7 @@ async function wcRestoreBatch(id) {
 async function wcForceDeleteBatch(id) {
     const result = await Swal.fire({
         title: 'Permanently delete this recon?',
-        text: 'This cannot be undone — the recon and its ticket rows will be gone for good.',
+        text: 'This cannot be undone - the recon and its ticket rows will be gone for good.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc2626',
@@ -1216,8 +1218,9 @@ async function wcForceDeleteBatch(id) {
     if (!result.isConfirmed) return;
 
     try {
-        const res = await fetch(`/api/reporting/weekly-consolidation/${id}/force`, {
-            method: 'DELETE',
+        // POST variant: production WAF blocks the DELETE method.
+        const res = await fetch(`/api/reporting/weekly-consolidation/${id}/force/delete`, {
+            method: 'POST',
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' },
             credentials: 'same-origin'
         });
@@ -1244,7 +1247,7 @@ async function wcLoadHistory() {
 
         const batches = json.data || [];
 
-        // Tombol "Show Deleted" hanya berarti buat yang punya can_delete —
+        // Tombol "Show Deleted" hanya berarti buat yang punya can_delete -
         // disembunyikan total dari yang lain, bukan cuma dinonaktifkan. Begitu
         // kita tahu true (dari list manapun), biarkan tetap true supaya
         // tombol/"Back to History" tidak hilang saat list yang SEDANG dilihat
@@ -1262,10 +1265,10 @@ async function wcLoadHistory() {
                 <td class="wc-td font-semibold">${escHtml(b.module_names || b.module_name)}</td>
                 <td class="wc-td">${escHtml(b.period_label || '-')}</td>
                 <td class="wc-td">${b.ticket_count}</td>
-                <td class="wc-td text-xs text-gray-500">${b.generated_at ? new Date(b.generated_at).toLocaleString('en-US') : '—'} ${b.generated_by ? 'by ' + escHtml(b.generated_by) : ''}</td>
+                <td class="wc-td text-xs text-gray-500">${b.generated_at ? new Date(b.generated_at).toLocaleString('en-US') : '-'} ${b.generated_by ? 'by ' + escHtml(b.generated_by) : ''}</td>
                 <td class="wc-td text-xs text-gray-500">${wcShowDeleted
-                    ? (b.deleted_at ? new Date(b.deleted_at).toLocaleString('en-US') + (b.deleted_by ? ' by ' + escHtml(b.deleted_by) : '') : '—')
-                    : (b.last_refreshed_at ? new Date(b.last_refreshed_at).toLocaleString('en-US') : '—')}</td>
+                    ? (b.deleted_at ? new Date(b.deleted_at).toLocaleString('en-US') + (b.deleted_by ? ' by ' + escHtml(b.deleted_by) : '') : '-')
+                    : (b.last_refreshed_at ? new Date(b.last_refreshed_at).toLocaleString('en-US') : '-')}</td>
                 <td class="wc-td text-right whitespace-nowrap">
                     ${wcShowDeleted ? `
                         <button type="button" onclick="wcRestoreBatch(${b.id})" class="px-2.5 py-1 text-xs font-semibold text-green-700 border border-green-700 rounded-md hover:bg-green-50 mr-1.5">Restore</button>

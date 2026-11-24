@@ -16,7 +16,7 @@
         </div>
         <div>
             <h2 class="text-2xl font-bold text-gray-900">Export Log Shifting</h2>
-            <p class="text-sm text-gray-500 mt-0.5">Rekap SLA note antar-shift dalam rentang tanggal &amp; jam tertentu — siap diexport ke Excel sebagai laporan.</p>
+            <p class="text-sm text-gray-500 mt-0.5">Rekap SLA note antar-shift dalam rentang tanggal &amp; jam tertentu - siap diexport ke Excel sebagai laporan.</p>
         </div>
     </div>
 
@@ -114,7 +114,7 @@
                 </tr>
             </thead>
             <tbody id="lsnTableBody">
-                <tr><td colspan="6" class="text-center py-10 text-gray-400 text-sm">Belum ada data — pilih rentang tanggal di atas.</td></tr>
+                <tr><td colspan="6" class="text-center py-10 text-gray-400 text-sm">Belum ada data - pilih rentang tanggal di atas.</td></tr>
             </tbody>
         </table>
     </div>
@@ -244,8 +244,8 @@
     <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[85vh] shadow-2xl overflow-hidden flex flex-col">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
             <div>
-                <h3 class="text-base font-bold text-gray-900" id="lsModalTicketNumber">—</h3>
-                <p class="text-xs text-gray-500 mt-0.5" id="lsModalTicketDesc">—</p>
+                <h3 class="text-base font-bold text-gray-900" id="lsModalTicketNumber">-</h3>
+                <p class="text-xs text-gray-500 mt-0.5" id="lsModalTicketDesc">-</p>
             </div>
             <button onclick="closeLsDetailModal()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:bg-red-800 hover:text-white transition-all">
                 <i class="fas fa-times text-xs"></i>
@@ -453,11 +453,11 @@ function renderLogShifting(tickets, searchActive) {
     body.innerHTML = tickets.map(t => {
         const dateStr = t.created_at
             ? new Date(t.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-            : '—';
+            : '-';
         return `
         <tr class="cursor-pointer hover:bg-gray-50" onclick="openLsDetailModal(${t.ticket_id})">
-            <td class="ls-td text-sm font-semibold text-gray-700">${escHtml(t.ticket_number || '—')}</td>
-            <td class="ls-td ls-td-desc text-sm text-gray-700">${escHtml(t.description || '—')}</td>
+            <td class="ls-td text-sm font-semibold text-gray-700">${escHtml(t.ticket_number || '-')}</td>
+            <td class="ls-td ls-td-desc text-sm text-gray-700">${escHtml(t.description || '-')}</td>
             <td class="ls-td text-sm text-gray-700">${t.pic ? escHtml(t.pic) : '<span class="text-gray-300 italic">Unknown</span>'}</td>
             <td class="ls-td text-xs text-gray-500">${dateStr}</td>
         </tr>`;
@@ -482,8 +482,8 @@ async function openLsDetailModal(ticketId) {
         if (!json.success) throw new Error(json.message || 'Failed to load detail');
 
         const { ticket, messages } = json.data;
-        document.getElementById('lsModalTicketNumber').textContent = ticket.ticket_number || '—';
-        document.getElementById('lsModalTicketDesc').textContent   = ticket.description || '—';
+        document.getElementById('lsModalTicketNumber').textContent = ticket.ticket_number || '-';
+        document.getElementById('lsModalTicketDesc').textContent   = ticket.description || '-';
 
         if (!messages.length) {
             body.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-gray-400 text-sm">No SLA messages found.</td></tr>`;
@@ -492,13 +492,13 @@ async function openLsDetailModal(ticketId) {
 
         body.innerHTML = messages.map(m => {
             const bubble = m.bubble_date ? new Date(m.bubble_date) : null;
-            const dateStr = bubble ? bubble.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-            const timeStr = bubble ? bubble.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB' : '—';
+            const dateStr = bubble ? bubble.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+            const timeStr = bubble ? bubble.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB' : '-';
             return `
             <tr>
                 <td class="ls-td text-xs text-gray-500">${dateStr}</td>
                 <td class="ls-td text-xs text-gray-500">${timeStr}</td>
-                <td class="ls-td ls-td-msg text-sm text-gray-700">${escHtml(m.sla_message || '—')}</td>
+                <td class="ls-td ls-td-msg text-sm text-gray-700">${escHtml(m.sla_message || '-')}</td>
                 <td class="ls-td text-sm text-gray-700">${m.sla_message_by ? escHtml(m.sla_message_by) : '<span class="text-gray-300 italic">Unknown</span>'}</td>
             </tr>`;
         }).join('');
@@ -555,7 +555,7 @@ function lsnClearMsg() {
     document.getElementById('lsnMsg').classList.add('hidden');
 }
 
-// Reset satu field saja (kalender atau jam) — independen, tidak menyentuh field lain.
+// Reset satu field saja (kalender atau jam) - independen, tidak menyentuh field lain.
 function lsnClearField(id) {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -600,7 +600,7 @@ function lsnBuildQuery() {
 function lsnRangeLabel(q) {
     const fromStr = `${q.dateFrom.split('-').reverse().join('/')}${q.timeFrom ? ' ' + q.timeFrom : ' 00:00'}`;
     const toStr   = `${q.dateTo.split('-').reverse().join('/')}${q.timeTo ? ' ' + q.timeTo : ' 23:59'}`;
-    return `${fromStr} — ${toStr}`;
+    return `${fromStr} - ${toStr}`;
 }
 
 async function lsLoadNotes() {
@@ -651,15 +651,15 @@ function renderLsNotes(rows) {
 
     body.innerHTML = rows.map(r => {
         const bubble = r.bubble_date ? new Date(r.bubble_date) : null;
-        const dateStr = bubble ? bubble.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-        const timeStr = bubble ? bubble.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB' : '—';
+        const dateStr = bubble ? bubble.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+        const timeStr = bubble ? bubble.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB' : '-';
         return `
         <tr class="cursor-pointer hover:bg-gray-50" title="Klik untuk membuka tiket di tab baru" onclick="window.open('/ticket/${r.ticket_id}', '_blank')">
-            <td class="ls-td text-sm font-semibold text-gray-700">${escHtml(r.ticket_number || '—')}</td>
-            <td class="ls-td ls-td-desc text-sm text-gray-700">${escHtml(r.description || '—')}</td>
+            <td class="ls-td text-sm font-semibold text-gray-700">${escHtml(r.ticket_number || '-')}</td>
+            <td class="ls-td ls-td-desc text-sm text-gray-700">${escHtml(r.description || '-')}</td>
             <td class="ls-td text-xs text-gray-500">${dateStr}</td>
             <td class="ls-td text-xs text-gray-500">${timeStr}</td>
-            <td class="ls-td ls-td-msg text-sm text-gray-700">${escHtml(r.sla_message || '—')}</td>
+            <td class="ls-td ls-td-msg text-sm text-gray-700">${escHtml(r.sla_message || '-')}</td>
             <td class="ls-td text-sm text-gray-700">${r.pic ? escHtml(r.pic) : '<span class="text-gray-300 italic">Unknown</span>'}</td>
         </tr>`;
     }).join('');

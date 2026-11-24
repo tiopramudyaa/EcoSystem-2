@@ -14,7 +14,7 @@ return new class extends Migration
         });
 
         Schema::table('delivery_project_payment_terms', function (Blueprint $table) {
-            // Nomor invoice — wajib diisi saat submit_invoice_date terisi (divalidasi di controller)
+            // Nomor invoice - wajib diisi saat submit_invoice_date terisi (divalidasi di controller)
             $table->string('invoice_number')->nullable()->after('submit_invoice_date');
             // Tanggal pembayaran diterima (Paid Date)
             $table->date('paid_date')->nullable()->after('invoice_number');

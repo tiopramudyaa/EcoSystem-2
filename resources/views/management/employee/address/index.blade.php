@@ -54,7 +54,7 @@
             <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">
                 <td class="px-4 py-3 text-gray-400 text-xs">${i+1}</td>
                 <td class="px-4 py-3 font-mono text-xs text-gray-600">${r._emp?.eci ?? '-'}</td>
-                <td class="px-4 py-3 font-semibold text-gray-900">${r._emp?.full_name ?? '-'}</td>
+                <td class="px-4 py-3 font-semibold text-gray-900">${(r._emp?.full_name ?? [r._emp?.first_name, r._emp?.last_name].filter(Boolean).join(' ')) || '-'}</td>
                 <td class="px-4 py-3 text-gray-600">${r.address_type ?? '-'}</td>
                 <td class="px-4 py-3 text-gray-600 max-w-xs truncate">${r.street ?? '-'}</td>
                 <td class="px-4 py-3 text-gray-600">${r.city ?? '-'}</td>

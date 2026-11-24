@@ -8,13 +8,13 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 /**
- * WRICEF Log — AJAX CRUD untuk section "WRICEF" di halaman detail
+ * WRICEF Log - AJAX CRUD untuk section "WRICEF" di halaman detail
  * Delivery Project (tepat setelah Project Planning).
  */
 class DeliveryProjectWricefController extends Controller
 {
     /**
-     * GET /projects/{project}/wricefs — JSON list untuk tabel WRICEF.
+     * GET /projects/{project}/wricefs - JSON list untuk tabel WRICEF.
      */
     public function apiIndex(DeliveryProject $project)
     {
@@ -38,7 +38,7 @@ class DeliveryProjectWricefController extends Controller
     {
         $validated = $this->validatePayload($request);
 
-        // Obj_Id sepenuhnya turunan modul + kategori — tidak pernah dari input.
+        // Obj_Id sepenuhnya turunan modul + kategori - tidak pernah dari input.
         $seq   = DeliveryProjectWricef::nextSeq($project->id, $validated['sap_module'], $validated['category']);
         $objId = DeliveryProjectWricef::buildObjId(
             DeliveryProjectWricef::objIdPrefix($validated['sap_module'], $validated['category']),
@@ -156,7 +156,7 @@ class DeliveryProjectWricefController extends Controller
     }
 
     /**
-     * Company selalu ikut customer project — tidak pernah disimpan per baris.
+     * Company selalu ikut customer project - tidak pernah disimpan per baris.
      */
     private function companyName(DeliveryProject $project): ?string
     {

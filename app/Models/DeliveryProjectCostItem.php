@@ -18,13 +18,16 @@ class DeliveryProjectCostItem extends Model
         'delivery_project_cost_id',
         'description',
         'amount',
+        'expense_date',
+        'period',
         'document_name',
         'document_file_id',
         'document_url',
     ];
 
     protected $casts = [
-        'amount' => 'float',
+        'amount'       => 'float',
+        'expense_date' => 'date',
     ];
 
     public function costItem()
@@ -32,7 +35,7 @@ class DeliveryProjectCostItem extends Model
         return $this->belongsTo(DeliveryProjectCost::class, 'delivery_project_cost_id');
     }
 
-    /** Cost item tidak menyimpan FK project — ambil lewat cost induknya. */
+    /** Cost item tidak menyimpan FK project - ambil lewat cost induknya. */
     protected function projectIdForActivity()
     {
         return DeliveryProjectCost::whereKey($this->delivery_project_cost_id)->value('delivery_projects_id');

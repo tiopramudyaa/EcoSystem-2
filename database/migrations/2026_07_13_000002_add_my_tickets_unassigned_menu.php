@@ -24,7 +24,7 @@ return new class extends Migration
             'updated_at' => now(),
         ]);
 
-        // No default grant — admin assigns this permission manually per role via Role & Menu Access.
+        // No default grant - admin assigns this permission manually per role via Role & Menu Access.
     }
 
     public function down(): void

@@ -6,14 +6,14 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Master data "Deliverable Document Type" — dulu hardcoded di
+ * Master data "Deliverable Document Type" - dulu hardcoded di
  * TicketDeliverableController::DOC_TYPES dan di dropdown "New Document"
  * (resources/views/ticket/show.blade.php). Dipindah ke master data supaya
  * admin bisa menambah/menonaktifkan tipe dokumen tanpa deploy kode, mirror
  * pola Module master data (management/employee/qualification).
  *
- * `doc_type` di ticket_deliverables tetap kolom string biasa (bukan FK) —
- * lihat 2026_05_07_081939_create_ticket_deliverables_table — jadi menghapus
+ * `doc_type` di ticket_deliverables tetap kolom string biasa (bukan FK) -
+ * lihat 2026_05_07_081939_create_ticket_deliverables_table - jadi menghapus
  * sebuah tipe di sini TIDAK mengubah dokumen yang sudah tersimpan, hanya
  * menghilangkannya dari pilihan dropdown ke depan.
  */

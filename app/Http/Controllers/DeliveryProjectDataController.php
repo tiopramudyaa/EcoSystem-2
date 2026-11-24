@@ -26,8 +26,10 @@ class DeliveryProjectDataController extends Controller
         
         $data = [];
         
+        $groupsByPhase = $this->rootGroupsByPhase($project, $phases);
+
         foreach ($phases as $phase) {
-            $groups = $this->getPhaseGroupsHierarchical($project, $phase);
+            $groups = $this->getPhaseGroupsHierarchical($project, $phase, $groupsByPhase->get($phase->id, collect()));
             
             $phaseDates = $this->calculatePhaseDates($groups);
             $phaseActualDates = $this->calculatePhaseActualDates($groups);
@@ -235,7 +237,7 @@ class DeliveryProjectDataController extends Controller
         return [
             'children' => function($query) {
                 $query->where('is_group', true)
-                    ->with(['children', 'stages', 'directActivities'])
+                    ->with(['children', 'stages', 'directActivities.activity'])
                     ->orderBy('order_sequence');
             },
             'stages' => function($q) {
@@ -246,9 +248,9 @@ class DeliveryProjectDataController extends Controller
                         }
                     ]);
             },
-            // Aktivitas tanpa stage — bentuk data Project Planning saat ini
+            // Aktivitas tanpa stage - bentuk data Project Planning saat ini
             'directActivities' => function($q) {
-                $q->orderBy('order_sequence');
+                $q->with('activity')->orderBy('order_sequence');
             },
         ];
     }
@@ -258,7 +260,7 @@ class DeliveryProjectDataController extends Controller
         return [
             'children' => function($childQuery) {
                 $childQuery->where('is_group', true)
-                    ->with(['children', 'stages', 'directActivities'])
+                    ->with(['children', 'stages', 'directActivities.activity'])
                     ->orderBy('order_sequence');
             },
             'stages' => function($stageQuery) {
@@ -269,18 +271,22 @@ class DeliveryProjectDataController extends Controller
                         }
                     ]);
             },
-            // Aktivitas yang menempel langsung ke group (tanpa stage) —
+            // Aktivitas yang menempel langsung ke group (tanpa stage) -
             // ini bentuk data yang dipakai Project Planning saat ini.
             'directActivities' => function($actQuery) {
-                $actQuery->orderBy('order_sequence');
+                $actQuery->with('activity')->orderBy('order_sequence');
             },
         ];
     }
 
-    private function getPhaseGroupsHierarchical(DeliveryProject $project, DeliveryProjectPhase $phase)
+    /**
+     * Root group semua phase dalam satu rangkaian query (bukan satu rangkaian per phase),
+     * dikelompokkan per phase_id. Isi eager load sama dengan sebelumnya.
+     */
+    private function rootGroupsByPhase(DeliveryProject $project, $phases)
     {
         $groups = DeliveryProjectPlanning::where('delivery_projects_id', $project->id)
-            ->where('phase_id', $phase->id)
+            ->whereIn('phase_id', $phases->pluck('id'))
             ->where('is_group', true)
             ->whereNull('parent_id')
             ->with([
@@ -317,24 +323,17 @@ class DeliveryProjectDataController extends Controller
             ->orderBy('order_sequence')
             ->get();
 
-        // Load relationships manually
-        foreach ($groups as $group) {
-            if ($group->stages) {
-                foreach ($group->stages as $stage) {
-                    if ($stage->activities) {
-                        foreach ($stage->activities as $activity) {
-                            if (method_exists($activity, 'children') && !$activity->relationLoaded('children')) {
-                                $activity->load('children');
-                            }
+        // Isi activities semua stage (grup + sub-grup) dalam batch, bukan per stage/activity
+        \App\Models\ActivityStage::hydrateActivities(
+            $groups->flatMap(fn ($g) => $g->stages->concat($g->children->flatMap(fn ($c) => $c->stages)))
+        );
 
-                            if ($activity->activity_id && method_exists($activity, 'activity') && !$activity->relationLoaded('activity')) {
-                                $activity->load('activity');
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        return $groups->groupBy('phase_id');
+    }
+
+    private function getPhaseGroupsHierarchical(DeliveryProject $project, DeliveryProjectPhase $phase, $preloadedGroups = null)
+    {
+        $groups = $preloadedGroups ?? $this->rootGroupsByPhase($project, collect([$phase]))->get($phase->id, collect());
 
         $result = [];
         foreach ($groups as $group) {
@@ -595,7 +594,7 @@ class DeliveryProjectDataController extends Controller
      * Aturan ini harus sama di semua view. Progress Overview sudah memakainya
      * (DeliveryProjectPlanning::getPlannedProgressAttribute → "prefer planning
      * record, fall back to activity"), sementara agregasi Gantt dulu justru
-     * MENDAHULUKAN activity dan S-Curve tidak punya fallback sama sekali —
+     * MENDAHULUKAN activity dan S-Curve tidak punya fallback sama sekali -
      * akibatnya satu baris yang sama bisa dihitung "belum mulai" di satu view dan
      * "sudah jalan" di view lain saat kedua sumber tidak sinkron.
      */
@@ -962,7 +961,7 @@ class DeliveryProjectDataController extends Controller
             $weightedProgress += ($progress * $weight);
         }
 
-        // Bobot group belum diisi sama sekali — bagi rata. Kalau tidak, phase
+        // Bobot group belum diisi sama sekali - bagi rata. Kalau tidak, phase
         // ini selalu 0% padahal bobot phase-nya tetap menekan overall progress.
         if ($totalGroupWeightRaw <= 0) {
             return round(collect($groups)->avg(fn ($g) => (float)($g['progress_percentage'] ?? 0)) ?? 0, 2);
@@ -1253,7 +1252,7 @@ class DeliveryProjectDataController extends Controller
             $weightedProgress += ($progress * $weight);
         }
 
-        // Bobot group belum diisi sama sekali — rata-rata polos (sama dengan Table view)
+        // Bobot group belum diisi sama sekali - rata-rata polos (sama dengan Table view)
         if ($totalWeight <= 0) {
             $progressSum = 0;
             foreach ($groups as $group) {
@@ -1396,7 +1395,7 @@ class DeliveryProjectDataController extends Controller
 
     private function pushSCurvePoint($activity, &$allDates, &$dataPoints, $phase, $effectiveWeight)
     {
-        // Tanggal dibaca lewat effectiveDate() — aturan yang sama dengan Progress
+        // Tanggal dibaca lewat effectiveDate() - aturan yang sama dengan Progress
         // Overview. Tanpa fallback ini, baris planning yang tanggalnya hanya ada di
         // master activity dihitung "belum dijadwalkan" (plan 0) oleh S-Curve saja.
         $plannedStart = $this->effectiveDate($activity, 'start_date');
@@ -1479,7 +1478,7 @@ class DeliveryProjectDataController extends Controller
 
     /**
      * Actual hanya punya arti sampai minggu berjalan. Minggu setelahnya dikosongkan
-     * (null) supaya garis oranye berhenti di "Latest Week" — bukan datar sampai akhir
+     * (null) supaya garis oranye berhenti di "Latest Week" - bukan datar sampai akhir
      * proyek yang membuat semua minggu depan terbaca "Behind".
      */
     private function trimFutureActual(array $weeklyData)
@@ -1673,7 +1672,7 @@ class DeliveryProjectDataController extends Controller
      * Jendela kerja tiap task: pakai tanggal aktual bila terisi; kalau belum,
      * pakai jadwal rencana. Jendela itu SELALU dijepit ke hari ini di kedua
      * ujungnya (lihat catatan di dalam) supaya seluruh progres yang sudah
-     * tercatat pasti terhitung penuh pada hari ini — dengan begitu
+     * tercatat pasti terhitung penuh pada hari ini - dengan begitu
      * Actual(hari ini) = Σ(bobot × progres) ÷ Σbobot, angka yang sama persis
      * dengan kartu Overall Progress, Table/Gantt view, dan Progress Overview.
      */
@@ -1691,7 +1690,7 @@ class DeliveryProjectDataController extends Controller
 
             if ($progress <= 0 || $weight <= 0) continue;
 
-            // Tanpa tanggal sama sekali, progresnya tetap earned — jangan dibuang,
+            // Tanpa tanggal sama sekali, progresnya tetap earned - jangan dibuang,
             // kalau tidak Actual(hari ini) < Overall Progress tanpa sebab yang
             // terlihat user. Anggap saja terkumpul hari ini.
             $start = $point['actual_start'] ?: $point['planned_start'];
@@ -1709,8 +1708,8 @@ class DeliveryProjectDataController extends Controller
             }
 
             // Progres yang SUDAH tercatat tidak boleh "menunggu" jadwal. Kalau
-            // jendelanya masih di masa depan — task dimulai lebih awal dari
-            // rencana, atau actual_end-nya diisi tanggal depan — jepit ke hari
+            // jendelanya masih di masa depan - task dimulai lebih awal dari
+            // rencana, atau actual_end-nya diisi tanggal depan - jepit ke hari
             // ini, sehingga elapsedFraction() bernilai 1 pada hari ini.
             // Untuk minggu-minggu LAMPAU perilakunya tidak berubah: start yang
             // dijepit ke hari ini tetap > target, jadi tetap belum dihitung.
@@ -1762,7 +1761,7 @@ class DeliveryProjectDataController extends Controller
         foreach ($dataPoints as $point) {
             $weight = (float) ($point['weight'] ?? 0);
             $totalWeight += $weight;
-            // Progres parsial ikut dihitung — kalau hanya task 100% yang dihitung,
+            // Progres parsial ikut dihitung - kalau hanya task 100% yang dihitung,
             // kartu ini selalu lebih kecil dari Overall Progress di Table/Gantt.
             $weightedProgress += $weight * (float) ($point['progress'] ?? 0);
 
@@ -1791,7 +1790,7 @@ class DeliveryProjectDataController extends Controller
             'on_track' => $onTrack,
             'delayed' => $delayed,
             'not_started' => $notStarted,
-            // Overall progress = Σ(bobot × progres) ÷ Σbobot — definisi yang sama
+            // Overall progress = Σ(bobot × progres) ÷ Σbobot - definisi yang sama
             // dipakai Progress Overview, Table view, dan Gantt view.
             'overall_progress' => $totalWeight > 0 ? round($weightedProgress / $totalWeight, 1) : 0,
         ];

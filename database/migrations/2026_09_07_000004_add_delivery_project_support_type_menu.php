@@ -7,11 +7,11 @@ use Illuminate\Support\Facades\DB;
 /**
  * Menu "Master Delivery Settings" (group, baru) → "Project Type" & "Support
  * Type" (page) di bawah Management. Sengaja diberi slug management.delivery.*
- * — beda namespace dari slug `delivery.project` / `delivery.support` yang
+ * - beda namespace dari slug `delivery.project` / `delivery.support` yang
  * sudah dipakai untuk menu app Delivery Project/Support itu sendiri.
  *
  * Grup-nya butuh insert manual (parent-nya sendiri belum ada saat migrasi ini
- * jalan — lihat catatan yang sama di 2026_09_07_000002_add_ticket_document_type_menu),
+ * jalan - lihat catatan yang sama di 2026_09_07_000002_add_ticket_document_type_menu),
  * child-nya lewat MenuRegistrar::register() biasa.
  *
  * order_seq 8 dipilih karena children `management` yang sudah ada memakai

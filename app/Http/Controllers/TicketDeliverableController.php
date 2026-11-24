@@ -7,6 +7,8 @@ use App\Models\Customer;
 use App\Models\DeliverableDocumentType;
 use App\Models\Ticket;
 use App\Models\TicketDeliverable;
+use App\Support\DeliverableRequirements;
+use App\Support\TicketTeamAccess;
 use App\Models\TicketMessage;
 use App\Services\MessageHtmlSanitizerService;
 use App\Services\OneDriveService;
@@ -43,16 +45,95 @@ class TicketDeliverableController extends Controller
             'folder_state'   => $state,           // no_customer | ready
             'folder_message' => $message,
             'folder_url'     => $ticket->onedrive_folder_url,
+            'can_configure'  => TicketTeamAccess::canConfigureDeliverableRequirements((int) ($user['id'] ?? 0), $ticket),
+        ] + $this->requirementsPayload($ticket));
+    }
+
+    /**
+     * Mandatory yang berlaku untuk tiket ini: default tipenya, atau pengaturan
+     * tiket itu sendiri bila sudah pernah diubah (is_customized).
+     */
+    private function requirementsPayload(Ticket $ticket): array
+    {
+        $req = DeliverableRequirements::forTicket($ticket);
+
+        return [
+            'mandatory_types'         => $req['mandatory'],
+            'default_mandatory_types' => $req['default'],
+            'is_customized'           => $req['customized'],
+            'ticket_type'             => $ticket->ticket_type,
+        ];
+    }
+
+    /**
+     * POST /api/tickets/{id}/deliverables/requirements (POST, bukan PUT, agar tidak diblok WAF)
+     * Body: { mandatory: ["RCA", ...] }. Menyimpan pengaturan tiket ini: tiap doc
+     * type aktif disimpan eksplisit (mandatory atau optional), sehingga tiket
+     * berhenti mengikuti default tipenya, bahkan bila semuanya dijadikan optional.
+     * Dilarang untuk member tiket (lihat TicketTeamAccess).
+     */
+    public function updateRequirements(Request $request, $ticketId)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $ticket = Ticket::where('ticket_id', $ticketId)->firstOrFail();
+
+        if (!TicketTeamAccess::canConfigureDeliverableRequirements((int) ($user['id'] ?? 0), $ticket)) {
+            return response()->json(['success' => false, 'message' => 'Ticket members cannot change document requirements.'], 403);
+        }
+
+        $active = DeliverableRequirements::activeTypeNames();
+
+        $validated = $request->validate([
+            'mandatory'   => ['present', 'array'],
+            'mandatory.*' => ['string', 'distinct', \Illuminate\Validation\Rule::in($active)],
         ]);
+
+        DB::transaction(function () use ($ticket, $validated, $active) {
+            $ticket->deliverableRequirements()->delete();
+            foreach ($active as $docType) {
+                $ticket->deliverableRequirements()->create([
+                    'doc_type'     => $docType,
+                    'is_mandatory' => in_array($docType, $validated['mandatory'], true),
+                ]);
+            }
+        });
+
+        return response()->json(['success' => true] + $this->requirementsPayload($ticket));
+    }
+
+    /**
+     * POST /api/tickets/{id}/deliverables/requirements/reset
+     * Hapus pengaturan tiket ini; kembali mengikuti default ticket type-nya.
+     */
+    public function resetRequirements($ticketId)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $ticket = Ticket::where('ticket_id', $ticketId)->firstOrFail();
+
+        if (!TicketTeamAccess::canConfigureDeliverableRequirements((int) ($user['id'] ?? 0), $ticket)) {
+            return response()->json(['success' => false, 'message' => 'Ticket members cannot change document requirements.'], 403);
+        }
+
+        $ticket->deliverableRequirements()->delete();
+
+        return response()->json(['success' => true] + $this->requirementsPayload($ticket));
     }
 
     /**
      * Tentukan kesiapan folder deliverable untuk sebuah ticket.
      * Folder ticket berada di level customer:
      *   {root}/{customer}/TICKETING/{ticket_number}/Deliverable
-     * Folder diturunkan langsung dari customer ticket — TIDAK lagi bergantung pada
+     * Folder diturunkan langsung dari customer ticket - TIDAK lagi bergantung pada
      * delivery support (deliverable tidak masuk ke folder support). Folder dibuat
-     * lazy saat upload pertama — tidak perlu "generate" lebih dulu.
+     * lazy saat upload pertama - tidak perlu "generate" lebih dulu.
      *
      * @return array{0:string,1:?string}
      *   [state, message]  state: no_customer | ready
@@ -73,7 +154,7 @@ class TicketDeliverableController extends Controller
      * POST /api/tickets/{id}/deliverables/upload-session
      * Buat OneDrive upload session lebih dulu supaya file diupload LANGSUNG dari
      * browser ke Graph (chunked), tidak lewat body request Laravel. Ini menghindari
-     * batas post_max_size/upload_max_filesize PHP dan batas 4 MB simple-PUT Graph —
+     * batas post_max_size/upload_max_filesize PHP dan batas 4 MB simple-PUT Graph -
      * lihat submitNewDoc() di ticket/show.blade.php untuk alur lengkapnya.
      */
     public function createUploadSession(Request $request, $ticketId)
@@ -147,7 +228,7 @@ class TicketDeliverableController extends Controller
         ];
         // Link diperbarui bukan hanya saat kosong/pindah folder, tapi juga saat
         // link tersimpan ternyata bukan share link, sudah kedaluwarsa, atau
-        // scope-nya bukan anonymous — kondisi yang bikin customer kena
+        // scope-nya bukan anonymous - kondisi yang bikin customer kena
         // "Request access" padahal di EcoSystem terlihat normal.
         $needsLink = empty($ticket->onedrive_folder_url)
             || $ticket->onedrive_folder_id !== $ticketFolderId
@@ -171,8 +252,8 @@ class TicketDeliverableController extends Controller
 
     /**
      * POST /api/tickets/{id}/deliverables
-     * JSON body: doc_type, description (optional, internal note — never sent to customer), onedrive_item_id + file_name
-     * (optional — hasil dari createUploadSession() + upload chunked ke Graph).
+     * JSON body: doc_type, description (optional, internal note - never sent to customer), onedrive_item_id + file_name
+     * (optional - hasil dari createUploadSession() + upload chunked ke Graph).
      */
     public function store(Request $request, $ticketId)
     {
@@ -182,7 +263,7 @@ class TicketDeliverableController extends Controller
         }
 
         // Doc type kini master data (menu Management > Master Ticket Settings >
-        // Document Type) — lihat DeliverableDocumentTypeController — bukan hardcode lagi.
+        // Document Type) - lihat DeliverableDocumentTypeController - bukan hardcode lagi.
         $validDocTypes = DeliverableDocumentType::active()->pluck('name');
 
         $request->validate([
@@ -202,9 +283,9 @@ class TicketDeliverableController extends Controller
             $fileId   = $request->input('onedrive_item_id');
             $fileName = $request->input('file_name');
 
-            // webUrl dari upload adalah path SharePoint langsung — butuh izin akun
+            // webUrl dari upload adalah path SharePoint langsung - butuh izin akun
             // (Request access). Buat anonymous share link agar file bisa dibuka
-            // customer tanpa login. File SUDAH terupload ke OneDrive di titik ini —
+            // customer tanpa login. File SUDAH terupload ke OneDrive di titik ini -
             // kalau share link gagal dibuat, tetap simpan baris deliverable (fileUrl
             // null) daripada kehilangan record untuk file yang sudah ada di OneDrive.
             // `onedrive:audit-links --fix` bisa memperbaiki link-nya belakangan.
@@ -212,7 +293,7 @@ class TicketDeliverableController extends Controller
                 $oneDrive = new OneDriveService();
                 $fileUrl  = $oneDrive->createShareLink($fileId, 'view')['url'];
             } catch (\Throwable $e) {
-                Log::error('Deliverable file share link failed — file uploaded but no public link yet', [
+                Log::error('Deliverable file share link failed - file uploaded but no public link yet', [
                     'ticket_id' => $ticketId,
                     'file_id'   => $fileId,
                     'error'     => $e->getMessage(),
@@ -348,6 +429,8 @@ class TicketDeliverableController extends Controller
         $bodyText = trim(html_entity_decode(strip_tags(preg_replace('#<(br|/p|/li|/h[1-6])\s*/?>#i', "\n", $bodyHtml))));
 
         TicketDeliverable::whereIn('id', $deliverables->pluck('id'))->update(['status' => 'Sent']);
+        // sent_at is written once: a resend keeps the first send time (SLA First Resolution).
+        TicketDeliverable::whereIn('id', $deliverables->pluck('id'))->whereNull('sent_at')->update(['sent_at' => now()]);
 
         // To/Cc diambil dari kolom composer reply (mirror reply biasa). Jika frontend
         // mengirim daftar (walau kosong) → HORMATI apa adanya & persist ke ticket; jika
@@ -372,7 +455,7 @@ class TicketDeliverableController extends Controller
         }
 
         // Build message body
-        // Chat bubble (EcoSystem/Jarvies) tetap tampil "Helpdesk Support" — konsisten
+        // Chat bubble (EcoSystem/Jarvies) tetap tampil "Helpdesk Support" - konsisten
         // dengan reply biasa, karena email dikirim dari shared inbox M365.
         $senderName  = 'Helpdesk Support';
         $senderEmail = $user['email'] ?? null;
@@ -422,7 +505,7 @@ class TicketDeliverableController extends Controller
                 ? ($d->onedrive_file_url
                     ? '<a href="' . htmlspecialchars($d->onedrive_file_url) . '" target="_blank" style="color:#2563eb;word-break:break-word;overflow-wrap:anywhere;">' . htmlspecialchars($d->file_name) . '</a>'
                     : htmlspecialchars($d->file_name))
-                : '&mdash;';
+                : '-';
             if ($i > 0) {
                 $htmlMsg .= '<tr><td colspan="3" style="padding:4px 0;"></td></tr>';
             }
@@ -490,7 +573,7 @@ class TicketDeliverableController extends Controller
                 $emailHtml = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#374151;line-height:1.7;max-width:600px;">'
                     . $htmlMsg
                     . '<p style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;">'
-                    . 'Sent by <strong style="color:#6b7280;">' . htmlspecialchars($signatureName) . '</strong> &mdash; PT Eclectic Consulting<br>'
+                    . 'Sent by <strong style="color:#6b7280;">' . htmlspecialchars($signatureName) . '</strong> - PT Eclectic Consulting<br>'
                     . 'Ticket: <strong style="color:#6b7280;">#' . htmlspecialchars($ticket->ticket_number ?? $ticket->ticket_id) . '</strong>'
                     . '</p></div>';
 
@@ -600,10 +683,10 @@ class TicketDeliverableController extends Controller
     /**
      * Resolve email customer dari berbagai sumber (urutan prioritas, mirror
      * TicketMessageController::resolveCustomerEmail):
-     * 1. ticket.submitted_by_email          — email login customer (initiateEmail / import CSV)
-     * 2. staging_tickets.submitted_by_email  — dari staging yang sudah diapprove
-     * 3. ticket_message.sender_email pertama — email pesan pertama dari customer
-     * 4. customer.email                       — email perusahaan (fallback terakhir)
+     * 1. ticket.submitted_by_email          - email login customer (initiateEmail / import CSV)
+     * 2. staging_tickets.submitted_by_email  - dari staging yang sudah diapprove
+     * 3. ticket_message.sender_email pertama - email pesan pertama dari customer
+     * 4. customer.email                       - email perusahaan (fallback terakhir)
      */
     private function resolveCustomerEmail(Ticket $ticket): ?string
     {

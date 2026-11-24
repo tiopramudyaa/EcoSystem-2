@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\DB;
  *     public function up(): void
  *     {
  *         MenuRegistrar::register('delivery.project', [
- *             'delivery-project.wricef.view' => 'WRICEF Log — View',
+ *             'delivery-project.wricef.view' => 'WRICEF Log - View',
  *         ], 61);
  *     }
  *
@@ -137,7 +137,7 @@ class MenuRegistrar
      * Set grant sebuah slug menjadi TEPAT: EC Administrator + role yang disebut.
      *
      * Berbeda dari grantToAdminOnly(), method ini dipakai saat pemilik sistem
-     * SUDAH memutuskan role mana yang boleh — jadi keputusan itu ikut tercatat
+     * SUDAH memutuskan role mana yang boleh - jadi keputusan itu ikut tercatat
      * di migrasi, bukan cuma diklik manual di Control Center. Sama seperti
      * grantToAdminOnly(), sifatnya menimpa: role di luar daftar dicabut, dan
      * menjalankannya ulang selalu mengembalikan slug ke keadaan ini.

@@ -47,7 +47,7 @@ class LiteAuthController extends Controller
             $email    = trim($request->email);
             $password = $request->password;
 
-            // Brute-force guard — identical logic to AuthController::login().
+            // Brute-force guard - identical logic to AuthController::login().
             $loginSecurity = app(\App\Services\LoginSecurityService::class);
 
             if ($loginSecurity->isIpBlocked($request->ip())) {
@@ -184,8 +184,13 @@ class LiteAuthController extends Controller
                 ], 403);
             }
 
+            // System lock: only the protected admin may sign in.
+            if (\App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
+                return $this->systemLockedResponse();
+            }
+
             // ── Two-factor authentication gate ──────────────────────────
-            // Same placement/rationale as AuthController::login() — every
+            // Same placement/rationale as AuthController::login() - every
             // other gate has already run, and no session/DB mutation
             // happens yet if 2FA is required.
             if (TwoFactorAuthService::isEnabled($authUser)) {
@@ -214,14 +219,28 @@ class LiteAuthController extends Controller
         }
     }
 
+    private function systemLockedResponse()
+    {
+        return response()->json([
+            'success' => false,
+            'locked'  => true,
+            'message' => \App\Services\SystemLockService::message(),
+        ], 423);
+    }
+
     /**
      * Finishes a Lite login after every gate (and, if enabled, 2FA) has
-     * passed — same DB/session writes as AuthController::finalizeEmployeeLogin(),
+     * passed - same DB/session writes as AuthController::finalizeEmployeeLogin(),
      * minus remember-me handling (Lite never sets that cookie). Called both
      * directly from login() and from verifyTwoFactor().
      */
     private function finalizeLiteLogin(object $authUser, array $sessionData, Request $request, string $requestId)
     {
+        // System lock: also covers the 2FA-verify path.
+        if (\App\Services\SystemLockService::blocks($sessionData['userData']['eci'] ?? null)) {
+            return $this->systemLockedResponse();
+        }
+
         $token    = $sessionData['token'];
         $userData = $sessionData['userData'];
 
@@ -363,23 +382,6 @@ class LiteAuthController extends Controller
 
         TwoFactorAuthService::clearFailedChallenge($authUserId);
 
-        if ($usedRecoveryCode) {
-            $event = SecurityEvent::record([
-                'event_type'         => 'two_factor_recovery_code_used',
-                'severity'           => 'medium',
-                'module'             => 'Auth',
-                'status'             => 'open',
-                'title'              => 'Recovery code used to log in',
-                'description'        => "Auth user #{$authUserId} logged in via Lite API using a 2FA recovery code instead of an authenticator code - often a sign they lost access to their device.",
-                'target_employee_id' => $authUser->employee_id,
-                'ip_address'         => $request->ip(),
-            ]);
-
-            if ($event) {
-                $loginSecurity->notifyAdmins($event, "Recovery code used for auth user #{$authUserId} (Lite API)");
-            }
-        }
-
         $sessionData = AuthController::buildEmployeeSessionData($authUser->employee_id);
 
         if (!$sessionData) {
@@ -393,7 +395,7 @@ class LiteAuthController extends Controller
     }
 
     /**
-     * Logout — hapus session dan catat aktivitas.
+     * Logout - hapus session dan catat aktivitas.
      *
      * POST /api/lite/auth/logout
      */

@@ -7,7 +7,7 @@ use App\Models\DeliveryProject;
 /**
  * Setiap create / update / delete pada record anak sebuah Delivery Project
  * (Issue, Risk, WRICEF, Cost, Document, Planning, dst.) memperbarui
- * delivery_projects.last_activity_at — kolom "Last Update Date" di list project.
+ * delivery_projects.last_activity_at - kolom "Last Update Date" di list project.
  *
  * Hanya jalur yang memicu event Eloquent yang tertangkap: saveQuietly(),
  * query builder (::where()->update()/delete(), DB::table()) sengaja TIDAK

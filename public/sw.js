@@ -1,4 +1,4 @@
-/* EcoSystem Service Worker — Web Push Notifications */
+/* EcoSystem Service Worker - Web Push Notifications */
 /* Version: 1.4 */
 
 self.addEventListener('install', function (event) {
@@ -42,7 +42,7 @@ self.addEventListener('push', function (event) {
                 c.postMessage({ type: 'PUSH_RECEIVED', payload: data });
             });
 
-            /* If a tab is open, postMessage handles the custom sound — mute OS sound.
+            /* If a tab is open, postMessage handles the custom sound - mute OS sound.
                If no tab is open, let OS play its sound as the only audio cue. */
             options.silent = clientList.length > 0;
             console.log('[SW] calling showNotification');

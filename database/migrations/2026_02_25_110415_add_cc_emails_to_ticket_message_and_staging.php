@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('ticket_message', function (Blueprint $table) {
-            // JSON array of {name, address} — CC recipients of the email
+            // JSON array of {name, address} - CC recipients of the email
             $table->json('cc_emails')->nullable()->after('email_in_reply_to');
         });
 
