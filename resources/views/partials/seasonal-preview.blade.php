@@ -87,17 +87,22 @@
     .sp-canvas { display: none; }
     .sp-overlay.is-3d .sp-canvas { display: block; }
     .sp-overlay.is-3d .sp-poster { display: none; }
-    .sp-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 3rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,0)); color: #fff; }
-    .sp-text { min-width: 0; }
-    .sp-title { margin: 0; font-size: 1.25rem; font-weight: 800; line-height: 1.25; }
-    .sp-logo { display: block; margin: 0 0 .6rem; line-height: 0; }
-    .sp-logo img { display: block; height: 2.25rem; width: auto; filter: drop-shadow(0 2px 8px rgba(0,0,0,.5)); }
-    .sp-overlay:not([hidden]) .sp-logo { animation: sp-logo-in .7s cubic-bezier(.2,.8,.2,1) .1s both; }
-    @keyframes sp-logo-in { from { opacity: 0; transform: translateY(8px) scale(.96); } to { opacity: 1; transform: none; } }
-    @media (prefers-reduced-motion: reduce) { .sp-overlay:not([hidden]) .sp-logo { animation: none; } }
-    .sp-note { margin: .25rem 0 0; font-size: .75rem; color: rgba(255,255,255,.85); }
+    /* Ucapan di tengah bawah (bukan pojok), muncul bertahap, lalu seluruh dialog memudar saat selesai. */
+    .sp-bar { display: contents; }
+    .sp-text { position: absolute; left: 0; right: 0; bottom: 0; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 5rem 1.5rem calc(2.25rem + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(0,0,0,.78) 0%, rgba(0,0,0,.5) 55%, rgba(0,0,0,0) 100%); color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+    .sp-title { margin: 0; font-size: clamp(1.375rem, 3.4vw, 2.25rem); font-weight: 800; line-height: 1.2; }
+    .sp-logo { display: block; margin: 0 0 .9rem; line-height: 0; }
+    .sp-logo img { display: block; height: 3rem; width: auto; filter: drop-shadow(0 2px 8px rgba(0,0,0,.5)); }
+    .sp-overlay:not([hidden]) .sp-logo { animation: sp-text-in .7s cubic-bezier(.2,.8,.2,1) .1s both; }
+    .sp-overlay:not([hidden]) .sp-title { animation: sp-text-in .65s cubic-bezier(.2,.8,.2,1) .5s both; }
+    .sp-overlay:not([hidden]) .sp-note { animation: sp-text-in .65s cubic-bezier(.2,.8,.2,1) .8s both; }
+    @keyframes sp-text-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .sp-overlay { transition: opacity .3s ease; }
+    .sp-overlay.is-ending { opacity: 0; }
+    @media (prefers-reduced-motion: reduce) { .sp-overlay:not([hidden]) .sp-logo, .sp-overlay:not([hidden]) .sp-title, .sp-overlay:not([hidden]) .sp-note { animation: none; } .sp-overlay { transition: none; } }
+    .sp-note { margin: .4rem 0 0; font-size: clamp(.9rem, 1.7vw, 1.125rem); color: rgba(255,255,255,.92); }
     .sp-note:empty { display: none; }
-    .sp-close { flex: none; display: inline-flex; align-items: center; gap: .4rem; border: 1px solid rgba(255,255,255,.6); background: rgba(0,0,0,.55); color: #fff; border-radius: .5rem; padding: .5rem .9rem; font-size: .8125rem; font-weight: 600; cursor: pointer; }
+    .sp-close { position: absolute; top: 1rem; right: 1rem; z-index: 2; display: inline-flex; align-items: center; gap: .4rem; border: 1px solid rgba(255,255,255,.6); background: rgba(0,0,0,.55); color: #fff; border-radius: .5rem; padding: .5rem .9rem; font-size: .8125rem; font-weight: 600; cursor: pointer; }
     .sp-close:hover { background: rgba(255,255,255,.18); }
     .sp-close:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
     .seasonal-preview-box button { color: var(--text-color, #374151); border-color: rgba(107,114,128,.45); background: transparent; }
@@ -170,7 +175,7 @@
         clearTimeout(timer); timer = null;
         if (handle) { try { handle.stop(); } catch (e) {} handle = null; }
         releaseGL();
-        ov.classList.remove('is-3d');
+        ov.classList.remove('is-3d', 'is-ending');
         ov.hidden = true;
         document.body.style.overflow = prevOverflow;
         document.removeEventListener('keydown', onKey, true);
@@ -195,7 +200,7 @@
         ov.setAttribute('aria-label', d.dialog);
         titleEl.textContent = d.greeting || d.dialog;
         noteEl.textContent = d.blessing || '';
-        ov.classList.remove('is-3d');
+        ov.classList.remove('is-3d', 'is-ending');
         if (d.poster) { poster.src = d.poster; poster.alt = d.alt; poster.style.display = ''; }
         else { poster.removeAttribute('src'); poster.style.display = 'none'; }
         ov.hidden = false;
@@ -227,8 +232,10 @@
                 if (Date.now() - t0 + SCENE_MS + 300 <= MAX_MS) {
                     return playLoop(m, d, my, t0); // canvas tetap tampil (frame terakhir) sampai frame pertama putaran berikut
                 }
-                releaseGL();
-                ov.classList.remove('is-3d'); // poster sampai penutupan otomatis
+                // Selesai: memudar lalu menutup sendiri (tidak menggantung di frame terakhir atau poster).
+                ov.classList.add('is-ending');
+                clearTimeout(timer);
+                timer = setTimeout(close, 340);
             });
         });
     }

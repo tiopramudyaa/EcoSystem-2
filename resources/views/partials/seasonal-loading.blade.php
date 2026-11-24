@@ -101,12 +101,12 @@
     /* Teks 3D di pita bawah dengan scrim gelap: tidak menimpa tokoh utama adegan dan tetap terbaca. */
     .seasonal-loading.is-3d .seasonal-loading__content {
         position: absolute; left: 0; right: 0; bottom: 0; margin: 0; z-index: 3;
-        padding: 4.5rem 1.5rem calc(1.75rem + env(safe-area-inset-bottom, 0px));
+        padding: 5rem 1.5rem calc(2.75rem + env(safe-area-inset-bottom, 0px));
         background: linear-gradient(to top, rgba(0,0,0,.74) 0%, rgba(0,0,0,.46) 55%, rgba(0,0,0,0) 100%);
         text-shadow: 0 2px 12px rgba(0,0,0,.6);
     }
-    .seasonal-loading.is-3d .seasonal-loading__title { margin-top: 0; font-size: 1.625rem; font-weight: 800; line-height: 1.2; }
-    .seasonal-loading.is-3d .seasonal-loading__subtitle { font-size: 1rem; color: rgba(255,255,255,.92); }
+    .seasonal-loading.is-3d .seasonal-loading__title { margin-top: 0; font-size: clamp(1.5rem, 3.2vw, 2.5rem); font-weight: 800; line-height: 1.2; }
+    .seasonal-loading.is-3d .seasonal-loading__subtitle { font-size: clamp(1rem, 1.8vw, 1.25rem); color: rgba(255,255,255,.92); }
     .seasonal-loading__icon { width: 3.5rem; height: 3.5rem; color: var(--st-accent, #f2c14e); fill: currentColor; }
     .seasonal-loading.is-3d .seasonal-loading__icon { display: none; }
     .seasonal-loading__title { margin: 1rem 0 0; font-size: 1.0625rem; font-weight: 700; color: #fff; letter-spacing: .02em; }
@@ -126,6 +126,13 @@
         mask: url('{{ asset('images/eclectic_logo_nobg.png') }}') left center / contain no-repeat;
     }
     .seasonal-loading.is-visible .seasonal-loading__logo::after { animation: seasonal-logo-shine 1.1s ease-in-out .95s 1 both; }
+    /* Ucapan muncul bertahap setelah logo; saat selesai konten dan adegan memudar (is-ending) sebelum pindah halaman. */
+    .seasonal-loading.is-visible .seasonal-loading__title { animation: seasonal-text-in .65s cubic-bezier(.2,.8,.2,1) .5s both; }
+    .seasonal-loading.is-visible .seasonal-loading__subtitle { animation: seasonal-text-in .65s cubic-bezier(.2,.8,.2,1) .8s both; }
+    .seasonal-loading.is-visible .seasonal-loading__status { animation: seasonal-text-in .65s cubic-bezier(.2,.8,.2,1) 1.1s both; }
+    @keyframes seasonal-text-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .seasonal-loading__content, .seasonal-loading__canvas { transition: opacity .3s ease; }
+    .seasonal-loading.is-ending .seasonal-loading__content, .seasonal-loading.is-ending .seasonal-loading__canvas { opacity: 0 !important; }
     @keyframes seasonal-logo-in { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
     @keyframes seasonal-logo-shine { 0% { opacity: 1; background-position: -150% 0; } 100% { opacity: 1; background-position: 250% 0; } }
 
@@ -147,7 +154,11 @@
     @media (prefers-reduced-motion: reduce) {
         .seasonal-loading { transition: none; }
         .seasonal-loading.is-static .seasonal-loading__content { animation: none; }
-        .seasonal-loading.is-visible .seasonal-loading__logo { animation: none; }
+        .seasonal-loading.is-visible .seasonal-loading__logo,
+        .seasonal-loading.is-visible .seasonal-loading__title,
+        .seasonal-loading.is-visible .seasonal-loading__subtitle,
+        .seasonal-loading.is-visible .seasonal-loading__status { animation: none; }
+        .seasonal-loading__content, .seasonal-loading__canvas { transition: none; }
         .seasonal-loading__logo::after { display: none; }
         .seasonal-loading.is-static.is-visible .seasonal-loading__bar span { animation: none; transform: scaleX(1); }
     }
@@ -227,6 +238,8 @@
                     go();
                 }
                 function at(ms) { clearTimeout(timer); timer = setTimeout(finish, ms); }
+                // Akhir yang tuntas: konten dan adegan memudar 300 ms, baru pindah halaman.
+                function finishSoft() { if (called) return; el.classList.add('is-ending'); at(300); }
                 var t0 = Date.now();
                 // Batas atas mutlak: redirect tetap terjadi walau semua yang lain macet.
                 at(3600);
@@ -240,7 +253,8 @@
                 function fallback() {
                     el.classList.remove('is-3d');
                     el.classList.add('is-static');
-                    at(Math.max(0, 1800 - (Date.now() - t0)));
+                    clearTimeout(timer);
+                    timer = setTimeout(finishSoft, Math.max(0, 1500 - (Date.now() - t0)));
                 }
                 if (reducedMotion()) { fallback(); return true; }
 
@@ -250,7 +264,7 @@
                     return m.play(el.querySelector('canvas'), { scene: THEMES[key].scene, palette: THEMES[key].palette, duration: 2600 });
                 }).then(function (h) {
                     var minDone = false, sceneDone = false;
-                    function check() { if (minDone && sceneDone) finish(); }
+                    function check() { if (minDone && sceneDone) finishSoft(); }
                     setTimeout(function () { minDone = true; check(); }, Math.max(0, 2200 - (Date.now() - t0)));
                     Promise.resolve(h && h.done).catch(function () {}).then(function () { sceneDone = true; check(); });
                 }).catch(function () { fallback(); });
