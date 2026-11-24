@@ -10,6 +10,12 @@ return [
       'manage' => 'Manage global default (Admin)',
       'default' => 'Default',
       'off' => 'Off',
+      'accent_locked_title' => 'Accent color is controlled by the seasonal theme',
+      'accent_locked_body' => 'While a seasonal theme is on, the interface uses the theme colors, so a different accent color will not show. Set Seasonal theme to Off to choose your own. Your saved color is kept and used again when the theme is off.',
+      'accent_turn_off' => 'Turn off seasonal theme',
+      'accent_toast' => 'A seasonal theme is active, so the accent color cannot be changed. Turn the seasonal theme off first.',
+      'accent_custom' => 'Custom color',
+      'accent_light_hint' => 'This color is very light. White button text may be hard to read.',
       'preview' => 
       array (
         'play' => 'Play preview',

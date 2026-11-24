@@ -10,6 +10,12 @@ return [
       'manage' => 'Kelola default global (Admin)',
       'default' => 'Default',
       'off' => 'Off',
+      'accent_locked_title' => 'Warna aksen diatur oleh tema musiman',
+      'accent_locked_body' => 'Selama tema musiman aktif, antarmuka memakai warna tema sehingga warna aksen lain tidak akan terlihat. Atur Seasonal theme ke Off untuk memilih warna sendiri. Warna yang tersimpan tetap ada dan dipakai lagi saat tema nonaktif.',
+      'accent_turn_off' => 'Nonaktifkan tema musiman',
+      'accent_toast' => 'Tema musiman sedang aktif, jadi warna aksen tidak dapat diubah. Nonaktifkan tema musiman terlebih dahulu.',
+      'accent_custom' => 'Warna kustom',
+      'accent_light_hint' => 'Warna ini sangat terang. Teks putih pada tombol mungkin sulit dibaca.',
       'preview' => 
       array (
         'play' => 'Play preview',
