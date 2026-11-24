@@ -104,6 +104,8 @@
 
     {{-- CSS variable tema musiman (--st-*) dan override --primary-*, hanya bila ada tema aktif. --}}
     @include('partials.seasonal-theme-vars')
+    {{-- Sidebar ringkas: status dibaca sebelum render supaya tidak berkedip. Hanya localStorage, tanpa query. --}}
+    <script>try{if(localStorage.getItem('ec_sidebar_rail')==='1')document.documentElement.setAttribute('data-sb-rail','1')}catch(e){}</script>
 
     <style>
         /* Cross-document View Transitions - pasangan dari deklarasi yang sama di
@@ -183,6 +185,32 @@
         @media (min-width: 40rem) {
             .sm\:items-end { align-items: flex-end; }
             .sm\:grid-cols-\[1fr_9\.5rem_9\.5rem_auto\] { grid-template-columns: 1fr 9.5rem 9.5rem auto; }
+        }
+
+        /* Sidebar ringkas (hanya ikon), khusus desktop. Status di html[data-sb-rail], disimpan di localStorage.
+           Hanya berlaku bila sidebar memakai menu bawaan (#sidebar[data-rail="on"]). Tidak mengubah fungsi menu. */
+        #sidebarRailToggle {
+            display: none; position: absolute; top: 5.25rem; right: -0.75rem; z-index: 60;
+            width: 1.5rem; height: 1.5rem; border-radius: 9999px; border: 1px solid rgba(0,0,0,.08);
+            align-items: center; justify-content: center; font-size: .65rem; cursor: pointer;
+            background: #fff; color: #374151; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+        }
+        #sidebarRailToggle:hover { background: #f3f4f6; }
+        #sidebarRailToggle:focus-visible { outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 4px rgba(0,0,0,.4); }
+        @media (min-width: 64rem) {
+            #sidebar[data-rail="on"] #sidebarRailToggle { display: flex; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"]:not(.w-0) { width: 5rem; }
+            html[data-sb-rail="1"]:has(#sidebar[data-rail="on"]) #mainContent.lg\:ml-64 { margin-left: 5rem; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] #sidebarRailToggle i { transform: rotate(180deg); }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .nav-text,
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .nav-pin-btn,
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .seasonal-decoration--sidebar .seasonal-accent,
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .px-4:has(> .relative > #sidebarSearch) { display: none !important; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] nav { padding-left: .5rem; padding-right: .5rem; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .nav-link { justify-content: center; padding-left: 0; padding-right: 0; gap: 0; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .sidebar-logo { padding: .75rem 0 .5rem; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .sidebar-logo > div { width: auto; padding: 0; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .sidebar-logo img { width: 2.75rem; height: 2.75rem; object-fit: cover; object-position: left center; }
         }
 
         /* Smooth scrollbar */
@@ -835,7 +863,7 @@
         <div id="sidebarOverlay" onclick="closeSidebar()" class="fixed inset-0 z-40 hidden lg:hidden" style="background-color: rgba(0,0,0,0.5);"></div>
 
         <!-- Sidebar - Modern Design -->
-        <aside id="sidebar" class="sidebar-transition fixed inset-y-0 left-0 h-screen flex flex-col {{ $preferences['sidebar_style'] === 'gradient' ? 'primary-gradient' : 'primary-solid' }} text-white shadow-2xl z-50 w-64 -translate-x-full lg:translate-x-0">
+        <aside id="sidebar" data-rail="{{ View::hasSection('sidebar-nav') ? 'off' : 'on' }}" class="sidebar-transition fixed inset-y-0 left-0 h-screen flex flex-col {{ $preferences['sidebar_style'] === 'gradient' ? 'primary-gradient' : 'primary-solid' }} text-white shadow-2xl z-50 w-64 -translate-x-full lg:translate-x-0">
             @if($effectiveSeasonalTheme !== 'none')
                 @include('partials.seasonal-theme', [
                     'themeKey' => $effectiveSeasonalTheme,
@@ -843,6 +871,7 @@
                     'placement' => 'sidebar',
                 ])
             @endif
+            <button type="button" id="sidebarRailToggle" onclick="toggleSidebarRail()" aria-pressed="false" aria-label="Collapse sidebar" title="Collapse sidebar"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
             {{-- Fixed header: logo + menu search - stays put while the nav list below scrolls --}}
             <div class="shrink-0">
                 <!-- Logo Section -->
@@ -2061,6 +2090,41 @@
             }
         }
 
+        // Sidebar ringkas (desktop). Disimpan di localStorage; menu dan rute tidak berubah.
+        function setSidebarRail(on, persist) {
+            var root = document.documentElement;
+            if (on) root.setAttribute('data-sb-rail', '1'); else root.removeAttribute('data-sb-rail');
+            if (persist !== false) { try { localStorage.setItem('ec_sidebar_rail', on ? '1' : '0'); } catch (e) {} }
+            var b = document.getElementById('sidebarRailToggle');
+            if (b) {
+                var label = on ? 'Expand sidebar' : 'Collapse sidebar';
+                b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                b.setAttribute('aria-label', label);
+                b.title = label;
+            }
+            // Tooltip nama menu saat hanya ikon yang tampil.
+            document.querySelectorAll('#sidebar a.nav-link, #sidebar button.nav-link').forEach(function (el) {
+                if (on) {
+                    var tx = el.querySelector('.nav-text');
+                    if (tx && !el.hasAttribute('title')) { el.setAttribute('title', tx.textContent.trim()); el.setAttribute('data-rail-title', '1'); }
+                } else if (el.getAttribute('data-rail-title')) {
+                    el.removeAttribute('title'); el.removeAttribute('data-rail-title');
+                }
+            });
+        }
+        function toggleSidebarRail() {
+            setSidebarRail(document.documentElement.getAttribute('data-sb-rail') !== '1');
+        }
+        (function () {
+            var sb = document.getElementById('sidebar');
+            if (!sb || sb.getAttribute('data-rail') !== 'on') return;
+            setSidebarRail(document.documentElement.getAttribute('data-sb-rail') === '1', false);
+            // Klik grup menu saat ringkas: sidebar melebar dulu (submenu butuh ruang), lalu handler grup berjalan seperti biasa.
+            sb.addEventListener('click', function (e) {
+                if (document.documentElement.getAttribute('data-sb-rail') !== '1' || !isDesktopViewport()) return;
+                if (e.target.closest && e.target.closest('button.nav-link')) setSidebarRail(false);
+            }, true);
+        })();
         // When resizing up to desktop, drop any mobile drawer state so the
         // docked sidebar and scroll lock are always in a clean state.
         window.addEventListener('resize', function () {
