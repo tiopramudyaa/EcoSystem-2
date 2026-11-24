@@ -303,6 +303,8 @@ php artisan view:cache && php artisan view:clear
 
 Urutan commit yang disarankan (tiap commit lolos tes sendiri): (1) berkas baru dan timpa, (2) bahasa, (3) backend (composer, resolver, controller, middleware, SettingsController), (4) dashboard dan sidebar, (5) login dan auth, (6) Settings dan pratinjau, (7) panduan dan dokumen.
 
+Hasil uji coba kering (2026-11-24, worktree terpisah dari `origin/eco_new`, tanpa menyentuh branch mana pun): langkah 0 sampai 3 menyalin 77 berkas baru dan mengganti 6 berkas (81 berkas ditambahkan termasuk folder dokumen ini, 6 diubah), lang minimal terbuat dengan 87 kunci EN dan 87 kunci ID, semua PHP lolos `php -l`, semua JS lolos `node --check`. Ketergantungan kelas tema (`AppConfig::getJson` dan `setJson`, `AuditLog::recordAction`, `AiModelSettings`, `SettingsController`, `AuthController`) semuanya sudah ada di eco_new. Yang belum diuji: sambungan di berkas bersama (bagian 6) dan tes PHPUnit setelah sambungan, karena itu bagian pekerjaan port.
+
 Catatan tes: tes tema di aldy_merge memakai `Tests\TestCase` dan menyemai cache; tes yang membaca partial atau aset (`SeasonalAssetsTest`, `LoginArtTest`, `SeasonalNavbarArtTest`, `PaletteCoherenceTest`) ikut ter-copy lewat manifest. Bila eco_new tidak punya kelas atau helper yang dipakai tes lain, sesuaikan di tes tema saja, bukan di kode produksi.
 
 ---
