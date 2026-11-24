@@ -118,9 +118,13 @@ export async function play(canvas, opts = {}) {
 
   try {
     const tier = qualityTier();
-    renderer = (reuse && keptRenderers.get(canvas)) || new THREE.WebGLRenderer({ canvas, antialias: tier === 'high', alpha: false });
+    // Renderer yang dipakai ulang: canvas masih memuat frame terakhir; tidak dikosongkan dan tidak di-fade
+    // ulang supaya sambungan antar putaran tidak berkedip.
+    const existing = reuse ? keptRenderers.get(canvas) : null;
+    renderer = existing || new THREE.WebGLRenderer({ canvas, antialias: tier === 'high', alpha: false });
     if (reuse) keptRenderers.set(canvas, renderer);
-    renderer.setPixelRatio(tier === 'high' ? Math.min(window.devicePixelRatio || 1, 1.5) : 1);
+    const wantRatio = tier === 'high' ? Math.min(window.devicePixelRatio || 1, 1.5) : 1;
+    if (renderer.getPixelRatio() !== wantRatio) renderer.setPixelRatio(wantRatio);
     renderer.shadowMap.enabled = false;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -128,7 +132,9 @@ export async function play(canvas, opts = {}) {
 
     const size = () => {
       const w = Math.max(2, canvas.clientWidth || window.innerWidth), h = Math.max(2, canvas.clientHeight || window.innerHeight);
-      renderer.setSize(w, h, false);
+      // setSize mengosongkan canvas walau ukurannya sama: lewati bila tidak berubah.
+      const cur = renderer.getSize(new THREE.Vector2());
+      if (cur.x !== w || cur.y !== h) renderer.setSize(w, h, false);
       return [w, h];
     };
     let [width, height] = size();
@@ -174,7 +180,7 @@ export async function play(canvas, opts = {}) {
       try {
         impl.update(t, dt);
         // fade in lembut pada 12% pertama
-        canvas.style.opacity = String(Math.min(1, t / 0.12));
+        canvas.style.opacity = existing ? '1' : String(Math.min(1, t / 0.12));
         renderer.render(scn, camera);
       } catch (e) { cleanup(); return; }
       if (t >= 1) cleanup();
@@ -184,7 +190,7 @@ export async function play(canvas, opts = {}) {
     // sehingga thread utama tidak membeku 300 sampai 1000 ms pada render pertama. Dibatasi 2,5 detik;
     // bila gagal atau tidak didukung, render pertama mengompilasi seperti biasa.
     impl.update(0, 0);
-    canvas.style.opacity = '0';
+    if (!existing) canvas.style.opacity = '0';
     if (renderer.compileAsync) {
       try { await Promise.race([renderer.compileAsync(scn, camera), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* abaikan */ }
     }

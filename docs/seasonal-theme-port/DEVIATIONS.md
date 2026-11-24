@@ -13,3 +13,4 @@ Kait di berkas bersama (bukan salinan): dashboard.blade.php, auth/*.blade.php, s
 
 | public/js/seasonal/stage.js | compileAsync, warmTextures (unggah tekstur bertahap), reuseRenderer dan release(), sampel downgrade lebih tahan hitch | Perbaikan tersendat (data di audit/step6-perf-baseline.md) |
 | resources/views/partials/seasonal-preview.blade.php | Loop pratinjau memakai ulang renderer dan canvas, poster tampil di jeda, renderer dilepas saat ditutup | Hitch loop kedua |
+| resources/views/partials/confirm-modal.blade.php | Satu baris kait: atribut data-danger pada tombol OK varian danger (disalin dari aldy_merge). Fitur data-confirm form di aldy_merge TIDAK dibawa | Remap tema musiman membiarkan tombol destruktif tetap merah. Tanpa baris ini tombol OK dialog danger menjadi hijau tema (bug B2 dari QA) |

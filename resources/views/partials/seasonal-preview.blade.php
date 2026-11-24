@@ -215,7 +215,7 @@
 
     // Memainkan adegan; bila sisa waktu cukup, sekali lagi sampai batas MAX_MS. Canvas dan renderer
     // dipakai ulang (reuseRenderer): pemutaran kedua tidak membuat konteks GL baru dan tidak mengompilasi
-    // ulang shader. Selama jeda antar putaran poster tampil, bukan layar kosong.
+    // ulang shader. Selama jeda antar putaran frame terakhir tetap tampil (tanpa poster, tanpa layar kosong).
     function playLoop(m, d, my, t0) {
         return m.play(canvas, { scene: d.scene, palette: d.palette, duration: SCENE_MS, reuseRenderer: true }).then(function (h) {
             if (my !== token) { h.stop(); releaseGL(); return; }
@@ -225,8 +225,7 @@
                 if (my !== token) return;
                 handle = null;
                 if (Date.now() - t0 + SCENE_MS + 300 <= MAX_MS) {
-                    ov.classList.remove('is-3d');
-                    return playLoop(m, d, my, t0);
+                    return playLoop(m, d, my, t0); // canvas tetap tampil (frame terakhir) sampai frame pertama putaran berikut
                 }
                 releaseGL();
                 ov.classList.remove('is-3d'); // poster sampai penutupan otomatis
