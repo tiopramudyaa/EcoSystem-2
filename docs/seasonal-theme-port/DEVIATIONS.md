@@ -18,3 +18,6 @@ Kait di berkas bersama (bukan salinan): dashboard.blade.php, auth/*.blade.php, s
 | resources/guide/{en,id}/010-home-dashboard.md | Langkah 8 dan pertanyaan umum tentang sidebar ringkas | Aturan CLAUDE.md: fitur terlihat pengguna wajib ada panduan |
 | resources/views/settings/index.blade.php (blok Accent color) | Color picker bebas (input type color, swatch terakhir), kunci pilihan warna selama tema musiman aktif (efektif) dengan kotak peringatan, toast peringatan saat dicoba, tombol Turn off seasonal theme, petunjuk warna terlalu terang | Permintaan pemilik 24 Nov. Murni sisi klien; server tetap memvalidasi regex #rrggbb; tanpa query tambahan (render Settings tetap 2 query) |
 | lang/en/ui.php, lang/id/ui.php | Kunci seasonal.accent_* (6 kunci) | Teks peringatan warna |
+| app/Models/AppConfig.php | Cache 5 menit dari aldy_merge, DITAMBAH pengecualian: kunci berawalan security. tidak di-cache | Audit G risiko R-A: penegakan 2FA dan login Microsoft harus langsung berlaku di semua instance (store cache lokal) |
+| app/Http/Controllers/SeasonalThemeSettingsController.php | schedule dicasting ke array sebelum array_values | Audit G N2: POST dengan schedule kosong memicu TypeError 500 |
+| resources/guide/{en,id}/021-my-seasonal-theme.md | Teks warna aksen terkunci dan color picker; navbar dipadatkan | Panduan mengikuti fitur Settings baru (audit G D1) |

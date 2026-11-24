@@ -11,6 +11,13 @@ class AppConfig extends Model
 
     public static function get(string $key, mixed $default = null): mixed
     {
+        // Kunci keamanan (penegakan 2FA, login Microsoft) TIDAK di-cache: perubahannya harus langsung berlaku di
+        // semua server, bukan tertunda sampai 5 menit di instance lain yang cache-nya lokal.
+        if (str_starts_with($key, 'security.')) {
+            $row = static::where('key', $key)->first();
+            return $row ? $row->value : $default;
+        }
+
         // Dibaca di setiap halaman (sidebar → pengaturan ESS): di-cache 5 menit, dibuang saat set(). Nilai kosong tidak ikut tersimpan lama.
         $hit = \Illuminate\Support\Facades\Cache::remember('app_config_' . $key, 300, function () use ($key) {
             $row = static::where('key', $key)->first();
