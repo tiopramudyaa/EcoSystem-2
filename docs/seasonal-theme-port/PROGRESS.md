@@ -19,7 +19,7 @@ Perbarui setelah setiap langkah selesai. Sumber: origin/aldy_merge. Tujuan akhir
 | 0 | Sinkron aldy_eco dengan eco_new (merge, 0 konflik) | SELESAI | cb765c92 |
 | 1a | Salin 77 berkas baru, timpa 6 berkas tema, verify-port OK 83, lang minimal 87 kunci | SELESAI | 7627f493 |
 | 1b | Kait backend + cache AppConfig (keputusan pemilik: dipasang). Tes Seasonal 74, gagal 2 (menunggu kait login dan settings) | SELESAI | bf73d6b7 dan commit AppConfig |
-| 2 | Kait dashboard.blade.php (a sampai i) | BELUM | |
+| 2 | Kait dashboard.blade.php (a sampai i). Partial tema: none = 0 byte, 6 tema = 0 query. Audit agent: lihat audit/step2-review.md | SELESAI (menunggu audit) | lihat git log |
 | 3 | Kait login.blade.php dan 4 halaman auth, verifikasi 6 tema x 4 viewport | BELUM | |
 | 4 | Kait pemilih tema settings/index.blade.php, cek halaman admin, pratinjau | BELUM | |
 | 5 | Panduan pengguna 021 dan 148 (en, id), guide-check, tes Guide | BELUM | |
