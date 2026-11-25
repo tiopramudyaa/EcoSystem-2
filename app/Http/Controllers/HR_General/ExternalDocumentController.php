@@ -50,12 +50,12 @@ class ExternalDocumentController extends Controller
         ];
 
         if ($request->ajax()) {
-            return view('hr-general.external.documents.components.list-table', $data);
+            return view('rpmo.external.documents.components.list-table', $data);
         }
 
         $counts = $this->documents->counts();
 
-        return view('hr-general.external.documents.index', $data + [
+        return view('rpmo.external.documents.index', $data + [
             'counts'        => $counts,
             'tabs'          => collect(ExternalRules::DOCUMENTS)->filter(fn ($d) => $this->canView($d['slug']))->all(),
             'canCreate'     => $this->employeeCan($doc['slug'], 'create'),

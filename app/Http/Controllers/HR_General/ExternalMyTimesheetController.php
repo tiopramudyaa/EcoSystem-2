@@ -43,7 +43,7 @@ class ExternalMyTimesheetController extends Controller
             $sheet = $pick && $pick['sheet_id'] ? $this->sheets->find((int) $pick['sheet_id']) : null;
         }
 
-        return view('hr-general.external.timesheet.my', [
+        return view('rpmo.external.timesheet.my', [
             'periods'  => $periods,
             'sheet'    => $sheet,
             'summary'  => $this->sheets->summary($me),
@@ -128,7 +128,7 @@ class ExternalMyTimesheetController extends Controller
     {
         $sheet = $this->owned($id);
 
-        return view('hr-general.external.timesheet.print', [
+        return view('rpmo.external.timesheet.print', [
             'sheet' => $sheet, 'amounts' => true,
             'verification' => R::verificationCode($id, $sheet->sheet_no, (string) config('app.key')),
             'approver' => $sheet->approved_by ? ($sheet->actor_names[$sheet->approved_by] ?? '') : '',

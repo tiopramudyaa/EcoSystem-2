@@ -12,7 +12,7 @@
 
 @section('content')
 <div class="w-full space-y-6 px-1 lg:px-2">
-    @include('hr-general.external.contracts.components.tabs')
+    @include('rpmo.external.contracts.components.tabs')
     @include('partials.accent-remap')
     @include('hr-general.recruitment.components.form-errors')
     @include('legal.contracts.components.confirm-forms')
@@ -74,7 +74,7 @@
         </form>
 
         <div id="extList" class="transition-opacity" aria-live="polite">
-            @include('hr-general.external.contracts.components.list-table')
+            @include('rpmo.external.contracts.components.list-table')
         </div>
     </div>
 </div>

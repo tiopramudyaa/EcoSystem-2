@@ -69,4 +69,4 @@ The designated approver reviews your hours, then your invoice is verified and pa
 - [[external-timesheet-payment]]
 - [[external-contracts]]
 
-<!-- sources: routes/hr-external.php, resources/views/hr-general/external/timesheet/my.blade.php, resources/views/hr-general/external/timesheet/components/sheet.blade.php, app/Support/External/ExternalTimesheetRules.php, resources/views/partials/sidebar.blade.php -->
+<!-- sources: routes/hr-external.php, resources/views/rpmo/external/timesheet/my.blade.php, resources/views/rpmo/external/timesheet/components/sheet.blade.php, app/Support/External/ExternalTimesheetRules.php, resources/views/partials/sidebar.blade.php -->

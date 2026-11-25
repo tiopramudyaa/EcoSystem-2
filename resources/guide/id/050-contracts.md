@@ -43,6 +43,17 @@ Pada halaman `Manage` seorang Employee, kartu `Contract Readiness` menampilkan p
 
 Jika ada yang kurang, halaman mendaftar tiap item. Klik sebuah item untuk membuka tab yang tepat pada profil Employee di tab baru, sehingga isian yang sudah Anda ketik pada formulir Contract tidak hilang. `Complete Employee Data` membuka profil Employee.
 
+## Peringatan kontrak segera berakhir
+
+Semua orang yang rolenya punya menu `Contract` (dan untuk konsultan, `External Contract`) melihat bilah kuning di atas setiap halaman bila ada kontrak yang akan berakhir: "N kontrak karyawan akan berakhir dalam 30 hari. Lihat detail". Aturannya:
+
+- Jendela waktunya adalah yang lebih besar antara 30 hari dan setelan "Ending soon" di Employee Master Settings, jadi tidak pernah kurang dari satu bulan.
+- Yang dihitung adalah kontrak aktif yang tanggal berakhirnya jatuh dari hari ini sampai akhir jendela. Kontrak permanen, draft, terminated, dan expired tidak dihitung.
+- `Lihat detail` membuka daftar Contracts yang sudah difilter ke kontrak tersebut (konsultan: dashboard External Contract). Gunakan untuk menindaklanjuti karyawan terkait.
+- Bilah bisa ditutup. Ia muncul lagi pada sesi browser baru, hari baru, atau saat jumlahnya berubah.
+- Siapa yang melihatnya mengikuti akses menu role, sehingga role baru dengan akses Contract otomatis melihatnya.
+- Jumlah diperbarui setiap beberapa menit.
+
 ## Langkah demi langkah
 
 ### Membuat Contract
@@ -150,4 +161,4 @@ Contract Active muncul di riwayat Contract Employee dan dihitung dalam [[onboard
 - [[offboarding]]
 - [[external-contracts]]
 
-<!-- sources: routes/hr-general.php, config/hc_contract.php, app/Support/Contracts/ContractRules.php, app/Http/Controllers/HR_General/ContractController.php, resources/views/hr-general/contracts/show.blade.php, resources/views/hr-general/contracts/index.blade.php, resources/views/hr-general/contracts/components/signing-panel.blade.php, resources/views/hr-general/contracts/template-form.blade.php -->
+<!-- sources: app/Services/Contracts/ContractExpiryAlert.php, resources/views/components/contract-expiry-alert.blade.php, routes/hr-general.php, config/hc_contract.php, app/Support/Contracts/ContractRules.php, app/Http/Controllers/HR_General/ContractController.php, resources/views/hr-general/contracts/show.blade.php, resources/views/hr-general/contracts/index.blade.php, resources/views/hr-general/contracts/components/signing-panel.blade.php, resources/views/hr-general/contracts/template-form.blade.php -->

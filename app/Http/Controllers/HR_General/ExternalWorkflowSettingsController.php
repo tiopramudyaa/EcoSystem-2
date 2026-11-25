@@ -27,7 +27,7 @@ class ExternalWorkflowSettingsController extends Controller
     {
         $options = $this->workflow->options();
 
-        return view('hr-general.external.timesheet.settings', [
+        return view('rpmo.external.timesheet.settings', [
             'settings'    => $this->workflow->settings(),
             'steps'       => collect(R::STAGES)->map(fn ($label, $stage) => $this->workflow->steps($stage))->all(),
             'overrides'   => $this->workflow->overrides(),

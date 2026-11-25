@@ -73,10 +73,10 @@ class ExternalTimesheetController extends Controller
         ];
 
         if ($request->ajax()) {
-            return view('hr-general.external.timesheet.components.list-table', $data);
+            return view('rpmo.external.timesheet.components.list-table', $data);
         }
 
-        return view('hr-general.external.timesheet.index', $data + $this->tabs() + [
+        return view('rpmo.external.timesheet.index', $data + $this->tabs() + [
             'summary'     => $this->sheets->summary(),
             'canCreate'   => !$invoiceView && $this->employeeCan(self::SLUG, 'create'),
             'consultants' => $invoiceView ? [] : $this->consultants->options(),
@@ -122,7 +122,7 @@ class ExternalTimesheetController extends Controller
         $actor = $this->actorId();
         $editRole = $this->employeeCan(self::SLUG, 'edit');
 
-        return view('hr-general.external.timesheet.show', $this->tabs() + [
+        return view('rpmo.external.timesheet.show', $this->tabs() + [
             'sheet'       => $sheet,
             'amounts'     => $amounts,
             'canEdit'     => $sheet->editable && $editRole,
@@ -226,7 +226,7 @@ class ExternalTimesheetController extends Controller
         $sheet = $this->sheets->find($id);
         abort_if($sheet === null, 404);
 
-        return view('hr-general.external.timesheet.print', [
+        return view('rpmo.external.timesheet.print', [
             'sheet' => $sheet, 'amounts' => $this->canView('general.external.timesheet.amount'),
             'verification' => R::verificationCode($id, $sheet->sheet_no, (string) config('app.key')),
             'approver' => $sheet->approved_by ? ($sheet->actor_names[$sheet->approved_by] ?? '') : '',

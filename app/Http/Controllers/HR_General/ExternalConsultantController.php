@@ -52,10 +52,10 @@ class ExternalConsultantController extends Controller
 
         // Penyaring langsung hanya menyegarkan tabel + halaman (components/list-table).
         if ($request->ajax()) {
-            return view('hr-general.external.consultants.components.list-table', $data);
+            return view('rpmo.external.consultants.components.list-table', $data);
         }
 
-        return view('hr-general.external.consultants.index', $data + ['summary' => $this->consultants->summary()]);
+        return view('rpmo.external.consultants.index', $data + ['summary' => $this->consultants->summary()]);
     }
 
     public function show(int $employeeId)
@@ -71,7 +71,7 @@ class ExternalConsultantController extends Controller
             'attachment'     => $this->canView('external.section.attachment.view'),
         ]);
 
-        return view('hr-general.external.consultants.show', [
+        return view('rpmo.external.consultants.show', [
             'c'            => $consultant,
             'profile'      => $profile,
             'canRate'      => $canRate,

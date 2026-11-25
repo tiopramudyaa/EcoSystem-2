@@ -8,7 +8,7 @@
     $tones = ['blue' => 'bg-blue-50 text-blue-600', 'green' => 'bg-green-50 text-green-600', 'amber' => 'bg-amber-50 text-amber-600', 'sky' => 'bg-sky-50 text-sky-600'];
 @endphp
 <div class="w-full space-y-6 px-1 lg:px-2">
-    @include('hr-general.external.contracts.components.tabs')
+    @include('rpmo.external.contracts.components.tabs')
     @include('partials.accent-remap')
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">

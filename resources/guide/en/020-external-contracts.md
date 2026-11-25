@@ -75,4 +75,4 @@ An `Active` contract defines the months for which the consultant can fill a time
 - [[external-timesheet-payment]]
 - [[external-letters]]
 
-<!-- sources: routes/hr-external.php, resources/views/hr-general/external/contracts/index.blade.php, resources/views/hr-general/external/contracts/manage.blade.php, resources/views/hr-general/external/components/signer-warning.blade.php, config/hc_contract.php, config/hc_external.php, app/Http/Controllers/HR_General/ExternalContractController.php -->
+<!-- sources: routes/hr-external.php, resources/views/rpmo/external/contracts/index.blade.php, resources/views/rpmo/external/contracts/manage.blade.php, resources/views/rpmo/external/components/signer-warning.blade.php, config/hc_contract.php, config/hc_external.php, app/Http/Controllers/HR_General/ExternalContractController.php -->

@@ -1830,6 +1830,7 @@
             {{-- `clip` (not `hidden`) so sticky elements inside pages (e.g. Payroll Settings sidebar) can stick to the viewport; `hidden` is the fallback for old browsers. --}}
             <div style="overflow-x: hidden; overflow-x: clip;">
                 <div class="@yield('content-class', 'p-4 sm:p-6')">
+                    @include('components.contract-expiry-alert')
                     @yield('content')
                 </div>
             </div>

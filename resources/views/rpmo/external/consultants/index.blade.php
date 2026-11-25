@@ -109,7 +109,7 @@
         </form>
 
         <div id="extList" class="transition-opacity" aria-live="polite">
-            @include('hr-general.external.consultants.components.list-table')
+            @include('rpmo.external.consultants.components.list-table')
         </div>
     </div>
 </div>

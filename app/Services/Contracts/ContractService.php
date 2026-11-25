@@ -151,6 +151,15 @@ class ContractService
         ];
     }
 
+    /** Number of active employees whose current contract ends between two dates (inclusive). */
+    public function endingBetween(string $from, string $to): int
+    {
+        $q = $this->baseQuery(false);
+        $this->applyStatusFilter($q, ContractRules::STATUS_ACTIVE, $from);
+
+        return (int) $q->whereNotNull('c.end_date')->whereBetween('c.end_date', [$from, $to])->count();
+    }
+
     /** Hitungan untuk kartu ringkasan di atas daftar. */
     public function summary(): array
     {

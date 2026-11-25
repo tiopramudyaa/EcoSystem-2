@@ -24,7 +24,7 @@
 
 @section('content')
 <div class="w-full space-y-6 px-1 lg:px-2">
-    @include('hr-general.external.timesheet.components.tabs')
+    @include('rpmo.external.timesheet.components.tabs')
     @include('hr-general.recruitment.components.form-errors')
     @if(session('success'))<div class="text-xs bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3"><i class="fas fa-circle-check mr-1"></i> {{ session('success') }}</div>@endif
 
@@ -66,7 +66,7 @@
                 <button type="button" id="extRefresh" class="flex-1 md:flex-none px-3 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90" title="Refresh the list"><i class="fas fa-rotate" id="extRefreshIcon"></i></button>
             </div>
         </form>
-        <div id="extList" class="transition-opacity" aria-live="polite">@include('hr-general.external.timesheet.components.list-table')</div>
+        <div id="extList" class="transition-opacity" aria-live="polite">@include('rpmo.external.timesheet.components.list-table')</div>
     </div>
 </div>
 

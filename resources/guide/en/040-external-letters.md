@@ -63,4 +63,4 @@ The letter appears in the list of its type and in the `Letter Register` as an ou
 - [[external-contracts]]
 - [[letter-templates]]
 
-<!-- sources: routes/hr-external.php, app/Support/External/ExternalRules.php, config/hc_external.php, resources/views/hr-general/external/documents/index.blade.php, resources/views/hr-general/external/documents/components/list-table.blade.php, resources/views/hr-general/external/components/signer-warning.blade.php -->
+<!-- sources: routes/hr-external.php, app/Support/External/ExternalRules.php, config/hc_external.php, resources/views/rpmo/external/documents/index.blade.php, resources/views/rpmo/external/documents/components/list-table.blade.php, resources/views/rpmo/external/components/signer-warning.blade.php -->

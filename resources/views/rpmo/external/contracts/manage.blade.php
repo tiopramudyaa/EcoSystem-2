@@ -66,7 +66,7 @@
 
 @section('content')
 <div class="w-full space-y-5 px-1 lg:px-2">
-    @include('hr-general.external.contracts.components.tabs')
+    @include('rpmo.external.contracts.components.tabs')
     @include('partials.accent-remap')
     <style>#extContractForm .grid > *, #extContractForm fieldset { min-width: 0; } #extContractForm .se-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }</style>
     @include('legal.contracts.components.issues-panel', ['issuesCanOpen' => $canProfile])
@@ -384,7 +384,7 @@
                                 @foreach($signatories as $p)<option value="{{ $p['id'] }}" @selected((string) $old('signatory_employee_id') === (string) $p['id'])>{{ $p['name'] }}@if(!empty($p['position'])) - {{ $p['position'] }}@endif</option>@endforeach
                             </select>
                             <p class="{{ $hint }}">{{ $signerNote ?? 'From Letter Templates → Settings → Signers.' }}</p>
-                            @include('hr-general.external.components.signer-warning', ['signerScope' => 'contract'])
+                            @include('rpmo.external.components.signer-warning', ['signerScope' => 'contract'])
                         </div>
                         <div class="md:col-span-12">
                             <label class="{{ $label }}" for="fNotes">Notes</label>
