@@ -30,7 +30,15 @@ Project heads, project administrators, RPMO and management, and any role given t
 2. Read the `SUMMARY` cards: `Total Projects`, `Open`, `In Process`, `Closed`, `On Track`, `At Risk`, `At Critical` and `Ending ≤ 30 days`. Click a card to filter the list to it.
 3. In the table, each project shows its `Last Update`, `IO Number`, `Customer`, `Project Type`, `Project Name`, `AE`, `Project Owner`, `Category` and `Project Status`. The most recently updated project is on top. Use the arrows in a column title to sort and the funnel icon to filter.
 4. Click a project to open its detail page (see the topic about the project detail).
-5. Choose `Export Excel` to download the list.
+5. Choose `Export Excel`, then `Project List`, to download the list. The other items in that menu (`Project Revenue`, `Invoiced Terms of Payment`) download straight away as before.
+
+### Choose the fields to export
+
+1. A window titled `Export Delivery Projects` opens. It shows the `Template` list and every `Fields` checkbox.
+2. Tick the fields you want in the file. Type in `Search fields` to find one in a long list. `Select all` ticks every field and `Unselect all` unticks them.
+3. To reuse this choice, type a name under `Save these fields as a template`, choose `Personal` or `Global` and choose `Save`. The template then appears in the `Template` list, marked `(Personal)` or `(Global)`.
+4. Next time, open the same window and pick the template in `Template`. Its fields are ticked for you. `Global` templates made by colleagues are in the same list. Choose `Delete` to remove a template of yours you no longer need.
+5. Choose `Export`. The file contains only the ticked fields.
 
 ### Add a project
 
@@ -50,6 +58,23 @@ On the project detail page:
 
 - `Close Project` locks the project: its data can no longer be changed. The button then becomes `Reopen Project` for people who may use it.
 - `Delete Project` removes the project for good. If the project still has related records, EcoSystem refuses and tells you it may still have related records. Close the project instead when work has ended.
+
+## Rules to know
+
+### When you export
+
+- The fields you can tick are the columns of the full `Project List` export.
+- Templates only choose columns. Which rows are exported is still decided by the filters, cards and search active on the list.
+- With every field ticked you get the normal full export. With fewer fields the file has plain cells: a red header row, the first row frozen and columns sized to fit, without the number and alignment formats of the full export.
+- At least one field must be ticked, and a template needs a name of up to 80 characters.
+- A `Personal` template is seen and used only by you. A `Global` template is seen and used by everyone who can open this export, and is marked with the name of its creator.
+- Only the creator can change a template. Others can use a `Global` template but not edit or delete it; to keep a variation, they save it under another name. An EC Administrator can delete any `Global` template.
+- Each list has its own fields and its own templates.
+- Among your own templates for one list a name is unique, whether `Personal` or `Global`. Saving with a name you already use replaces that template and can switch it between `Personal` and `Global`. A `Global` name must also differ from every other `Global` template of that list.
+- `Save` stores the fields that are ticked at that moment. Changing the ticks of a chosen template and then choosing `Export` does not change the template.
+- The window opens with the template you used last on this browser.
+- If a field is removed from the export later, it simply disappears from your saved templates.
+- Templates, `Global` ones included, do not change who may export. The export button still follows your access in `Menu Access`, so a `Global` template is only useful to people who can export this list.
 
 ## What happens next
 

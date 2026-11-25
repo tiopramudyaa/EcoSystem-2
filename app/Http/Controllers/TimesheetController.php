@@ -213,22 +213,22 @@ class TimesheetController extends Controller
                     return trim($ds->name . ($clientName ? " ({$clientName})" : '') . ($ds->type ? ", {$ds->type}" : ''));
                 });
 
-            return Excel::download(new TimesheetSupportExport($rows, $jatahMap, $deliveryMap), $filename);
+            return ExportColumns::download($request, 'timesheet_support', new TimesheetSupportExport($rows, $jatahMap, $deliveryMap), $filename);
         }
 
         if ($type === 'project') {
-            return Excel::download(new TimesheetProjectExport($rows), $filename);
+            return ExportColumns::download($request, 'timesheet_project', new TimesheetProjectExport($rows), $filename);
         }
 
         if ($type === 'non_project') {
-            return Excel::download(new TimesheetNonProjectExport($rows), $filename);
+            return ExportColumns::download($request, 'timesheet_non_project', new TimesheetNonProjectExport($rows), $filename);
         }
 
         if ($type === 'office') {
-            return Excel::download(new TimesheetOfficeExport($rows), $filename);
+            return ExportColumns::download($request, 'timesheet_office', new TimesheetOfficeExport($rows), $filename);
         }
 
-        return Excel::download(new TimesheetApprovalExport($rows), $filename);
+        return ExportColumns::download($request, 'timesheet_all', new TimesheetApprovalExport($rows), $filename);
     }
 
     /**
@@ -558,6 +558,19 @@ class TimesheetController extends Controller
     /**
      * Store new timesheet (API)
      */
+    /** 403 when the logged-in employee may not log this timesheet type, otherwise null. */
+    private function typeNotAllowedResponse(string $type)
+    {
+        if (TimesheetApproval::canLog($type)) {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'You do not have permission to log ' . (TimesheetApproval::LABELS[$type] ?? $type) . ' timesheets.',
+        ], 403);
+    }
+
     public function store(Request $request)
     {
         // Izin murni dari Role Access (slug timesheet.create), sama dengan tombol di UI.
@@ -635,6 +648,14 @@ class TimesheetController extends Controller
                     'success' => false,
                     'message' => 'Forbidden: you can only create timesheets for yourself',
                 ], 403);
+            }
+
+            // Type permission (Menu Access: timesheet.log.*). Applies when logging for yourself.
+            if ($sessionUser && (int) $validated['employee_id'] === (int) $sessionUser->id) {
+                $typeKey = $isProject ? 'project' : ($isNonProject ? 'non_project' : (!empty($validated['ticket_id'] ?? null) ? 'support' : 'office'));
+                if ($denied = $this->typeNotAllowedResponse($typeKey)) {
+                    return $denied;
+                }
             }
 
             $validated['status'] = 'draft';
@@ -866,6 +887,16 @@ class TimesheetController extends Controller
             $isProject = !empty($validated['delivery_projects_id']);
             $isNonProject = !$isProject && $request->boolean('is_non_project') && empty($validated['ticket_id'] ?? null);
             $validated['is_non_project'] = $isNonProject;
+
+            // Type permission (Menu Access: timesheet.log.*). Applies to your own entries,
+            // including when you convert one to another type.
+            if ((int) $timesheet->employee_id === (int) $currentEmployeeId) {
+                $typeKey = $isProject ? 'project' : ($isNonProject ? 'non_project' : (!empty($validated['ticket_id'] ?? null) ? 'support' : 'office'));
+                if ($denied = $this->typeNotAllowedResponse($typeKey)) {
+                    return $denied;
+                }
+            }
+
             // An entry that already has a captured GPS fix / date (Project or Non Project) keeps them.
             $wasProjectLike = !empty($timesheet->delivery_projects_id) || (bool) $timesheet->is_non_project;
             if ($isProject) {
@@ -1076,6 +1107,12 @@ class TimesheetController extends Controller
                     'success' => false,
                     'message' => 'Only draft timesheets can be submitted'
                 ], 400);
+            }
+
+            // Type permission (Menu Access: timesheet.log.*) for your own entries.
+            if ((int) $timesheet->employee_id === (int) $currentEmployeeId
+                && ($denied = $this->typeNotAllowedResponse(TimesheetApproval::typeOf($timesheet)))) {
+                return $denied;
             }
 
             // For support timesheets, enforce mandays quota hard-stop

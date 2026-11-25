@@ -25,10 +25,16 @@ Administrator, dan role mana pun yang diberi menu `Management` › `Menu Access`
 *Tangkapan layar dengan data contoh.*
 
 1. Buka `Management` › `Menu Access`.
-2. Baca pohonnya. Ikon tumpukan ungu adalah grup (seperti `Calendar` atau `Reporting`), ikon halaman biru adalah halaman, dan ikon petir adalah function: tombol atau aksi di dalam halaman, misalnya `Create Event`.
-3. Teks abu-abu di kanan setiap baris adalah slug-nya, berupa nama pendek bertitik. Pakai saat melaporkan menu yang hilang kepada administrator atau mencarinya di sebuah topik.
+2. Baca kartu di bagian atas: jumlah seluruh menu dan berapa yang berupa grup, halaman, dan function. Lalu baca pohonnya. Ikon tumpukan ungu adalah grup (seperti `Calendar` atau `Reporting`), ikon halaman biru adalah halaman, dan ikon petir adalah function: tombol atau aksi di dalam halaman, misalnya `Create Event`. Sebuah grup juga menampilkan jumlah item di dalamnya.
+3. Label abu-abu di kanan setiap baris adalah slug-nya, berupa nama pendek bertitik. Klik untuk menyalinnya, lalu tempel saat melaporkan menu yang hilang kepada administrator.
 4. Klik panah pada baris, atau `Expand All` dan `Collapse All`, untuk menampilkan atau menyembunyikan sub-item.
-5. Ketik di `Search menu name...` untuk mencari menu. Pilih `Reset` untuk menghapus pencarian.
+5. Ketik di `Search menu name...` untuk mencari menu. Pakai tombol `All`, `Groups`, `Pages`, dan `Functions` untuk menampilkan satu jenis saja. Pilih `Reset` untuk menghapus pencarian dan filter.
+
+## Aturan yang perlu diketahui
+
+- **Hanya baca.** Halaman ini tidak mengubah apa pun. Menu hanya diberikan dari `Management` › `Role`.
+- **Siapa yang boleh membukanya.** Hanya orang yang diberi menu `Management` › `Menu Access` di Menu Access. Orang yang bisa membuka `Management` › `Role` juga menerima daftar yang sama di dalam jendela role, tetapi tidak halaman ini.
+- **Hanya menu aktif yang tampil.** Menu yang dimatikan tidak muncul.
 
 ## Apa yang terjadi selanjutnya
 

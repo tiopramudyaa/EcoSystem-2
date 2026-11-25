@@ -32,7 +32,16 @@ HR, administrator, dan role mana pun yang diberi menu `Master` › `Employee` di
 1. Buka `Master` › `Employee`. Baris judul menyebut jumlah karyawan yang tampil.
 2. Pakai ikon corong di judul kolom untuk menyaring menurut `ECI`, `Full Name`, `Position`, `Module`, `Employee Group`, `Division`, `Department`, `Home Base`, `Personnel Area`, `Employee Type`, `Status`, dan lainnya. `Clear` mengembalikan filter.
 3. Kolom `Status` berisi `Active`, `Blocked`, atau `Flagged for Deletion`. Orang yang diblokir atau ditandai tidak bisa login.
-4. Klik sebuah baris untuk membuka data karyawan. `Export Excel` mengunduh daftar. `Manage Dropdown Data` membuka daftar dropdown yang dipakai formulir.
+4. Klik sebuah baris untuk membuka data karyawan. `Export Excel` membuka jendela export (lihat "Ekspor daftar" di bawah). `Manage Dropdown Data` membuka daftar dropdown yang dipakai formulir.
+
+### Ekspor daftar
+
+1. Pilih `Export Excel` di atas tabel.
+2. Jendela berjudul `Export Master Employee` terbuka. Isinya daftar `Template` dan semua kotak centang `Fields`.
+3. Centang field yang ingin masuk ke file. Ketik di `Search fields` untuk mencari satu field di daftar panjang. `Select all` mencentang semua field dan `Unselect all` menghapus semua centang.
+4. Untuk memakai pilihan ini lagi, ketik nama di bawah `Save these fields as a template`, pilih `Personal` atau `Global`, lalu pilih `Save`. Template itu kemudian muncul di daftar `Template` dengan tanda `(Personal)` atau `(Global)`.
+5. Lain kali, buka jendela yang sama dan pilih template di `Template`. Field-nya sudah tercentang. Template `Global` buatan rekan ada di daftar yang sama. Pilih `Delete` untuk menghapus template Anda yang tidak dipakai lagi.
+6. Pilih `Export`. File hanya berisi field yang dicentang.
 
 ### Buat karyawan
 
@@ -84,6 +93,14 @@ Pakai ini hanya jika seseorang kehilangan ponsel dan kode pemulihannya sehingga 
 - Orang itu diberi tahu di aplikasi dan lewat email, sehingga reset yang tidak ia minta tidak lolos tanpa terlihat. Jika email tidak dapat dikirim, reset tetap berlaku dan pesannya memberi tahu Anda.
 - Setiap reset tercatat di `Control Center` › `Audit Log` dengan nama Anda dan nama orang itu.
 - `Change Password`: minimal 6 karakter, diketik dua kali. `Change Employee ID`: harus baru, paling banyak 50 karakter, butuh password Anda sendiri, dan mengakhiri sesi orang itu yang sedang berjalan. `Change Role`: minimal satu role harus tetap terpilih, dan memberi seseorang role EC Administrator butuh kode 2FA baru dari Anda. `Delete` tidak bisa dibatalkan.
+
+### Saat mengekspor
+
+- Field yang bisa dicentang adalah kolom export penuh, dari `ECI` sampai `Status`. Baris tetap mengikuti filter di daftar.
+- Semua field tercentang menghasilkan export biasa. Field lebih sedikit menghasilkan sel polos (judul merah, baris pertama dibekukan, tanpa format angka).
+- Minimal satu field harus dicentang. Nama template maksimal 80 karakter dan unik di antara template Anda sendiri di daftar ini: menyimpan dengan nama yang sudah ada mengganti template itu. Nama `Global` juga harus berbeda dari template `Global` lain.
+- Template `Personal` hanya milik Anda. Template `Global` bisa dipakai semua orang yang bisa mengekspor daftar ini, tetapi hanya pembuatnya yang boleh mengubahnya, dan EC Administrator boleh menghapus template `Global` mana pun. `Save` menyimpan field yang tercentang saat itu. Jendela terbuka dengan template yang terakhir Anda pakai di browser ini.
+- Template tidak mengubah siapa yang boleh mengekspor. Field yang kelak dihapus dari export hilang begitu saja dari template Anda.
 
 ## Apa yang terjadi selanjutnya
 

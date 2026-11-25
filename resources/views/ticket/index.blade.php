@@ -1155,7 +1155,12 @@
         // dropdown values are now IDs, and setCustomDropdownValue() needs a matching item
         // already in the panel to resolve the ID back to a display name.
         await loadFilterOptions();
-        restoreTicketFilterState();
+        _suppressFilterFetch = true;
+        try {
+            restoreTicketFilterState();
+        } finally {
+            _suppressFilterFetch = false;
+        }
         loadTickets();
         if (userRole === EC_ADMINISTRATOR_ROLE || userRole === DELIVERY_SUPPORT_USER_ROLE || STAFF_TOGGLE_ROLES.includes(userRole) || userRole === SUPPORT_MANAGER_ROLE || CAN_VIEW_UNASSIGNED_TICKET) updateViewToggle();
         startEmailPolling();
@@ -1248,8 +1253,16 @@
         if (descKw) params.set('description', descKw);
         if (ticketKw) params.set('ticket_number', ticketKw);
 
-        const qs = params.toString();
-        window.location.href = '{{ route("ticket.export") }}' + (qs ? '?' + qs : '');
+        // Pilih field/template dulu; filter di atas tetap ikut terkirim.
+        ExportPicker.open({
+            type: 'ticket',
+            title: 'Export Support Tickets',
+            onConfirm: (cols) => {
+                ExportPicker.appendTo(params, cols);
+                const qs = params.toString();
+                window.location.href = '{{ route("ticket.export") }}' + (qs ? '?' + qs : '');
+            },
+        });
     }
 
     function toggleView(view) {
@@ -2091,8 +2104,15 @@
     // wraps the keyword-search popovers themselves - hiding it mid-fetch force-blurs
     // whichever input the user is still typing in (they'd have to click back in after
     // every debounced search).
+    // Selama restoreTicketFilterState() berjalan (DOMContentLoaded), filterTickets() dan
+    // applyColFilter() ikut memanggil fungsi ini. Fetch ditahan di sini karena
+    // DOMContentLoaded memanggil loadTickets() satu kali setelah restore selesai;
+    // tanpa penahan ini halaman memuat daftar ticket 3 kali sekaligus.
+    let _suppressFilterFetch = false;
+
     function applyAdvancedFilters() {
         currentPage = 1;
+        if (_suppressFilterFetch) return;
         loadTickets(true);
     }
 

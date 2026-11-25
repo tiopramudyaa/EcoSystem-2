@@ -442,7 +442,7 @@ class EmployeeController extends Controller
 
         $filename = 'EMPLOYEE MANAGEMENT ' . now()->timezone('Asia/Jakarta')->format('dmY') . '.xlsx';
 
-        return Excel::download(new EmployeeExport($rows), $filename);
+        return \App\Support\ExportColumns::download($request, 'employee', new EmployeeExport($rows), $filename);
     }
 
     /**

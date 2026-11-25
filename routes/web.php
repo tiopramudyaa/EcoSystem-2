@@ -107,8 +107,15 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('menu:dashboard');
 
+    // ==================== EXPORT TEMPLATES ====================
+    // Template pilihan kolom untuk tombol Export (pribadi per karyawan). Tanpa
+    // middleware menu: izin export dicek di endpoint export tiap list.
+    Route::get('/export-templates/{type}', [\App\Http\Controllers\ExportTemplateController::class, 'index'])->name('export-templates.index')->where('type', '[a-z_]+');
+    Route::post('/export-templates/{type}', [\App\Http\Controllers\ExportTemplateController::class, 'store'])->name('export-templates.store')->where('type', '[a-z_]+');
+    Route::post('/export-templates/{id}/delete', [\App\Http\Controllers\ExportTemplateController::class, 'destroy'])->name('export-templates.destroy')->whereNumber('id');
+
     // ==================== AI ASSISTANT ====================
-    Route::get('/ai-assistant', [\App\Http\Controllers\AiAssistantController::class, 'index'])->name('ai-assistant')->middleware('menu:ai-assistant');
+    Route::get('/ai-assistant',[\App\Http\Controllers\AiAssistantController::class, 'index'])->name('ai-assistant')->middleware('menu:ai-assistant');
     Route::post('/ai-assistant/chat', [\App\Http\Controllers\AiAssistantController::class, 'chat'])->name('ai-assistant.chat')->middleware('menu:ai-assistant');
     // Riwayat percakapan (arsip DB, per-employee - lihat AiAssistantController::
     // conversations()) - inilah yang membuat history tetap muncul lintas
