@@ -214,6 +214,12 @@
                     </div>
                 </div>
                 @if($can('delivery-project.add-new'))
+                <button type="button" onclick="openProjectImportModal()"
+                        class="inline-flex items-center gap-2 border border-gray-300 bg-white text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-50 transition duration-300 text-sm sm:text-base">
+                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span class="hidden sm:inline">Import Excel</span>
+                    <span class="sm:hidden">Import</span>
+                </button>
                 <a href="{{ route('projects.create') }}"
                    class="primary-gradient text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition duration-300 text-sm sm:text-base">
                     <span class="hidden sm:inline">Add New</span>
@@ -229,12 +235,25 @@
             $aeOptions       = $projects->pluck('ae_name')->filter()->unique()->sort()->values();
             $ownerOptions    = $projects->pluck('project_owner')->filter()->unique()->sort()->values();
             $customerOptions = $projects->map(fn($p) => $p->client->basicData->name_1 ?? null)->filter()->unique()->sort()->values();
+            $pmOptions       = collect($projectManagers)->flatten()->filter()->unique(fn($n) => mb_strtolower($n))->sort()->values();
+
+            // Helper per project untuk kolom baru (dipakai tabel desktop & card mobile).
+            $projPmNames  = fn($p) => $projectManagers[$p->id] ?? [];
+            // data-pm: nama PM dipisah "|" supaya filter bisa mencocokkan salah satu
+            // PM secara utuh (project bisa punya lebih dari satu PM).
+            $projPmData   = fn($p) => mb_strtolower(implode('|', $projPmNames($p)));
+            $projProgress = fn($p) => (float) ($progress[$p->id] ?? 0);
+            $projContract = function ($p) {
+                $start = optional($p->contract_start_date)->format('d M Y') ?? '-';
+                $end   = optional($p->contract_end_date)->format('d M Y') ?? '-';
+                return [$start, $end];
+            };
         @endphp
         {{-- Mobile-only search. On desktop, filtering & sorting live in the table
              header (like the Support Tickets list). --}}
         <div class="p-4 lg:hidden">
             <input type="search" id="project-search"
-                placeholder="Search by IO, customer, type, project name, AE, or owner..."
+                placeholder="Search by IO, customer, type, project name, AE, owner, PM, or method..."
                 class="block w-full border border-gray-300 rounded-lg shadow-sm primary-focus transition text-sm px-4 py-2.5">
         </div>
         {{-- MOBILE VIEW: Card Layout --}}
@@ -249,8 +268,11 @@
                          data-status="{{ strtolower($project->status ?? '') }}"
                          data-deadline="{{ $deadlineFlag }}"
                          data-ae="{{ strtolower($project->ae_name ?? '') }}"
+                         data-owner="{{ strtolower($project->project_owner ?? '') }}"
+                         data-pm="{{ $projPmData($project) }}"
+                         data-method="{{ strtolower($project->delivery_method ?? '') }}"
                          data-customer="{{ strtolower($project->client->basicData->name_1 ?? '') }}"
-                         data-searchable-content="{{ strtolower(($project->io_number ?? '') . ' ' . ($project->client->basicData->name_1 ?? '') . ' ' . $project->project_type . ' ' . $project->name . ' ' . ($project->ae_name ?? '') . ' ' . $project->project_owner . ' ' . $project->status . ' ' . $project->category) }}">
+                         data-searchable-content="{{ mb_strtolower(($project->io_number ?? '') . ' ' . ($project->client->basicData->name_1 ?? '') . ' ' . $project->project_type . ' ' . $project->name . ' ' . ($project->ae_name ?? '') . ' ' . $project->project_owner . ' ' . implode(' ', $projPmNames($project)) . ' ' . ($project->delivery_method ?? '') . ' ' . $project->status . ' ' . $project->category) }}">
                         {{-- Card Header --}}
                         <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
                             <div class="flex justify-between items-start">
@@ -279,10 +301,38 @@
                                 <p class="text-sm text-gray-500">AE:</p>
                                 <p class="text-sm font-medium text-gray-900 mt-1">{{ $project->ae_name ?? 'N/A' }}</p>
                             </div>
-                            {{-- Project Owner --}}
+                            {{-- Contract Start & End Date --}}
+                            @php [$cStart, $cEnd] = $projContract($project); @endphp
                             <div>
-                                <p class="text-sm text-gray-500">Project Owner:</p>
+                                <p class="text-sm text-gray-500">Contract Start &amp; End Date:</p>
+                                <p class="text-sm font-medium text-gray-900 mt-1">{{ $cStart }} to {{ $cEnd }}</p>
+                            </div>
+                            {{-- Delivery Owner (dulu "Project Owner") --}}
+                            <div>
+                                <p class="text-sm text-gray-500">Delivery Owner:</p>
                                 <p class="text-sm font-medium text-gray-900 mt-1">{{ $project->project_owner ?? 'N/A' }}</p>
+                            </div>
+                            {{-- Project Manager (Team Members) --}}
+                            <div>
+                                <p class="text-sm text-gray-500">Project Manager:</p>
+                                <p class="text-sm font-medium text-gray-900 mt-1">{{ implode(', ', $projPmNames($project)) ?: '-' }}</p>
+                            </div>
+                            {{-- Progress & Method --}}
+                            @php $pct = $projProgress($project); @endphp
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <p class="text-sm text-gray-500">Progress:</p>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <div class="flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                            <div class="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600" style="width: {{ min(100, max(0, $pct)) }}%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-900">{{ $pct }}%</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Method:</p>
+                                    <p class="text-sm font-medium text-gray-900 mt-1">{{ $project->delivery_method ?: '-' }}</p>
+                                </div>
                             </div>
                             {{-- Status Badges --}}
                             <div class="flex flex-wrap gap-2">
@@ -371,6 +421,25 @@
                                     @include('delivery.project.projects.partials.proj-clear', ['key' => 'customer'])
                                 </div>
                             </th>
+                            {{-- Contract Start & End Date: sort by start or end --}}
+                            <th class="proj-th relative bg-gray-50 border-b">
+                                <button type="button" class="proj-th-btn" onclick="toggleProjPanel('proj-panel-contract', this)">
+                                    <span class="whitespace-nowrap">Contract Start &amp; End Date</span>
+                                    <span id="proj-sort-contract" class="proj-sort-icon">⇅</span>
+                                </button>
+                                <div id="proj-panel-contract" class="proj-panel hidden">
+                                    <label class="proj-panel-label">Sort by Start Date</label>
+                                    <div class="flex gap-2 mb-2">
+                                        <button type="button" onclick="projSort('start','asc')" class="proj-sort-btn">&uarr; Asc</button>
+                                        <button type="button" onclick="projSort('start','desc')" class="proj-sort-btn">&darr; Desc</button>
+                                    </div>
+                                    <label class="proj-panel-label">Sort by End Date</label>
+                                    <div class="flex gap-2">
+                                        <button type="button" onclick="projSort('end','asc')" class="proj-sort-btn">&uarr; Asc</button>
+                                        <button type="button" onclick="projSort('end','desc')" class="proj-sort-btn">&darr; Desc</button>
+                                    </div>
+                                </div>
+                            </th>
                             {{-- Project Type: sort + select filter --}}
                             <th class="proj-th relative bg-gray-50 border-b">
                                 <button type="button" class="proj-th-btn" onclick="toggleProjPanel('proj-panel-type', this)">
@@ -419,10 +488,12 @@
                                     @include('delivery.project.projects.partials.proj-clear', ['key' => 'ae'])
                                 </div>
                             </th>
-                            {{-- Project Owner: sort + select filter --}}
+                            {{-- Delivery Owner (dulu berlabel "Project Owner"; isinya tetap
+                                 kolom project_owner dari General Information). Key filter
+                                 tetap 'owner' supaya filter tersimpan user tidak hilang. --}}
                             <th class="proj-th relative bg-gray-50 border-b">
                                 <button type="button" class="proj-th-btn" onclick="toggleProjPanel('proj-panel-owner', this)">
-                                    <span>Project Owner</span>
+                                    <span>Delivery Owner</span>
                                     <span id="proj-sort-owner" class="proj-sort-icon">⇅</span>
                                     @include('delivery.project.projects.partials.proj-funnel', ['key' => 'owner'])
                                 </button>
@@ -430,10 +501,54 @@
                                     @include('delivery.project.projects.partials.proj-sort-btns', ['key' => 'owner'])
                                     <label class="proj-panel-label">Filter</label>
                                     <select onchange="projSetFilter('owner', this.value)" class="proj-panel-input">
-                                        <option value="">All Owners</option>
+                                        <option value="">All Delivery Owners</option>
                                         @foreach($ownerOptions as $o)<option value="{{ strtolower($o) }}">{{ $o }}</option>@endforeach
                                     </select>
                                     @include('delivery.project.projects.partials.proj-clear', ['key' => 'owner'])
+                                </div>
+                            </th>
+                            {{-- Project Manager (dari Team Members): sort + select filter --}}
+                            <th class="proj-th relative bg-gray-50 border-b">
+                                <button type="button" class="proj-th-btn" onclick="toggleProjPanel('proj-panel-pm', this)">
+                                    <span>Project Manager</span>
+                                    <span id="proj-sort-pm" class="proj-sort-icon">⇅</span>
+                                    @include('delivery.project.projects.partials.proj-funnel', ['key' => 'pm'])
+                                </button>
+                                <div id="proj-panel-pm" class="proj-panel hidden">
+                                    @include('delivery.project.projects.partials.proj-sort-btns', ['key' => 'pm'])
+                                    <label class="proj-panel-label">Filter</label>
+                                    <select onchange="projSetFilter('pm', this.value)" class="proj-panel-input"
+                                            data-searchable="true" data-search-placeholder="Search project manager...">
+                                        <option value="">All Project Managers</option>
+                                        @foreach($pmOptions as $pm)<option value="{{ mb_strtolower($pm) }}">{{ $pm }}</option>@endforeach
+                                    </select>
+                                    @include('delivery.project.projects.partials.proj-clear', ['key' => 'pm'])
+                                </div>
+                            </th>
+                            {{-- Progress (Overall Project Progress dari Project Planning): sort --}}
+                            <th class="proj-th bg-gray-50 border-b">
+                                <button type="button" class="proj-th-btn" onclick="projToggleSort('progress')" title="Sort by Progress">
+                                    <span>Progress</span>
+                                    <span id="proj-sort-progress" class="proj-sort-icon">⇅</span>
+                                </button>
+                            </th>
+                            {{-- Method (Delivery Method dari General Information): sort + select filter --}}
+                            <th class="proj-th relative bg-gray-50 border-b">
+                                <button type="button" class="proj-th-btn" onclick="toggleProjPanel('proj-panel-method', this)">
+                                    <span>Method</span>
+                                    <span id="proj-sort-method" class="proj-sort-icon">⇅</span>
+                                    @include('delivery.project.projects.partials.proj-funnel', ['key' => 'method'])
+                                </button>
+                                <div id="proj-panel-method" class="proj-panel hidden">
+                                    @include('delivery.project.projects.partials.proj-sort-btns', ['key' => 'method'])
+                                    <label class="proj-panel-label">Filter</label>
+                                    <select onchange="projSetFilter('method', this.value)" class="proj-panel-input">
+                                        <option value="">All Methods</option>
+                                        <option value="onsite">Onsite</option>
+                                        <option value="hybrid">Hybrid</option>
+                                        <option value="wfh">WFH</option>
+                                    </select>
+                                    @include('delivery.project.projects.partials.proj-clear', ['key' => 'method'])
                                 </div>
                             </th>
                             {{-- Category: sort + select filter --}}
@@ -490,9 +605,14 @@
                                     data-status="{{ strtolower($project->status ?? '') }}"
                                     data-ae="{{ strtolower($project->ae_name ?? '') }}"
                                     data-owner="{{ strtolower($project->project_owner ?? '') }}"
+                                    data-pm="{{ $projPmData($project) }}"
+                                    data-method="{{ strtolower($project->delivery_method ?? '') }}"
+                                    data-progress="{{ $projProgress($project) }}"
+                                    data-start="{{ optional($project->contract_start_date)->timestamp ?? 0 }}"
+                                    data-end="{{ optional($project->contract_end_date)->timestamp ?? 0 }}"
                                     data-customer="{{ strtolower($project->client->basicData->name_1 ?? '') }}"
                                     data-updated="{{ optional($project->last_update_date)->timestamp ?? 0 }}"
-                                    data-searchable-content="{{ strtolower(($project->io_number ?? '') . ' ' . ($project->client->basicData->name_1 ?? '') . ' ' . $project->project_type . ' ' . $project->name . ' ' . ($project->ae_name ?? '') . ' ' . $project->project_owner . ' ' . $project->status . ' ' . $project->category) }}">
+                                    data-searchable-content="{{ mb_strtolower(($project->io_number ?? '') . ' ' . ($project->client->basicData->name_1 ?? '') . ' ' . $project->project_type . ' ' . $project->name . ' ' . ($project->ae_name ?? '') . ' ' . $project->project_owner . ' ' . implode(' ', $projPmNames($project)) . ' ' . ($project->delivery_method ?? '') . ' ' . $project->status . ' ' . $project->category) }}">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {{ optional($project->last_update_date)->format('d M Y') ?? '-' }}
                                     </td>
@@ -503,6 +623,11 @@
                                         <div class="text-sm font-medium text-gray-900">
                                             {{ $project->client->basicData->name_1 ?? 'N/A' }}
                                         </div>
+                                    </td>
+                                    @php [$cStart, $cEnd] = $projContract($project); @endphp
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <div class="text-gray-700">{{ $cStart }}</div>
+                                        <div class="text-xs text-gray-400">to {{ $cEnd }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {{ $project->project_type }}
@@ -517,6 +642,25 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {{ $project->project_owner ?? 'N/A' }}
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">
+                                        @forelse($projPmNames($project) as $pmName)
+                                            <div class="whitespace-nowrap">{{ $pmName }}</div>
+                                        @empty
+                                            <span class="text-gray-400">-</span>
+                                        @endforelse
+                                    </td>
+                                    @php $pct = $projProgress($project); @endphp
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <div class="flex items-center gap-2" title="Overall Project Progress">
+                                            <div class="w-16 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                                <div class="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600" style="width: {{ min(100, max(0, $pct)) }}%"></div>
+                                            </div>
+                                            <span class="font-medium text-gray-700">{{ $pct }}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ $project->delivery_method ?: '-' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
@@ -537,7 +681,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="px-6 py-12 text-center">
+                                    <td colspan="13" class="px-6 py-12 text-center">
                                         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                         </svg>
@@ -548,7 +692,7 @@
                             @endforelse
                             {{-- No Results Row --}}
                             <tr id="desktop-no-results-row" class="hidden">
-                                <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">
+                                <td colspan="13" class="px-6 py-4 text-center text-sm text-gray-500">
                                     No projects match your search.
                                 </td>
                             </tr>
@@ -557,6 +701,10 @@
             </div>
         </div>
     </div>
+
+    @if($can('delivery-project.add-new'))
+        @include('delivery.project.projects.partials.import-projects-modal')
+    @endif
 
     <style>
         /* Smooth scroll behavior */
@@ -747,7 +895,12 @@
         // Operates on the already-rendered rows. Functions are global because the
         // header markup wires them via inline onclick/onchange handlers.
         const PROJ_TEXT_FILTERS = ['io', 'name'];
-        const PROJ_SORT_KEYS    = ['io', 'customer', 'type', 'name', 'ae', 'owner', 'category', 'status', 'updated'];
+        // Filter "salah satu dari daftar": data-* berisi beberapa nilai dipisah "|"
+        // (project bisa punya lebih dari satu Project Manager).
+        const PROJ_LIST_FILTERS = ['pm'];
+        // Sort numerik (timestamp / persen); key lain diurutkan sebagai teks.
+        const PROJ_NUMERIC_SORT = ['updated', 'start', 'end', 'progress'];
+        const PROJ_SORT_KEYS    = ['io', 'customer', 'type', 'name', 'ae', 'owner', 'pm', 'method', 'progress', 'category', 'status', 'updated'];
         const projState = { sortKey: null, sortDir: 'asc', filters: {} };
 
         // ── Filter tersimpan ─────────────────────────────────────────────────────
@@ -755,7 +908,7 @@
         // localStorage (per user, per browser) dan dipasang lagi saat halaman ini
         // dibuka kembali; hilang hanya kalau user sendiri yang meng-clear-nya.
         // Sort sengaja tidak ikut disimpan: tidak ada kontrol untuk melepasnya.
-        const PROJ_FILTER_KEYS  = ['io', 'customer', 'type', 'name', 'ae', 'owner', 'category', 'status', 'deadline'];
+        const PROJ_FILTER_KEYS  = ['io', 'customer', 'type', 'name', 'ae', 'owner', 'pm', 'method', 'category', 'status', 'deadline'];
         const PROJ_FILTER_STORE ='deliveryProjects.index.filters.u{{ auth()->id() }}';
         let projFiltersRestored = false;
 
@@ -820,7 +973,8 @@
                     const val = f[key];
                     if (!val) continue;
                     const data = row.dataset[key] || '';
-                    if (PROJ_TEXT_FILTERS.includes(key)) { if (!data.includes(val)) { ok = false; break; } }
+                    if (PROJ_LIST_FILTERS.includes(key)) { if (!data.split('|').includes(val)) { ok = false; break; } }
+                    else if (PROJ_TEXT_FILTERS.includes(key)) { if (!data.includes(val)) { ok = false; break; } }
                     else if (data !== val) { ok = false; break; }
                 }
                 row.style.display = ok ? '' : 'none';
@@ -831,7 +985,7 @@
                 const k = projState.sortKey;
                 const dir = projState.sortDir === 'desc' ? -1 : 1;
                 visible.sort((a, b) => {
-                    if (k === 'updated') return ((Number(a.dataset.updated) || 0) - (Number(b.dataset.updated) || 0)) * dir;
+                    if (PROJ_NUMERIC_SORT.includes(k)) return ((Number(a.dataset[k]) || 0) - (Number(b.dataset[k]) || 0)) * dir;
                     return (a.dataset[k] || '').localeCompare(b.dataset[k] || '', undefined, { numeric: true, sensitivity: 'base' }) * dir;
                 });
                 visible.forEach(r => tbody.appendChild(r));
@@ -867,7 +1021,8 @@
                         // diabaikan, bukan dianggap tidak cocok.
                         if (!val || !(key in card.dataset)) continue;
                         const data = card.dataset[key] || '';
-                        if (PROJ_TEXT_FILTERS.includes(key)) { if (!data.includes(val)) { ok = false; break; } }
+                        if (PROJ_LIST_FILTERS.includes(key)) { if (!data.split('|').includes(val)) { ok = false; break; } }
+                        else if (PROJ_TEXT_FILTERS.includes(key)) { if (!data.includes(val)) { ok = false; break; } }
                         else if (data !== val) { ok = false; break; }
                     }
                 }
@@ -930,7 +1085,15 @@
                 if (projState.sortKey === k) { el.textContent = projState.sortDir === 'asc' ? '↑' : '↓'; el.classList.add('active'); }
                 else { el.textContent = '⇅'; el.classList.remove('active'); }
             });
-            ['io', 'customer', 'type', 'name', 'ae', 'owner', 'category', 'status'].forEach(k => {
+            // Kolom Contract punya dua sort (start / end) dengan satu ikon.
+            const contractIcon = document.getElementById('proj-sort-contract');
+            if (contractIcon) {
+                const onContract = ['start', 'end'].includes(projState.sortKey);
+                contractIcon.textContent = onContract ? (projState.sortDir === 'asc' ? '↑' : '↓') : '⇅';
+                contractIcon.classList.toggle('active', onContract);
+                contractIcon.title = onContract ? ('Sorted by ' + projState.sortKey + ' date') : '';
+            }
+            ['io', 'customer', 'type', 'name', 'ae', 'owner', 'pm', 'method', 'category', 'status'].forEach(k => {
                 const fn = document.getElementById('proj-funnel-' + k);
                 if (fn) fn.classList.toggle('active', !!projState.filters[k]);
             });

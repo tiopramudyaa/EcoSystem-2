@@ -100,8 +100,18 @@ class PlanCostDocumentLink
             throw new \RuntimeException('owner has no OneDrive folder');
         }
 
-        $planCost = collect($this->oneDrive->listSubFoldersByParentId($ownerFolderId))
-            ->first(fn($f) => mb_strtolower($f['name']) === 'plan cost');
+        $children = collect($this->oneDrive->listSubFoldersByParentId($ownerFolderId));
+        $planCost = $children->first(fn($f) => mb_strtolower($f['name']) === 'plan cost');
+
+        // Delivery Project: "Plan Cost" kini berada di dalam "01. Discover"
+        // (lihat ProjectDocumentFolderService::planCostFolderId).
+        if (!$planCost) {
+            $discover = $children->first(fn($f) => mb_strtolower($f['name']) === '01. discover');
+            if ($discover) {
+                $planCost = collect($this->oneDrive->listSubFoldersByParentId($discover['id']))
+                    ->first(fn($f) => mb_strtolower($f['name']) === 'plan cost');
+            }
+        }
 
         if (!$planCost) {
             throw new \RuntimeException('"Plan Cost" folder not found');

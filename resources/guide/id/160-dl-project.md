@@ -3,9 +3,9 @@ key: dl-project
 chapter: delivery
 order: 10
 title: Project
-summary: Temukan delivery project, saring dengan kartu ringkasan, tambah project baru, ekspor daftar, dan tutup atau hapus project.
+summary: Temukan delivery project, saring dengan kartu ringkasan, tambah project baru atau impor banyak project dari Excel, ekspor daftar, dan tutup atau hapus project.
 requires: [delivery.project, delivery-project.add-new, delivery-project.close-project, delivery-project.delete-project]
-updated: 2026-11-02
+updated: 2026-11-25
 ---
 `Delivery` › `Project` mendaftar semua delivery project perusahaan. Dari sini Anda membuka project, menambah project baru, dan mengekspor daftar.
 
@@ -28,7 +28,7 @@ Project head, project administrator, RPMO, dan manajemen, serta role mana pun ya
 
 1. Buka `Delivery` › `Project`. Tiga tab di atas adalah `Project`, `Issues`, dan `Planning`. `Project` adalah daftarnya.
 2. Baca kartu `SUMMARY`: `Total Projects`, `Open`, `In Process`, `Closed`, `On Track`, `At Risk`, `At Critical`, dan `Ending ≤ 30 days`. Klik kartu untuk menyaring daftar.
-3. Di tabel, setiap project menampilkan `Last Update`, `IO Number`, `Customer`, `Project Type`, `Project Name`, `AE`, `Project Owner`, `Category`, dan `Project Status`. Project yang paling baru diperbarui ada di atas. Pakai panah di judul kolom untuk mengurutkan dan ikon corong untuk menyaring.
+3. Di tabel, setiap project menampilkan `Last Update`, `IO Number`, `Customer`, `Contract Start & End Date`, `Project Type`, `Project Name`, `AE`, `Delivery Owner`, `Project Manager`, `Progress`, `Method`, `Category`, dan `Project Status`. Project yang paling baru diperbarui ada di atas. Pakai panah di judul kolom untuk mengurutkan dan ikon corong untuk menyaring. `Contract Start & End Date` bisa diurutkan menurut tanggal mulai atau tanggal selesai. `Progress` diurutkan dengan sekali klik pada judulnya. Di ponsel, field yang sama tampil di setiap kartu project.
 4. Klik sebuah project untuk membuka halaman detailnya (lihat topik detail project).
 5. Pilih `Export Excel`, lalu `Project List`, untuk mengunduh daftar. Item lain di menu itu (`Project Revenue`, `Invoiced Terms of Payment`) tetap langsung mengunduh seperti sebelumnya.
 
@@ -52,6 +52,8 @@ Project head, project administrator, RPMO, dan manajemen, serta role mana pun ya
 4. Formulir yang sama juga memuat data penjualan (`Delivery Information`), `Delivery Data`, `Team Members` pertama, dan `Location Information`. Isi yang sudah Anda ketahui, sisanya dapat ditambahkan nanti di halaman detail project.
 5. Kirim formulir. Project baru lalu muncul di daftar.
 
+Untuk menambah banyak project sekaligus, `Import Excel` (di samping `Add New`) membacanya dari file Excel. Fitur ini punya topik sendiri di bab ini.
+
 ### Tutup, buka kembali, atau hapus project
 
 Di halaman detail project:
@@ -60,6 +62,16 @@ Di halaman detail project:
 - `Delete Project` menghapus project selamanya. Bila project masih punya data terkait, EcoSystem menolak dan menyebut masih ada data terkait. Tutup saja project bila pekerjaan sudah selesai.
 
 ## Aturan yang perlu diketahui
+
+### Asal isi kolom
+
+- `Contract Start & End Date` adalah tanggal kontrak di `General Information` project.
+- `Delivery Owner` adalah orang yang dipilih sebagai `Project Owner` di `General Information`. Yang berubah hanya judul kolom di daftar; formulir tetap menamai field-nya `Project Owner`.
+- `Project Manager` memuat semua anggota ber-role `Project Manager` di `Team Members` project. Satu project bisa menampilkan lebih dari satu nama. Project manager yang tersimpan di project lama sebelum ada `Team Members` juga ditampilkan. Tanda strip berarti belum ada anggota tim dengan role itu.
+- `Progress` adalah angka yang sama dengan `Overall Project Progress` di `Project Planning`. Nilainya tetap 0% sampai project punya planning dengan bobot phase.
+- `Method` adalah `Delivery Method` (`Onsite`, `Hybrid`, atau `WFH`). Tanda strip berarti belum diisi.
+- Menyaring `Project Manager` dengan satu nama menampilkan semua project tempat orang itu menjadi salah satu project manager.
+- Kolom `Project Manager` di export `Project List` mengikuti aturan yang sama dengan daftar.
 
 ### Saat mengekspor
 
@@ -82,8 +94,12 @@ Project baru muncul di daftar dan di laporan yang membaca project, seperti `Coll
 
 ## Pertanyaan umum
 
-**Tidak ada tombol `Add New`.** Role Anda tidak memiliki `Add New Project`. Minta administrator.
+**Tidak ada tombol `Add New`.** Role Anda tidak memiliki `Add New Project`. Minta administrator. Tombol `Import Excel` memerlukan izin yang sama.
 
 **Saya tidak bisa mengubah apa pun pada project.** Kemungkinan project sudah ditutup. Buka kembali dulu bila Anda berhak.
 
-<!-- sources: routes/web.php, resources/views/delivery/project/projects/index.blade.php, resources/views/delivery/project/projects/create.blade.php -->
+**`Project Manager` berisi tanda strip.** Belum ada anggota di `Team Members` project itu yang ber-role `Project Manager`. Tambah atau ubah anggota di halaman detail project.
+
+**`Progress` 0% padahal pekerjaan sudah berjalan.** Progres dibaca dari `Project Planning`. Pastikan planning punya phase yang terlihat dengan bobot, dan activity sudah diisi progresnya.
+
+<!-- sources: routes/web.php, app/Http/Controllers/DeliveryProjectController.php (index, export, projectManagerNames), app/Models/DeliveryProject.php (calculateOverallProgress), resources/views/delivery/project/projects/index.blade.php, resources/views/delivery/project/projects/create.blade.php -->
