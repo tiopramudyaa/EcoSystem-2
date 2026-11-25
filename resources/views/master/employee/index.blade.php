@@ -1661,8 +1661,16 @@ const canEmployeeAction = {{ $can('master.employee.action') ? 'true' : 'false' }
         Object.entries(getCurrentFilters()).forEach(([key, value]) => {
             if (value) params.set(key, value);
         });
-        const qs = params.toString();
-        window.location.href = '{{ route("master.employee.export") }}' + (qs ? '?' + qs : '');
+        // Pilih field/template dulu; filter di atas tetap ikut terkirim.
+        ExportPicker.open({
+            type: 'employee',
+            title: 'Export Master Employee',
+            onConfirm: (cols) => {
+                ExportPicker.appendTo(params, cols);
+                const qs = params.toString();
+                window.location.href = '{{ route("master.employee.export") }}' + (qs ? '?' + qs : '');
+            },
+        });
     }
 
     function resetFilters() {

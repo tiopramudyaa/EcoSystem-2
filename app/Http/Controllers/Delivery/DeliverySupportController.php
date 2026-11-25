@@ -142,7 +142,9 @@ class DeliverySupportController extends Controller
         ->sort(fn ($a, $b) => strcasecmp($a['customer'], $b['customer']) ?: strcasecmp($a['name'], $b['name']))
         ->values();
 
-        return \Maatwebsite\Excel\Facades\Excel::download(
+        return \App\Support\ExportColumns::download(
+            $request,
+            'delivery_support',
             new \App\Exports\DeliverySupportExport($rows),
             'Delivery_Support_' . now()->format('Ymd_His') . '.xlsx'
         );

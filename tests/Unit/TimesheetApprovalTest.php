@@ -71,4 +71,34 @@ class TimesheetApprovalTest extends TestCase
         $this->assertStringNotContainsString('Only managers can reject', $source);
         $this->assertStringContainsString('TimesheetApproval::canApprove', $source);
     }
+
+    public function test_every_type_has_its_own_log_permission_registered_by_seeder_and_migration(): void
+    {
+        $this->assertSame(array_keys(TimesheetApproval::PERMISSIONS), array_keys(TimesheetApproval::LOG_PERMISSIONS));
+        $this->assertCount(4, array_unique(TimesheetApproval::LOG_PERMISSIONS));
+
+        $seeder    = file_get_contents(base_path('database/seeders/MenuSeeder.php'));
+        $migration = file_get_contents(base_path('database/migrations/2026_11_25_000001_add_timesheet_log_type_permissions.php'));
+
+        foreach (TimesheetApproval::LOG_PERMISSIONS as $slug) {
+            $this->assertStringContainsString("'{$slug}'", $seeder, "{$slug} is missing from MenuSeeder");
+            $this->assertStringContainsString("'{$slug}'", $migration, "{$slug} is missing from the migration");
+        }
+    }
+
+    public function test_tabs_come_from_log_permissions_with_no_role_map_or_fallback(): void
+    {
+        $calendar = file_get_contents(base_path('app/Http/Controllers/CalendarController.php'));
+        $this->assertStringContainsString('TimesheetApproval::loggableTypes', $calendar);
+        $this->assertStringNotContainsString('$typeMap', $calendar);
+        $this->assertStringNotContainsString("['project', 'support', 'office']", $calendar);
+
+        $controller = file_get_contents(base_path('app/Http/Controllers/TimesheetController.php'));
+        $this->assertGreaterThanOrEqual(3, substr_count($controller, 'typeNotAllowedResponse('));
+    }
+
+    public function test_an_unknown_employee_may_log_nothing(): void
+    {
+        $this->assertSame([], TimesheetApproval::loggableTypes(null));
+    }
 }

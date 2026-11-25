@@ -5,7 +5,7 @@ order: 115
 title: Timesheets
 summary: Catat jam kerja pada project, ticket, atau pekerjaan kantor, kirim untuk persetujuan, dan minta akses terlambat.
 requires: [calendar.timesheets]
-updated: 2026-11-21
+updated: 2026-11-25
 ---
 `Calendar` › `Timesheets` adalah tempat Anda mencatat jam kerja dan mengirimnya untuk persetujuan.
 
@@ -17,6 +17,7 @@ Employee yang memiliki `Timesheets` di bawah `Calendar`. Head dan approver memak
 
 - Ketahui project atau ticket yang Anda kerjakan, tanggalnya, jam mulai dan selesai, serta apa yang Anda lakukan.
 - Tombol `Create Timesheet` hanya tampil bila role Anda mengizinkan. Jika tidak ada, hubungi administrator.
+- Tipe yang bisa Anda catat (`Project`, `Non Project`, `Support`, `Office`) bergantung pada role Anda. Lihat "Tipe yang bisa dicatat" di `Aturan yang perlu diketahui`. Jika suatu tipe tidak ada, hubungi administrator.
 
 ## Langkah demi langkah
 
@@ -60,6 +61,15 @@ Kartu di atas daftar menghitung entri Anda sebagai `Draft`, `Submitted`, `Approv
 > [!NOTE]
 > Jika Anda berwenang menyetujui timesheet, Anda juga melihat `Approve` dan `Reject`, termasuk untuk beberapa entri sekaligus. Selalu tulis alasan yang jelas saat menolak.
 
+### Ekspor timesheet
+
+1. Di `Calendar` › `Timesheets`, pilih `Export Timesheet` di atas daftar. Tombol ini hanya muncul untuk orang yang boleh menyetujui timesheet. Bila daftar kosong untuk filter saat ini, tidak ada yang diekspor dan Anda diberi tahu.
+2. Jendela berjudul `Export Timesheet (nama tab)` terbuka. Isinya daftar `Template` dan semua kotak centang `Fields`.
+3. Centang field yang ingin masuk ke file. Ketik di `Search fields` untuk mencari satu field di daftar panjang. `Select all` mencentang semua field dan `Unselect all` menghapus semua centang.
+4. Untuk memakai pilihan ini lagi, ketik nama di bawah `Save these fields as a template`, pilih `Personal` atau `Global`, lalu pilih `Save`. Template itu kemudian muncul di daftar `Template` dengan tanda `(Personal)` atau `(Global)`.
+5. Lain kali, buka jendela yang sama dan pilih template di `Template`. Field-nya sudah tercentang. Template `Global` buatan rekan ada di daftar yang sama. Pilih `Delete` untuk menghapus template Anda yang tidak dipakai lagi.
+6. Pilih `Export`. File hanya berisi field yang dicentang.
+
 ## Aturan yang perlu diketahui
 
 Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar, EcoSystem menampilkan pesan dan tidak menyimpan.
@@ -67,6 +77,9 @@ Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar,
 ### Untuk setiap entri
 
 - Membuat timesheet memerlukan fungsi `Create Timesheet` di `Menu Access`. Tanpa fungsi itu permintaan ditolak, meskipun dikirim langsung.
+- Tipe yang bisa Anda catat diatur per tipe di `Menu Access`, di bawah `Timesheets`: `Log Project Timesheet`, `Log Non Project Timesheet`, `Log Support Timesheet`, dan `Log Office Timesheet`. Tab dan pilihan `Type` hanya menampilkan tipe yang Anda pegang, digabung dari semua role Anda. Jika tidak memegang satu pun, halaman menampilkan pemberitahuan dan `Create Timesheet` disembunyikan. Tidak ada cadangan "semua tipe". Menyimpan, mengubah, atau mengirim entri milik sendiri dengan tipe yang tidak Anda pegang ditolak, meskipun dikirim langsung.
+- Secara bawaan `Log Project` dan `Log Non Project` untuk Delivery Project Head, Delivery Project User, dan Helpdesk, `Log Support` untuk Delivery Support User, Delivery Support Head, dan Helpdesk, serta `Log Office` untuk EC User, Delivery RPMO Head, dan Helpdesk. EC Administrator memegang keempatnya. Role lain, misalnya External Consultant, tidak memegang satu pun sampai administrator mengaktifkannya.
+- Approver (siapa pun yang memegang fungsi `Approve or Reject`) melihat halaman persetujuan untuk tipe itu, bukan entri miliknya sendiri.
 - Tanggal tidak boleh di masa depan.
 - Anda hanya bisa membuat entri untuk diri sendiri, kecuali EC Administrator, RPMO Head, serta Head of Project dan Head of Support.
 - Memindahkan entri yang sudah ada ke tanggal lain memeriksa lagi batas periode untuk tanggal baru.
@@ -107,6 +120,21 @@ Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar,
 - Penolakan memerlukan alasan tertulis. Karyawan melihatnya, dapat memperbaiki entri (kembali ke `Draft`), dan mengirimnya lagi.
 - Entri yang sudah disetujui bersifat final: tidak dapat dibuka kembali atau diubah.
 - Hanya `Draft` yang bisa dihapus, kecuali Anda memegang `Delete Timesheet in Any Status` (secara bawaan hanya EC Administrator).
+
+### Saat mengekspor
+
+- Field yang bisa dicentang bergantung pada tab tipe yang sedang terbuka (`All`, `Project`, `Non Project`, `Support`, atau `Office`), karena tiap tab punya kolom sendiri. Hanya tipe yang boleh Anda setujui yang diekspor.
+- Template hanya memilih kolom. Baris yang diekspor tetap ditentukan oleh filter, kartu, dan pencarian yang aktif di daftar.
+- Bila semua field dicentang, hasilnya export penuh yang biasa. Bila field lebih sedikit, file berisi sel polos: baris judul merah, baris pertama dibekukan dan lebar kolom menyesuaikan, tanpa format angka dan perataan seperti export penuh.
+- Minimal satu field harus dicentang, dan template butuh nama sampai 80 karakter.
+- Template `Personal` hanya dilihat dan dipakai oleh Anda. Template `Global` dilihat dan dipakai semua orang yang bisa membuka export ini, dan diberi tanda nama pembuatnya.
+- Hanya pembuatnya yang boleh mengubah template. Orang lain boleh memakai template `Global` tetapi tidak boleh mengubah atau menghapusnya; untuk menyimpan variasi, mereka menyimpannya dengan nama lain. EC Administrator boleh menghapus template `Global` mana pun.
+- Setiap daftar punya field dan template sendiri. Untuk timesheet artinya satu set per tab.
+- Di antara template Anda sendiri untuk satu daftar, nama harus unik, baik `Personal` maupun `Global`. Menyimpan dengan nama yang sudah Anda pakai mengganti template itu dan bisa mengubahnya antara `Personal` dan `Global`. Nama `Global` juga harus berbeda dari template `Global` lain di daftar itu.
+- `Save` menyimpan field yang sedang tercentang. Mengubah centang pada template yang dipilih lalu memilih `Export` tidak mengubah template.
+- Jendela terbuka dengan template yang terakhir Anda pakai di browser ini.
+- Bila sebuah field kelak dihapus dari export, field itu hilang begitu saja dari template tersimpan Anda.
+- Template, termasuk yang `Global`, tidak mengubah siapa yang boleh mengekspor. Tombol export tetap mengikuti akses Anda di `Menu Access`, jadi template `Global` hanya berguna bagi orang yang bisa mengekspor daftar ini.
 
 ## Apa yang terjadi selanjutnya
 
