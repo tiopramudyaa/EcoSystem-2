@@ -450,6 +450,8 @@
         $cmLatest          = \App\Models\CustomerMandays::where('ticket_id', $ticket->ticket_id)->latestVersion()->first();
         $cmWaitingStep     = $cmLatest ? $cmApprovalService->currentStepName($cmLatest) : null;
         $isMandaysApprover = $cmLatest ? $cmApprovalService->canAct($cmLatest, (int) $user->id)['allowed'] : false;
+        // Penyetuju Level 2: Approve langsung / Cancel saat Ready to Send atau Sent to Chat.
+        $isMandaysFinalizer = $cmLatest ? $cmApprovalService->canFinalize($cmLatest, (int) $user->id)['allowed'] : false;
         $mandaysBadge    = [
             'none'            => ['bg-gray-100 text-gray-500',   'None'],
             'pic_draft'       => ['bg-yellow-100 text-yellow-700','Draft'],
@@ -498,9 +500,11 @@
         // Tampilkan Head "View Mandays Proposal" hanya jika user tidak punya akses Helpdesk review
         // (jika punya keduanya, Helpdesk block sudah cukup - hindari duplikasi Customer Mandays di sidebar)
         $isHeadCustomerMandays  = $isHead && !$isHelpdesk && $ticketAssigned;
-        $isMandaysApproverPanel = $isMandaysApprover && $ticketAssigned;
+        $isMandaysApproverPanel  = $isMandaysApprover && $ticketAssigned;
+        $isMandaysFinalizerPanel = $isMandaysFinalizer && $ticketAssigned;
+        $canOpenMandaysReview    = $isHelpdeskMandays || $isMandaysApproverPanel || $isMandaysFinalizerPanel;
         $hasMandaysSection = $isPicCustomerMandays || $isPicResolutionDays || $isHelpdeskMandays || $isHeadMandays || $isHeadCustomerMandays
-                           || $isMandaysApproverPanel
+                           || $isMandaysApproverPanel || $isMandaysFinalizerPanel
                            || $canTakeTicket || $canAssignTicketLead || $canAssignDelivery;
     @endphp
 
@@ -579,8 +583,9 @@
                 </div>
                 @endif
                 {{-- Helpdesk + approver level aktif (Management > Flow): Customer Mandays Review.
-                     Approve/Reject Level 1 & 2 ada di modal Review Mandays Proposal. --}}
-                @if($isHelpdeskMandays || $isMandaysApproverPanel)
+                     Approve/Reject Level 1 & 2 ada di modal Review Mandays Proposal. Penyetuju
+                     Level 2 juga bisa Approve/Cancel saat Ready to Send atau Sent to Chat. --}}
+                @if($canOpenMandaysReview)
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label class="text-xs font-semibold text-gray-500">Mandays Review</label>
@@ -596,7 +601,7 @@
                 </div>
                 @endif
                 {{-- Delivery Support Head: Customer Mandays (view only) --}}
-                @if($isHeadCustomerMandays && !$isMandaysApproverPanel)
+                @if($isHeadCustomerMandays && !$isMandaysApproverPanel && !$isMandaysFinalizerPanel)
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label class="text-xs font-semibold text-gray-500">Customer Mandays</label>
@@ -2497,7 +2502,7 @@
 </div>
 
 {{-- Helpdesk: Customer Mandays Review Modal (juga dipakai approver Level 1/2) --}}
-@if((isset($isHelpdesk) && $isHelpdesk) || !empty($isMandaysApproverPanel))
+@if((isset($isHelpdesk) && $isHelpdesk) || !empty($isMandaysApproverPanel) || !empty($isMandaysFinalizerPanel))
 <div id="hdMandaysModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[90vh]">
         <div class="flex justify-between items-center px-6 py-5 border-b border-gray-200 flex-shrink-0">
@@ -2586,6 +2591,7 @@
                 <button id="hdBtnReviseResend"  onclick="hdReviseResend()"      class="hidden inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Revise &amp; Resend</button>
                 <button id="hdBtnLevelReject"   onclick="hdLevelReject()"       class="hidden inline-flex items-center px-4 py-2 bg-red-100 text-red-700 text-xs font-semibold rounded-lg hover:bg-red-200 border border-red-300">Reject</button>
                 <button id="hdBtnLevelApprove"  onclick="hdLevelApprove()"      class="hidden inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Approve</button>
+                <button id="hdBtnFinalApprove"  onclick="hdFinalApprove()"      class="hidden inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Approve</button>
                 <button id="hdBtnNewProposal"   onclick="hdCreateNewProposal()" class="hidden inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Create New Proposal</button>
             </div>
         </div>
@@ -2722,8 +2728,8 @@
                 Edit Draft
             </button>
             @endif
-            {{-- Helpdesk / approver level aktif: buka modal review untuk versi yang sedang berjalan --}}
-            @if($isHelpdeskMandays || $isMandaysApproverPanel)
+            {{-- Helpdesk / approver level aktif / penyetuju Level 2: buka modal review untuk versi yang sedang berjalan --}}
+            @if($canOpenMandaysReview)
             <button id="mvdBtnHdReview" onclick="mvdOpenHdReview()" class="hidden inline-flex items-center px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">
                 Review This Version
             </button>
@@ -8196,6 +8202,7 @@
             // Approval bertingkat: hanya approver level aktif (dicek server) yang boleh bertindak.
             const isInApproval       = status === 'pending_approval';
             const canActLevel        = isInApproval && !!draftData.can_act;
+            const canFinalize        = !!draftData.can_finalize;
             if (isInApproval && proposal.current_step_name) {
                 document.getElementById('hdMandaysStatusLabel').textContent = 'Waiting ' + proposal.current_step_name;
             }
@@ -8301,7 +8308,7 @@
             document.getElementById('hdMandaysFoot').innerHTML = footHtml;
 
             // Show/hide buttons per state
-            ['hdBtnSaveDraft','hdBtnSendToChat','hdBtnReviseResend','hdBtnLevelApprove','hdBtnLevelReject','hdBtnCancel','hdBtnNewProposal'].forEach(id => {
+            ['hdBtnSaveDraft','hdBtnSendToChat','hdBtnReviseResend','hdBtnLevelApprove','hdBtnLevelReject','hdBtnFinalApprove','hdBtnCancel','hdBtnNewProposal'].forEach(id => {
                 document.getElementById(id)?.classList.add('hidden');
             });
             if (isInApproval) {
@@ -8323,19 +8330,21 @@
             } else if (isPicSubmitted) {
                 if (HD_CAN_SAVE_DRAFT)       document.getElementById('hdBtnSaveDraft')?.classList.remove('hidden');
                 if (HD_CAN_SEND_TO_CUSTOMER) document.getElementById('hdBtnSendToChat')?.classList.remove('hidden');
-                if (HD_CAN_CANCEL)           document.getElementById('hdBtnCancel')?.classList.remove('hidden');
-                // Lolos approval internal Level 1 & 2. Approved hanya lewat customer (tanpa jalan pintas).
+                // Penyetuju Level 2 boleh Approve langsung / Cancel (seperti Helpdesk sebelum approval bertingkat).
+                if (canFinalize)             document.getElementById('hdBtnFinalApprove')?.classList.remove('hidden');
+                if (HD_CAN_CANCEL || canFinalize) document.getElementById('hdBtnCancel')?.classList.remove('hidden');
                 banner.innerHTML = `<i class="fas fa-info-circle text-blue-500 text-sm mt-0.5 flex-shrink-0"></i>
                     <div><p class="font-semibold text-blue-800">Ready to Send</p>
-                    <p class="text-xs font-normal text-blue-700 mt-0.5">This proposal passed both approval levels. Check it, then send it to the customer. It becomes Approved when the customer approves it.</p></div>`;
+                    <p class="text-xs font-normal text-blue-700 mt-0.5">This proposal passed both approval levels. Check it, then send it to the customer. It becomes Approved when the customer approves it, or when the Level 2 approver approves it directly.</p></div>`;
                 banner.classList.remove('hidden');
                 banner.classList.add('flex', 'bg-blue-50', 'border', 'border-blue-200', 'text-blue-800');
             } else if (isCustomerRejected) {
                 if (HD_CAN_SAVE_DRAFT)       document.getElementById('hdBtnSaveDraft')?.classList.remove('hidden');
                 if (HD_CAN_SEND_TO_CUSTOMER) document.getElementById('hdBtnReviseResend')?.classList.remove('hidden');
-                if (HD_CAN_CANCEL)           document.getElementById('hdBtnCancel')?.classList.remove('hidden');
+                if (HD_CAN_CANCEL || canFinalize) document.getElementById('hdBtnCancel')?.classList.remove('hidden');
             } else if (isSentToChat) {
-                if (HD_CAN_CANCEL)  document.getElementById('hdBtnCancel')?.classList.remove('hidden');
+                if (canFinalize)                  document.getElementById('hdBtnFinalApprove')?.classList.remove('hidden');
+                if (HD_CAN_CANCEL || canFinalize) document.getElementById('hdBtnCancel')?.classList.remove('hidden');
             } else if (isCanceled) {
                 document.getElementById('hdBtnNewProposal')?.classList.remove('hidden');
             }
@@ -8581,6 +8590,30 @@
         }
     }
 
+    /** Penyetuju Level 2: approve langsung proposal Ready to Send / Sent to Chat (tanpa menunggu customer). */
+    async function hdFinalApprove() {
+        if (!await showConfirm('Approve this proposal now? It becomes Approved without waiting for the customer, and the ticket mandays are set to this total.', 'Approve', 'primary')) return;
+        const btn = document.getElementById('hdBtnFinalApprove');
+        btn.disabled = true; btn.textContent = 'Approving...';
+        try {
+            const res = await fetch(MANDAYS_API('approval/final-approve'), {
+                method: 'POST', headers: getHeaders(), credentials: 'same-origin',
+            });
+            const data = await res.json();
+            if (data.success) {
+                showNotification(data.message || 'Customer mandays approved.', 'success');
+                closeHdMandaysModal();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showNotification(data.message || 'Failed to approve.', 'error');
+            }
+        } catch (e) {
+            showNotification('Error: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Approve';
+        }
+    }
+
     /** Baca angka dari grid modal review (sama seperti hdSaveAndAction). */
     function hdCollectDetails() {
         const details = [];
@@ -8598,7 +8631,7 @@
 
     function hdShowCancelConfirm() {
         // Hide action buttons and show cancel confirmation form
-        ['hdBtnSaveDraft','hdBtnSendToChat','hdBtnReviseResend','hdBtnLevelApprove','hdBtnLevelReject','hdBtnCancel','hdBtnNewProposal'].forEach(id => {
+        ['hdBtnSaveDraft','hdBtnSendToChat','hdBtnReviseResend','hdBtnLevelApprove','hdBtnLevelReject','hdBtnFinalApprove','hdBtnCancel','hdBtnNewProposal'].forEach(id => {
             document.getElementById(id)?.classList.add('hidden');
         });
         document.getElementById('hdCancelConfirmWrap').classList.remove('hidden');
