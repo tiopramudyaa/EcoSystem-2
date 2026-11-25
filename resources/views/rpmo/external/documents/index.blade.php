@@ -81,7 +81,7 @@
         </form>
 
         <div id="extList" class="transition-opacity" aria-live="polite">
-            @include('hr-general.external.documents.components.list-table')
+            @include('rpmo.external.documents.components.list-table')
         </div>
     </div>
 </div>
@@ -147,7 +147,7 @@
                             <select id="dSigner" name="signatory_employee_id" class="{{ $input }}" required>
                                 @foreach($signerRows as $p)<option value="{{ $p['id'] }}" @selected((string) old('signatory_employee_id', $form['signer']['id'] ?? '') === (string) $p['id'])>{{ $p['name'] }}</option>@endforeach
                             </select>
-                            @include('hr-general.external.components.signer-warning', ['signerScope' => 'letters'])</div>
+                            @include('rpmo.external.components.signer-warning', ['signerScope' => 'letters'])</div>
                         <div class="md:col-span-2"><label class="{{ $label }}" for="dTitle">Signer position</label><input id="dTitle" name="signatory_title" maxlength="150" value="{{ old('signatory_title', $form['signer']['position'] ?? '') }}" class="{{ $input }}" required>
                             <p class="text-[10px] text-gray-400 mt-1">Filled from the signer; you can change what is printed under the signature.</p></div>
                         <div class="md:col-span-3">

@@ -74,4 +74,4 @@ Data penugasan dibaca oleh [[external-contracts]] dan [[external-timesheet-payme
 - [[external-letters]]
 - [[onboarding]]
 
-<!-- sources: routes/hr-external.php, resources/views/hr-general/external/consultants/index.blade.php, resources/views/hr-general/external/consultants/show.blade.php, resources/views/hr-general/external/consultants/components/list-table.blade.php, resources/views/master/employee/sections/hrprofile.blade.php, resources/views/master/employee/sections/emergency-card.blade.php, resources/views/master/employee/show.blade.php, app/Http/Controllers/HR_General/ExternalConsultantController.php -->
+<!-- sources: routes/hr-external.php, resources/views/rpmo/external/consultants/index.blade.php, resources/views/rpmo/external/consultants/show.blade.php, resources/views/rpmo/external/consultants/components/list-table.blade.php, resources/views/master/employee/sections/hrprofile.blade.php, resources/views/master/employee/sections/emergency-card.blade.php, resources/views/master/employee/show.blade.php, app/Http/Controllers/HR_General/ExternalConsultantController.php -->

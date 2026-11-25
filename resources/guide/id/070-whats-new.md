@@ -70,4 +70,4 @@ Semua orang yang masuk ke EcoSystem. Sebagian butir hanya berlaku bila Anda memi
 - [[welcome]]
 - [[navigating-ecosystem]]
 
-<!-- sources: docs/HRGA/05-LOG-SESI.md, resources/views/hr-general/attendance/my-attendance.blade.php, resources/views/finance/payroll/settings.blade.php, resources/views/hr-general/external/contracts/manage.blade.php -->
+<!-- sources: docs/HRGA/05-LOG-SESI.md, resources/views/hr-general/attendance/my-attendance.blade.php, resources/views/finance/payroll/settings.blade.php, resources/views/rpmo/external/contracts/manage.blade.php -->

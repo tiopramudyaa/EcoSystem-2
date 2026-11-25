@@ -90,4 +90,19 @@ return [
         ['key' => 'doc_ijazah',     'label' => 'Ijazah (diploma) document', 'check' => 'attachment:Ijazah|Diploma',  'section' => 'attachment', 'for' => 'internal'],
         ['key' => 'doc_npwp',       'label' => 'NPWP card document (optional)', 'check' => 'attachment:NPWP',        'section' => 'attachment', 'optional' => true, 'for' => 'internal'],
     ],
+    /*
+     * Peringatan kontrak berakhir di banner atas semua halaman. Muncul untuk siapa pun yang punya izin menu pada
+     * `audiences` (diatur di Role & permission, bukan per nama role). Jendela = yang lebih besar antara `min_days`
+     * dan setelan "Ending soon" (Management → Employee Master Settings → Contract).
+     */
+    'expiry_alert' => [
+        'enabled'    => true,
+        'min_days'   => 30,
+        'cache_secs' => 600,
+        // scope => [slug menu yang dibutuhkan, nama route tujuan]
+        'audiences'  => [
+            'internal' => ['slug' => 'general.contracts.list',     'route' => 'general.contracts.list'],
+            'external' => ['slug' => 'general.external.contracts', 'route' => 'general.external.contracts.dashboard'],
+        ],
+    ],
 ];

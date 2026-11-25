@@ -73,6 +73,13 @@ class ExternalContractService
         return ['total' => (int) $row->total, 'active' => (int) $row->active, 'draft' => (int) $row->draft, 'templated' => (int) $row->templated];
     }
 
+    /** Number of active external contracts ending between two dates (inclusive). */
+    public function endingBetween(string $from, string $to): int
+    {
+        return (int) $this->baseQuery(false, false)->whereNotIn(DB::raw("IFNULL(c.lifecycle_status,'')"), ['draft', 'terminated'])
+            ->where('c.is_active', 1)->whereBetween('c.end_date', [$from, $to])->count();
+    }
+
     /** Active external contracts that end within the "ending soon" window (nearest first) - for the Dashboard tab. */
     public function endingSoon(int $limit = 8): array
     {

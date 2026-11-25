@@ -27,7 +27,7 @@
 @section('content')
 <div class="w-full space-y-5 px-1 lg:px-2">
     @if($external)
-        @include('hr-general.external.contracts.components.tabs')
+        @include('rpmo.external.contracts.components.tabs')
         @include('partials.accent-remap')
         @include('legal.contracts.components.confirm-forms')
     @else

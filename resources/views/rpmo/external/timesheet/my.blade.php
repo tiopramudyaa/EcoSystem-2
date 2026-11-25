@@ -73,7 +73,7 @@
                 </div>
                 <a href="{{ $u['print'] }}" target="_blank" class="px-3 py-1.5 rounded-full border border-gray-300 text-gray-700 text-xs font-semibold hover:bg-gray-50"><i class="fas fa-print mr-1"></i> Print</a>
             </div>
-            @include('hr-general.external.timesheet.components.sheet')
+            @include('rpmo.external.timesheet.components.sheet')
         @else
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-10 text-center text-sm text-gray-500">Choose a month above, or start a new one with <i class="fas fa-plus mx-1"></i>.</div>
         @endif

@@ -73,10 +73,10 @@ class ExternalContractController extends Controller
         ];
 
         if ($request->ajax()) {
-            return view('hr-general.external.contracts.components.list-table', $data);
+            return view('rpmo.external.contracts.components.list-table', $data);
         }
 
-        return view('hr-general.external.contracts.index', $data + [
+        return view('rpmo.external.contracts.index', $data + [
             'summary'     => $this->external->summary(),
             'consultants' => $this->consultants->options(),
             'canTemplates' => $this->canView('general.contracts.templates'),
@@ -86,7 +86,7 @@ class ExternalContractController extends Controller
     /** Dashboard tab: the counts of the external contracts and the ones about to end. Changes nothing. */
     public function dashboard()
     {
-        return view('hr-general.external.contracts.dashboard', [
+        return view('rpmo.external.contracts.dashboard', [
             'summary' => $this->external->summary(),
             'ending' => $this->external->endingSoon(),
             'endingDays' => (int) \App\Services\Management\EmployeeMasterData::rule('contract', 'ending_soon_days'),
@@ -108,7 +108,7 @@ class ExternalContractController extends Controller
         // Nilai awal formulir baru: dari engagement konsultan (skema, tarif bila berizin, periode).
         $engagement = \Illuminate\Support\Facades\DB::table('employee_engagement')->where('employee_id', $employeeId)->first();
 
-        return view('hr-general.external.contracts.manage', [
+        return view('rpmo.external.contracts.manage', [
             'c'           => $consultant,
             'history'     => $history,
             'edit'        => $edit,
