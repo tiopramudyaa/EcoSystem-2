@@ -194,10 +194,7 @@ class DeliveryProjectController extends Controller
 
         $filename = 'Delivery_Projects_' . now()->format('Ymd_His') . '.xlsx';
 
-        return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\DeliveryProjectExport($rows),
-            $filename
-        );
+        return \App\Support\ExportColumns::download($request, 'delivery_project', new \App\Exports\DeliveryProjectExport($rows), $filename);
     }
 
     /**

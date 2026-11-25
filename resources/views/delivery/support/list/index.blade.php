@@ -607,13 +607,21 @@
             return;
         }
 
-        const url = new URL('{{ route('delivery.support.export') }}', window.location.origin);
-        // Semua baris terpilih → biarkan server mengekspor semuanya (hindari URL panjang).
-        if (ids.length < rows.length) url.searchParams.set('ids', ids.join(','));
+        // Pilih field/template dulu; baris yang terlihat tetap jadi isi export.
+        ExportPicker.open({
+            type: 'delivery_support',
+            title: 'Export Delivery Support',
+            onConfirm: (cols) => {
+                const url = new URL('{{ route('delivery.support.export') }}', window.location.origin);
+                // Semua baris terpilih → biarkan server mengekspor semuanya (hindari URL panjang).
+                if (ids.length < rows.length) url.searchParams.set('ids', ids.join(','));
+                ExportPicker.appendTo(url.searchParams, cols);
 
-        btn.disabled = true;
-        window.location.href = url.toString();
-        setTimeout(() => { btn.disabled = false; }, 3000);
+                btn.disabled = true;
+                window.location.href = url.toString();
+                setTimeout(() => { btn.disabled = false; }, 3000);
+            },
+        });
     }
 
     function applySupportMobileView() {

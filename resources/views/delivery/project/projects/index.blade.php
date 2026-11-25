@@ -988,14 +988,22 @@
                 return;
             }
 
-            const url = new URL('{{ route('projects.export') }}', window.location.origin);
-            // Kalau semua baris terpilih, biarkan server mengekspor semuanya -
-            // tak perlu mengirim daftar id panjang yang bisa menabrak batas URL.
-            if (ids.length < rows.length) url.searchParams.set('ids', ids.join(','));
+            // Pilih field/template dulu; baris yang terlihat tetap jadi isi export.
+            ExportPicker.open({
+                type: 'delivery_project',
+                title: 'Export Delivery Projects',
+                onConfirm: (cols) => {
+                    const url = new URL('{{ route('projects.export') }}', window.location.origin);
+                    // Kalau semua baris terpilih, biarkan server mengekspor semuanya -
+                    // tak perlu mengirim daftar id panjang yang bisa menabrak batas URL.
+                    if (ids.length < rows.length) url.searchParams.set('ids', ids.join(','));
+                    ExportPicker.appendTo(url.searchParams, cols);
 
-            btn.disabled = true;
-            window.location.href = url.toString();
-            setTimeout(() => { btn.disabled = false; }, 3000);
+                    btn.disabled = true;
+                    window.location.href = url.toString();
+                    setTimeout(() => { btn.disabled = false; }, 3000);
+                },
+            });
         }
 
         // Fixed-position popovers so panels are never clipped by the scroll container.

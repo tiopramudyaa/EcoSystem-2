@@ -25,10 +25,16 @@ Administrators, and any role given the `Management` › `Menu Access` menu in Me
 *Screenshot with sample data.*
 
 1. Open `Management` › `Menu Access`.
-2. Read the tree. A purple stack icon is a group (such as `Calendar` or `Reporting`), a blue page icon is a page, and a lightning icon is a function: a button or action inside a page, for example `Create Event`.
-3. The grey text at the right of each row is its slug, a short dotted name. Use it when you report a missing menu to an administrator or look it up in a topic.
+2. Read the cards at the top: the total number of menus and how many are groups, pages and functions. Then read the tree. A purple stack icon is a group (such as `Calendar` or `Reporting`), a blue page icon is a page, and a lightning icon is a function: a button or action inside a page, for example `Create Event`. A group also shows how many items it holds.
+3. The grey tag at the right of each row is its slug, a short dotted name. Click it to copy it, then paste it when you report a missing menu to an administrator.
 4. Click the arrow of a row, or `Expand All` and `Collapse All`, to show or hide sub-items.
-5. Type in `Search menu name...` to find a menu. Choose `Reset` to clear the search.
+5. Type in `Search menu name...` to find a menu. Use the `All`, `Groups`, `Pages` and `Functions` buttons to show only one kind. Choose `Reset` to clear the search and the filter.
+
+## Rules to know
+
+- **Read only.** This page changes nothing. Menus are granted only from `Management` › `Role`.
+- **Who may open it.** Only people given the `Management` › `Menu Access` menu in Menu Access. People who can open `Management` › `Role` also receive this same list inside the role window, but not this page.
+- **Only active menus are listed.** A menu that has been switched off does not appear.
 
 ## What happens next
 

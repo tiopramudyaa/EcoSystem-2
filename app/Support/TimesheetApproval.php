@@ -23,6 +23,18 @@ class TimesheetApproval
         'office'      => 'timesheet.approve.office',
     ];
 
+    /**
+     * tipe => slug izin MENCATAT timesheet sendiri (function di bawah menu Timesheets).
+     * Menentukan tab dan jenis entri yang boleh dibuat. Tanpa izin = tipe itu tidak muncul
+     * dan server menolak menyimpannya. Tidak ada cadangan "semua tipe".
+     */
+    public const LOG_PERMISSIONS = [
+        'project'     => 'timesheet.log.project',
+        'non_project' => 'timesheet.log.non-project',
+        'support'     => 'timesheet.log.support',
+        'office'      => 'timesheet.log.office',
+    ];
+
     public const LABELS = [
         'project'     => 'Project',
         'non_project' => 'Non Project',
@@ -70,6 +82,29 @@ class TimesheetApproval
             array_keys(self::PERMISSIONS),
             fn (string $type) => $employee->canAccessMenu(self::PERMISSIONS[$type])
         ));
+    }
+
+    /**
+     * Tipe yang boleh dicatat karyawan ini untuk timesheet miliknya, urut seperti tab di halaman.
+     *
+     * @return string[]
+     */
+    public static function loggableTypes(?Employee $employee = null): array
+    {
+        $employee ??= self::currentEmployee();
+        if (!$employee) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_keys(self::LOG_PERMISSIONS),
+            fn (string $type) => $employee->canAccessMenu(self::LOG_PERMISSIONS[$type])
+        ));
+    }
+
+    public static function canLog(string $type, ?Employee $employee = null): bool
+    {
+        return in_array($type, self::loggableTypes($employee), true);
     }
 
     public static function canApprove(string $type, ?Employee $employee = null): bool
