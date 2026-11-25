@@ -5,7 +5,7 @@ order: 14
 title: Customer Mandays and Resolution Days
 summary: The two estimates on a ticket, who approves each one and how they move from draft to approved.
 requires: [ticket.propose-mandays-customer, ticket.propose-mandays-resolution, ticket.review-mandays, ticket.head-mandays, ticket.approve-resolution-days]
-updated: 2026-11-18
+updated: 2026-11-25
 ---
 A ticket that needs effort estimates carries two different proposals. They are easy to mix up, so keep them apart.
 
@@ -37,9 +37,9 @@ Ticket leads and consultants who propose, the two approval levels and Helpdesk f
 3. The Level 1 approver opens `Review Mandays Proposal` on the ticket, selects the version, then `Review This Version`. The badge next to it shows `Your turn` when it is their turn. They can adjust the mandays and select `Approve`, or write a reason in `Approval Notes` and select `Reject`.
 4. After Level 1 approves, the proposal waits for Level 2 (by default Helpdesk), who reviews it the same way.
 5. After Level 2 approves, the status becomes `Ready to Send`. Helpdesk uses `Review Mandays Proposal` to check it, adjust it if needed, and send it to the customer by chat and email.
-6. The customer approves through the link they receive, and the proposal becomes `Approved`.
+6. The customer approves through the link they receive, and the proposal becomes `Approved`. If the customer already agreed another way, for example by email, a Level 2 approver can open `Review Mandays Proposal` and select `Approve` while the proposal is `Ready to Send` or `Sent to Chat`.
 7. If a level rejects, the status becomes `Rejected` and the reason is shown to the PIC. The PIC selects `New Version`, revises the proposal and submits it again.
-8. Helpdesk can cancel a proposal. A revision creates a new version.
+8. Helpdesk, or a Level 2 approver while the proposal is `Ready to Send` or `Sent to Chat`, can select `Cancel Proposal`. A revision creates a new version.
 
 Each version shows an `Approval Trail` with every level, who acted, when, and their note.
 
@@ -62,11 +62,12 @@ Each version shows an `Approval Trail` with every level, who acted, when, and th
 - If the flow is changed while a proposal waits, its undecided levels follow the new approvers. Levels already approved stay as they were.
 - Submitting is refused when a level has no approver set. Ask an administrator to set up the flow.
 - You cannot edit a proposal while it is waiting for approval, waiting for Helpdesk to send it, or after it was sent to the customer. Wait for the answer, or ask Helpdesk to cancel it.
-- Helpdesk cannot approve a proposal directly. A proposal becomes `Approved` only when the customer approves it.
+- A proposal becomes `Approved` when the customer approves it, or when a Level 2 approver approves it directly. Level 2 approvers can do this only on the latest version while it is `Ready to Send` or `Sent to Chat`, not while it is still in internal approval and not right after the customer rejected it. Approving this way sets the ticket mandays to the proposal total, the same as the customer's approval.
+- Helpdesk users who are not Level 2 approvers cannot approve a proposal directly.
 - After both levels approve, Helpdesk can still adjust the proposal before sending it to the customer by chat and email.
 - The customer can reject the proposal from the link they receive and may write a reason. It then returns to Helpdesk, who revises it and sends it again.
 - On a `Change Request` ticket only the ticket lead can propose Customer Mandays. Heads are not held to this.
-- Cancelling a proposal needs the cancel permission. Cancelling one that is already approved needs a separate permission, and the customer is not told automatically, so Helpdesk follows up by email.
+- Cancelling a proposal needs the cancel permission. Level 2 approvers can also cancel the latest version while it is `Ready to Send` or `Sent to Chat`, without that permission. Cancelling one that is already approved needs a separate permission, and the customer is not told automatically, so Helpdesk follows up by email.
 - Proposing Customer Mandays needs the `Propose Mandays Customer` function and proposing Resolution Days needs the `Propose Resolution Days` function in `Menu Access`, on top of being the ticket lead or a member. Saving a review needs `Save Draft` or `Send to Customer`, because sending saves your edits first. Approving a level does not need a function in `Menu Access`: it follows the approvers set in the flow. Without the function the request is refused, even if it is sent directly.
 - When a Customer Mandays proposal is submitted, the Level 1 approvers get a bell notification. When Level 1 approves, the Level 2 approvers are notified. When Level 2 approves, everyone whose role has the review permission in `Role Access` is notified that it is ready to send. When a level rejects, the PIC is notified. When Resolution Days is submitted, everyone whose role has the head or Resolution Days approval permission is notified.
 - Sub-actions in the review screen (edit, save draft, send to customer, cancel) each have their own permission in `Role Access`. A role that can open the review but lacks these sees the proposal without the action buttons.
@@ -95,5 +96,7 @@ Approved days are used for the workload shown in `My Tasks` and in `Consultant W
 **I cannot see the review buttons.** Reviewing is only for Helpdesk and heads. Ask your administrator if you think you should have them.
 
 **I am an approver but see no `Approve` button.** The button only appears while the proposal waits at your level. If it waits at another level, it is not your turn. Reload the ticket after the proposal is submitted.
+
+**The customer agreed by email but the proposal still shows `Sent to Chat`.** Ask a Level 2 approver to open `Review Mandays Proposal` and select `Approve`. Who counts as Level 2 is set in the flow.
 
 <!-- sources: routes/web.php, routes/api.php, routes/lite.php, app/Http/Controllers/MandaysController.php, app/Http/Controllers/Lite/LiteCustomerMandaysController.php, app/Services/CustomerMandaysApprovalService.php, app/Services/LiteCustomerMandaysPresenter.php, resources/views/ticket/show.blade.php, resources/views/ticket/task.blade.php -->

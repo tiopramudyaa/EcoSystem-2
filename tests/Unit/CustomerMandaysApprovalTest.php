@@ -402,6 +402,100 @@ class CustomerMandaysApprovalTest extends TestCase
      * Baris form Flow: Level 1 dan Level 2 dengan nama bawaan, dan penyetuju bawaan
      * (role Admin / Helpdesk) bila tidak diganti lewat $l1 / $l2.
      */
+    // ── Level 2: approve langsung / cancel saat Ready to Send atau Sent to Chat ──
+
+    public function test_level_two_approver_can_approve_ready_to_send_directly(): void
+    {
+        [$ticket, $p] = $this->readyToSend();
+
+        $this->assertFalse($this->service->canFinalize($p, self::ADMIN)['allowed']);
+        $this->assertFalse($this->service->canFinalize($p, self::OUTSIDER)['allowed']);
+        $this->assertTrue($this->service->canFinalize($p, self::HELPDESK)['allowed']);
+
+        $r = $this->service->finalApprove($p, $ticket, self::HELPDESK, 'Helpdesk');
+
+        $this->assertTrue($r['allowed'], $r['reason']);
+        $this->assertSame('approved', $p->fresh()->status);
+        $this->assertSame('approved', $ticket->fresh()->mandays_proposal_status);
+        $this->assertEquals(5, (float) $ticket->fresh()->man_days);
+    }
+
+    public function test_level_two_approver_can_approve_while_waiting_for_customer(): void
+    {
+        [$ticket, $p] = $this->readyToSend();
+        $p->update(['status' => 'sent_to_chat']);
+        $ticket->update(['mandays_proposal_status' => 'sent_to_chat']);
+
+        $r = $this->service->finalApprove($p->fresh(), $ticket, self::HELPDESK, 'Helpdesk');
+
+        $this->assertTrue($r['allowed'], $r['reason']);
+        $this->assertSame('approved', $p->fresh()->status);
+    }
+
+    public function test_proposal_sent_before_multi_level_flow_uses_current_level_two(): void
+    {
+        // Dikirim dengan alur lama: tidak ada snapshot approval.
+        [$ticket, $p] = $this->draft();
+        $p->update(['status' => 'sent_to_chat']);
+
+        $this->assertSame(0, $p->approvals()->count());
+        $this->assertTrue($this->service->canFinalize($p->fresh(), self::HELPDESK)['allowed']);
+        $this->assertFalse($this->service->canFinalize($p->fresh(), self::ADMIN)['allowed']);
+
+        // Konfigurasi Level 2 diganti ke orang tertentu: hanya dia yang boleh.
+        CustomerMandaysApprovalStep::where('order_seq', 2)->update([
+            'approver_type' => 'employee', 'approver_role_id' => null, 'approver_employee_ids' => json_encode([self::NEW_L2]),
+        ]);
+        $this->assertFalse($this->service->canFinalize($p->fresh(), self::HELPDESK)['allowed']);
+        $this->assertTrue($this->service->canFinalize($p->fresh(), self::NEW_L2)['allowed']);
+    }
+
+    public function test_direct_approve_is_refused_during_internal_approval(): void
+    {
+        [$ticket, $p] = $this->submitted();
+
+        $r = $this->service->finalApprove($p, $ticket, self::HELPDESK, 'Helpdesk');
+
+        $this->assertFalse($r['allowed']);
+        $this->assertSame('pending_approval', $p->fresh()->status);
+    }
+
+    public function test_direct_approve_is_refused_after_customer_rejected(): void
+    {
+        [$ticket, $p] = $this->readyToSend();
+        $p->update(['rejection_reason' => 'Too many days']);
+
+        // Cancel tetap boleh (canFinalize), approve tidak.
+        $this->assertTrue($this->service->canFinalize($p->fresh(), self::HELPDESK)['allowed']);
+        $r = $this->service->finalApprove($p->fresh(), $ticket, self::HELPDESK, 'Helpdesk');
+
+        $this->assertFalse($r['allowed']);
+        $this->assertSame('pending_helpdesk', $p->fresh()->status);
+    }
+
+    public function test_direct_approve_only_on_latest_version(): void
+    {
+        [$ticket, $p] = $this->readyToSend();
+        CustomerMandays::create([
+            'ticket_id' => $ticket->ticket_id, 'version' => 2, 'status' => 'draft', 'total_mandays' => 3,
+        ]);
+
+        $this->assertFalse($this->service->canFinalize($p->fresh(), self::HELPDESK)['allowed']);
+    }
+
+    /** @return array{0: Ticket, 1: CustomerMandays} */
+    private function readyToSend(): array
+    {
+        [$ticket, $p] = $this->submitted();
+        $this->assertTrue($this->service->approve($p, $ticket, self::ADMIN, 'Admin')['allowed']);
+        $this->assertTrue($this->service->approve($p->fresh(), $ticket, self::HELPDESK, 'Helpdesk')['allowed']);
+
+        $p = $p->fresh();
+        $this->assertSame('pending_helpdesk', $p->status);
+
+        return [$ticket->fresh(), $p];
+    }
+
     private function flowRows(array $l1, array $l2): array
     {
         $steps = CustomerMandaysApprovalStep::ordered()->get();

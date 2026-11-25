@@ -77,12 +77,16 @@ class ExplainWorkflowTool implements AiTool
                    version and submits again.
                 3. After both levels approve, the status becomes "pending_helpdesk" (ready to send). Helpdesk can still
                    edit line items/description/notes depending on their permissions, then sends it to the customer
-                   (posts into the ticket chat and emails the customer). Helpdesk can no longer approve directly.
+                   (posts into the ticket chat and emails the customer).
                 4. The customer approves or rejects via the Jarvies portal. Approval sets the ticket's `man_days` to
-                   this proposal's total and is the only way to reach "approved". Rejection sends it back to Helpdesk
-                   with the customer's reason attached.
-                5. A pending/sent/approved proposal can be cancelled (cancelling an already-approved one needs an
-                   extra permission).
+                   this proposal's total. Rejection sends it back to Helpdesk with the customer's reason attached.
+                   Anyone who is a Level 2 approver can also approve directly while the proposal is "pending_helpdesk"
+                   (ready to send) or "sent_to_chat" (waiting for the customer), for example when the customer agreed
+                   by email. This has the same effect as the customer's approval. It is not allowed while the
+                   proposal is still in internal approval, or right after the customer rejected it.
+                5. A pending/sent/approved proposal can be cancelled by users with the cancel permission (cancelling
+                   an already-approved one needs an extra permission). Level 2 approvers can also cancel the latest
+                   version while it is ready to send or waiting for the customer.
 
                 Button label in the ticket page: "Propose Mandays" (changes to a status-specific label once one exists).
 
