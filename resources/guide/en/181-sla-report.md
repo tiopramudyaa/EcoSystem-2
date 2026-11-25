@@ -5,7 +5,7 @@ order: 11
 title: SLA Report
 summary: Track the response and resolution of every ticket against its SLA, read the pause log of a ticket and export the report.
 requires: [sla.report, ticket.sla-log]
-updated: 2026-11-02
+updated: 2026-11-23
 ---
 `SLA` › `SLA Report` (the SLA Tracker) shows for each ticket whether it was answered and solved within the agreed time. It refreshes by itself every 60 seconds.
 
@@ -32,7 +32,7 @@ Helpdesk, support managers and heads, and any role given the `SLA` › `SLA Repo
 *Screenshot with sample data.*
 
 3. `SLA RESPONSE` shows the target, when the SLA clock started, when a response was due, when the ticket was responded, how long it took and whether the target was `Achieved`.
-4. `SLA RESOLUTION` shows the target in hours, the start and due time, the first resolved date, the date the resolution document or mail was sent, the resolution duration, the time target and its status, the closed date and notes. Duration is counted stop-and-go: time spent waiting for the customer or a third party is not counted.
+4. `SLA RESOLUTION` shows the target in hours, the start and due time, the first resolved date, the date the resolution document or mail was sent, the resolution duration, the time target and its status, the `First Resolution`, the closed date and notes. Duration is counted stop-and-go: time spent waiting for the customer or a third party is not counted.
 5. Choose `Export SLA` to download the report as a spreadsheet.
 
 ![The SLA Log window of a ticket with response, resolution, waiting time and ball holder](images/guide/sla-report-log.png)
@@ -47,6 +47,8 @@ Helpdesk, support managers and heads, and any role given the `SLA` › `SLA Repo
 - When the customer replies, the ball returns to the helpdesk and the clock restarts, unless a meeting hold is active (see the ticket meeting topic).
 - Hours are counted as business hours (Monday to Friday, excluding Indonesian public holidays, and excluding the policy's break) unless the policy is `24/7 Calendar Hours`.
 - `Closed` and `Cancelled` finish the SLA. A cancelled ticket always counts as met.
+- The resolution status (`Achieved` or `Not Achieved`) of a `Closed` ticket compares the final resolution duration with the target. For a ticket that is not finished yet it compares the running resolution time so far, and the cell has a yellow background: the result can still change until the ticket is closed. Type of service CR is exempt from the resolution target and always shows `N/A`, and so does a `Cancelled` ticket.
+- `First Resolution` applies to `Incident` tickets only. Tickets of any other type show `Not Incident` in this column. For an Incident it is the date and time the first `IR` or `RCA` deliverable document was sent to the customer from the ticket chat room. Other document types do not count. The time is recorded once, at the first send, and does not change afterwards. It stays `-` until an IR or RCA is sent.
 - The response target is checked on the first reply. The resolution time is the net time: total elapsed time minus all waiting time.
 
 ## What happens next
