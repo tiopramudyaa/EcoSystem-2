@@ -225,6 +225,12 @@ class DeliveryProject extends Model
         return $this->hasMany(Document::class, 'delivery_projects_id');
     }
 
+    /** Folder dokumen project, urut 01..06, 00. Other, lalu folder tambahan. */
+    public function documentFolders()
+    {
+        return $this->hasMany(DeliveryProjectDocumentFolder::class, 'delivery_projects_id')->ordered();
+    }
+
     public function phases(){
         return $this->hasMany(DeliveryProjectPhase::class, 'delivery_projects_id')
                     ->where('is_visible', true)
@@ -763,6 +769,11 @@ class DeliveryProject extends Model
             if (!$project->last_activity_at && !static::$activityTrackingPaused) {
                 $project->last_activity_at = now();
             }
+        });
+
+        // Folder dokumen standar (01. Discover ... 00. Other) ada sejak project dibuat.
+        static::created(function ($project) {
+            DeliveryProjectDocumentFolder::ensureDefaults($project);
         });
 
         static::updated(function ($project) {

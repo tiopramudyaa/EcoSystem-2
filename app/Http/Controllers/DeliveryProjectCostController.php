@@ -548,10 +548,10 @@ class DeliveryProjectCostController extends Controller
     {
         $oneDrive = new OneDriveService();
 
-        $planCostFolderId = $oneDrive->findOrCreateSubFolderById(
-            $project->onedrive_folder_id,
-            'Plan Cost'
-        );
+        // Folder "Plan Cost" ada di dalam "01. Discover" (folder dokumen standar).
+        // Folder "Plan Cost" lama di akar folder project dipindah ke sana.
+        $planCostFolderId = (new \App\Services\ProjectDocumentFolderService($oneDrive))
+            ->planCostFolderId($project);
 
         $result = $oneDrive->uploadFile(
             $planCostFolderId,

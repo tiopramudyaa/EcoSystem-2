@@ -3,9 +3,9 @@ key: dl-project
 chapter: delivery
 order: 10
 title: Project
-summary: Find delivery projects, filter them with the summary cards, add a new project, export the list and close or delete a project.
+summary: Find delivery projects, filter them with the summary cards, add a new project or import many from Excel, export the list and close or delete a project.
 requires: [delivery.project, delivery-project.add-new, delivery-project.close-project, delivery-project.delete-project]
-updated: 2026-11-02
+updated: 2026-11-25
 ---
 `Delivery` › `Project` lists every delivery project of the company. From here you open a project, add a new one and export the list.
 
@@ -28,7 +28,7 @@ Project heads, project administrators, RPMO and management, and any role given t
 
 1. Open `Delivery` › `Project`. The three tabs on top are `Project`, `Issues` and `Planning`. `Project` is the list.
 2. Read the `SUMMARY` cards: `Total Projects`, `Open`, `In Process`, `Closed`, `On Track`, `At Risk`, `At Critical` and `Ending ≤ 30 days`. Click a card to filter the list to it.
-3. In the table, each project shows its `Last Update`, `IO Number`, `Customer`, `Project Type`, `Project Name`, `AE`, `Project Owner`, `Category` and `Project Status`. The most recently updated project is on top. Use the arrows in a column title to sort and the funnel icon to filter.
+3. In the table, each project shows its `Last Update`, `IO Number`, `Customer`, `Contract Start & End Date`, `Project Type`, `Project Name`, `AE`, `Delivery Owner`, `Project Manager`, `Progress`, `Method`, `Category` and `Project Status`. The most recently updated project is on top. Use the arrows in a column title to sort and the funnel icon to filter. `Contract Start & End Date` can be sorted by the start date or by the end date. `Progress` sorts with one click on its title. On a phone the same fields appear on each project card.
 4. Click a project to open its detail page (see the topic about the project detail).
 5. Choose `Export Excel`, then `Project List`, to download the list. The other items in that menu (`Project Revenue`, `Invoiced Terms of Payment`) download straight away as before.
 
@@ -52,6 +52,8 @@ Project heads, project administrators, RPMO and management, and any role given t
 4. The same form also holds the sales data (`Delivery Information`), `Delivery Data`, the first `Team Members` and the `Location Information`. Fill what you know now, the rest can be added later on the project detail page.
 5. Submit the form. The new project then appears in the list.
 
+To add many projects at once, `Import Excel` (next to `Add New`) reads them from an Excel file. It has its own topic in this chapter.
+
 ### Close, reopen or delete a project
 
 On the project detail page:
@@ -60,6 +62,16 @@ On the project detail page:
 - `Delete Project` removes the project for good. If the project still has related records, EcoSystem refuses and tells you it may still have related records. Close the project instead when work has ended.
 
 ## Rules to know
+
+### Where the columns come from
+
+- `Contract Start & End Date` are the contract dates in `General Information` of the project.
+- `Delivery Owner` is the person chosen as `Project Owner` in `General Information`. Only the column title on the list changed; the form still calls the field `Project Owner`.
+- `Project Manager` lists every member with the role `Project Manager` in `Team Members` of the project. A project can show more than one name. A project manager saved on older projects before `Team Members` existed is also shown. A dash means no team member has that role yet.
+- `Progress` is the same number as `Overall Project Progress` in `Project Planning`. It stays 0% until the project has a planning with phase weights.
+- `Method` is the `Delivery Method` (`Onsite`, `Hybrid` or `WFH`). A dash means it was not filled.
+- Filtering `Project Manager` on one name keeps every project where that person is one of the project managers.
+- The `Project Manager` column of the `Project List` export follows the same rule as the list.
 
 ### When you export
 
@@ -82,8 +94,12 @@ A new project appears in the list and in the reports that read projects, such as
 
 ## Common questions
 
-**There is no `Add New` button.** Your role does not have `Add New Project`. Ask your administrator.
+**There is no `Add New` button.** Your role does not have `Add New Project`. Ask your administrator. The `Import Excel` button needs the same permission.
 
 **I cannot change anything on a project.** It is probably closed. Reopen it first if you are allowed to.
 
-<!-- sources: routes/web.php, resources/views/delivery/project/projects/index.blade.php, resources/views/delivery/project/projects/create.blade.php -->
+**`Project Manager` shows a dash.** Nobody in `Team Members` of that project has the role `Project Manager`. Add or change a member on the project detail page.
+
+**`Progress` shows 0% although work has started.** The progress is read from `Project Planning`. Check that the planning has visible phases with weights and that activities have progress filled in.
+
+<!-- sources: routes/web.php, app/Http/Controllers/DeliveryProjectController.php (index, export, projectManagerNames), app/Models/DeliveryProject.php (calculateOverallProgress), resources/views/delivery/project/projects/index.blade.php, resources/views/delivery/project/projects/create.blade.php -->

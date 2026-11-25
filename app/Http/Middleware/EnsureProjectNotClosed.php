@@ -76,7 +76,10 @@ class EnsureProjectNotClosed
                 ? $documentParam
                 : Document::find($documentParam);
             if ($doc) {
-                return DeliveryProject::find($doc->project_id);
+                // FK dokumen adalah delivery_projects_id (dulu tertulis
+                // project_id yang tidak ada, sehingga dokumen project Closed
+                // tetap bisa diedit/dihapus).
+                return DeliveryProject::find($doc->delivery_projects_id);
             }
         }
 
