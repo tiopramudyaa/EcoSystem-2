@@ -358,6 +358,25 @@ class SlaService
             ->value('updated_at');
     }
 
+    /**
+     * "First Resolution" for display: when the first IR or RCA deliverable was sent to the
+     * customer from the ticket chat room (TicketDeliverable::FIRST_RESOLUTION_DOC_TYPES).
+     * Uses sent_at, which is written once on the first send and never moves afterwards.
+     */
+    public function firstResolutionDocAt(TicketSla $sla): ?Carbon
+    {
+        if (!$sla->ticket_id) {
+            return null;
+        }
+
+        $at = \App\Models\TicketDeliverable::where('ticket_id', $sla->ticket_id)
+            ->whereIn('doc_type', \App\Models\TicketDeliverable::FIRST_RESOLUTION_DOC_TYPES)
+            ->whereNotNull('sent_at')
+            ->min('sent_at');
+
+        return $at ? Carbon::parse($at) : null;
+    }
+
     // ── 1b. Live duration recompute (self-heals historical data, no backfill needed) ──────
 
     /**

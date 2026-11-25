@@ -5,7 +5,7 @@ order: 12
 title: Assigning tickets and managing the team
 summary: Take a ticket, assign a ticket lead, add team members and link the ticket to one Delivery Support.
 requires: [ticket.assign-pic, ticket.assign-delivery-support, ui.ticket.manage-members, ticket.take]
-updated: 2026-11-02
+updated: 2026-11-23
 ---
 Every ticket needs an owner. This topic shows how a ticket gets its ticket lead and team, and how it is tied to a Delivery Support.
 
@@ -31,6 +31,13 @@ Helpdesk and heads who assign tickets, and consultants who take tickets themselv
 2. Select `Take This Ticket`.
 
 If the ticket is unclear or outside your skills, leave an `Internal Note` for Helpdesk instead of leaving it untouched.
+
+### Mention a colleague in an internal note
+
+1. On the ticket, select `Internal Note`.
+2. Type `@` followed by part of a name or a role, then pick the person or role from the list. The name appears in blue (a role in purple).
+3. If you picked the wrong person, delete the whole blue name and pick again.
+4. Send the note.
 
 ### Assign a ticket lead
 
@@ -68,6 +75,8 @@ A ticket belongs to **one** Delivery Support. If it was linked wrongly, remove t
 - `Delete Ticket` works only for roles that were given the `Delete Ticket` function in Menu Access. By default these are the administrator, Delivery Support Manager II and Delivery Support Section Head. Anyone else is refused, even if the request is sent directly.
 - Deleting a ticket takes it out of every list and report, and its page no longer opens. Nothing is erased from the database: the messages, SLA record, Resolution Days and timesheets stay stored. EcoSystem has no screen to bring a deleted ticket back, so a deletion made by mistake needs the technical team. The deletion is recorded in the `Audit Log` as `Deleted Ticket`.
 - To get a ticket out of the way and keep the option to show it again, use `Hide Ticket` instead. See `Hidden Tickets`.
+- A mention notifies only the people whose name is still in the note when you send it. A name you picked and then deleted, or changed by hand, is not notified. Mentioning a role notifies every active person in that role. You never get a mention notification from your own note, and editing a note notifies only the people newly mentioned in that edit.
+- Mentions work only in an `Internal Note`, not in a reply to the customer.
 
 ## What happens next
 
@@ -77,6 +86,8 @@ The ticket appears in the `My Tickets` tab of its ticket lead and team members, 
 
 **A person is missing from the list.** They may not be allowed to act as ticket lead or member, or their account is blocked. Ask your administrator.
 
+**I mentioned someone but they got no notification.** Check that their name is still shown in blue in the note. If you typed or edited the name by hand instead of picking it from the list, it does not count as a mention.
+
 **I cannot change the Delivery Support.** Your role may not include `Assign to Delivery Support`. Ask Helpdesk or your head, or ask an administrator to give your role that function in Menu Access.
 
-<!-- sources: routes/web.php, app/Http/Controllers/TicketController.php, resources/views/ticket/index.blade.php, resources/views/ticket/show.blade.php -->
+<!-- sources: routes/web.php, app/Http/Controllers/TicketController.php, resources/views/ticket/index.blade.php, resources/views/ticket/show.blade.php, app/Http/Controllers/TicketMessageController.php, app/Services/MentionTextGuard.php -->

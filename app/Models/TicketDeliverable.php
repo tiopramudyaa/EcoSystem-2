@@ -21,13 +21,21 @@ class TicketDeliverable extends Model
         'onedrive_file_id',
         'onedrive_file_url',
         'status',
+        'sent_at',
         'uploaded_by',
         'upload_date',
     ];
 
     protected $casts = [
         'upload_date' => 'date',
+        'sent_at'     => 'datetime',
     ];
+
+    /**
+     * Doc types whose first send counts as the ticket's "First Resolution" in the
+     * SLA Report (SlaService::firstResolutionDocAt).
+     */
+    public const FIRST_RESOLUTION_DOC_TYPES = ['IR', 'RCA'];
 
     public function ticket()
     {
