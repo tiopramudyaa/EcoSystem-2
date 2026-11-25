@@ -21,3 +21,5 @@ Kait di berkas bersama (bukan salinan): dashboard.blade.php, auth/*.blade.php, s
 | app/Models/AppConfig.php | Cache 5 menit dari aldy_merge, DITAMBAH pengecualian: kunci berawalan security. tidak di-cache | Audit G risiko R-A: penegakan 2FA dan login Microsoft harus langsung berlaku di semua instance (store cache lokal) |
 | app/Http/Controllers/SeasonalThemeSettingsController.php | schedule dicasting ke array sebelum array_values | Audit G N2: POST dengan schedule kosong memicu TypeError 500 |
 | resources/guide/{en,id}/021-my-seasonal-theme.md | Teks warna aksen terkunci dan color picker; navbar dipadatkan | Panduan mengikuti fitur Settings baru (audit G D1) |
+| resources/views/partials/seasonal-theme.blade.php | Ornamen dan partikel disembunyikan saat cetak dan prefers-contrast: more | Audit performa G: ornamen sidebar masih tampil pada kontras tinggi |
+| app/Models/AppConfig.php (lanjutan) | Kunci security. di-memo per request (bukan cache lintas request), dibuang saat set() | Audit performa G: tanpa memo, security.microsoft_login terbaca 6 kali per render Settings |

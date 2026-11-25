@@ -197,6 +197,10 @@
         border-radius: 50%;
         opacity: 0;
     }
+    /* Cetak dan kontras tinggi: seluruh ornamen dan partikel disembunyikan. */
+    @media print, (prefers-contrast: more) {
+        .seasonal-decoration { display: none !important; }
+    }
     @media (prefers-reduced-motion: no-preference) {
         .seasonal-decoration .seasonal-particle { display: block; }
         .seasonal-decoration .seasonal-snowflake {
