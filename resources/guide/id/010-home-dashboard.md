@@ -4,7 +4,7 @@ chapter: getting-started
 order: 10
 title: Dashboard Home
 summary: Halaman awal Anda: pintasan yang disematkan, angka utama, tiket terbaru, dan tautan cepat.
-updated: 2026-10-28
+updated: 2026-11-24
 ---
 `Home` adalah halaman pertama yang Anda lihat setelah masuk. Halaman ini memberi pintasan ke yang paling sering Anda pakai dan gambaran cepat angka di sekitar Anda.
 
@@ -29,6 +29,7 @@ Angka di `Home` hanya menampilkan apa yang boleh dilihat role Anda. Bila sebuah 
 5. Di `Recent Tickets`, buka tiket langsung, atau pilih `View all` untuk menuju daftar lengkap.
 6. Sebagian role juga melihat `Ticket Status Breakdown`, `Ticket Submissions` (30 hari terakhir) dan `Agent Workload` (tiket aktif per agen). Pakai untuk melihat penumpukan lebih awal.
 7. Pakai `Quick Navigation` untuk akses satu klik ke halaman seperti `Tickets`, `My Tasks` dan `Reporting`.
+8. Di layar desktop, pilih panah kecil di tepi sidebar untuk mengecilkannya menjadi ikon saja. Halaman jadi lebih lapang. Pilih panah itu lagi untuk membukanya. Arahkan kursor ke ikon untuk melihat nama menu, atau pilih grup menu untuk membuka sidebar penuh.
 
 ## Apa yang terjadi selanjutnya
 
@@ -41,5 +42,7 @@ Menu yang disematkan diingat untuk akun Anda, jadi tetap ada saat Anda masuk lag
 **Menu yang saya butuhkan tidak ada di `All Menu`.** Menu itu bukan bagian dari role Anda. Tanyakan kepada administrator.
 
 **Sidebar saya berbeda dari rekan kerja.** Menu mengikuti role masing-masing.
+
+**Sidebar hanya menampilkan ikon.** Anda sempat mengecilkannya. Pilih panah kecil di tepinya untuk membukanya lagi. Pilihan ini diingat hanya di browser ini.
 
 <!-- sources: resources/views/home, resources/views/dashboard.blade.php, routes/web.php -->
