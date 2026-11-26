@@ -547,13 +547,15 @@ Route::middleware(['web'])->group(function () {
         Route::get('/{ticketId}/mandays/hd-draft', [MandaysController::class, 'getHelpdeskDraft']);
         Route::put('/{ticketId}/mandays/hd-draft', [MandaysController::class, 'saveHelpdeskDraft']);
         Route::post('/{ticketId}/mandays/hd-draft/submit-chat', [MandaysController::class, 'submitToChat']);
-        // Jalan pintas "Helpdesk approve" dihapus: status approved hanya lewat customer.
+        // Approve langsung kini hanya untuk penyetuju Level 2 (lihat approval/final-approve).
 
         // Customer Mandays — approval bertingkat (Level 1 → Level 2). Kewenangan
         // diputuskan CustomerMandaysApprovalService::canAct(), bukan slug menu.
         Route::get('/{ticketId}/mandays/approval', [MandaysController::class, 'getApproval']);
         Route::post('/{ticketId}/mandays/approval/approve', [MandaysController::class, 'approveLevel']);
         Route::post('/{ticketId}/mandays/approval/reject', [MandaysController::class, 'rejectLevel']);
+        // Penyetuju Level 2: approve langsung saat Ready to Send / Sent to Chat (canFinalize()).
+        Route::post('/{ticketId}/mandays/approval/final-approve', [MandaysController::class, 'finalApproveCustomerMandays']);
         Route::post('/{ticketId}/mandays/hd-draft/cancel', [MandaysController::class, 'cancelCustomerMandays']);
 
         // Resolution Days - PIC + Head of Support
@@ -833,37 +835,37 @@ Route::middleware(['web'])->group(function () {
     Route::get('/my-menus', [\App\Http\Controllers\MenuController::class, 'getMyMenus']);
 
     // Menu management
-    Route::get('/menus',                                            [\App\Http\Controllers\MenuController::class, 'index']);
-    Route::get('/menus/all',                                        [\App\Http\Controllers\MenuController::class, 'allWithPermissions']);
-    Route::get('/menus/with-roles',                                 [\App\Http\Controllers\MenuController::class, 'withRoles']);
-    Route::post('/menus',                                           [\App\Http\Controllers\MenuController::class, 'store']);
-    Route::put('/menus/{menuId}',                                   [\App\Http\Controllers\MenuController::class, 'update']);
-    Route::delete('/menus/{menuId}',                                [\App\Http\Controllers\MenuController::class, 'destroy']);
-    Route::post('/menus/{menuId}/delete',                           [\App\Http\Controllers\MenuController::class, 'destroy']);
-    Route::put('/menus/{menuId}/roles/{roleId}',                    [\App\Http\Controllers\MenuController::class, 'updateRolePermission']);
-    Route::delete('/menus/{menuId}/roles/{roleId}',                 [\App\Http\Controllers\MenuController::class, 'removeRolePermission']);
-    Route::post('/menus/{menuId}/roles/{roleId}/delete',            [\App\Http\Controllers\MenuController::class, 'removeRolePermission']);
+    Route::get('/menus',                                            [\App\Http\Controllers\MenuController::class, 'index'])->middleware('menu:management.permissions');
+    Route::get('/menus/all',                                        [\App\Http\Controllers\MenuController::class, 'allWithPermissions'])->middleware('menu:management.roles,management.permissions');
+    Route::get('/menus/with-roles',                                 [\App\Http\Controllers\MenuController::class, 'withRoles'])->middleware('menu:management.roles,management.permissions');
+    Route::post('/menus',                                           [\App\Http\Controllers\MenuController::class, 'store'])->middleware('menu:management.permissions');
+    Route::put('/menus/{menuId}',                                   [\App\Http\Controllers\MenuController::class, 'update'])->middleware('menu:management.permissions');
+    Route::delete('/menus/{menuId}',                                [\App\Http\Controllers\MenuController::class, 'destroy'])->middleware('menu:management.permissions');
+    Route::post('/menus/{menuId}/delete',                           [\App\Http\Controllers\MenuController::class, 'destroy'])->middleware('menu:management.permissions');
+    Route::put('/menus/{menuId}/roles/{roleId}',                    [\App\Http\Controllers\MenuController::class, 'updateRolePermission'])->middleware('menu:management.permissions');
+    Route::delete('/menus/{menuId}/roles/{roleId}',                 [\App\Http\Controllers\MenuController::class, 'removeRolePermission'])->middleware('menu:management.permissions');
+    Route::post('/menus/{menuId}/roles/{roleId}/delete',            [\App\Http\Controllers\MenuController::class, 'removeRolePermission'])->middleware('menu:management.permissions');
 
     // Role management
-    Route::get('/roles',                                            [\App\Http\Controllers\RoleController::class, 'index']);
-    Route::post('/roles',                                           [\App\Http\Controllers\RoleController::class, 'store']);
-    Route::get('/roles/{id}',                                       [\App\Http\Controllers\RoleController::class, 'show']);
-    Route::put('/roles/{id}',                                       [\App\Http\Controllers\RoleController::class, 'update']);
-    Route::delete('/roles/{id}',                                    [\App\Http\Controllers\RoleController::class, 'destroy']);
-    Route::post('/roles/{id}/delete',                               [\App\Http\Controllers\RoleController::class, 'destroy']);
-    Route::get('/roles/{id}/permissions',                           [\App\Http\Controllers\RoleController::class, 'permissions']);
-    Route::put('/roles/{id}/permissions/{menuId}',                  [\App\Http\Controllers\RoleController::class, 'updatePermission']);
-    Route::post('/roles/{id}/permissions/{menuId}/revoke',          [\App\Http\Controllers\RoleController::class, 'removePermission']);
-    Route::delete('/roles/{id}/permissions/{menuId}',               [\App\Http\Controllers\RoleController::class, 'removePermission']);
-    Route::post('/roles/{id}/permissions/{menuId}/delete',          [\App\Http\Controllers\RoleController::class, 'removePermission']);
-    Route::get('/roles/{id}/employees',                             [\App\Http\Controllers\RoleController::class, 'employees']);
+    Route::get('/roles',                                            [\App\Http\Controllers\RoleController::class, 'index'])->middleware('menu:management.roles,master.employee.action');
+    Route::post('/roles',                                           [\App\Http\Controllers\RoleController::class, 'store'])->middleware('menu:management.roles');
+    Route::get('/roles/{id}',                                       [\App\Http\Controllers\RoleController::class, 'show'])->middleware('menu:management.roles,master.employee.action');
+    Route::put('/roles/{id}',                                       [\App\Http\Controllers\RoleController::class, 'update'])->middleware('menu:management.roles');
+    Route::delete('/roles/{id}',                                    [\App\Http\Controllers\RoleController::class, 'destroy'])->middleware('menu:management.roles');
+    Route::post('/roles/{id}/delete',                               [\App\Http\Controllers\RoleController::class, 'destroy'])->middleware('menu:management.roles');
+    Route::get('/roles/{id}/permissions',                           [\App\Http\Controllers\RoleController::class, 'permissions'])->middleware('menu:management.roles');
+    Route::put('/roles/{id}/permissions/{menuId}',                  [\App\Http\Controllers\RoleController::class, 'updatePermission'])->middleware('menu:management.roles');
+    Route::post('/roles/{id}/permissions/{menuId}/revoke',          [\App\Http\Controllers\RoleController::class, 'removePermission'])->middleware('menu:management.roles');
+    Route::delete('/roles/{id}/permissions/{menuId}',               [\App\Http\Controllers\RoleController::class, 'removePermission'])->middleware('menu:management.roles');
+    Route::post('/roles/{id}/permissions/{menuId}/delete',          [\App\Http\Controllers\RoleController::class, 'removePermission'])->middleware('menu:management.roles');
+    Route::get('/roles/{id}/employees',                             [\App\Http\Controllers\RoleController::class, 'employees'])->middleware('menu:management.roles');
 
     // Holiday management (Manajemen → Hari Libur)
-    Route::get('/management/holidays',         [\App\Http\Controllers\HolidayManagementController::class, 'index']);
-    Route::post('/management/holidays',        [\App\Http\Controllers\HolidayManagementController::class, 'store']);
-    Route::put('/management/holidays/{id}',    [\App\Http\Controllers\HolidayManagementController::class, 'update']);
-    Route::delete('/management/holidays/{id}', [\App\Http\Controllers\HolidayManagementController::class, 'destroy']);
-    Route::post('/management/holidays/{id}/delete', [\App\Http\Controllers\HolidayManagementController::class, 'destroy']);
+    Route::get('/management/holidays',         [\App\Http\Controllers\HolidayManagementController::class, 'index'])->middleware('menu:management.holidays');
+    Route::post('/management/holidays',        [\App\Http\Controllers\HolidayManagementController::class, 'store'])->middleware('menu:management.holidays');
+    Route::put('/management/holidays/{id}',    [\App\Http\Controllers\HolidayManagementController::class, 'update'])->middleware('menu:management.holidays');
+    Route::delete('/management/holidays/{id}', [\App\Http\Controllers\HolidayManagementController::class, 'destroy'])->middleware('menu:management.holidays');
+    Route::post('/management/holidays/{id}/delete', [\App\Http\Controllers\HolidayManagementController::class, 'destroy'])->middleware('menu:management.holidays');
 
     // Dropdown config management (Manajemen → Employee → Dropdown Settings) -
     // generic Employee Information dropdown master data (Position, Division,

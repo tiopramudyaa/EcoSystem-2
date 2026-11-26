@@ -527,12 +527,49 @@ class MandaysController extends Controller
             ? $approvalService->canAct($proposal, (int) (session('user')['id'] ?? 0))
             : ['allowed' => false, 'reason' => null];
 
+        // Penyetuju Level 2: Approve langsung / Cancel saat Ready to Send atau Sent to Chat.
+        $canFinalize = $proposal
+            && $approvalService->canFinalize($proposal, (int) (session('user')['id'] ?? 0))['allowed'];
+
         return response()->json([
             'success'               => true,
             'data'                  => $proposal ? $this->formatCustomerProposal($proposal) : null,
             'can_act'               => $gate['allowed'],
             'can_act_reason'        => $gate['allowed'] ? null : $gate['reason'],
+            'can_finalize'          => $canFinalize,
             'ticket_mandays_status' => $ticket->mandays_proposal_status ?? 'none',
+        ]);
+    }
+
+    /**
+     * POST /api/tickets/{ticketId}/mandays/approval/final-approve
+     * Penyetuju Level 2 menyetujui proposal yang siap dikirim atau menunggu customer,
+     * tanpa menunggu customer di JARVIES. Kewenangan: CustomerMandaysApprovalService::canFinalize().
+     */
+    public function finalApproveCustomerMandays($ticketId, CustomerMandaysApprovalService $approvalService)
+    {
+        $ticket   = Ticket::where('ticket_id', $ticketId)->firstOrFail();
+        $proposal = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
+        if (!$proposal) {
+            return response()->json(['success' => false, 'message' => 'No proposal found.'], 422);
+        }
+
+        $sessionUser = session('user');
+        $result = $approvalService->finalApprove(
+            $proposal,
+            $ticket,
+            (int) ($sessionUser['id'] ?? 0),
+            $sessionUser['name'] ?? 'Approver'
+        );
+
+        if (!$result['allowed']) {
+            return response()->json(['success' => false, 'message' => $result['reason']], 422);
+        }
+
+        return response()->json([
+            'success'               => true,
+            'message'               => 'Customer mandays approved.',
+            'ticket_mandays_status' => CustomerMandays::STATUS_APPROVED,
         ]);
     }
 
@@ -785,13 +822,21 @@ class MandaysController extends Controller
     {
         $sessionUserId = session('user')['id'] ?? null;
         $employee = $sessionUserId ? Employee::find($sessionUserId) : null;
-        if (!$employee?->canAccessMenu('ticket.review-mandays.cancel')) {
-            return response()->json(['success' => false, 'message' => 'You do not have permission to cancel the customer mandays proposal.'], 403);
-        }
 
         $ticket = Ticket::where('ticket_id', $ticketId)->firstOrFail();
 
         $latestProposal = CustomerMandays::where('ticket_id', $ticketId)->latestVersion()->first();
+
+        // Izin menu cancel, ATAU penyetuju Level 2 untuk versi terbaru yang siap dikirim /
+        // menunggu customer (tanpa mandays_id lain). canFinalize() sudah memeriksa keduanya.
+        $requestedId      = $request->input('mandays_id');
+        $targetsLatest    = !$requestedId || ($latestProposal && (int) $requestedId === (int) $latestProposal->id);
+        $canCancelAsLevel = $employee && $latestProposal && $targetsLatest
+            && $approvalService->canFinalize($latestProposal, (int) $employee->employee_id)['allowed'];
+
+        if (!$employee?->canAccessMenu('ticket.review-mandays.cancel') && !$canCancelAsLevel) {
+            return response()->json(['success' => false, 'message' => 'You do not have permission to cancel the customer mandays proposal.'], 403);
+        }
 
         // Target a specific (possibly already-superseded) version via mandays_id, or
         // default to the latest version - covers both "cancel the current draft/

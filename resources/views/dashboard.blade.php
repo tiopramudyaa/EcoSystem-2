@@ -2366,6 +2366,10 @@
          Usage: const v = await showPrompt('msg', 'title', {placeholder, maxLength}) --}}
     @include('partials.prompt-modal')
 
+    {{-- Global export field picker (pilih kolom + template) - dipakai tombol Export di list.
+         Usage: ExportPicker.open({type, title, onConfirm: (cols|null) => ...}) --}}
+    @include('partials.export-picker')
+
     @stack('scripts')
 
     {{-- ==================== GLOBAL SELECT ENHANCER ====================

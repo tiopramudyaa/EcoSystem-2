@@ -5,12 +5,14 @@ namespace App\Http\Middleware;
 use App\Models\Employee;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckMenuAccess
 {
-    public function handle(Request $request, Closure $next, string $menuSlug): Response
+    /**
+     * Satu atau beberapa slug (`menu:a,b`): cukup punya salah satu untuk lolos.
+     */
+    public function handle(Request $request, Closure $next, string ...$menuSlugs): Response
     {
         $user = session('user');
 
@@ -22,17 +24,15 @@ class CheckMenuAccess
         }
 
         $employee = Employee::find($user['id'] ?? null);
-        $canAccess = $employee && $employee->canAccessMenu($menuSlug);
-
-        // TEMP DIAGNOSTIC - remove after the 2026-09-29 menu-access investigation.
-        Log::info('CheckMenuAccess diagnostic', [
-            'menu_slug'        => $menuSlug,
-            'session_user_id'  => $user['id'] ?? null,
-            'employee_found'   => (bool) $employee,
-            'employee_role_ids'=> $employee ? $employee->roles()->pluck('employee_role.id')->all() : null,
-            'can_access'       => $canAccess,
-            'path'             => $request->path(),
-        ]);
+        $canAccess = false;
+        if ($employee) {
+            foreach ($menuSlugs as $slug) {
+                if ($employee->canAccessMenu($slug)) {
+                    $canAccess = true;
+                    break;
+                }
+            }
+        }
 
         if (!$canAccess) {
             if ($request->expectsJson() || $request->is('api/*')) {
