@@ -4,8 +4,8 @@ Per 25 November 2026. Rincian tiap gerbang ada di folder `audit/`, penyimpangan 
 
 ## Status
 
-- Port, fitur tambahan, dan audit selesai di branch `aldy_eco`. Belum di-push.
-- `origin/eco_new` maju 4 commit setelah sinkronisasi, hanya mengubah `README.md`. Uji merge: tanpa konflik, tanpa tumpang tindih berkas.
+- Port, fitur tambahan, dan audit selesai di branch `aldy_eco`, lalu di-merge ke `eco_new` pada 26 November 2026.
+- Sebelum merge, `eco_new` (13 commit baru) digabung ke `aldy_eco` tanpa konflik. Hasil gabungan diuji ulang: 345 tes, 3909 assertion, 0 gagal; 1011 route; Settings 2 query. `guide-check`: 2 galat (topik 062) dan 3 peringatan (topik 014 dan 115), semuanya dari berkas milik `eco_new`.
 - Tes: 298 tes, 3649 assertion, 0 gagal (`php -d extension=pdo_sqlite -d extension=sqlite3 vendor/bin/phpunit`).
 - Panduan: `guide-check` 0 peringatan, 2 galat lama di topik 062 (`control-center.schedule-monitor`), bukan dari tema.
 - Diff terhadap `origin/eco_new`: 95 berkas baru, 21 diubah. Tidak ada perubahan di `database`, `config`, `composer`, `routes`, `public/build`, atau `package.json`. Tidak ada migrasi.
@@ -81,7 +81,7 @@ Performa 3D (36 kombinasi, NVIDIA dan Intel): median 16,7 ms di semua kasus. p95
 1. `git fetch origin`, lalu `git merge origin/eco_new` di `aldy_eco`, jalankan suite tes.
 2. Uji manual di server lokal dengan akun nyata: login, Settings (tema, Off, warna), admin Seasonal Theme (manual, jadwal, musik), sidebar ringkas, dialog hapus.
 3. Push `aldy_eco`, buat PR ke `eco_new`.
-4. Setelah deploy: `php artisan view:clear` dan `php artisan cache:clear`.
+4. Setelah deploy: `php artisan view:clear` dan `php artisan cache:clear`. Commit `eco_new` terbaru (di luar tema) membawa 4 migrasi bertanggal 2026_11_25; jalankan `php artisan migrate` sesuai prosedur rilis pemiliknya.
 5. Pastikan `public/js/seasonal`, `public/vendor/three`, `public/images/seasonal` ikut terkirim, dan kompresi serta header cache aktif (`curl -I --compressed`).
 6. `npm run build` bukan syarat tema. Bila pipeline membangunnya ulang, periksa juga halaman lain.
 7. Bila ada CSP di infrastruktur, izinkan skrip inline, import map, dan `img-src data:`.
