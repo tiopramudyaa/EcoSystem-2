@@ -5,7 +5,7 @@ order: 40
 title: Master Employee Settings
 summary: Kelola pilihan dropdown dan batas data yang dipakai tiap tab profil Employee.
 requires: [management.employee, management.employee.basic-data, management.employee.address, management.employee.identification, management.employee.family, management.employee.education, management.employee.qualification, management.employee.contract, management.employee.bank, management.employee.payment, management.employee.attachment]
-updated: 2026-10-27
+updated: 2026-11-27
 ---
 Master Employee Settings mengatur pilihan yang ditawarkan formulir Employee (misalnya gelar, agama, negara, jenis dokumen, atau bank) dan batas penyimpanan datanya (misalnya panjang maksimum). Ada satu halaman untuk setiap tab profil Employee. Topik ini ditujukan untuk administrator dan HR.
 
@@ -23,7 +23,7 @@ Administrator dan pemilik data HR. Di `Management` › `Employee` Anda melihat s
 ### Menambah pilihan
 
 1. Buka `Management` › `Employee` lalu pilih tab.
-2. Temukan daftarnya, misalnya `Titles` atau `Countries`.
+2. Temukan daftarnya, misalnya `Academic titles` atau `Countries`.
 3. Di `Add an option`, ketik label yang ditampilkan kepada pengguna. Bila halaman meminta `Saved as`, isi nilai yang disimpan bersama data.
 4. Konfirmasi untuk menambahkannya. Pilihan muncul di daftar.
 

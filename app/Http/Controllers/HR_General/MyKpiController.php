@@ -371,7 +371,7 @@ class MyKpiController extends Controller
                     continue;
                 }
 
-                $max = $detail->indicator?->rating_max ?: $scaleMax;
+                $max = $scaleMax;
 
                 if (isset($data['rating']) && (int)$data['rating'] > 0) {
                     // Clamp to the template's scale so a tampered request can't exceed it.

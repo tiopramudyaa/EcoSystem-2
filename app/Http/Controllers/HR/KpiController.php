@@ -585,7 +585,7 @@ return redirect()->back()->with('error', 'Failed to create evaluations.');
                     continue;
                 }
 
-                $max = $detail->indicator?->rating_max ?: $scaleMax;
+                $max = $scaleMax;
 
                 if (isset($data['rating']) && (int) $data['rating'] > 0) {
                     $detail->star_rating      = min($max, (int) $data['rating']);

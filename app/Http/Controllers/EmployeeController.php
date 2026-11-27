@@ -905,7 +905,7 @@ class EmployeeController extends Controller
             'gender' => 'nullable|in:Male,Female',
             'religion' => 'nullable|in:Islam,Christian,Catholic,Hindu,Buddhist,Konghucu,Confucian',   // 'Confucian' = nilai lama, tetap diterima
             'marital_status' => 'nullable|in:Single,Married,Divorced,Widow/Widower',
-            'title' => 'nullable|in:Mr.,Mrs.,Ms.,Dr.,Prof.',
+            'title' => 'nullable|in:Dr.,Prof.',   // gelar akademik saja; sapaan (Mr./Mrs./Ms.) sudah tercermin di Gender
             'birth_date' => 'nullable|date|before_or_equal:today',
             'birth_place' => 'nullable|string|max:100',
             'since_date' => 'nullable|date',
@@ -918,7 +918,7 @@ class EmployeeController extends Controller
             'birth_date.date' => 'Birth Date must be a valid date.',
             'birth_date.before_or_equal' => 'Birth Date cannot be in the future.',
             'since_date.date' => 'Since Date must be a valid date.',
-            'title.in' => 'Title must be one of Mr., Mrs., Ms., Dr., Prof.',
+            'title.in' => 'Academic Title must be Dr. or Prof.',
             'nick_name.required' => 'Nick Name is required.',
             'nick_name.unique' => 'Nick Name is already taken. Please choose a different nick name.',
             'password.required' => 'Password is required',

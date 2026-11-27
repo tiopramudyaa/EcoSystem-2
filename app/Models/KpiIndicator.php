@@ -36,13 +36,10 @@ class KpiIndicator extends Model
     }
 
     /**
-     * Scale cap for this indicator: its own override, else the template's.
+     * Scale cap for this indicator. Always the template's scale: one scale per template, so the stars can never differ between indicators (a stored per-indicator rating_max is ignored).
      */
     public function effectiveMax(): int
     {
-        if ($this->rating_max) {
-            return (int) $this->rating_max;
-        }
         // Lazy-loads the template when it isn't eager-loaded, so the star
         // count always follows the template's scoring scale (5, 7, ...) -
         // never a hardcoded 5.

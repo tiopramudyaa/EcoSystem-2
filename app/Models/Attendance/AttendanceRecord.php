@@ -26,7 +26,7 @@ class AttendanceRecord extends Model
         'check_out_distance_m', 'check_out_ip', 'check_out_device', 'check_out_source',
 
         'shift_id', 'late_minutes', 'early_leave_minutes',
-        'work_minutes', 'overtime_minutes',
+        'work_minutes', 'work_seconds', 'overtime_minutes',
         'day_status', 'source', 'flags', 'notes',
         'period_year', 'period_month',
     ];
@@ -43,6 +43,7 @@ class AttendanceRecord extends Model
         'late_minutes'        => 'integer',
         'early_leave_minutes' => 'integer',
         'work_minutes'        => 'integer',
+        'work_seconds'        => 'integer',
         'overtime_minutes'    => 'integer',
         'period_year'         => 'integer',
         'period_month'        => 'integer',

@@ -560,8 +560,8 @@
         
         deleteIdentificationId = selectedIdentificationId;
         
-        const identification = identificationsData.find(i => i.identification_id === selectedIdentificationId);
-        let identificationInfo = 'this identification document';
+        const identification = identificationsData.find(i => String(i.identification_id) === String(selectedIdentificationId));
+        let identificationInfo = '';
         
         if (identification) {
             const type = getIdentificationTypeLabel(identification.identification_type);

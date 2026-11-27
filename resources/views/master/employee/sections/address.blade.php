@@ -815,8 +815,8 @@
         
         deleteAddressId = selectedAddressId;
         
-        const address = addressesData.find(a => a.address_id === selectedAddressId);
-        let addressInfo = 'this address';
+        const address = addressesData.find(a => String(a.address_id) === String(selectedAddressId));
+        let addressInfo = '';
         
         if (address) {
             const type = address.address_type || 'Unknown';

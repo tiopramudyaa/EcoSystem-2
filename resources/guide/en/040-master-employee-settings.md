@@ -5,7 +5,7 @@ order: 40
 title: Master Employee Settings
 summary: Manage the dropdown options and data limits used by each tab of the employee profile.
 requires: [management.employee, management.employee.basic-data, management.employee.address, management.employee.identification, management.employee.family, management.employee.education, management.employee.qualification, management.employee.contract, management.employee.bank, management.employee.payment, management.employee.attachment]
-updated: 2026-10-27
+updated: 2026-11-27
 ---
 Master Employee Settings controls the choices that employee forms offer (for example titles, religions, countries, document types or banks) and the limits the data is saved under (for example maximum lengths). One page exists for each tab of the employee profile. This topic is for administrators and HR.
 
@@ -23,7 +23,7 @@ Administrators and HR data owners. Under `Management` › `Employee` you see one
 ### Add an option
 
 1. Open `Management` › `Employee` and choose the tab.
-2. Find the list, for example `Titles` or `Countries`.
+2. Find the list, for example `Academic titles` or `Countries`.
 3. Under `Add an option`, type the label shown to users. If the page asks for `Saved as`, enter the value saved with the record.
 4. Confirm to add it. The option appears in the list.
 

@@ -335,7 +335,7 @@
     {{-- ── Section 3: Scoring Form & Rating (per template scale) ─────────────── --}}
     <form id="kpiReviewForm" onsubmit="submitKpiReview(event)">
         @csrf
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden space-y-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 kpi-sticky-card space-y-6">
 
             <div class="p-6 border-b border-gray-100 space-y-4">
                 <h3 class="text-sm font-bold text-gray-800 flex items-center gap-2">
@@ -376,9 +376,9 @@
                     </span>
                 </div>
 
-                <div class="overflow-x-auto">
+                <div class="kpi-sticky-wrap">
                     <table class="w-full text-xs">
-                        <thead class="bg-gray-50/80 border-b border-gray-200">
+                        <thead class="kpi-sticky-head bg-gray-50/80 border-b border-gray-200">
                             <tr>
                                 <th class="text-left px-4 py-3 font-semibold text-gray-500 uppercase w-10">NO</th>
                                 <th class="text-left px-4 py-3 font-semibold text-gray-500 uppercase">KPI INDICATOR</th>
@@ -393,7 +393,7 @@
                             @php
                                 $ind = $detail->indicator;
                                 $isPara = $ind && $ind->isParagraph();
-                                $max = $ind?->rating_max ?: $scaleMax;
+                                $max = $scaleMax; // one scale per template
                                 $weight = $ind?->weight ?? 0;
                                 // Upward rows are filled via self_* fields (rater's own input);
                                 // every other type via supervisor_* fields.
@@ -592,6 +592,17 @@
     </div>
 </div>
 
+
+<style>
+/* Judul kolom tabel pengisian tetap terlihat saat halaman digulir. Pembungkus tidak boleh membuat
+   scroll container (overflow auto/hidden) di desktop, kalau tidak sticky tidak berlaku. */
+.kpi-sticky-wrap { overflow-x: auto; }
+.kpi-sticky-card { overflow: visible; }
+@media (min-width: 1024px) {
+    .kpi-sticky-wrap { overflow: visible; }
+    .kpi-sticky-head th { position: sticky; top: 4.5rem; z-index: 30; background: #f9fafb; box-shadow: 0 1px 0 #e5e7eb; }
+}
+</style>
 <script>
 function setStarRating(detailId, star, weight, max) {
     max = max || 5;

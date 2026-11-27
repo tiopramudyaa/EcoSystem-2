@@ -149,6 +149,7 @@ class MyAttendanceController extends Controller
             'check_out_at'       => $record->check_out_at?->format('H:i'),
             'late_minutes'       => $record->late_minutes,
             'work_minutes'       => $record->work_minutes,
+            'work_seconds'       => $record->work_seconds,
             'overtime_minutes'   => $record->overtime_minutes,
             'day_status'         => $record->day_status,
             'check_in_verdict'   => $record->geofenceVerdict('check_in'),

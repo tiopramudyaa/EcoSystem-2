@@ -422,7 +422,7 @@ class KpiTemplateDatasets
         $data = [
             'name' => $v['name'], 'answer_type' => $v['answer_type'],
             // Same as the template scale = follow it (the form has no per-indicator scale).
-            'rating_max' => ($paragraph || !$v['rating_max'] || (int) $v['rating_max'] === $divisor) ? null : (int) $v['rating_max'],
+            'rating_max' => null, // the template scale applies to every indicator
             'measurement_unit' => $v['measurement_unit'], 'target_value' => $paragraph ? null : $v['target_value'],
             'weight' => $paragraph ? 0 : (float) $v['weight'], 'description' => $v['indicator_description'],
         ];

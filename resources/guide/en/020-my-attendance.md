@@ -5,7 +5,7 @@ order: 20
 title: My Attendance
 summary: Check in and out, review your attendance history, and ask HR to correct a wrong or missing time.
 requires: [general.my-attendance]
-updated: 2026-11-18
+updated: 2026-11-27
 ---
 `My Attendance` records your daily Check-in and Check-out from your own account and shows your history for the last 30 days.
 
@@ -34,7 +34,7 @@ Check-in and check-out are recorded once per day. When both are filled, the page
 
 ### Read your numbers
 
-- The month cards show `Present This Month`, `Late`, `Work Hours` and `Overtime Hours`.
+- The month cards show `Present This Month`, `Late`, `Work Hours` and `Overtime Hours`. Work hours are counted exactly, down to the second (for example `7 h 30 m 12 s`): check-out time minus check-in time, minus the shift's break. Overtime is counted in whole minutes.
 - Under each punch, `View on map` opens the recorded point. `GPS accuracy` is rated Good, Fair or Low, and `Technical details` holds the raw data.
 - The `30-Day History` table lists `Date`, `In`, `Out`, `Work`, `Method`, `Location` and `Status` for each day.
 

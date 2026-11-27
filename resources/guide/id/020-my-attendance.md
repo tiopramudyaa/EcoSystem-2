@@ -5,7 +5,7 @@ order: 20
 title: My Attendance
 summary: Lakukan Check-in dan Check-out, periksa riwayat kehadiran, dan minta HR mengoreksi jam yang salah atau terlewat.
 requires: [general.my-attendance]
-updated: 2026-11-18
+updated: 2026-11-27
 ---
 `My Attendance` mencatat Check-in dan Check-out harian dari akun Anda sendiri dan menampilkan riwayat 30 hari terakhir.
 
@@ -34,7 +34,7 @@ Check-in dan Check-out dicatat satu kali per hari. Bila keduanya sudah terisi, h
 
 ### Membaca angka Anda
 
-- Kartu bulanan menampilkan `Present This Month`, `Late`, `Work Hours`, dan `Overtime Hours`.
+- Kartu bulanan menampilkan `Present This Month`, `Late`, `Work Hours`, dan `Overtime Hours`. Jam kerja dihitung tepat sampai detik (misalnya `7 h 30 m 12 s`): jam check-out dikurangi jam check-in, dikurangi istirahat shift. Lembur dihitung dalam menit penuh.
 - Di bawah setiap presensi, `View on map` membuka titik yang tercatat. `GPS accuracy` dinilai Good, Fair, atau Low, dan `Technical details` berisi data mentahnya.
 - Tabel `30-Day History` memuat `Date`, `In`, `Out`, `Work`, `Method`, `Location`, dan `Status` untuk setiap hari.
 

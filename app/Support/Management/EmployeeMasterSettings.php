@@ -57,7 +57,7 @@ class EmployeeMasterSettings
                 'title' => 'Employee Basic Data', 'applies' => 'Master → Employee → Basic Data tab',
                 'about' => 'The choices on the Basic Data form and the limits on a name. Position, department and the other organisation lists are master data of their own.',
                 'lists' => [
-                    'title'           => $list('Titles', 'Mr., Mrs., Dr. …', $same(['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.']), ['employee_basic_data', 'title']),
+                    'title'           => $list('Academic titles', 'Dr., Prof. … Forms of address (Mr., Mrs., Ms.) are not used: Gender already says it.', $same(['Dr.', 'Prof.']), ['employee_basic_data', 'title']),
                     'gender'          => $list('Gender', 'The choices for gender.', $same(['Male', 'Female']), ['employee_basic_data', 'gender']),
                     'religion'        => $list('Religion', 'The choices for religion.', $same(['Islam', 'Christian', 'Catholic', 'Hindu', 'Buddhist', 'Konghucu']), ['employee_basic_data', 'religion']),
                     'marital_status'  => $list('Marital status', 'The choices for marital status.', $same(['Single', 'Married', 'Divorced', 'Widow/Widower']), ['employee_basic_data', 'marital_status']),

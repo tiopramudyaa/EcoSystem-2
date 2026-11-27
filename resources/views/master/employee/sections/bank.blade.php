@@ -543,8 +543,8 @@
         
         deleteBankId = selectedBankId;
         
-        const bank = banksData.find(b => b.bank_id === selectedBankId);
-        let bankInfo = 'this bank account';
+        const bank = banksData.find(b => String(b.bank_id) === String(selectedBankId));
+        let bankInfo = '';
         
         if (bank) {
             bankInfo = `${bank.bank_name || ''} - ${maskAccountNumber(bank.account_number)}`;

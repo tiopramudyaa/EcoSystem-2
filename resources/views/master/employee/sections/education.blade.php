@@ -541,8 +541,8 @@
         
         deleteEducationId = selectedEducationId;
         
-        const education = educationsData.find(e => e.education_id === selectedEducationId);
-        let educationInfo = 'this education record';
+        const education = educationsData.find(e => String(e.education_id) === String(selectedEducationId));
+        let educationInfo = '';
         
         if (education) {
             educationInfo = `${education.education_type || ''} - ${education.institute_place || ''}`;

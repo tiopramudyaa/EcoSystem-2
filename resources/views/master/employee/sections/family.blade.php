@@ -581,8 +581,8 @@
         
         deleteFamilyId = selectedFamilyId;
         
-        const family = familiesData.find(f => f.family_id === selectedFamilyId);
-        let familyInfo = 'this family member';
+        const family = familiesData.find(f => String(f.family_id) === String(selectedFamilyId));
+        let familyInfo = '';
         
         if (family) {
             const fullName = family.title ? `${family.title} ${family.name}` : family.name;
