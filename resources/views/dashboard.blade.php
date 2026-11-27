@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"@if(($seasonalTheme['key'] ?? 'none') !== 'none') data-season="{{ $seasonalTheme['key'] }}"@endif>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -43,7 +43,9 @@
             'font_size' => 'medium',
             'compact_mode' => false,
             'show_animations' => true,
-            'seasonal_theme' => 'none',
+            // 'default' = ikut tema admin. Fallback 'none' di sini dulu membuat user yang
+            // belum pernah menyimpan preferensi tidak pernah melihat tema admin.
+            'seasonal_theme' => 'default',
         ]);
 
         // Musik latar musiman - MURNI wewenang admin (Control Center → Seasonal
@@ -52,6 +54,11 @@
         // tidak dirender sama sekali dalam kondisi ini - lihat di bawah).
         $globalBgMusicUrl = \App\Support\GlobalSeasonalTheme::soundUrl();
         $globalBgMusicVolume = \App\Support\GlobalSeasonalTheme::soundVolume();
+
+        // Tema musiman: sudah di-resolve oleh SeasonalThemeComposer ($seasonalTheme:
+        // key, meta, soundUrl, soundVolume). Preferensi user 'default' = ikut admin.
+        $seasonalTheme = $seasonalTheme ?? ['key' => 'none', 'meta' => null, 'soundUrl' => null, 'soundVolume' => null];
+        $effectiveSeasonalTheme = $seasonalTheme['key'];
 
         // Convert hex to RGB for Tailwind
         $primaryColor = $preferences['primary_color'];
@@ -94,7 +101,12 @@
         $showLimitedMenus = false; // tidak dipakai lagi
         $canManageSla     = $can('sla.config');
     @endphp
-    
+
+    {{-- CSS variable tema musiman (--st-*) dan override --primary-*, hanya bila ada tema aktif. --}}
+    @include('partials.seasonal-theme-vars')
+    {{-- Sidebar ringkas: status dibaca sebelum render supaya tidak berkedip. Hanya localStorage, tanpa query. --}}
+    <script>try{if(localStorage.getItem('ec_sidebar_rail')==='1')document.documentElement.setAttribute('data-sb-rail','1')}catch(e){}</script>
+
     <style>
         /* Cross-document View Transitions - pasangan dari deklarasi yang sama di
            auth/login.blade.php. Progressive enhancement murni CSS, tidak ada
@@ -153,7 +165,54 @@
         .primary-solid {
             background-color: rgb(var(--primary-rgb)) !important;
         }
-        
+
+        /* Tema musiman: hanya bila <html data-season> ada. Palet dari partials/seasonal-theme-vars.
+           Selector html[data-season] #sidebar lebih spesifik daripada .primary-gradient/.primary-solid
+           di atas (yang memakai !important), jadi menang tanpa menyentuh kelas itu.
+           Tanpa data-season tidak ada yang berubah. */
+        html[data-season] #sidebar.primary-gradient {
+            background: linear-gradient(135deg, rgb(var(--st-primary-dark-rgb)), rgb(var(--st-primary-rgb))) !important;
+        }
+        html[data-season] #sidebar.primary-solid {
+            background-color: rgb(var(--st-primary-rgb)) !important;
+        }
+        html[data-season] #sidebar { --sb-accent: var(--st-accent, #f2c14e); }
+
+        /* Utilitas yang dipakai halaman admin Seasonal Theme tetapi belum ada di build Tailwind
+           (public/build). Aman bila nanti ikut terbentuk saat build ulang: nilainya sama. */
+        .basis-44 { flex-basis: 11rem; }
+        .accent-gray-700 { accent-color: #374151; }
+        @media (min-width: 40rem) {
+            .sm\:items-end { align-items: flex-end; }
+            .sm\:grid-cols-\[1fr_9\.5rem_9\.5rem_auto\] { grid-template-columns: 1fr 9.5rem 9.5rem auto; }
+        }
+
+        /* Sidebar ringkas (hanya ikon), khusus desktop. Status di html[data-sb-rail], disimpan di localStorage.
+           Hanya berlaku bila sidebar memakai menu bawaan (#sidebar[data-rail="on"]). Tidak mengubah fungsi menu. */
+        #sidebarRailToggle {
+            display: none; position: absolute; top: 5.25rem; right: -0.75rem; z-index: 60;
+            width: 1.5rem; height: 1.5rem; border-radius: 9999px; border: 1px solid rgba(0,0,0,.08);
+            align-items: center; justify-content: center; font-size: .65rem; cursor: pointer;
+            background: #fff; color: #374151; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+        }
+        #sidebarRailToggle:hover { background: #f3f4f6; }
+        #sidebarRailToggle:focus-visible { outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 4px rgba(0,0,0,.4); }
+        @media (min-width: 64rem) {
+            #sidebar[data-rail="on"] #sidebarRailToggle { display: flex; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"]:not(.w-0) { width: 5rem; }
+            html[data-sb-rail="1"]:has(#sidebar[data-rail="on"]) #mainContent.lg\:ml-64 { margin-left: 5rem; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] #sidebarRailToggle i { transform: rotate(180deg); }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .nav-text,
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .nav-pin-btn,
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .seasonal-decoration--sidebar .seasonal-accent,
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .px-4:has(> .relative > #sidebarSearch) { display: none !important; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] nav { padding-left: .5rem; padding-right: .5rem; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .nav-link { justify-content: center; padding-left: 0; padding-right: 0; gap: 0; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .sidebar-logo { padding: .75rem 0 .5rem; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .sidebar-logo > div { width: auto; padding: 0; }
+            html[data-sb-rail="1"] #sidebar[data-rail="on"] .sidebar-logo img { width: 2.75rem; height: 2.75rem; object-fit: cover; object-position: left center; }
+        }
+
         /* Smooth scrollbar */
         ::-webkit-scrollbar {
             width: 4px;
@@ -780,23 +839,31 @@
             return String(parseFloat(Number(value).toFixed(2)));
         };
     </script>
+    {{-- Remap warna tombol/aksen brand ke palet musiman. Selector-nya html[data-season], jadi inert tanpa tema.
+         Dimuat hanya saat tema aktif, atau di halaman Settings (pratinjau memasang data-season lewat JS),
+         supaya halaman tanpa tema tidak membawa 5 KB CSS yang tidak terpakai. --}}
+    @if(($seasonalTheme['key'] ?? 'none') !== 'none' || request()->routeIs('settings.*'))
+        @include('partials.seasonal-ui-remap', ['dark' => ($preferences['theme'] ?? 'light') === 'dark'])
+    @endif
+    {{-- Aksen dekoratif sidebar, header, dan kartu ringkasan. Hanya CSS tema yang aktif; tanpa tema tidak dimuat. --}}
+    @if(($seasonalTheme['key'] ?? 'none') !== 'none')
+        @include('partials.seasonal-accents', ['themeKey' => $seasonalTheme['key'], 'dark' => ($preferences['theme'] ?? 'light') === 'dark', 'showAnimations' => $preferences['show_animations'] ?? true])
+    @endif
 </head>
 <body class="text-gray-900 min-h-screen" style="background-color: var(--bg-color);">
+    {{-- Sprite ikon dan ornamen vektor tema musiman, hanya bila ada tema aktif. Halaman yang menampilkan
+         kartu pilihan tema (Settings, Seasonal Theme) menyertakannya sendiri (@once). --}}
+    @if($effectiveSeasonalTheme !== 'none')
+        @include('partials.seasonal-icons')
+    @endif
     <div id="toast-container"></div>
     <div class="flex min-h-screen">
 
         <!-- Mobile sidebar backdrop (only visible when drawer is open on < lg) -->
         <div id="sidebarOverlay" onclick="closeSidebar()" class="fixed inset-0 z-40 hidden lg:hidden" style="background-color: rgba(0,0,0,0.5);"></div>
 
-        {{-- Tema musiman: resolve preferensi user ('default' → ikut admin) SEKALI di sini,
-             dipakai untuk dekorasi sidebar saja (bukan seluruh halaman - lihat feedback
-             di App\Support\SeasonalThemeResolver / partials.seasonal-theme). --}}
-        @php
-            $effectiveSeasonalTheme = \App\Support\SeasonalThemeResolver::effectiveFor($preferences['seasonal_theme'] ?? 'default');
-        @endphp
-
         <!-- Sidebar - Modern Design -->
-        <aside id="sidebar" class="sidebar-transition fixed inset-y-0 left-0 h-screen flex flex-col {{ $preferences['sidebar_style'] === 'gradient' ? 'primary-gradient' : 'primary-solid' }} text-white shadow-2xl z-50 w-64 -translate-x-full lg:translate-x-0">
+        <aside id="sidebar" data-rail="{{ View::hasSection('sidebar-nav') ? 'off' : 'on' }}" class="sidebar-transition fixed inset-y-0 left-0 h-screen flex flex-col {{ $preferences['sidebar_style'] === 'gradient' ? 'primary-gradient' : 'primary-solid' }} text-white shadow-2xl z-50 w-64 -translate-x-full lg:translate-x-0">
             @if($effectiveSeasonalTheme !== 'none')
                 @include('partials.seasonal-theme', [
                     'themeKey' => $effectiveSeasonalTheme,
@@ -804,6 +871,7 @@
                     'placement' => 'sidebar',
                 ])
             @endif
+            <button type="button" id="sidebarRailToggle" onclick="toggleSidebarRail()" aria-pressed="false" aria-label="Collapse sidebar" title="Collapse sidebar"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
             {{-- Fixed header: logo + menu search - stays put while the nav list below scrolls --}}
             <div class="shrink-0">
                 <!-- Logo Section -->
@@ -1644,10 +1712,11 @@
             <!-- Header - Modern Design -->
             <header class="sticky top-0 z-40 shadow-sm border-b border-gray-100" style="background-color: var(--card-bg);">
                 @if($effectiveSeasonalTheme !== 'none')
-                    @include('partials.seasonal-theme', [
+                    {{-- Hiasan vektor selebar navbar (menggantikan tiga aksen pudar placement 'header'). --}}
+                    @include('partials.seasonal-navbar', [
                         'themeKey' => $effectiveSeasonalTheme,
                         'showAnimations' => $preferences['show_animations'] ?? true,
-                        'placement' => 'header',
+                        'dark' => ($preferences['theme'] ?? 'light') === 'dark',
                     ])
                 @endif
                 <div class="px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center gap-3">
@@ -2021,6 +2090,41 @@
             }
         }
 
+        // Sidebar ringkas (desktop). Disimpan di localStorage; menu dan rute tidak berubah.
+        function setSidebarRail(on, persist) {
+            var root = document.documentElement;
+            if (on) root.setAttribute('data-sb-rail', '1'); else root.removeAttribute('data-sb-rail');
+            if (persist !== false) { try { localStorage.setItem('ec_sidebar_rail', on ? '1' : '0'); } catch (e) {} }
+            var b = document.getElementById('sidebarRailToggle');
+            if (b) {
+                var label = on ? 'Expand sidebar' : 'Collapse sidebar';
+                b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                b.setAttribute('aria-label', label);
+                b.title = label;
+            }
+            // Tooltip nama menu saat hanya ikon yang tampil.
+            document.querySelectorAll('#sidebar a.nav-link, #sidebar button.nav-link').forEach(function (el) {
+                if (on) {
+                    var tx = el.querySelector('.nav-text');
+                    if (tx && !el.hasAttribute('title')) { el.setAttribute('title', tx.textContent.trim()); el.setAttribute('data-rail-title', '1'); }
+                } else if (el.getAttribute('data-rail-title')) {
+                    el.removeAttribute('title'); el.removeAttribute('data-rail-title');
+                }
+            });
+        }
+        function toggleSidebarRail() {
+            setSidebarRail(document.documentElement.getAttribute('data-sb-rail') !== '1');
+        }
+        (function () {
+            var sb = document.getElementById('sidebar');
+            if (!sb || sb.getAttribute('data-rail') !== 'on') return;
+            setSidebarRail(document.documentElement.getAttribute('data-sb-rail') === '1', false);
+            // Klik grup menu saat ringkas: sidebar melebar dulu (submenu butuh ruang), lalu handler grup berjalan seperti biasa.
+            sb.addEventListener('click', function (e) {
+                if (document.documentElement.getAttribute('data-sb-rail') !== '1' || !isDesktopViewport()) return;
+                if (e.target.closest && e.target.closest('button.nav-link')) setSidebarRail(false, false); // sementara: pilihan tersimpan tidak ditimpa
+            }, true);
+        })();
         // When resizing up to desktop, drop any mobile drawer state so the
         // docked sidebar and scroll lock are always in a clean state.
         window.addEventListener('resize', function () {

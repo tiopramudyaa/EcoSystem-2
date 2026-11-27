@@ -145,6 +145,121 @@ class CustomerMandaysApprovalService
     }
 
     /**
+     * Status tempat penyetuju level terakhir (Level 2) boleh langsung Approve atau
+     * Cancel, sama seperti Helpdesk sebelum ada approval bertingkat: siap dikirim,
+     * atau sudah dikirim dan menunggu customer.
+     */
+    public const FINAL_ACTION_STATUSES = [
+        CustomerMandays::STATUS_PENDING_HELPDESK,
+        CustomerMandays::STATUS_SENT_TO_CHAT,
+    ];
+
+    /**
+     * Apakah karyawan ini penyetuju level terakhir (Level 2) untuk proposal ini.
+     *
+     * Memakai snapshot level terakhir milik proposal. Proposal yang dikirim sebelum
+     * approval bertingkat aktif tidak punya snapshot, jadi memakai konfigurasi
+     * Management > Flow yang berlaku sekarang.
+     */
+    public function isLastLevelApprover(CustomerMandays $proposal, int $actorId): bool
+    {
+        $employee = Employee::find($actorId);
+        if (!$employee) {
+            return false;
+        }
+        $roleIds = array_map('intval', $employee->getRoleIds());
+
+        // reorder(): relasi approvals() sudah berurutan naik; yang dicari level terakhir.
+        $snapshot = $proposal->approvals()->reorder('order_seq', 'desc')->first();
+        if ($snapshot) {
+            return $snapshot->allows($actorId, $roleIds);
+        }
+
+        $step = $this->steps()->last();
+        if (!$step) {
+            return false;
+        }
+
+        return match ($step->approver_type) {
+            CustomerMandaysApprovalStep::TYPE_ROLE
+                => $step->approver_role_id !== null && in_array((int) $step->approver_role_id, $roleIds, true),
+            CustomerMandaysApprovalStep::TYPE_EMPLOYEE
+                => in_array($actorId, array_map('intval', $step->approver_employee_ids ?? []), true),
+            default => false,
+        };
+    }
+
+    /**
+     * Boleh Approve langsung atau Cancel proposal yang siap dikirim / menunggu customer?
+     * Hanya untuk versi terbaru ticket dan hanya penyetuju level terakhir.
+     *
+     * @return array{allowed: bool, reason: string}
+     */
+    public function canFinalize(CustomerMandays $proposal, int $actorId): array
+    {
+        if (!in_array($proposal->status, self::FINAL_ACTION_STATUSES, true)) {
+            return ['allowed' => false, 'reason' => 'This proposal is not ready to send or waiting for the customer.'];
+        }
+
+        $isLatest = !CustomerMandays::where('ticket_id', $proposal->ticket_id)
+            ->where('version', '>', $proposal->version)
+            ->exists();
+        if (!$isLatest) {
+            return ['allowed' => false, 'reason' => 'Only the latest version can be approved.'];
+        }
+
+        if (!$this->isLastLevelApprover($proposal, $actorId)) {
+            return ['allowed' => false, 'reason' => 'Only the Level 2 approver can approve this proposal.'];
+        }
+
+        return ['allowed' => true, 'reason' => ''];
+    }
+
+    /**
+     * Penyetuju Level 2 menyetujui proposal langsung (tanpa menunggu customer di JARVIES),
+     * misalnya karena customer sudah setuju lewat email. Efeknya sama dengan Approve
+     * Helpdesk sebelum approval bertingkat: man_days ticket diisi total proposal.
+     *
+     * @return array{allowed: bool, reason: string}
+     */
+    public function finalApprove(CustomerMandays $proposal, Ticket $ticket, int $actorId, string $actorName): array
+    {
+        $gate = $this->canFinalize($proposal, $actorId);
+        if (!$gate['allowed']) {
+            return $gate;
+        }
+
+        // Ditolak customer: revisi dan kirim ulang, atau cancel; jangan langsung approve.
+        if ($proposal->status === CustomerMandays::STATUS_PENDING_HELPDESK && !empty($proposal->rejection_reason)) {
+            return ['allowed' => false, 'reason' => 'The customer rejected this proposal. Revise and resend it, or cancel it.'];
+        }
+
+        $fromStatus = $proposal->status;
+
+        DB::transaction(function () use ($proposal, $ticket) {
+            $proposal->update([
+                'status'             => CustomerMandays::STATUS_APPROVED,
+                'current_step_order' => null,
+            ]);
+            $ticket->update([
+                'mandays_proposal_status' => CustomerMandays::STATUS_APPROVED,
+                'man_days'                => $proposal->total_mandays,
+            ]);
+        });
+
+        Log::info('Customer mandays approval: approved directly by Level 2', [
+            'customer_mandays_id' => $proposal->id,
+            'ticket_id'           => $ticket->ticket_id,
+            'from_status'         => $fromStatus,
+            'actor_id'            => $actorId,
+            'actor_name'          => $actorName,
+            'total_mandays'       => (float) $proposal->total_mandays,
+        ]);
+
+        return ['allowed' => true, 'reason' => ''];
+    }
+
+    /**
      * Proposal (versi terbaru tiap ticket) yang levelnya sedang menunggu karyawan ini.
      * Memakai aturan yang sama dengan canAct(), jadi daftar ini tidak pernah memuat
      * proposal yang tidak boleh ia putuskan.
