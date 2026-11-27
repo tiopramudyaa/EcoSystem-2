@@ -93,29 +93,57 @@
                 </div>
 
                 {{-- Accent Color --}}
-                <div class="px-8 py-6">
+                @php
+                    // Tema musiman aktif untuk pengguna ini (Default mengikuti tema global admin) = warna aksen
+                    // dikendalikan tema, jadi pilihan warna dikunci dan diberi peringatan. Tanpa query tambahan
+                    // (GlobalSeasonalTheme di-memo per request dan dicache AppConfig).
+                    $acChoice = $preferences['seasonal_theme'] ?? 'default';
+                    $acKey = $acChoice === 'default' ? \App\Support\GlobalSeasonalTheme::active() : $acChoice;
+                    $acLocked = $acKey !== 'none' && \App\Support\SeasonalThemes::isValid($acKey);
+                    $acPresets = ['#991b1b'=>'Default','#c62828'=>'Red','#1976d2'=>'Blue','#388e3c'=>'Green','#f57c00'=>'Orange',
+                                  '#7b1fa2'=>'Purple','#0097a7'=>'Teal','#5d4037'=>'Brown','#455a64'=>'Slate'];
+                    $acSaved = strtolower((string) ($preferences['primary_color'] ?? '#991b1b'));
+                    $acSaved = preg_match('/^#[0-9a-f]{6}$/', $acSaved) ? $acSaved : '#991b1b';
+                    $acIsCustom = !array_key_exists($acSaved, $acPresets);
+                @endphp
+                <div class="px-8 py-6 {{ $acLocked ? 'is-locked' : '' }}" id="accentRow">
                     <div class="flex items-start justify-between gap-8">
                         <div class="w-48 flex-shrink-0">
                             <p class="text-sm font-medium text-gray-800">Accent color</p>
                             <p class="text-xs text-gray-400 mt-1 leading-relaxed">Used for buttons and active states</p>
                         </div>
-                        <div class="flex flex-wrap gap-2.5">
-                            @foreach(['#991b1b'=>'Default','#c62828'=>'Red','#1976d2'=>'Blue','#388e3c'=>'Green','#f57c00'=>'Orange',
-                                      '#7b1fa2'=>'Purple','#0097a7'=>'Teal','#5d4037'=>'Brown','#455a64'=>'Slate']
-                                     as $hex=>$label)
-                            <button type="button" onclick="selectColor('{{ $hex }}')" title="{{ $label }}"
-                                class="color-option w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-110 shadow-sm
-                                       {{ $preferences['primary_color']===$hex ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : '' }}"
-                                style="background:{{ $hex }}">
-                                @if($preferences['primary_color']===$hex)
-                                    <i class="fas fa-check text-white text-xs"></i>
-                                @endif
-                            </button>
-                            @endforeach
+                        <div style="min-width:0; max-width:26rem;">
+                            <div class="flex flex-wrap gap-2.5 justify-end">
+                                @foreach($acPresets as $hex=>$label)
+                                <button type="button" onclick="selectColor('{{ $hex }}')" title="{{ $label }}"
+                                    class="color-option w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-110 shadow-sm
+                                           {{ $acSaved===$hex ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : '' }}"
+                                    style="background:{{ $hex }}">
+                                    @if($acSaved===$hex)
+                                        <i class="fas fa-check text-white text-xs"></i>
+                                    @endif
+                                </button>
+                                @endforeach
+                                <label class="ac-custom {{ $acIsCustom ? 'is-selected' : '' }}" id="acCustomWrap" title="{{ __('ui.seasonal.accent_custom') }}"
+                                       @if($acIsCustom) style="background:{{ $acSaved }}" @endif>
+                                    <input type="color" id="customAccent" value="{{ $acSaved }}" aria-label="{{ __('ui.seasonal.accent_custom') }}"
+                                           oninput="selectCustomColor(this.value)"
+                                           onclick="if (accentLocked()) { event.preventDefault(); warnAccentLocked(); }">
+                                    <span class="ac-ico" aria-hidden="true"><i class="fas fa-eye-dropper"></i></span>
+                                </label>
+                            </div>
+                            <p class="ac-hint" id="accentLightHint" hidden>{{ __('ui.seasonal.accent_light_hint') }}</p>
+                            <div class="ac-notice" id="accentLockNotice" role="status" @if(!$acLocked) hidden @endif>
+                                <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                                <div>
+                                    <strong>{{ __('ui.seasonal.accent_locked_title') }}</strong><br>
+                                    {{ __('ui.seasonal.accent_locked_body') }}
+                                    <div><button type="button" onclick="turnOffSeasonal()">{{ __('ui.seasonal.accent_turn_off') }}</button></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-
                 {{-- Sidebar Style --}}
                 <div class="px-8 py-6">
                     <div class="flex items-start justify-between gap-8">
@@ -139,51 +167,57 @@
 
                 {{-- Seasonal Theme --}}
                 @php
-                    // Dihitung di sini (bukan controller) supaya konsisten dengan pola yang
-                    // sudah dipakai dashboard.blade.php/login.blade.php untuk fitur ini.
-                    $currentGlobalSeasonal = \App\Support\GlobalSeasonalTheme::active();
-                    $currentGlobalSeasonalLabel = $currentGlobalSeasonal === 'none'
-                        ? 'Off (admin hasn\'t enabled anything)'
-                        : (\App\Support\SeasonalThemes::get($currentGlobalSeasonal)['label'] ?? 'Off');
+                    // Tema global admin saat ini (untuk label "Default" dan pratinjau). Layout belum
+                    // dirender saat konten ini dibangun, jadi dihitung langsung di sini.
+                    $stGlobalKey = \App\Support\GlobalSeasonalTheme::active();
+                    $stGlobalLabel = __(\App\Support\SeasonalThemes::get($stGlobalKey)['label_key'] ?? 'ui.seasonal.themes.none');
+                    $stCurrent = $preferences['seasonal_theme'] ?? 'default';
+                    $stPalettes = collect(\App\Support\SeasonalThemes::catalog())->map(fn ($m) => $m['palette'])->all();
                 @endphp
                 <div class="px-8 py-6">
                     <div class="flex items-start justify-between gap-8">
                         <div class="w-48 flex-shrink-0">
-                            <p class="text-sm font-medium text-gray-800">Seasonal theme</p>
-                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">Festive decoration on your dashboard</p>
+                            <p class="text-sm font-medium text-gray-800">{{ __('ui.seasonal.title') }}</p>
+                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ __('ui.seasonal.subtitle') }}</p>
                             <p class="text-xs text-gray-400 mt-2 leading-relaxed">
-                                "Default" currently follows the admin's global setting:
-                                <span class="font-semibold text-gray-600">{{ $currentGlobalSeasonalLabel }}</span>.
-                                Pick "Off" here to opt out for yourself only.
+                                {{ __('ui.seasonal.follows_admin', ['theme' => $stGlobalLabel]) }}
+                                {{ __('ui.seasonal.opt_out') }}
                             </p>
                             @if($can('control-center.seasonal-theme'))
                                 <a href="{{ route('admin.seasonal-theme') }}"
                                    class="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 hover:text-red-800 hover:underline mt-2">
                                     <i class="fas fa-gear text-[10px]"></i>
-                                    Manage global default (Admin)
+                                    {{ __('ui.seasonal.manage') }}
                                 </a>
                             @endif
+                            @include('partials.seasonal-preview', ['picker' => '#seasonalPicker', 'globalKey' => $stGlobalKey])
                         </div>
-                        <div class="flex items-center gap-3">
-                            {{-- 'default' bukan bagian dari SeasonalThemes (itu katalog tema yang
-                                 bisa dirender) - ini murni pilihan "ikut admin" di level preferensi
-                                 user, lihat App\Support\SeasonalThemeResolver. --}}
-                            <button type="button" onclick="selectSeasonalTheme('default')"
-                                class="flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all hover:border-red-400
-                                       {{ ($preferences['seasonal_theme'] ?? 'default')==='default' ? 'border-red-600 bg-red-50/50' : 'border-gray-200' }}">
-                                <div class="w-full h-8 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                        <div class="flex flex-wrap items-center justify-end gap-3" id="seasonalPicker">
+                    @include('partials.seasonal-icons')
+                            {{-- 'default' bukan bagian dari SeasonalThemes (katalog tema yang bisa
+                                 dirender): ini pilihan "ikut admin" di level preferensi user,
+                                 lihat App\Support\SeasonalThemeResolver. --}}
+                            <button type="button" data-season-choice="default" onclick="selectSeasonalTheme('default', this)"
+                                style="--st-card-accent:#6b7280"
+                                class="st-card flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all {{ $stCurrent === 'default' ? 'is-selected' : '' }}">
+                                <div class="st-tile w-full h-11 bg-gray-100">
                                     <i class="fas fa-wand-magic-sparkles text-gray-500"></i>
                                 </div>
-                                <span class="text-xs font-medium {{ ($preferences['seasonal_theme'] ?? 'default')==='default' ? 'text-red-700' : 'text-gray-500' }}">Default</span>
+                                <span class="st-card-label text-xs font-medium">{{ __('ui.seasonal.default') }}</span>
                             </button>
-                            @foreach(\App\Support\SeasonalThemes::catalog() as $sk=>$meta)
-                            <button type="button" onclick="selectSeasonalTheme('{{ $sk }}')"
-                                class="flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all hover:border-red-400
-                                       {{ ($preferences['seasonal_theme'] ?? 'default')===$sk ? 'border-red-600 bg-red-50/50' : 'border-gray-200' }}">
-                                <div class="w-full h-8 rounded-lg flex items-center justify-center overflow-hidden" style="background:{{ $meta['accent'] }}1a">
-                                    <i class="fas {{ $meta['icon'] }}" style="color:{{ $meta['accent'] }}"></i>
-                                </div>
-                                <span class="text-xs font-medium {{ ($preferences['seasonal_theme'] ?? 'default')===$sk ? 'text-red-700' : 'text-gray-500' }}">{{ $meta['label'] }}</span>
+                            @foreach(\App\Support\SeasonalThemes::catalog() as $sk => $meta)
+                            <button type="button" data-season-choice="{{ $sk }}" onclick="selectSeasonalTheme('{{ $sk }}', this)"
+                                style="--st-card-accent:{{ $meta['accent'] }}"
+                                class="st-card flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all {{ $stCurrent === $sk ? 'is-selected' : '' }}">
+                                @if($meta['palette'])
+                                    <div class="st-tile relative w-full h-11" style="background:linear-gradient(135deg, {{ $meta['palette']['login_from'] }} 55%, {{ $meta['palette']['login_to'] }} 170%)">
+                                        @include('partials.seasonal-icon', ['name' => 'icon-' . $sk, 'theme' => $sk, 'size' => 34])
+                                        @include('partials.seasonal-poster', ['theme' => $sk])
+                                    </div>
+                                @else
+                                    <div class="st-tile w-full h-11 bg-gray-100"><i class="fas {{ $meta['icon'] }} text-gray-400"></i></div>
+                                @endif
+                                <span class="st-card-label text-xs font-medium">{{ __($meta['label_key']) }}</span>
                             </button>
                             @endforeach
                         </div>
@@ -768,6 +802,29 @@
 </div>
 
 <style>
+.st-card { border-color:#e5e7eb; background:transparent; }
+#accentRow.is-locked .color-option, #accentRow.is-locked .ac-custom { opacity:.45; cursor:not-allowed; }
+#accentRow.is-locked .color-option:hover, #accentRow.is-locked .ac-custom:hover { transform:none; }
+.ac-custom { position:relative; display:inline-flex; width:2rem; height:2rem; border-radius:.5rem; align-items:center; justify-content:center; cursor:pointer; background:conic-gradient(#f44336,#ff9800,#ffeb3b,#4caf50,#00bcd4,#3f51b5,#9c27b0,#f44336); box-shadow:0 1px 2px rgba(0,0,0,.15); transition:transform .15s ease; }
+.ac-custom:hover { transform:scale(1.1); }
+.ac-custom input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:inherit; padding:0; border:0; }
+.ac-custom .ac-ico { color:#fff; font-size:.7rem; text-shadow:0 1px 2px rgba(0,0,0,.6); pointer-events:none; }
+.ac-custom.is-selected { box-shadow:0 0 0 2px #fff, 0 0 0 4px #9ca3af; transform:scale(1.1); }
+.ac-notice { margin-top:.75rem; padding:.75rem .9rem; border:1px solid #f59e0b; background:rgba(245,158,11,.12); color:var(--text-color,#111827); border-radius:.625rem; font-size:.75rem; line-height:1.45; display:flex; gap:.6rem; align-items:flex-start; text-align:left; }
+.ac-notice[hidden] { display:none; }
+.ac-notice > i { color:#d97706; margin-top:.15rem; }
+.ac-notice button { margin-top:.5rem; border:1px solid rgba(107,114,128,.5); background:transparent; color:inherit; border-radius:.4rem; padding:.3rem .65rem; font-size:.75rem; font-weight:600; cursor:pointer; }
+.ac-notice button:hover { background:rgba(107,114,128,.12); }
+.ac-notice.is-pulse { animation:ac-pulse .6s ease 1; }
+@keyframes ac-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(245,158,11,0); } 40% { box-shadow:0 0 0 4px rgba(245,158,11,.45); } }
+.ac-hint { margin-top:.4rem; font-size:.7rem; color:#b45309; text-align:right; }
+.ac-hint[hidden] { display:none; }
+@media (prefers-reduced-motion: reduce) { .ac-notice.is-pulse { animation:none; } }
+.st-card:hover { border-color:var(--st-card-accent); }
+.st-card.is-selected { border-color:var(--st-card-accent); box-shadow:0 0 0 1px var(--st-card-accent); }
+/* Warna label mengikuti tema terang/gelap halaman (var(--text-color)), bukan hex tetap. */
+.st-card .st-card-label { color:var(--text-color, #111827); opacity:.68; }
+.st-card.is-selected .st-card-label { color:var(--text-color, #111827); opacity:1; }
 .se-btn { display:flex; align-items:center; }
 .se-label.is-placeholder { color:#9ca3af; }
 .se-wrap.is-open .se-arrow { transform:rotate(180deg); }
@@ -825,15 +882,71 @@ function selectTheme(theme) {
     el.classList.remove('border-gray-200');
     el.querySelector('span')?.classList.replace('text-gray-500','text-red-700');
 }
-function selectColor(hex) {
-    S.primary_color = hex;
+// ── Warna aksen: dikunci selama tema musiman aktif ────────────────────────────
+const ACCENT_MSG = @json(__('ui.seasonal.accent_toast'));
+function accentLocked() {
+    const k = S.seasonal_theme === 'default' ? SEASONAL_PREVIEW.globalKey : S.seasonal_theme;
+    return !!(k && k !== 'none' && SEASONAL_PREVIEW.palettes[k]);
+}
+function updateAccentLock() {
+    const row = document.getElementById('accentRow');
+    if (!row) return;
+    const locked = accentLocked();
+    row.classList.toggle('is-locked', locked);
+    const n = document.getElementById('accentLockNotice');
+    if (n) n.hidden = !locked;
+    row.querySelectorAll('.color-option, #customAccent').forEach(e => e.setAttribute('aria-disabled', locked ? 'true' : 'false'));
+}
+function warnAccentLocked() {
+    const n = document.getElementById('accentLockNotice');
+    if (n) {
+        n.hidden = false;
+        n.classList.remove('is-pulse'); void n.offsetWidth; n.classList.add('is-pulse');
+        if (n.scrollIntoView) n.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+    if (typeof showNotification === 'function') showNotification(ACCENT_MSG, 'warning');
+}
+function turnOffSeasonal() {
+    const card = document.querySelector('#seasonalPicker [data-season-choice="none"]');
+    if (card) selectSeasonalTheme('none', card);
+}
+// Warna sangat terang: teks putih pada tombol sulit dibaca. Luminans relatif WCAG; ambang 0.45 (rasio kira-kira 2:1).
+function accentTooLight(hex) {
+    const m = /^#([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!m) return false;
+    const c = [m[1], m[2], m[3]].map(h => { const v = parseInt(h, 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] > 0.45;
+}
+function markAccentSelection(hex, custom) {
     document.querySelectorAll('.color-option').forEach(b => {
         b.classList.remove('ring-2','ring-offset-2','ring-gray-400','scale-110');
         b.innerHTML = '';
     });
+    const wrap = document.getElementById('acCustomWrap');
+    if (wrap) {
+        wrap.classList.toggle('is-selected', !!custom);
+        wrap.style.background = custom ? hex : '';
+    }
+    const hint = document.getElementById('accentLightHint');
+    if (hint) hint.hidden = !accentTooLight(hex);
+}
+function selectColor(hex) {
+    if (accentLocked()) { warnAccentLocked(); return; }
+    S.primary_color = hex;
+    markAccentSelection(hex, false);
     const el = event.currentTarget;
     el.classList.add('ring-2','ring-offset-2','ring-gray-400','scale-110');
     el.innerHTML = '<i class="fas fa-check text-white text-xs"></i>';
+    const ci = document.getElementById('customAccent'); if (ci) ci.value = hex;
+    _applyColor(hex);
+}
+function selectCustomColor(value) {
+    const inp = document.getElementById('customAccent');
+    if (accentLocked()) { warnAccentLocked(); if (inp) inp.value = S.primary_color; return; }
+    const hex = String(value).toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(hex)) return;
+    S.primary_color = hex;
+    markAccentSelection(hex, true);
     _applyColor(hex);
 }
 function selectSidebarStyle(style) {
@@ -861,17 +974,47 @@ function selectFontSize(size) {
     el.classList.remove('border-gray-200');
     document.documentElement.style.fontSize = {small:'14px',medium:'16px',large:'18px'}[size];
 }
-function selectSeasonalTheme(theme) {
+// Pratinjau tema musiman: menerapkan palet ke halaman ini tanpa reload. Hanya sementara,
+// tersimpan setelah Save (sama seperti pilihan Appearance lainnya).
+const SEASONAL_PREVIEW = {
+    globalKey: @json($stGlobalKey),
+    palettes: @json($stPalettes),
+};
+function previewSeasonalTheme(theme) {
+    const root = document.documentElement;
+    const key = theme === 'default' ? SEASONAL_PREVIEW.globalKey : theme;
+    const p = SEASONAL_PREVIEW.palettes[key];
+    const vars = {
+        '--st-primary-rgb': p && p.primary_rgb,
+        '--st-primary-dark-rgb': p && p.primary_dark_rgb,
+        '--st-accent': p && p.accent,
+        '--st-login-from': p && p.login_from,
+        '--st-login-to': p && p.login_to,
+        '--st-login-mid': p && (p.login_mid || p.login_to),
+        '--st-button': p && (p.button || p.login_to),
+    };
+    // Warna brand (--primary-*) ikut dipratinjau; format koma seperti :root layout.
+    const comma = v => v && v.trim().split(/[\s,]+/).join(', ');
+    if (!p) {
+        root.removeAttribute('data-season');
+        Object.keys(vars).forEach(v => root.style.removeProperty(v));
+        ['--primary-rgb', '--primary-dark-rgb'].forEach(v => root.style.removeProperty(v));
+        // Kembalikan Accent color pilihan pengguna (inline-nya tadi dihapus).
+        if (S.primary_color) _applyColor(S.primary_color);
+        return;
+    }
+    root.setAttribute('data-season', key);
+    Object.keys(vars).forEach(v => root.style.setProperty(v, vars[v]));
+    root.style.setProperty('--primary-rgb', comma(p.primary_rgb));
+    root.style.setProperty('--primary-dark-rgb', comma(p.primary_dark_rgb));
+    root.style.setProperty('--primary-color', 'rgb(' + comma(p.primary_rgb) + ')');
+}
+function selectSeasonalTheme(theme, el) {
     S.seasonal_theme = theme;
-    document.querySelectorAll('[onclick^="selectSeasonalTheme"]').forEach(o => {
-        o.classList.remove('border-red-600','bg-red-50/50');
-        o.classList.add('border-gray-200');
-        o.querySelectorAll('span').forEach(s => { s.classList.replace('text-red-700','text-gray-500'); });
-    });
-    const el = event.currentTarget;
-    el.classList.add('border-red-600','bg-red-50/50');
-    el.classList.remove('border-gray-200');
-    el.querySelectorAll('span').forEach(s => { s.classList.replace('text-gray-500','text-red-700'); });
+    document.querySelectorAll('#seasonalPicker .st-card').forEach(o => o.classList.remove('is-selected'));
+    if (el) el.classList.add('is-selected');
+    previewSeasonalTheme(theme);
+    updateAccentLock();
 }
 function _applyColor(hex) {
     document.documentElement.style.setProperty('--primary-color', hex);
@@ -1246,7 +1389,7 @@ async function disconnectMicrosoft() {
 @endif
 
 // ── Expose ────────────────────────────────────────────────────────────────────
-window.switchTab=switchTab; window.selectTheme=selectTheme; window.selectColor=selectColor;
+window.switchTab=switchTab; window.selectTheme=selectTheme; window.selectColor=selectColor; window.selectCustomColor=selectCustomColor; window.accentLocked=accentLocked; window.warnAccentLocked=warnAccentLocked; window.turnOffSeasonal=turnOffSeasonal;
 window.selectSidebarStyle=selectSidebarStyle; window.selectFontSize=selectFontSize;
 window.selectSeasonalTheme=selectSeasonalTheme;
 window.saveSettings=saveSettings; window.resetSettings=resetSettings;

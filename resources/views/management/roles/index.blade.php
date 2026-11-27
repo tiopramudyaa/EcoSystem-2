@@ -4,48 +4,79 @@
 @section('page-title', 'Role Management')
 
 @section('content')
-<div class="bg-white rounded-xl p-6 shadow-sm">
-    <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b-2 border-gray-100">
-        <h2 class="text-2xl font-bold text-gray-900">Role Management</h2>
-        <button onclick="openCreateRoleModal()" class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all duration-200">
-            <i class="fas fa-plus mr-2"></i> Add Role
+<div class="space-y-5">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-xl bg-red-50 text-red-800 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-user-shield text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 leading-tight">Role Management</h2>
+                <p class="text-sm text-gray-500">Create roles and choose which menus each role can open.</p>
+            </div>
+        </div>
+        <button onclick="openCreateRoleModal()" class="inline-flex items-center justify-center px-4 py-2.5 primary-gradient text-white text-sm font-semibold rounded-xl shadow-sm hover:opacity-90 transition-all duration-200">
+            <i class="fas fa-plus mr-2 text-xs"></i> Add Role
         </button>
     </div>
 
-    <!-- Filter -->
-    <div class="mb-4">
-        <input type="text" id="roleSearch" placeholder="Search role name or description..."
-            oninput="filterRoles()"
-            class="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800">
+    <!-- Summary -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-red-50 text-red-800 flex items-center justify-center"><i class="fas fa-layer-group"></i></div>
+            <div><p class="text-2xl font-bold text-gray-900 leading-none" id="statRoles">-</p><p class="text-xs text-gray-500 mt-1">Total roles</p></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fas fa-users"></i></div>
+            <div><p class="text-2xl font-bold text-gray-900 leading-none" id="statMembers">-</p><p class="text-xs text-gray-500 mt-1">Role assignments</p></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center"><i class="fas fa-user-slash"></i></div>
+            <div><p class="text-2xl font-bold text-gray-900 leading-none" id="statUnused">-</p><p class="text-xs text-gray-500 mt-1">Roles without members</p></div>
+        </div>
     </div>
 
-    <!-- Table -->
-    <div class="overflow-x-auto border border-gray-200 rounded-lg">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 border-b border-gray-200">
-                <tr>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Members</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="rolesTableBody" class="divide-y divide-gray-100">
-                <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
-            </tbody>
-        </table>
+    <!-- List -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="relative w-full sm:w-80">
+                <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input type="text" id="roleSearch" placeholder="Search role name or description..."
+                    oninput="filterRoles()"
+                    class="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-red-800/30 focus:border-red-800">
+            </div>
+            <p class="text-xs text-gray-500" id="roleResultCount"></p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50/70 border-b border-gray-100">
+                        <th class="px-5 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-16">ID</th>
+                        <th class="px-5 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                        <th class="px-5 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                        <th class="px-5 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Members</th>
+                        <th class="px-5 py-3 text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="rolesTableBody" class="divide-y divide-gray-100">
+                    <tr><td colspan="5" class="px-5 py-12 text-center text-gray-400">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <!-- ── Modal: Create / Edit Role ──────────────────────────────────────────── -->
-<div id="roleModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
-        <div class="flex justify-between items-center p-6 border-b border-gray-100">
-            <h3 id="roleModalTitle" class="text-lg font-bold text-gray-900">Add Role</h3>
-            <button onclick="closeModal('roleModal')" class="text-gray-400 hover:text-gray-600 transition-colors">
-                <i class="fas fa-times text-xl"></i>
+<div id="roleModal" class="hidden fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="flex justify-between items-center px-6 py-5 border-b border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-red-50 text-red-800 flex items-center justify-center"><i class="fas fa-user-shield"></i></div>
+                <h3 id="roleModalTitle" class="text-base font-bold text-gray-900">Add Role</h3>
+            </div>
+            <button onclick="closeModal('roleModal')" aria-label="Close" class="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition flex items-center justify-center">
+                <i class="fas fa-times"></i>
             </button>
         </div>
         <form id="roleForm" onsubmit="submitRole(event)" class="p-6 space-y-4">
@@ -53,34 +84,47 @@
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Name <span class="text-red-500">*</span></label>
                 <input type="text" id="roleName" required maxlength="100"
-                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-red-800"
                     placeholder="e.g. Project Manager">
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Description</label>
                 <textarea id="roleDescription" maxlength="255" rows="3"
-                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent resize-none"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-red-800 resize-none"
                     placeholder="Optional description..."></textarea>
             </div>
             <div class="flex gap-3 justify-end pt-2">
-                <button type="button" onclick="closeModal('roleModal')" class="px-4 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all">Cancel</button>
-                <button type="submit" class="px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all">Save</button>
+                <button type="button" onclick="closeModal('roleModal')" class="px-4 py-2.5 bg-white text-gray-700 text-sm font-semibold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 primary-gradient text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-all">Save</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- ── Modal: Members ─────────────────────────────────────────────────────── -->
-<div id="membersModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
-        <div class="flex justify-between items-center p-6 border-b border-gray-100">
-            <h3 id="membersModalTitle" class="text-lg font-bold text-gray-900">Members</h3>
-            <button onclick="closeModal('membersModal')" class="text-gray-400 hover:text-gray-600 transition-colors">
-                <i class="fas fa-times text-xl"></i>
+<div id="membersModal" class="hidden fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+        <div class="flex justify-between items-start gap-4 px-6 pt-5 pb-4 flex-shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0"><i class="fas fa-users"></i></div>
+                <div class="min-w-0">
+                    <h3 id="membersModalTitle" class="text-base font-bold text-gray-900 leading-tight truncate">Members</h3>
+                    <p id="membersModalSub" class="text-sm text-gray-500">Members of this role</p>
+                </div>
+            </div>
+            <button onclick="closeModal('membersModal')" aria-label="Close" class="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-times"></i>
             </button>
         </div>
-        <div id="membersModalBody" class="p-6 max-h-96 overflow-y-auto">
-            <p class="text-gray-400 text-sm text-center">Loading...</p>
+        <div id="membersSearchWrap" class="hidden px-6 pb-3 flex-shrink-0">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input type="text" id="memberSearch" placeholder="Search name or ECI..." oninput="renderMembers()"
+                    class="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-red-800/30 focus:border-red-800">
+            </div>
+        </div>
+        <div id="membersModalBody" class="border-t border-gray-100 overflow-y-auto flex-1 px-6 py-2">
+            <p class="text-gray-400 text-sm text-center py-8">Loading...</p>
         </div>
     </div>
 </div>
@@ -110,23 +154,77 @@
 </div>
 
 <!-- ── Modal: Menu Access ─────────────────────────────────────────────────── -->
-<div id="menuAccessModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
-        <div class="flex justify-between items-center p-6 border-b border-gray-100 flex-shrink-0">
-            <h3 id="menuAccessTitle" class="text-lg font-bold text-gray-900">Menu Access</h3>
-            <button onclick="closeModal('menuAccessModal')" class="text-gray-400 hover:text-gray-600 transition-colors">
-                <i class="fas fa-times text-xl"></i>
+<style>
+    .ma-switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+    .ma-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+    .ma-switch input:disabled { cursor: not-allowed; }
+    .ma-switch .ma-track { position: absolute; inset: 0; background: #d1d5db; border-radius: 999px; transition: background .15s; }
+    .ma-switch .ma-track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+    .ma-switch input:checked + .ma-track { background: #991b1b; }
+    .ma-switch input:checked + .ma-track::after { transform: translateX(16px); }
+    .ma-switch input:focus-visible + .ma-track { box-shadow: 0 0 0 3px rgba(153,27,27,.25); }
+    .ma-switch input:disabled + .ma-track { opacity: .45; }
+    .ma-row { display: flex; align-items: center; gap: 10px; padding: 9px 20px 9px 16px; border-bottom: 1px solid #f3f4f6; transition: background .12s; }
+    .ma-row:hover { background: #fafafa; }
+    .ma-row.ma-group { background: #f9fafb; }
+    .ma-row.ma-group:hover { background: #f3f4f6; }
+    .ma-ico { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+    .ma-chip { font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 999px; border: 1px solid #e5e7eb; color: #4b5563; background: #fff; cursor: pointer; transition: all .12s; }
+    .ma-chip:hover { border-color: #fca5a5; color: #991b1b; }
+    .ma-chip.active { background: #991b1b; border-color: #991b1b; color: #fff; }
+</style>
+<div id="menuAccessModal" class="hidden fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <!-- Header -->
+        <div class="flex items-start justify-between gap-4 px-6 pt-5 pb-4 flex-shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-red-50 text-red-800 flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 class="text-base font-bold text-gray-900 leading-tight">Menu Access</h3>
+                    <p class="text-sm text-gray-500 truncate">Role: <span id="menuAccessRole" class="font-semibold text-gray-700"></span></p>
+                </div>
+            </div>
+            <button onclick="closeModal('menuAccessModal')" aria-label="Close"
+                class="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-times"></i>
             </button>
         </div>
 
-        <!-- Search -->
-        <div class="px-6 py-3 border-b border-gray-100 flex-shrink-0">
-            <input type="text" id="menuSearch" placeholder="Search menu name..." oninput="filterMenuRows()"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800">
+        <!-- Summary -->
+        <div class="px-6 pb-4 flex-shrink-0">
+            <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                <span><span id="menuAccessCount" class="font-semibold text-gray-800">0</span> of <span id="menuAccessTotal">0</span> menus granted</span>
+                <span id="menuAccessPct" class="font-semibold text-red-800">0%</span>
+            </div>
+            <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                <div id="menuAccessBar" class="h-full bg-red-800 rounded-full transition-all duration-300" style="width:0%"></div>
+            </div>
         </div>
 
-        <div id="menuAccessList" class="overflow-y-auto flex-1 divide-y divide-gray-100">
-            <div class="px-4 py-8 text-center text-gray-400 text-sm">Loading...</div>
+        <!-- Toolbar -->
+        <div class="px-6 py-3 border-y border-gray-100 bg-gray-50/60 flex-shrink-0 space-y-3">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input type="text" id="menuSearch" placeholder="Search menu name..." oninput="filterMenuRows()"
+                    class="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-red-800">
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2" id="menuFilterChips">
+                    <button type="button" class="ma-chip active" data-f="all" onclick="setMenuFilter('all')">All</button>
+                    <button type="button" class="ma-chip" data-f="granted" onclick="setMenuFilter('granted')">Granted</button>
+                    <button type="button" class="ma-chip" data-f="denied" onclick="setMenuFilter('denied')">Not granted</button>
+                </div>
+                <div class="flex items-center gap-3 text-xs font-medium text-gray-500">
+                    <button type="button" onclick="expandAllMenus(true)" class="hover:text-red-800 transition"><i class="fas fa-angles-down mr-1"></i>Expand all</button>
+                    <button type="button" onclick="expandAllMenus(false)" class="hover:text-red-800 transition"><i class="fas fa-angles-up mr-1"></i>Collapse all</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="menuAccessList" class="overflow-y-auto flex-1">
+            <div class="px-4 py-10 text-center text-gray-400 text-sm">Loading...</div>
         </div>
     </div>
 </div>
@@ -160,6 +258,19 @@ function filterRoles() {
 
 // ── Render ────────────────────────────────────────────────────────────────────
 
+function updateRoleStats() {
+    const members = rolesData.reduce((sum, r) => sum + (Number(r.employees_count) || 0), 0);
+    document.getElementById('statRoles').textContent = rolesData.length;
+    document.getElementById('statMembers').textContent = members;
+    document.getElementById('statUnused').textContent = rolesData.filter(r => !Number(r.employees_count)).length;
+}
+
+function roleInitials(name) {
+    const parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
+    const letters = parts.length > 1 ? parts[0][0] + parts[1][0] : (parts[0] || '?').slice(0, 2);
+    return letters.toUpperCase();
+}
+
 function renderRoles() {
     const tbody = document.getElementById('rolesTableBody');
     const query = (document.getElementById('roleSearch')?.value || '').toLowerCase().trim();
@@ -169,39 +280,54 @@ function renderRoles() {
             (r.description || '').toLowerCase().includes(query))
         : rolesData;
 
+    updateRoleStats();
+    document.getElementById('roleResultCount').textContent =
+        rolesData.length ? `Showing ${filtered.length} of ${rolesData.length} roles` : '';
+
     if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">${query ? 'No roles match your search.' : 'No roles found.'}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="px-5 py-14 text-center">
+            <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3"><i class="fas fa-search"></i></div>
+            <p class="text-sm font-medium text-gray-700">${query ? 'No roles match your search' : 'No roles found'}</p>
+            <p class="text-xs text-gray-400 mt-1">${query ? 'Try another keyword.' : 'Use Add Role to create the first one.'}</p></td></tr>`;
         return;
     }
-    tbody.innerHTML = filtered.map(role => `
-        <tr class="hover:bg-gray-50 transition-colors">
-            <td class="px-4 py-3 text-gray-500">${role.id}</td>
-            <td class="px-4 py-3 font-semibold text-gray-900">${escHtml(role.name)}</td>
-            <td class="px-4 py-3 text-gray-500">${escHtml(role.description || '-')}</td>
-            <td class="px-4 py-3">
-                <button onclick="openEmployeesModal(${role.id})"
-                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">
-                    ${role.employees_count} member${role.employees_count !== 1 ? 's' : ''}
+    tbody.innerHTML = filtered.map(role => {
+        const count = Number(role.employees_count) || 0;
+        return `
+        <tr class="hover:bg-gray-50/70 transition-colors">
+            <td class="px-5 py-3.5 text-gray-400 text-xs">${role.id}</td>
+            <td class="px-5 py-3.5">
+                <div class="flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-xl bg-red-50 text-red-800 text-xs font-bold flex items-center justify-center flex-shrink-0">${escHtml(roleInitials(role.name))}</span>
+                    <span class="font-semibold text-gray-900">${escHtml(role.name)}</span>
+                </div>
+            </td>
+            <td class="px-5 py-3.5 text-gray-500 max-w-md">${role.description ? escHtml(role.description) : '<span class="text-gray-300">No description</span>'}</td>
+            <td class="px-5 py-3.5">
+                <button onclick="openEmployeesModal(${role.id})" title="View members"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${count ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}">
+                    <i class="fas fa-user text-[10px]"></i>
+                    ${count} member${count !== 1 ? 's' : ''}
                 </button>
             </td>
-            <td class="px-4 py-3">
-                <div class="flex items-center gap-2">
+            <td class="px-5 py-3.5">
+                <div class="flex items-center justify-end gap-2">
                     <button onclick="openMenuAccessModal(${role.id}, '${escHtml(role.name)}')"
-                        class="px-3 py-1.5 text-xs font-semibold bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
-                        <i class="fas fa-key mr-1"></i> Menu Access
+                        class="inline-flex items-center px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-800 border border-red-100 rounded-lg hover:bg-red-100 transition-colors">
+                        <i class="fas fa-key mr-1.5"></i> Menu Access
                     </button>
-                    <button onclick="openEditRoleModal(${role.id})"
-                        class="px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
-                        <i class="fas fa-pen mr-1"></i> Edit
+                    <button onclick="openEditRoleModal(${role.id})" title="Edit role" aria-label="Edit role"
+                        class="w-8 h-8 flex items-center justify-center text-gray-500 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors">
+                        <i class="fas fa-pen text-xs"></i>
                     </button>
-                    <button onclick="deleteRole(${role.id}, '${escHtml(role.name)}')"
-                        class="px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors">
-                        <i class="fas fa-trash mr-1"></i> Delete
+                    <button onclick="deleteRole(${role.id}, '${escHtml(role.name)}')" title="Delete role" aria-label="Delete role"
+                        class="w-8 h-8 flex items-center justify-center text-red-500 bg-white border border-gray-200 rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors">
+                        <i class="fas fa-trash text-xs"></i>
                     </button>
                 </div>
             </td>
-        </tr>
-    `).join('');
+        </tr>`;
+    }).join('');
 }
 
 // ── Create / Edit Role ────────────────────────────────────────────────────────
@@ -269,42 +395,63 @@ async function deleteRole(id, name) {
 
 // ── Members Modal ─────────────────────────────────────────────────────────────
 
+let currentMembers = [];
+
 async function openEmployeesModal(id) {
     const role = rolesData.find(r => r.id === id);
-    document.getElementById('membersModalTitle').textContent = `Members - ${role?.name ?? ''}`;
-    document.getElementById('membersModalBody').innerHTML = '<p class="text-gray-400 text-sm text-center">Loading...</p>';
+    document.getElementById('membersModalTitle').textContent = role?.name ?? 'Members';
+    document.getElementById('membersModalSub').textContent = 'Loading members...';
+    document.getElementById('membersSearchWrap').classList.add('hidden');
+    document.getElementById('memberSearch').value = '';
+    document.getElementById('membersModalBody').innerHTML = '<p class="text-gray-400 text-sm text-center py-8">Loading...</p>';
     openModal('membersModal');
 
-    let members = [];
     try {
         const res  = await fetch(`/api/roles/${id}/employees`);
         const json = await res.json();
-        members = json.data || [];
+        currentMembers = json.data || [];
     } catch (e) {
-        document.getElementById('membersModalBody').innerHTML = '<p class="text-red-500 text-sm text-center">Failed to load data.</p>';
+        document.getElementById('membersModalSub').textContent = 'Could not load members';
+        document.getElementById('membersModalBody').innerHTML = '<p class="text-red-500 text-sm text-center py-8">Failed to load data.</p>';
         return;
     }
 
-    if (!members.length) {
-        document.getElementById('membersModalBody').innerHTML = '<p class="text-gray-400 text-sm text-center">No members.</p>';
+    document.getElementById('membersModalSub').textContent =
+        `${currentMembers.length} member${currentMembers.length !== 1 ? 's' : ''}`;
+    // Pencarian hanya berguna untuk role besar.
+    document.getElementById('membersSearchWrap').classList.toggle('hidden', currentMembers.length <= 8);
+    renderMembers();
+}
+
+function renderMembers() {
+    const body  = document.getElementById('membersModalBody');
+    const query = (document.getElementById('memberSearch')?.value || '').toLowerCase().trim();
+
+    if (!currentMembers.length) {
+        body.innerHTML = `<div class="py-10 text-center">
+            <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3"><i class="fas fa-user-slash"></i></div>
+            <p class="text-sm font-medium text-gray-700">No members yet</p>
+            <p class="text-xs text-gray-400 mt-1">Assign this role to people in Master &rsaquo; Employee.</p></div>`;
         return;
     }
 
-    document.getElementById('membersModalBody').innerHTML = `
-        <ul class="divide-y divide-gray-100">
-            ${members.map(m => `
-                <li class="py-2.5 flex items-center gap-3">
-                    <span class="w-8 h-8 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                        ${(m.full_name || m.eci || '?').charAt(0).toUpperCase()}
-                    </span>
-                    <div>
-                        <p class="text-sm font-semibold text-gray-900">${escHtml(m.full_name || '-')}</p>
-                        <p class="text-xs text-gray-500">${escHtml(m.eci || '')}</p>
-                    </div>
-                </li>
-            `).join('')}
-        </ul>
-    `;
+    const list = query
+        ? currentMembers.filter(m => (m.full_name || '').toLowerCase().includes(query) || (m.eci || '').toLowerCase().includes(query))
+        : currentMembers;
+
+    if (!list.length) {
+        body.innerHTML = '<p class="text-gray-400 text-sm text-center py-8">No members match your search.</p>';
+        return;
+    }
+
+    body.innerHTML = `<ul class="divide-y divide-gray-100">${list.map(m => `
+        <li class="py-3 flex items-center gap-3">
+            <span class="w-9 h-9 rounded-xl bg-red-50 text-red-800 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                ${escHtml(roleInitials(m.full_name || m.eci || '?'))}
+            </span>
+            <p class="text-sm font-semibold text-gray-900 flex-1 min-w-0 truncate">${escHtml(m.full_name || '-')}</p>
+            ${m.eci ? `<span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 flex-shrink-0">${escHtml(m.eci)}</span>` : ''}
+        </li>`).join('')}</ul>`;
 }
 
 // ── Menu Access Modal ─────────────────────────────────────────────────────────
@@ -312,11 +459,17 @@ async function openEmployeesModal(id) {
 let menuTree = [];
 let expandedMenus = new Set();
 let savingMenu = {};
+let currentRoleName = '';
+let menuFilter = 'all';
 
 async function openMenuAccessModal(id, roleName) {
     currentRoleId = id;
-    document.getElementById('menuAccessTitle').textContent = `Menu Access - ${roleName}`;
-    document.getElementById('menuAccessList').innerHTML = '<div class="px-4 py-8 text-center text-gray-400 text-sm">Loading...</div>';
+    currentRoleName = roleName;
+    document.getElementById('menuAccessRole').textContent = roleName;
+    document.getElementById('menuSearch').value = '';
+    menuFilter = 'all';
+    syncFilterChips();
+    document.getElementById('menuAccessList').innerHTML = '<div class="px-4 py-10 text-center text-gray-400 text-sm">Loading...</div>';
     openModal('menuAccessModal');
 
     const [permRes, menuRes] = await Promise.all([
@@ -345,10 +498,50 @@ function buildMenuTree(items, parentId) {
         .map(m => ({ ...m, children: buildMenuTree(items, m.id) }));
 }
 
+function menuHasAccess(id) { return !!(roleMenuPermissions[id]?.can_view); }
+
+// [granted, total] untuk semua turunan (tanpa node itu sendiri)
+function menuDescendantCounts(node) {
+    let g = 0, t = 0;
+    (node.children || []).forEach(c => {
+        t++; if (menuHasAccess(c.id)) g++;
+        const [cg, ct] = menuDescendantCounts(c);
+        g += cg; t += ct;
+    });
+    return [g, t];
+}
+
+function updateMenuSummary() {
+    const total = allMenusData.length;
+    const granted = allMenusData.filter(m => menuHasAccess(m.id)).length;
+    const pct = total ? Math.round(granted / total * 100) : 0;
+    document.getElementById('menuAccessCount').textContent = granted;
+    document.getElementById('menuAccessTotal').textContent = total;
+    document.getElementById('menuAccessPct').textContent = pct + '%';
+    document.getElementById('menuAccessBar').style.width = pct + '%';
+}
+
+function syncFilterChips() {
+    document.querySelectorAll('#menuFilterChips .ma-chip').forEach(b => b.classList.toggle('active', b.dataset.f === menuFilter));
+}
+
+function setMenuFilter(f) {
+    menuFilter = f;
+    syncFilterChips();
+    filterMenuRows();
+}
+
+function expandAllMenus(open) {
+    expandedMenus.clear();
+    if (open) allMenusData.forEach(m => expandedMenus.add(m.id));
+    renderMenuAccessTree();
+}
+
 function renderMenuAccessTree() {
     const search = document.getElementById('menuSearch').value.toLowerCase().trim();
     const container = document.getElementById('menuAccessList');
     container.innerHTML = '';
+    updateMenuSummary();
 
     let hasAny = false;
     menuTree.forEach(node => {
@@ -356,47 +549,56 @@ function renderMenuAccessTree() {
     });
 
     if (!hasAny) {
-        container.innerHTML = '<div class="px-4 py-8 text-center text-gray-400 text-sm">Tidak ada menu.</div>';
+        container.innerHTML = `<div class="px-4 py-14 text-center">
+            <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3"><i class="fas fa-search"></i></div>
+            <p class="text-sm font-medium text-gray-700">No menus found</p>
+            <p class="text-xs text-gray-400 mt-1">Try another keyword or filter.</p></div>`;
     }
 }
 
 function renderMenuNode(node, depth, container, search, parentAccessible = true) {
-    if (search && !menuNodeMatches(node, search)) return false;
+    if (!menuNodeMatches(node, search)) return false;
 
     const hasChildren  = node.children && node.children.length > 0;
     const isExpanded   = expandedMenus.has(node.id);
-    const hasAccess    = !!(roleMenuPermissions[node.id]?.can_view);
+    const hasAccess    = menuHasAccess(node.id);
     const isDisabled   = !parentAccessible; // disable jika parent tidak punya akses
 
     const typeStyle = {
-        group:    { icon: 'fa-layer-group text-purple-400', textCls: 'font-semibold text-gray-900', bg: 'bg-white' },
-        page:     { icon: 'fa-file-alt text-blue-400',      textCls: 'font-medium text-gray-800',   bg: 'bg-white' },
-        function: { icon: 'fa-bolt text-orange-400',        textCls: 'text-gray-700',               bg: 'bg-gray-50' },
-    }[node.type] || { icon: 'fa-circle text-gray-400', textCls: 'text-gray-700', bg: 'bg-white' };
+        group:    { icon: 'fa-layer-group', box: 'bg-purple-50 text-purple-500', textCls: 'font-semibold text-gray-900', label: 'Group' },
+        page:     { icon: 'fa-file-alt',    box: 'bg-blue-50 text-blue-500',     textCls: 'font-medium text-gray-800',   label: 'Page' },
+        function: { icon: 'fa-bolt',        box: 'bg-orange-50 text-orange-500', textCls: 'text-gray-700',               label: 'Action' },
+    }[node.type] || { icon: 'fa-circle', box: 'bg-gray-100 text-gray-400', textCls: 'text-gray-700', label: '' };
 
-    // Jika parent tidak accessible, row di-gray-out
-    const rowOpacity  = isDisabled ? 'opacity-40' : '';
-    const labelCls    = isDisabled ? 'text-gray-400' : typeStyle.textCls;
+    const labelCls = isDisabled ? 'text-gray-400' : typeStyle.textCls;
+    const [dg, dt] = hasChildren ? menuDescendantCounts(node) : [0, 0];
 
     const div = document.createElement('div');
-    div.className = `flex items-center gap-2 px-4 py-2.5 transition-colors border-b border-gray-100 ${typeStyle.bg} ${rowOpacity} ${isDisabled ? '' : 'hover:bg-blue-50/30'}`;
-    div.style.paddingLeft = `${16 + depth * 22}px`;
-    if (isDisabled) div.title = 'Parent menu is inactive - enable the parent first';
+    div.className = `ma-row ${node.type === 'group' ? 'ma-group' : ''}`;
+    div.style.paddingLeft = `${16 + depth * 24}px`;
+    if (isDisabled) {
+        div.style.opacity = '.55';
+        div.title = 'Parent menu is inactive - enable the parent first';
+    }
 
     div.innerHTML = `
         ${hasChildren
-            ? `<button onclick="toggleMenuNode(${node.id})"
-                    class="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 flex-shrink-0 focus:outline-none">
-                   <i class="fas ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-xs"></i>
+            ? `<button onclick="toggleMenuNode(${node.id})" aria-label="Toggle"
+                    class="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-800 flex-shrink-0 focus:outline-none">
+                   <i class="fas ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-[10px]"></i>
                </button>`
             : `<span class="w-5 flex-shrink-0"></span>`
         }
-        <i class="fas ${typeStyle.icon} text-xs w-4 text-center flex-shrink-0"></i>
-        <span class="text-sm ${labelCls} flex-1 leading-tight">${escHtml(node.name)}</span>
-        <input type="checkbox" ${hasAccess ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}
-            class="w-4 h-4 rounded flex-shrink-0 ${isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer accent-red-800'}"
-            onchange="toggleMenuAccess(${node.id}, this)"
-            title="${escHtml(node.name)}">
+        <span class="ma-ico ${typeStyle.box}"><i class="fas ${typeStyle.icon}"></i></span>
+        <span class="text-sm ${labelCls} flex-1 leading-tight min-w-0 truncate">${escHtml(node.name)}</span>
+        ${typeStyle.label ? `<span class="hidden sm:inline text-[10px] uppercase tracking-wide font-semibold text-gray-400">${typeStyle.label}</span>` : ''}
+        ${hasChildren ? `<span class="text-[11px] font-medium px-2 py-0.5 rounded-full ${dg === dt ? 'bg-green-50 text-green-700' : (dg ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500')}">${dg}/${dt}</span>` : ''}
+        <label class="ma-switch" title="${escHtml(node.name)}">
+            <input type="checkbox" ${hasAccess ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}
+                onchange="toggleMenuAccess(${node.id}, this)"
+                title="${escHtml(node.name)}">
+            <span class="ma-track"></span>
+        </label>
     `;
 
     container.appendChild(div);
@@ -410,8 +612,12 @@ function renderMenuNode(node, depth, container, search, parentAccessible = true)
     return true;
 }
 
+// Node tampil jika dirinya atau salah satu turunannya cocok dengan pencarian dan filter.
 function menuNodeMatches(node, search) {
-    if (node.name.toLowerCase().includes(search)) return true;
+    const nameOk = !search || node.name.toLowerCase().includes(search);
+    const has = menuHasAccess(node.id);
+    const filterOk = menuFilter === 'all' || (menuFilter === 'granted' ? has : !has);
+    if (nameOk && filterOk) return true;
     return (node.children || []).some(c => menuNodeMatches(c, search));
 }
 
@@ -421,7 +627,7 @@ function toggleMenuNode(id) {
 }
 
 function filterMenuRows() {
-    if (document.getElementById('menuSearch').value) {
+    if (document.getElementById('menuSearch').value || menuFilter !== 'all') {
         allMenusData.forEach(m => expandedMenus.add(m.id));
     }
     renderMenuAccessTree();
@@ -433,7 +639,7 @@ async function toggleMenuAccess(menuId, checkbox) {
 
     const grant = checkbox.checked;
     const menuName = checkbox.title || 'menu ini';
-    const roleName = document.getElementById('menuAccessTitle').textContent.replace('Menu Access - ', '');
+    const roleName = currentRoleName;
     const node = findMenuNode(menuTree, menuId);
     const hasChildren = !!(node?.children?.length);
 
@@ -646,5 +852,21 @@ function escHtml(str) {
 
 // Init
 loadRoles();
+
+// Escape dan klik di luar kartu menutup modal (modal konfirmasi diurus sendiri).
+const _closableModals = ['roleModal', 'membersModal', 'menuAccessModal'];
+document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!document.getElementById('confirmModal').classList.contains('hidden')) return;
+    _closableModals.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.classList.contains('hidden')) closeModal(id);
+    });
+});
+_closableModals.forEach(id => {
+    document.getElementById(id)?.addEventListener('mousedown', function (e) {
+        if (e.target === this) closeModal(id);
+    });
+});
 </script>
 @endsection

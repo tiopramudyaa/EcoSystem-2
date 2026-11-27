@@ -33,9 +33,16 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
 
     {{-- Basic Project Information --}}
     <div class="bg-white overflow-hidden shadow-md sm:rounded-lg mb-6">
-        <div class="p-6 border-b border-gray-200">
-            <h3 class="text-xl font-semibold text-gray-700">New Delivery Project Form</h3>
-            <p class="mt-1 text-sm text-gray-600">Fill in the delivery project details below.</p>
+        <div class="p-6 border-b border-gray-200 flex items-start justify-between gap-4 flex-wrap">
+            <div>
+                <h3 class="text-xl font-semibold text-gray-700">New Delivery Project Form</h3>
+                <p class="mt-1 text-sm text-gray-600">Fill in the delivery project details below, or import many projects at once from Excel.</p>
+            </div>
+            <button type="button" onclick="openProjectImportModal()"
+                    class="inline-flex items-center gap-2 border border-gray-300 bg-white text-gray-700 text-sm font-semibold py-2 px-4 rounded-lg hover:bg-gray-50 transition">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                Import Excel
+            </button>
         </div>
         <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             {{-- Semua dropdown dikonversi ke custom-dd manual untuk konsistensi
@@ -601,6 +608,9 @@ $employees = ($employees ?? collect())->sortBy(fn($e) => strtolower($e->basicDat
         </div>
     </div>
 </form>
+
+{{-- Import Excel (halaman ini sudah dijaga izin Add New) --}}
+@include('delivery.project.projects.partials.import-projects-modal')
 
 {{-- Add / Edit Team Member Modal (outside <form> to avoid nesting issues) --}}
 <div id="cTeamModal" class="fixed inset-0 z-50 hidden">

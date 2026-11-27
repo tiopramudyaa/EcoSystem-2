@@ -87,6 +87,8 @@
             iconWrap.className  = WRAP_CLS[variant];
             iconWrap.innerHTML  = ICONS[variant];
             okBtn.className     = OK_CLS[variant];
+            // Penanda untuk remap tema musiman: tombol destruktif tetap merah.
+            if (variant === 'danger') { okBtn.setAttribute('data-danger', ''); } else { okBtn.removeAttribute('data-danger'); }
             okBtn.textContent     = opts.okText     || 'OK';
             cancelBtn.textContent = opts.cancelText || 'Cancel';
             cancelBtn.classList.toggle('hidden', !!opts.hideCancel);

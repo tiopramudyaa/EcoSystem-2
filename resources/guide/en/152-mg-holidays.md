@@ -20,29 +20,39 @@ Administrators, and any role given the `Management` › `Holidays` menu in Menu 
 
 ## Step by step
 
-![The Holidays list with date, day, name, type, status and Edit and Delete buttons](images/guide/mgmt-holidays.png)
+![The Holidays list with summary cards, filters, and a row for each holiday](images/guide/mgmt-holidays.png)
 
 *Screenshot with sample data.*
 
-1. Open `Management` › `Holidays`. Each row shows the date, the day of the week, the name, the type and the status.
-2. Narrow the list with the year list (`All Years`) and the search box `Search holiday name...`.
+1. Open `Management` › `Holidays`. Four cards at the top count the holidays listed and how many are national, collective leave and custom. Each row shows a small calendar tile, the date with its day of the week, the name, the type and the status. A holiday that is active and close shows a tag such as `Today`, `Tomorrow` or `in 12 days`, and one already gone shows `Past`.
+2. Narrow the list with the year list (`All Years`), the search box `Search holiday name...`, and the type buttons `All`, `National Holiday`, `Collective Leave` and `Custom Holiday`. The count beside the buttons shows how many of the listed holidays you see.
 3. To add a day, choose `Add Holiday`.
 
-![The Add Holiday window with date, name, type and the Active tick](images/guide/mgmt-holiday-add.png)
+![The Add Holiday window with date, name, type and the Active switch](images/guide/mgmt-holiday-add.png)
 
 *Screenshot with sample data.*
 
-4. Fill `Date`, `Name` and `Type`. Keep `Active (applied to calendar & date pickers)` ticked so the day counts, or untick it to keep the entry without applying it. Choose `Save`.
-5. To change a day, choose `Edit`. To remove it for good, choose `Delete` and confirm.
+4. Fill `Date`, `Name` and `Type`. Keep the `Active` switch on so the day counts, or turn it off to keep the entry without applying it. Choose `Save`.
+5. To change a day, choose the pencil button on its row (tooltip `Edit holiday`). To remove it for good, choose the trash button (tooltip `Delete holiday`) and confirm.
+
+## Rules to know
+
+- **Who may change holidays.** Only people given the `Management` › `Holidays` menu in Menu Access. The system checks this on every change, not only by hiding the menu.
+- **Required fields.** `Date` must be a valid date, `Name` is required (up to 255 characters), and `Type` must be one of the three types.
+- **No duplicates.** The same date with the same name cannot be saved twice, when adding or when editing. Two different names on one date are allowed.
+- **Only active holidays count.** An inactive holiday stays in the list but is ignored by the calendar, the date pickers and the working-day calculation of ticket SLA.
+- **Delete is permanent.** There is no undo. Turn `Active` off instead if you may need the day again.
 
 ## What happens next
 
-An active holiday is applied to the system calendar and date pickers straight away. An inactive one stays in the list but is shown dimmed and is not applied.
+An active holiday is applied to the system calendar, the date pickers and the working-day calculation of ticket SLA straight away. An inactive one stays in the list but is shown dimmed and is not applied.
 
 ## Common questions
 
 **It says the holiday already exists.** A holiday with the same date and name is already in the list. Edit that one instead.
 
 **A government holiday changed date.** Edit the entry and change its `Date`. There is no need to delete it first.
+
+**How do I close the window without saving?** Choose the X or `Cancel`, press `Esc`, or click outside the window. Nothing is changed.
 
 <!-- sources: resources/views/management/holidays/index.blade.php, app/Http/Controllers/HolidayManagementController.php -->

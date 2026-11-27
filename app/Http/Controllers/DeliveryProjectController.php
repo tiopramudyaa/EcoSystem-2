@@ -13,7 +13,9 @@ use App\Models\DeliveryProjectPlanning;
 use App\Models\DeliveryProjectPhase;
 use App\Models\DeliveryProjectActivity;
 use App\Models\DeliveryProjectPaymentTerm;
+use App\Models\DeliveryProjectDocumentFolder;
 use App\Services\OneDriveService;
+use App\Services\ProjectDocumentFolderService;
 use App\Services\ProjectReminderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +28,73 @@ class DeliveryProjectController extends Controller
     public function index()
     {
         $projects = DeliveryProject::with('client.basicData')->orderByLastUpdate()->get();
-        return view('delivery.project.projects.index', compact('projects'));
+
+        // Kolom Progress = "Overall Project Progress" di Project Planning
+        // (calculateOverallProgress memakai rumus yang sama). Relasinya di-preload
+        // massal supaya tidak N+1 per group/activity.
+        DeliveryProject::preloadProgressRelations($projects);
+        $progress = $projects->mapWithKeys(fn ($p) => [$p->id => (float) $p->calculateOverallProgress()]);
+
+        // Kolom Project Manager = isi Team Members ber-role Project Manager.
+        $projectManagers = $this->projectManagerNames($projects);
+
+        return view('delivery.project.projects.index', compact('projects', 'progress', 'projectManagers'));
+    }
+
+    /**
+     * Nama Project Manager per project, persis seperti yang tampil di tabel
+     * Team Members halaman detail: semua baris pivot ber-role "Project Manager"
+     * (anggota vendor memakai member_name), ditambah FK-fallback
+     * project_manager_id bila employee-nya tidak punya baris pivot sama sekali
+     * (project era pra-pivot). Satu project bisa punya lebih dari satu PM.
+     *
+     * @param  \Illuminate\Support\Collection<int, DeliveryProject>  $projects
+     * @return array<int, array<int, string>>  [project_id => [nama, ...]]
+     */
+    private function projectManagerNames($projects): array
+    {
+        $projectIds = $projects->pluck('id');
+        if ($projectIds->isEmpty()) {
+            return [];
+        }
+
+        $pivotRows = DB::table('delivery_project_employee')
+            ->whereIn('delivery_projects_id', $projectIds)
+            ->orderBy('created_at')
+            ->get(['delivery_projects_id', 'employee_id', 'member_name', 'role']);
+
+        $pivotEmpIds = $pivotRows->whereNotNull('employee_id')
+            ->groupBy('delivery_projects_id')
+            ->map(fn ($g) => $g->pluck('employee_id')->map(fn ($id) => (string) $id)->all());
+
+        $pmRows = $pivotRows->where('role', 'Project Manager')->groupBy('delivery_projects_id');
+
+        $employeeIds = $pivotRows->where('role', 'Project Manager')->pluck('employee_id')
+            ->merge($projects->pluck('project_manager_id'))
+            ->filter()->unique()->values();
+
+        // full_name adalah accessor, jadi di-resolve lewat model, bukan query.
+        $names = EmployeeBasicData::whereIn('employee_id', $employeeIds)
+            ->get()
+            ->mapWithKeys(fn ($b) => [(string) $b->employee_id => $b->full_name]);
+
+        $result = [];
+        foreach ($projects as $project) {
+            $list = collect();
+
+            $fk = $project->project_manager_id;
+            if ($fk && !in_array((string) $fk, $pivotEmpIds[$project->id] ?? [], true)) {
+                $list->push($names[(string) $fk] ?? null);
+            }
+
+            foreach ($pmRows[$project->id] ?? [] as $row) {
+                $list->push($row->employee_id ? ($names[(string) $row->employee_id] ?? null) : $row->member_name);
+            }
+
+            $result[$project->id] = $list->map(fn ($n) => trim((string) $n))->filter()->unique()->values()->all();
+        }
+
+        return $result;
     }
 
     /**
@@ -101,9 +169,12 @@ class DeliveryProjectController extends Controller
             ->get()
             ->groupBy('delivery_projects_id');
 
+        // Sama dengan kolom Project Manager di list: diambil dari Team Members.
+        $projectManagers = $this->projectManagerNames($projects);
+
         $rows = $projects->map(function (DeliveryProject $project) use (
             $employeeNames, $actualCosts, $teamCounts, $documentCounts,
-            $issueStats, $riskStats, $wricefStats, $paymentTerms
+            $issueStats, $riskStats, $wricefStats, $paymentTerms, $projectManagers
         ) {
             $revenue    = (float) ($project->revenue ?? 0);
             $actualCost = (float) ($actualCosts[$project->id] ?? 0);
@@ -136,7 +207,7 @@ class DeliveryProjectController extends Controller
                 'project_owner'       => $text($project->project_owner),
                 'delivery_owner'      => $name($project->delivery_owner_id),
                 'delivery_manager'    => $name($project->delivery_manager_id),
-                'project_manager'     => $name($project->project_manager_id),
+                'project_manager'     => $text(implode(', ', $projectManagers[$project->id] ?? [])),
                 'co_pm'               => $name($project->co_pm_id),
                 'project_admin'       => $name($project->project_admin_id),
                 'ae_type'             => $text($project->ae_type),
@@ -194,10 +265,7 @@ class DeliveryProjectController extends Controller
 
         $filename = 'Delivery_Projects_' . now()->format('Ymd_His') . '.xlsx';
 
-        return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\DeliveryProjectExport($rows),
-            $filename
-        );
+        return \App\Support\ExportColumns::download($request, 'delivery_project', new \App\Exports\DeliveryProjectExport($rows), $filename);
     }
 
     /**
@@ -496,6 +564,10 @@ class DeliveryProjectController extends Controller
 
     public function show(DeliveryProject $project)
     {
+        // Jaring pengaman untuk project yang dibuat lewat jalur tanpa event model
+        // (seeder / import): folder standar + dokumen tanpa folder → 00. Other.
+        DeliveryProjectDocumentFolder::ensureDefaults($project);
+
         $project->load([
             'client.basicData',
             'phases',
@@ -505,6 +577,7 @@ class DeliveryProjectController extends Controller
             'createdBy',
             'closedBy.basicData',
             'documents',
+            'documentFolders',
             'teamMembers.basicData',
             'plannings.phase',
             'plannings.activity'
@@ -1021,6 +1094,28 @@ class DeliveryProjectController extends Controller
     // DOCUMENT MANAGEMENT WITH AJAX SUPPORT
     // ============================================
     
+    /**
+     * Folder dokumen milik project dari request (`folder_id`); tanpa `folder_id`
+     * dokumen masuk "00. Other". Folder project lain ditolak lewat validasi.
+     */
+    private function resolveDocumentFolder(Request $request, DeliveryProject $project): DeliveryProjectDocumentFolder
+    {
+        $request->validate([
+            'folder_id' => [
+                'nullable', 'integer',
+                Rule::exists('delivery_project_document_folders', 'id')->where('delivery_projects_id', $project->id),
+            ],
+        ], [
+            'folder_id.exists' => 'The selected folder does not belong to this project.',
+        ]);
+
+        if ($request->filled('folder_id')) {
+            return DeliveryProjectDocumentFolder::findOrFail($request->integer('folder_id'));
+        }
+
+        return DeliveryProjectDocumentFolder::defaultFolder($project, DeliveryProjectDocumentFolder::OTHER_NUMBER);
+    }
+
     public function storeDocument(Request $request, DeliveryProject $project)
     {
         $request->validate([
@@ -1028,8 +1123,11 @@ class DeliveryProjectController extends Controller
             'link_document' => 'required|url',
             'document_type' => 'required|string|max:100',
         ]);
+        $folder = $this->resolveDocumentFolder($request, $project);
 
-        $document = $project->documents()->create($request->only(['document_name', 'link_document', 'document_type']));
+        $document = $project->documents()->create(
+            $request->only(['document_name', 'link_document', 'document_type']) + ['folder_id' => $folder->id]
+        );
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -1052,30 +1150,54 @@ class DeliveryProjectController extends Controller
             'file.max' => 'Ukuran file maksimal 100 MB.',
         ]);
 
-        $updateData = $request->only(['document_name', 'document_type']);
+        $project = DeliveryProject::findOrFail($document->delivery_projects_id);
 
-        if ($request->hasFile('file')) {
-            $project = DeliveryProject::find($document->delivery_projects_id);
+        // Folder tujuan: dikirim form Edit; tanpa folder_id dokumen tetap di
+        // foldernya sekarang.
+        $folder = $request->filled('folder_id')
+            ? $this->resolveDocumentFolder($request, $project)
+            : ($document->folder ?? DeliveryProjectDocumentFolder::defaultFolder($project, DeliveryProjectDocumentFolder::OTHER_NUMBER));
 
-            if (!$project || !$project->onedrive_folder_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'OneDrive folder has not been created for this project.',
-                ], 422);
+        $updateData = $request->only(['document_name', 'document_type']) + ['folder_id' => $folder->id];
+        $folders    = new ProjectDocumentFolderService();
+
+        try {
+            if ($request->hasFile('file')) {
+                if (!$project->onedrive_folder_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'OneDrive folder has not been created for this project.',
+                    ], 422);
+                }
+
+                // File pengganti di-upload ke folder (tujuan) dokumen.
+                $oneDrive = new OneDriveService();
+                $file     = $request->file('file');
+                $result   = $oneDrive->uploadFile(
+                    $folders->ensureOneDriveFolder($folder, $project),
+                    $file->getClientOriginalName(),
+                    file_get_contents($file->getRealPath()),
+                    $file->getMimeType() ?: 'application/octet-stream'
+                );
+
+                $updateData['link_document']    = $oneDrive->createAnonymousLink($result['id'], 'view');
+                $updateData['onedrive_item_id'] = $result['id'];
+            } elseif ((int) $document->folder_id !== (int) $folder->id
+                && $document->onedrive_item_id && $project->onedrive_folder_id) {
+                // Pindah folder: file di OneDrive ikut dipindah. Item ID tetap,
+                // jadi link dokumen tidak berubah. Dokumen lama tanpa item ID
+                // hanya berpindah di EcoSystem.
+                $folders->moveFile($document->onedrive_item_id, $folder, $project);
             }
-
-            $oneDrive     = new OneDriveService();
-            $file         = $request->file('file');
-            $originalName = $file->getClientOriginalName();
-
-            $result   = $oneDrive->uploadFile(
-                $project->onedrive_folder_id,
-                $originalName,
-                file_get_contents($file->getRealPath()),
-                $file->getMimeType() ?: 'application/octet-stream'
-            );
-
-            $updateData['link_document'] = $oneDrive->createAnonymousLink($result['id'], 'view');
+        } catch (\Throwable $e) {
+            Log::error('updateDocument OneDrive step failed', [
+                'document_id' => $document->id,
+                'error'       => $e->getMessage(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update the file in OneDrive: ' . $e->getMessage(),
+            ], 500);
         }
 
         $document->update($updateData);
@@ -1084,12 +1206,195 @@ class DeliveryProjectController extends Controller
         return response()->json([
             'success'  => true,
             'message'  => 'Document updated successfully.',
-            'document' => [
-                'id'            => $document->id,
-                'document_name' => $document->document_name,
-                'document_type' => $document->document_type,
-                'link_document' => $document->link_document,
+            'document' => $this->documentPayload($document),
+        ]);
+    }
+
+    /** Bentuk JSON satu dokumen untuk tabel Project Documents. */
+    private function documentPayload(Document $document): array
+    {
+        return [
+            'id'            => $document->id,
+            'folder_id'     => $document->folder_id,
+            'document_name' => $document->document_name,
+            'document_type' => $document->document_type,
+            'link_document' => $document->link_document,
+        ];
+    }
+
+    // ============================================
+    // DOCUMENT FOLDERS
+    // ============================================
+
+    /** Aturan nama folder tambahan (tanpa nomor; nomor diberikan sistem). */
+    private function documentFolderNameRules(DeliveryProject $project, ?int $ignoreId = null): array
+    {
+        return [
+            'name' => [
+                'required', 'string', 'max:100',
+                'not_regex:~[\\\\/:*?"<>|]~',
+                'not_regex:~^\s*\d+\s*\.~',
+                function ($attribute, $value, $fail) use ($project, $ignoreId) {
+                    $taken = DeliveryProjectDocumentFolder::where('delivery_projects_id', $project->id)
+                        ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                        ->get(['name'])
+                        ->contains(fn ($f) => mb_strtolower(trim($f->name)) === mb_strtolower(trim((string) $value)));
+                    if ($taken) {
+                        $fail('A folder with this name already exists in this project.');
+                    }
+                },
             ],
+        ];
+    }
+
+    private const DOCUMENT_FOLDER_NAME_MESSAGES = [
+        'name.required'  => 'Folder name is required.',
+        'name.max'       => 'Folder name may not be longer than 100 characters.',
+        'name.not_regex' => 'Folder name cannot contain \\ / : * ? " < > | and cannot start with a number and a dot (the number is added automatically).',
+    ];
+
+    private function folderPayload(DeliveryProjectDocumentFolder $folder): array
+    {
+        return [
+            'id'           => $folder->id,
+            'number'       => $folder->number,
+            'name'         => $folder->name,
+            'display_name' => $folder->display_name,
+            'is_default'   => $folder->is_default,
+        ];
+    }
+
+    /**
+     * Tambah folder dokumen. Nomor otomatis: 11, 12, 13, ... Subfolder OneDrive
+     * langsung dibuat bila folder OneDrive project sudah ada; bila gagal, dibuat
+     * saat upload pertama.
+     */
+    public function storeDocumentFolder(Request $request, DeliveryProject $project)
+    {
+        $request->merge(['name' => trim((string) $request->input('name'))]);
+        $request->validate($this->documentFolderNameRules($project), self::DOCUMENT_FOLDER_NAME_MESSAGES);
+
+        DeliveryProjectDocumentFolder::ensureDefaults($project);
+
+        $folder = DB::transaction(function () use ($request, $project) {
+            // Kunci baris project supaya dua Add Folder bersamaan tidak berebut nomor.
+            DeliveryProject::whereKey($project->id)->lockForUpdate()->first();
+
+            return DeliveryProjectDocumentFolder::create([
+                'delivery_projects_id' => $project->id,
+                'number'               => DeliveryProjectDocumentFolder::nextCustomNumber($project->id),
+                'name'                 => $request->input('name'),
+                'is_default'           => false,
+            ]);
+        });
+
+        DeliveryProject::markActivity($project->id);
+
+        $warning = null;
+        if ($project->onedrive_folder_id) {
+            try {
+                (new ProjectDocumentFolderService())->ensureOneDriveFolder($folder, $project);
+            } catch (\Throwable $e) {
+                Log::warning('OneDrive document folder create failed', [
+                    'project_id' => $project->id,
+                    'folder_id'  => $folder->id,
+                    'error'      => $e->getMessage(),
+                ]);
+                $warning = 'The folder was added, but it could not be created in OneDrive yet. It will be created on the first upload.';
+            }
+        }
+
+        return response()->json([
+            'success'     => true,
+            'message'     => "Folder {$folder->display_name} added.",
+            'warning'     => $warning,
+            'folder'      => $this->folderPayload($folder),
+            'next_number' => DeliveryProjectDocumentFolder::nextCustomNumber($project->id),
+        ]);
+    }
+
+    /** Rename folder tambahan. Folder standar tidak bisa di-rename. */
+    public function updateDocumentFolder(Request $request, DeliveryProject $project, DeliveryProjectDocumentFolder $folder)
+    {
+        if ((int) $folder->delivery_projects_id !== (int) $project->id) {
+            abort(404);
+        }
+        if ($folder->is_default) {
+            return response()->json(['success' => false, 'message' => 'Standard folders cannot be renamed.'], 422);
+        }
+
+        $request->merge(['name' => trim((string) $request->input('name'))]);
+        $request->validate($this->documentFolderNameRules($project, $folder->id), self::DOCUMENT_FOLDER_NAME_MESSAGES);
+
+        $folder->name = $request->input('name');
+
+        if ($project->onedrive_folder_id) {
+            try {
+                (new ProjectDocumentFolderService())->renameOneDriveFolder($folder);
+            } catch (\Throwable $e) {
+                Log::error('OneDrive document folder rename failed', [
+                    'folder_id' => $folder->id,
+                    'error'     => $e->getMessage(),
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to rename the folder in OneDrive: ' . $e->getMessage(),
+                ], 500);
+            }
+        }
+
+        $folder->save();
+        DeliveryProject::markActivity($project->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Folder renamed.',
+            'folder'  => $this->folderPayload($folder),
+        ]);
+    }
+
+    /**
+     * Hapus folder tambahan yang sudah kosong. Folder standar tidak bisa dihapus.
+     * Subfolder OneDrive ikut dihapus hanya bila di sana juga kosong.
+     */
+    public function destroyDocumentFolder(DeliveryProject $project, DeliveryProjectDocumentFolder $folder)
+    {
+        if ((int) $folder->delivery_projects_id !== (int) $project->id) {
+            abort(404);
+        }
+        if ($folder->is_default) {
+            return response()->json(['success' => false, 'message' => 'Standard folders cannot be deleted.'], 422);
+        }
+        if ($folder->documents()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This folder still has documents. Move or delete them first.',
+            ], 422);
+        }
+
+        $note = null;
+        if ($project->onedrive_folder_id) {
+            try {
+                if (!(new ProjectDocumentFolderService())->deleteOneDriveFolderIfEmpty($folder)) {
+                    $note = 'The folder in OneDrive still contains files, so it was kept there.';
+                }
+            } catch (\Throwable $e) {
+                Log::warning('OneDrive document folder delete failed', [
+                    'folder_id' => $folder->id,
+                    'error'     => $e->getMessage(),
+                ]);
+                $note = 'The folder could not be removed from OneDrive and was kept there.';
+            }
+        }
+
+        $folder->delete();
+        DeliveryProject::markActivity($project->id);
+
+        return response()->json([
+            'success'     => true,
+            'message'     => 'Folder deleted.',
+            'warning'     => $note,
+            'next_number' => DeliveryProjectDocumentFolder::nextCustomNumber($project->id),
         ]);
     }
 
@@ -1960,7 +2265,17 @@ class DeliveryProjectController extends Controller
 
                 $link = $oneDrive->createShareLink($folderId);
                 $project->applyOneDriveShareLink($link);
+
+                // ID subfolder lama (bila ada) milik folder project sebelumnya.
+                DeliveryProjectDocumentFolder::where('delivery_projects_id', $project->id)
+                    ->update(['onedrive_folder_id' => null]);
             }
+
+            // Subfolder dokumen (01. Discover ... 00. Other + folder tambahan,
+            // Plan Cost di dalam Discover). Juga melengkapi project lama yang
+            // foldernya dibuat sebelum ada folder dokumen. Gagal per folder
+            // hanya dicatat; folder itu dibuat saat upload pertama.
+            (new ProjectDocumentFolderService($oneDrive))->syncAll($project);
 
             return response()->json([
                 'success'          => true,
@@ -2006,6 +2321,7 @@ class DeliveryProjectController extends Controller
             'file.max' => 'Ukuran file maksimal 100 MB.',
         ]);
 
+        $folder       = $this->resolveDocumentFolder($request, $project);
         $file         = $request->file('file');
         $originalName = $file->getClientOriginalName();
         $docName      = $request->input('document_name') ?: $originalName;
@@ -2014,7 +2330,7 @@ class DeliveryProjectController extends Controller
             $oneDrive = new OneDriveService();
 
             $result   = $oneDrive->uploadFile(
-                $project->onedrive_folder_id,
+                (new ProjectDocumentFolderService($oneDrive))->ensureOneDriveFolder($folder, $project),
                 $originalName,
                 file_get_contents($file->getRealPath()),
                 $file->getMimeType() ?: 'application/octet-stream'
@@ -2024,20 +2340,17 @@ class DeliveryProjectController extends Controller
             $shareUrl = $oneDrive->createAnonymousLink($result['id'], 'view');
 
             $document = $project->documents()->create([
-                'document_name' => $docName,
-                'link_document' => $shareUrl,
-                'document_type' => $request->document_type,
+                'folder_id'        => $folder->id,
+                'document_name'    => $docName,
+                'link_document'    => $shareUrl,
+                'onedrive_item_id' => $result['id'],
+                'document_type'    => $request->document_type,
             ]);
 
             return response()->json([
                 'success'  => true,
                 'message'  => 'Document uploaded successfully.',
-                'document' => [
-                    'id'            => $document->id,
-                    'document_name' => $document->document_name,
-                    'link_document' => $document->link_document,
-                    'document_type' => $document->document_type,
-                ],
+                'document' => $this->documentPayload($document),
             ]);
 
         } catch (\Exception $e) {
@@ -2069,12 +2382,17 @@ class DeliveryProjectController extends Controller
             'filename'      => 'required|string|max:255',
             'document_name' => 'nullable|string|max:255',
             'document_type' => 'required|string|max:100',
+            'folder_id'     => 'required',
+        ], [
+            'folder_id.required' => 'Please choose a folder.',
         ]);
+        $folder = $this->resolveDocumentFolder($request, $project);
 
         try {
             $oneDrive  = new OneDriveService();
+            // File langsung di-upload ke subfolder OneDrive folder yang dipilih.
             $uploadUrl = $oneDrive->createUploadSession(
-                $project->onedrive_folder_id,
+                (new ProjectDocumentFolderService($oneDrive))->ensureOneDriveFolder($folder, $project),
                 $request->input('filename')
             );
 
@@ -2112,7 +2430,11 @@ class DeliveryProjectController extends Controller
             'document_name'    => 'nullable|string|max:255',
             'document_type'    => 'required|string|max:100',
             'filename'         => 'required|string|max:255',
+            'folder_id'        => 'required',
+        ], [
+            'folder_id.required' => 'Please choose a folder.',
         ]);
+        $folder = $this->resolveDocumentFolder($request, $project);
 
         try {
             $oneDrive = new OneDriveService();
@@ -2120,20 +2442,17 @@ class DeliveryProjectController extends Controller
 
             $docName  = $request->input('document_name') ?: $request->input('filename');
             $document = $project->documents()->create([
-                'document_name' => $docName,
-                'link_document' => $shareUrl,
-                'document_type' => $request->input('document_type'),
+                'folder_id'        => $folder->id,
+                'document_name'    => $docName,
+                'link_document'    => $shareUrl,
+                'onedrive_item_id' => $request->input('onedrive_item_id'),
+                'document_type'    => $request->input('document_type'),
             ]);
 
             return response()->json([
                 'success'  => true,
                 'message'  => 'Document uploaded successfully.',
-                'document' => [
-                    'id'            => $document->id,
-                    'document_name' => $document->document_name,
-                    'link_document' => $document->link_document,
-                    'document_type' => $document->document_type,
-                ],
+                'document' => $this->documentPayload($document),
             ]);
         } catch (\Exception $e) {
             Log::error('finalizeDocumentUpload failed', [
@@ -2162,6 +2481,10 @@ class DeliveryProjectController extends Controller
                 'onedrive_link_expires_at' => null,
                 'onedrive_link_checked_at' => null,
             ]);
+            // Subfolder dokumen ikut terhapus bersama folder project di OneDrive;
+            // folder dokumen di EcoSystem tetap ada dan dibuat ulang nanti.
+            DeliveryProjectDocumentFolder::where('delivery_projects_id', $project->id)
+                ->update(['onedrive_folder_id' => null]);
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             Log::error('OneDrive deleteFolder failed (project)', [

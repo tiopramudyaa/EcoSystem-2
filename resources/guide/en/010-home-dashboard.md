@@ -4,7 +4,7 @@ chapter: getting-started
 order: 10
 title: Home dashboard
 summary: Your starting page: pinned shortcuts, key numbers, recent tickets and quick links.
-updated: 2026-10-28
+updated: 2026-11-24
 ---
 `Home` is the first page you see after you sign in. It gives you shortcuts to what you use most and a quick look at the numbers around you.
 
@@ -29,6 +29,7 @@ The numbers on `Home` show only what your role may see. If a number looks low, i
 5. Under `Recent Tickets`, open a ticket directly, or select `View all` to go to the full list.
 6. Some roles also see `Ticket Status Breakdown`, `Ticket Submissions` (the last 30 days) and `Agent Workload` (active tickets per agent). Use them to spot a build-up early.
 7. Use `Quick Navigation` for one-click access to pages such as `Tickets`, `My Tasks` and `Reporting`.
+8. On a desktop screen, select the small arrow on the edge of the sidebar to shrink it to icons only. The page gets more room. Select the arrow again to open it. Hover over an icon to see the menu name, or select a menu group to open the full sidebar.
 
 ## What happens next
 
@@ -41,5 +42,7 @@ Pinned menus are remembered for your account, so they are there the next time yo
 **A menu I need is not in `All Menu`.** It is not part of your role. Ask your administrator.
 
 **The sidebar looks different from a colleague's.** Menus follow each person's role.
+
+**The sidebar shows only icons.** You shrank it earlier. Select the small arrow on its edge to open it again. The choice is remembered on this browser only.
 
 <!-- sources: resources/views/home, resources/views/dashboard.blade.php, routes/web.php -->

@@ -3,52 +3,198 @@
 namespace App\Support;
 
 /**
- * Katalog tema musiman (Natal, lalu Tahun Baru/Lebaran menyusul) - sumber
- * kebenaran TUNGGAL untuk visual apa saja yang tersedia. Ini murni katalog
- * tema yang bisa dirender (none/natal/...); bukan tempat konsep "ikut admin"
- * ('default') - itu ditangani SettingsController::ALLOWED_VALUES dan
- * App\Support\SeasonalThemeResolver, supaya kelas ini tetap hanya berisi
- * tema yang benar-benar bisa dirender oleh partial.
+ * Katalog tema musiman: sumber kebenaran TUNGGAL untuk tema apa saja yang
+ * tersedia, termasuk palet warna, dekorasi, teks loading screen, dan saran
+ * jadwal. Murni tema yang bisa dirender (none, natal, ...); konsep "ikut
+ * admin" ('default') ditangani App\Support\SeasonalThemeResolver.
  *
- * Dipakai oleh dua jalur konfigurasi independen yang keduanya di-resolve ke
- * satu key di katalog ini sebelum dirender:
+ * Dua jalur konfigurasi independen, keduanya di-resolve ke satu key katalog:
  *
  *   - Per-user: SettingsController (auth_users.preferences.seasonal_theme).
  *   - Global admin: App\Support\GlobalSeasonalTheme (app_configs), berlaku
- *     sebagai default untuk semua user (dashboard) + halaman login, diatur
- *     lewat Control Center. User tetap bisa menimpa pilihan admin ini di
- *     preferensi mereka sendiri (lihat SeasonalThemeResolver).
+ *     sebagai default semua user dan halaman login, bisa manual atau
+ *     terjadwal. User boleh menimpa pilihan admin di preferensinya.
  *
- * Menambah tema baru (Tahun Baru, Lebaran) berarti menambah satu entri di
- * CATALOG dan satu literal di SettingsController::ALLOWED_VALUES['seasonal_theme']
- * - bukan menulis ulang controller/route/JS. Field `decoration` adalah tag
- * yang dibaca partial resources/views/partials/seasonal-theme.blade.php lewat
- * @switch untuk memilih efek animasi jatuhnya (mis. 'snow' untuk Natal).
- * Field `accents` adalah emoji dekorasi statis (bukan animasi) yang
- * ditampilkan berbarengan - dipakai Unicode emoji, bukan nama ikon Font
- * Awesome, karena Font Awesome Free 6.4 tidak punya ikon Santa/pohon-natal
- * yang bisa dipastikan tersedia tanpa cek manual; emoji tidak butuh aset
- * atau library tambahan dan tidak pernah render "kotak kosong" bila salah nama.
+ * Menambah tema baru cukup menambah satu entri CATALOG. Daftar yang diterima
+ * SettingsController dan validasi admin dibangun dari keys(), jadi tidak ada
+ * literal ganda yang perlu disinkronkan.
+ *
+ * Field entri:
+ *   - label_key    kunci terjemahan nama tema (lang/*\/ui.php).
+ *   - icon         kelas Font Awesome untuk kartu pilihan.
+ *   - accent       warna chip pratinjau.
+ *   - palette      nilai CSS variable --st-* (lihat partial seasonal-theme-vars).
+ *                  null untuk 'none' (tidak ada override warna).
+ *   - decoration   tag efek animasi yang dibaca partial seasonal-theme:
+ *                  snow, confetti, stars, sparkle, lantern, flag, atau null.
+ *   - ornaments    nama ornamen vektor (SVG symbol st-orn-NAMA) untuk dekorasi
+ *                  header dan sidebar. Ikon utama tema: symbol st-icon-KEY.
+ *   - scene        jenis adegan 3D loading screen (public/js/seasonal/scenes).
+ *   - loading      kunci terjemahan judul dan subjudul loading screen.
+ *   - window       saran jadwal [mm-dd awal, mm-dd akhir]; null bila tanggalnya
+ *                  berpindah tiap tahun (Ramadan, Lebaran, Imlek) sehingga
+ *                  admin yang mengisi tanggal tepatnya.
  */
 final class SeasonalThemes
 {
     public const NONE = 'none';
     public const NATAL = 'natal';
+    public const TAHUN_BARU = 'tahun_baru';
+    public const RAMADAN = 'ramadan';
+    public const LEBARAN = 'lebaran';
+    public const IMLEK = 'imlek';
+    public const HUT_RI = 'hut_ri';
 
     private const CATALOG = [
         self::NONE => [
-            'label' => 'Off',
+            'label_key' => 'ui.seasonal.themes.none',
             'icon' => 'fa-ban',
             'accent' => '#9ca3af',
+            'palette' => null,
             'decoration' => null,
-            'accents' => [],
+            'ornaments' => [],
+            'scene' => null,
+            'loading' => null,
+            'window' => null,
         ],
         self::NATAL => [
-            'label' => 'Natal',
+            'label_key' => 'ui.seasonal.themes.natal',
             'icon' => 'fa-tree',
-            'accent' => '#b91c1c',
+            'accent' => '#1b6a40',
+            'palette' => [
+                'primary_rgb' => '20 69 47',
+                'primary_dark_rgb' => '11 42 30',
+                'accent' => '#d4af37',
+                'login_from' => '#0b2a1e',
+                'login_mid' => '#14452f',
+                'login_to' => '#1f6b43',
+                'button' => '#1b6a40',
+                'loading_bottom' => '#14452f',
+                'dark' => ['accent' => '#e0bc4a', 'login_to' => '#2a7f52'],
+            ],
             'decoration' => 'snow',
-            'accents' => ['🎄', '🎅', '🎁', '⛄', '🔔'],
+            'ornaments' => ['snowflake', 'bauble', 'star', 'bell'],
+            'scene' => 'sleigh',
+            'loading' => [
+                'title_key' => 'ui.seasonal.loading.natal.title',
+                'subtitle_key' => 'ui.seasonal.loading.natal.subtitle',
+            ],
+            'window' => ['12-01', '12-26'],
+        ],
+        self::TAHUN_BARU => [
+            'label_key' => 'ui.seasonal.themes.tahun_baru',
+            'icon' => 'fa-clock',
+            'accent' => '#2b2b36',
+            'palette' => [
+                'primary_rgb' => '34 34 44',
+                'primary_dark_rgb' => '10 10 15',
+                'accent' => '#f3dc8e',
+                'login_from' => '#07070b',
+                'login_mid' => '#16161f',
+                'login_to' => '#2b2b36',
+                'button' => '#2b2b36',
+                'loading_bottom' => '#2b2b36',
+            ],
+            'decoration' => 'confetti',
+            'ornaments' => ['firework', 'spark', 'star', 'clock'],
+            'scene' => 'fireworks',
+            'loading' => [
+                'title_key' => 'ui.seasonal.loading.tahun_baru.title',
+                'subtitle_key' => 'ui.seasonal.loading.tahun_baru.subtitle',
+            ],
+            'window' => ['12-27', '01-03'],
+        ],
+        self::RAMADAN => [
+            'label_key' => 'ui.seasonal.themes.ramadan',
+            'icon' => 'fa-moon',
+            'accent' => '#1e407c',
+            'palette' => [
+                'primary_rgb' => '30 64 124',
+                'primary_dark_rgb' => '15 32 70',
+                'accent' => '#f5c542',
+                'login_from' => '#050a1c',
+                'login_mid' => '#0f2046',
+                'login_to' => '#1e3a8a',
+                'button' => '#1e3a8a',
+                'loading_bottom' => '#1e3a8a',
+            ],
+            'decoration' => 'stars',
+            'ornaments' => ['crescent', 'star', 'fanous', 'star'],
+            'scene' => 'crescent',
+            'loading' => [
+                'title_key' => 'ui.seasonal.loading.ramadan.title',
+                'subtitle_key' => 'ui.seasonal.loading.ramadan.subtitle',
+            ],
+            'window' => null,
+        ],
+        self::LEBARAN => [
+            'label_key' => 'ui.seasonal.themes.lebaran',
+            'icon' => 'fa-mosque',
+            'accent' => '#1b5e20',
+            'palette' => [
+                'primary_rgb' => '27 94 32',
+                'primary_dark_rgb' => '14 61 20',
+                'accent' => '#d4e157',
+                'login_from' => '#06240d',
+                'login_mid' => '#0e3d14',
+                'login_to' => '#2e7d32',
+                'button' => '#2e7d32',
+                'loading_bottom' => '#2e7d32',
+            ],
+            'decoration' => 'sparkle',
+            'ornaments' => ['ketupat', 'mosque', 'star8', 'ketupat'],
+            'scene' => 'eid',
+            'loading' => [
+                'title_key' => 'ui.seasonal.loading.lebaran.title',
+                'subtitle_key' => 'ui.seasonal.loading.lebaran.subtitle',
+            ],
+            'window' => null,
+        ],
+        self::IMLEK => [
+            'label_key' => 'ui.seasonal.themes.imlek',
+            'icon' => 'fa-dragon',
+            'accent' => '#a83416',
+            'palette' => [
+                'primary_rgb' => '168 52 22',
+                'primary_dark_rgb' => '122 31 16',
+                'accent' => '#f5c542',
+                'login_from' => '#3a0a05',
+                'login_mid' => '#7a1f10',
+                'login_to' => '#a83416',
+                'button' => '#a83416',
+                'loading_bottom' => '#7a1f10',
+            ],
+            'decoration' => 'lantern',
+            'ornaments' => ['lantern', 'coin', 'fu', 'cloud'],
+            'scene' => 'lunar',
+            'loading' => [
+                'title_key' => 'ui.seasonal.loading.imlek.title',
+                'subtitle_key' => 'ui.seasonal.loading.imlek.subtitle',
+            ],
+            'window' => null,
+        ],
+        self::HUT_RI => [
+            'label_key' => 'ui.seasonal.themes.hut_ri',
+            'icon' => 'fa-flag',
+            'accent' => '#a80c24',
+            'palette' => [
+                'primary_rgb' => '168 12 36',
+                'primary_dark_rgb' => '125 10 30',
+                'accent' => '#ffffff',
+                'login_from' => '#3d0610',
+                'login_mid' => '#7d0a1e',
+                'login_to' => '#a80c24',
+                'button' => '#a80c24',
+                'loading_bottom' => '#7d0a1e',
+            ],
+            'decoration' => 'flag',
+            'ornaments' => ['flag', 'bamboo', 'star', 'ribbon'],
+            'scene' => 'flag',
+            'loading' => [
+                'title_key' => 'ui.seasonal.loading.hut_ri.title',
+                'subtitle_key' => 'ui.seasonal.loading.hut_ri.subtitle',
+            ],
+            'window' => ['08-10', '08-20'],
         ],
     ];
 
@@ -58,7 +204,13 @@ final class SeasonalThemes
         return array_keys(self::CATALOG);
     }
 
-    /** Katalog lengkap, dipakai untuk render picker (Settings & Control Center). */
+    /** Key tema yang bisa dipilih user: 'default' (ikut admin) + semua key katalog. */
+    public static function userChoices(): array
+    {
+        return array_merge(['default'], self::keys());
+    }
+
+    /** Katalog lengkap, dipakai untuk render picker (Settings dan Control Center). */
     public static function catalog(): array
     {
         return self::CATALOG;

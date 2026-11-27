@@ -32,7 +32,16 @@ HR, administrators, and any role given the `Master` › `Employee` menu in Menu 
 1. Open `Master` › `Employee`. The title line says how many employees are shown.
 2. Use the funnel icon in a column title to filter by `ECI`, `Full Name`, `Position`, `Module`, `Employee Group`, `Division`, `Department`, `Home Base`, `Personnel Area`, `Employee Type`, `Status` and more. `Clear` resets a filter.
 3. The `Status` column is `Active`, `Blocked` or `Flagged for Deletion`. A blocked or flagged person cannot sign in.
-4. Click a row to open the employee's record. `Export Excel` downloads the list. `Manage Dropdown Data` opens the dropdown lists used by the form.
+4. Click a row to open the employee's record. `Export Excel` opens the export window (see "Export the list" below). `Manage Dropdown Data` opens the dropdown lists used by the form.
+
+### Export the list
+
+1. Choose `Export Excel` above the table.
+2. A window titled `Export Master Employee` opens. It shows the `Template` list and every `Fields` checkbox.
+3. Tick the fields you want in the file. Type in `Search fields` to find one in a long list. `Select all` ticks every field and `Unselect all` unticks them.
+4. To reuse this choice, type a name under `Save these fields as a template`, choose `Personal` or `Global` and choose `Save`. The template then appears in the `Template` list, marked `(Personal)` or `(Global)`.
+5. Next time, open the same window and pick the template in `Template`. Its fields are ticked for you. `Global` templates made by colleagues are in the same list. Choose `Delete` to remove a template of yours you no longer need.
+6. Choose `Export`. The file contains only the ticked fields.
 
 ### Create an employee
 
@@ -84,6 +93,14 @@ Use this only when a person lost their phone and their recovery codes and cannot
 - The person is told in the app and by email, so a reset they did not ask for does not go unnoticed. If the email cannot be sent, the reset still stands and the message tells you so.
 - Every reset is written to `Control Center` › `Audit Log` with your name and the person's name.
 - `Change Password`: at least 6 characters, typed twice. `Change Employee ID`: must be new, at most 50 characters, needs your own password, and ends the person's current sessions. `Change Role`: at least one role must stay selected, and giving someone the EC Administrator role needs a fresh 2FA code from you. `Delete` cannot be undone.
+
+### When you export
+
+- The fields you can tick are the columns of the full export, from `ECI` to `Status`. Rows still follow the filters on the list.
+- Every field ticked gives the normal export. Fewer fields give plain cells (red header, no number formats).
+- At least one field must be ticked. A template name can be up to 80 characters and is unique among your own templates in this list: saving with an existing name replaces that template. A `Global` name must also differ from other `Global` templates.
+- A `Personal` template is only yours. A `Global` template can be used by everyone who can export this list, but only its creator can change it, and an EC Administrator can delete any. `Save` stores the fields ticked at that moment. The window opens with your last template.
+- Templates do not change who may export. A field removed from the export later drops out of them.
 
 ## What happens next
 

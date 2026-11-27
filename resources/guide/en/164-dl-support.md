@@ -29,8 +29,17 @@ Helpdesk, support heads and managers, project and RPMO staff, and any role given
 1. Open `Delivery` › `Support`. The tabs on top are `Support` (the list) and `Planning`.
 2. Read the `SUMMARY` cards: `Total Delivery Support`, `In Progress`, `Completed`, `Not Started`, `Ending ≤ 30 days`, `Past End Date`, `Upcoming` and `No Timeline`. Click a card to filter.
 3. Type in the search box (client, ticket ID or description) or use the funnel icons in the column titles. Columns include `Customer`, `Support Name`, `Support Type`, `IO Number`, `Progress` and `Timeline`.
-4. Click an item to open its detail page. Choose `Export Excel` to download the list.
+4. Click an item to open its detail page.
 5. The `Planning` tab shows the `Support Planning List`: each support with its progress, status, how many activities are completed and its timeline.
+
+### Export the list
+
+1. Choose `Export Excel` above the table. The button appears only if your role has the export function for Delivery Support.
+2. A window titled `Export Delivery Support` opens. It shows the `Template` list and every `Fields` checkbox.
+3. Tick the fields you want in the file. Type in `Search fields` to find one in a long list. `Select all` ticks every field and `Unselect all` unticks them.
+4. To reuse this choice, type a name under `Save these fields as a template`, choose `Personal` or `Global` and choose `Save`. The template then appears in the `Template` list, marked `(Personal)` or `(Global)`.
+5. Next time, open the same window and pick the template in `Template`. Its fields are ticked for you. `Global` templates made by colleagues are in the same list. Choose `Delete` to remove a template of yours you no longer need.
+6. Choose `Export`. The file contains only the ticked fields.
 
 ### Add a support item
 
@@ -45,6 +54,23 @@ Helpdesk, support heads and managers, project and RPMO staff, and any role given
 5. Add `Total Mandays` and the `Approval` date and name if known, then choose `Create Delivery Support`.
 
 Tickets are linked to a support from the ticket page, not from this form.
+
+## Rules to know
+
+### When you export
+
+- The fields you can tick are the columns of the full export: `Customer`, `Support Name`, `Type`, `IO`, `Total Mandays`, `Start Date`, `End Date`, `Delivery Owner`, `Support Manager`, `Co PM`, `Support Admin` and `Sales`.
+- Templates only choose columns. Which rows are exported is still decided by the filters, cards and search active on the list.
+- With every field ticked you get the normal full export. With fewer fields the file has plain cells: a red header row, the first row frozen and columns sized to fit, without the number and alignment formats of the full export.
+- At least one field must be ticked, and a template needs a name of up to 80 characters.
+- A `Personal` template is seen and used only by you. A `Global` template is seen and used by everyone who can open this export, and is marked with the name of its creator.
+- Only the creator can change a template. Others can use a `Global` template but not edit or delete it; to keep a variation, they save it under another name. An EC Administrator can delete any `Global` template.
+- Each list has its own fields and its own templates.
+- Among your own templates for one list a name is unique, whether `Personal` or `Global`. Saving with a name you already use replaces that template and can switch it between `Personal` and `Global`. A `Global` name must also differ from every other `Global` template of that list.
+- `Save` stores the fields that are ticked at that moment. Changing the ticks of a chosen template and then choosing `Export` does not change the template.
+- The window opens with the template you used last on this browser.
+- If a field is removed from the export later, it simply disappears from your saved templates.
+- Templates, `Global` ones included, do not change who may export. The export button still follows your access in `Menu Access`, so a `Global` template is only useful to people who can export this list.
 
 ## What happens next
 
