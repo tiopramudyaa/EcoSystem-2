@@ -1597,6 +1597,9 @@
     var SB_SEC_KEY = 'ecosystem:sidebar:sections:v1';
     function sbSecRead() { try { return JSON.parse(localStorage.getItem(SB_SEC_KEY)) || {}; } catch (e) { return {}; } }
     var SB_LAYOUT_KEY = 'ecosystem:sidebar:layout:v1';
+    // Dipasang dari Settings > Sidebar layout > Always open: sidebar tidak lagi melipat otomatis setelah membuka halaman.
+    var SB_PIN_KEY = 'ecosystem:sidebar:pin-open:v1';
+    function sbPinnedOpen() { try { return localStorage.getItem(SB_PIN_KEY) === '1'; } catch (e) { return false; } }
     function sbIsRail() { return document.documentElement.getAttribute('data-sb-layout') === 'rail'; }
     function sbRailAllowed() { var a = document.getElementById('sidebar'); return !!a && a.getAttribute('data-rail') !== 'off'; }
     function sbCloseFlyouts(except) {
@@ -1692,14 +1695,14 @@
         var a = e.target.closest ? e.target.closest('#sidebar a.nav-link[href]') : null;
         if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { return; }
         if (a.target === '_blank' || /^(#|javascript:)/i.test(a.getAttribute('href') || '')) { return; }
-        if (window.innerWidth < 1024 || !sbRailAllowed() || sbIsRail()) { return; }
+        if (window.innerWidth < 1024 || !sbRailAllowed() || sbIsRail() || sbPinnedOpen()) { return; }
         try { sessionStorage.setItem(SB_AFTER_NAV_KEY, String(Date.now())); } catch (err) { /* no note: stays expanded */ }
     });
     function sbCollapseAfterNavigation() {
         var at = 0;
         try { at = parseInt(sessionStorage.getItem(SB_AFTER_NAV_KEY), 10) || 0; sessionStorage.removeItem(SB_AFTER_NAV_KEY); } catch (err) { return; }
         // The note is for the page the click opened: a stale one (page never arrived, tab left idle) is ignored.
-        if (!at || Date.now() - at > 15000 || window.innerWidth < 1024 || !sbRailAllowed() || sbIsRail()) { return; }
+        if (!at || Date.now() - at > 15000 || window.innerWidth < 1024 || !sbRailAllowed() || sbIsRail() || sbPinnedOpen()) { return; }
         var fold = function () { setTimeout(function () { if (!sbIsRail()) { sbApplyLayout(true, true); } }, 250); };
         if (document.readyState === 'complete') { fold(); } else { window.addEventListener('load', fold, { once: true }); }
     }

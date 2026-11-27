@@ -5,7 +5,7 @@ order: 20
 title: Navigating EcoSystem
 summary: Find your way around the Dashboard, sidebar, notifications, profile menu and personal Settings.
 requires: []
-updated: 2026-11-19
+updated: 2026-11-27
 ---
 This topic shows the main parts of the screen and how to personalise them, so you can reach any page quickly.
 
@@ -41,7 +41,7 @@ On a phone or a narrow window the sidebar is hidden. Select the menu button at t
 
 1. Select a section title, for example `My Workspace`, to fold or unfold it. EcoSystem remembers your choice in this browser.
 2. Select the double-arrow button next to the search box to collapse or expand all sections at once.
-3. Select `Collapse to icons` at the bottom of the sidebar to shrink it to an icon strip. Hover over or select a section icon to see its menus. Select `Expand sidebar` to return.
+3. Select `Collapse to icons` at the bottom of the sidebar to shrink it to an icon strip. Hover over or select a section icon to see its menus. Select `Expand sidebar` to return. You can also choose `Auto` (the default), `Always open` or `Icons only` under `Sidebar layout` in `Settings` › `Appearance`. `Auto` folds the sidebar to icons after you open a page, `Always open` never does, and `Icons only` keeps the icon strip. It applies at once, is remembered on this device and browser only, and does not need `Save changes`.
 
 ### Pin your favorite menus
 
@@ -69,7 +69,7 @@ Select your name in the top-right corner to open `My Profile`, `Settings`, `User
 
 1. Open `Settings` from the sidebar or from the menu under your name.
 2. Choose a tab on the left:
-   - `Appearance`: `Theme` (Light, Dark or Auto), `Accent color`, `Sidebar style` (Gradient or Solid), `Font size`, `Compact mode`, `Show animations` and `Seasonal theme`. `Theme` here only means Light, Dark or Auto; the festive look is the separate `Seasonal theme` (`Default` follows the administrator, or choose `Off` or one theme for yourself).
+   - `Appearance`: `Theme` (Light, Dark or Auto), `Accent color`, `Sidebar style` (Gradient or Solid), `Sidebar layout` (Always open or Icons only), `Font size`, `Compact mode`, `Show animations` and `Seasonal theme`. `Theme` here only means Light, Dark or Auto; the festive look is the separate `Seasonal theme` (`Default` follows the administrator, or choose `Off` or one theme for yourself).
    - `Preferences`: `Auto-save`, `Auto-refresh` and `Keyboard shortcuts`.
    - `Notifications`: switch notifications, email and push alerts on or off, and pick the notification sounds.
    - `Security`: change your password. Enter a new password of at least 8 characters, confirm it and select `Update password`.

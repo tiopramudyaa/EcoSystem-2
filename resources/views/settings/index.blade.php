@@ -168,6 +168,25 @@
                     </div>
                 </div>
 
+                {{-- Sidebar Layout: perangkat ini, sama dengan tombol di dasar sidebar (kunci localStorage yang sama) --}}
+                <div class="px-4 sm:px-8 py-6" id="sidebarLayoutRow">
+                    <div class="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-8">
+                        <div class="w-full sm:w-48 flex-shrink-0">
+                            <p class="text-sm font-medium text-gray-800">{{ __('ui.settings.appearance.sb_layout') }}</p>
+                            <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ __('ui.settings.appearance.sb_layout_d') }}</p>
+                        </div>
+                        <div class="flex items-center gap-3" role="radiogroup" aria-label="{{ __('ui.settings.appearance.sb_layout') }}">
+                            @foreach(['auto'=>[__('ui.settings.appearance.sb_auto'),'fa-wand-magic-sparkles'],'full'=>[__('ui.settings.appearance.sb_full'),'fa-table-columns'],'rail'=>[__('ui.settings.appearance.sb_rail'),'fa-grip-lines-vertical']] as $lk=>[$ll,$li])
+                            <button type="button" role="radio" aria-checked="false" data-sb-layout-choice="{{ $lk }}" onclick="selectSidebarLayout('{{ $lk }}')"
+                                class="flex flex-col items-center gap-2 w-24 p-2.5 border-2 rounded-xl transition-all hover:border-red-400 border-gray-200">
+                                <div class="w-full h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center"><i class="fas {{ $li }}"></i></div>
+                                <span class="text-xs font-medium text-gray-500">{{ $ll }}</span>
+                            </button>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Seasonal Theme --}}
                 @php
                     // Tema global admin saat ini (untuk label "Default" dan pratinjau). Layout belum
@@ -985,6 +1004,32 @@ function pickCustomColor(raw) {
     document.getElementById('customColorNote').classList.toggle('hidden', !res.adjusted);
     _applyColor(res.hex);
 }
+const SB_LAYOUT_KEY_S = 'ecosystem:sidebar:layout:v1', SB_PIN_KEY_S = 'ecosystem:sidebar:pin-open:v1';
+function currentSidebarMode() {
+    try {
+        if (localStorage.getItem(SB_PIN_KEY_S) === '1') return 'full';
+        return localStorage.getItem(SB_LAYOUT_KEY_S) === 'rail' ? 'rail' : 'auto';
+    } catch (e) { return 'auto'; }
+}
+function markSidebarLayout() {
+    const mode = currentSidebarMode();
+    document.querySelectorAll('[data-sb-layout-choice]').forEach(b => {
+        const on = b.dataset.sbLayoutChoice === mode;
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        b.classList.toggle('border-red-600', on); b.classList.toggle('bg-red-50/50', on); b.classList.toggle('border-gray-200', !on);
+        b.querySelector('span')?.classList.toggle('text-red-700', on); b.querySelector('span')?.classList.toggle('text-gray-500', !on);
+    });
+}
+// Berlaku langsung dan tersimpan di perangkat ini (tidak ikut tombol Save).
+// auto = terbuka, melipat ke ikon setelah membuka halaman; full = selalu terbuka; rail = hanya ikon.
+function selectSidebarLayout(mode) {
+    try {
+        if (mode === 'full') localStorage.setItem(SB_PIN_KEY_S, '1'); else localStorage.removeItem(SB_PIN_KEY_S);
+    } catch (e) {}
+    if (typeof sbApplyLayout === 'function') sbApplyLayout(mode === 'rail', true);
+    markSidebarLayout();
+}
+document.addEventListener('DOMContentLoaded', markSidebarLayout);
 function selectSidebarStyle(style) {
     S.sidebar_style = style;
     document.querySelectorAll('[onclick^="selectSidebarStyle"]').forEach(o => {
@@ -1425,7 +1470,7 @@ async function disconnectMicrosoft() {
 @endif
 
 // ── Expose ────────────────────────────────────────────────────────────────────
-window.switchTab=switchTab; window.selectTheme=selectTheme; window.selectColor=selectColor; window.pickCustomColor=pickCustomColor; window.accentReadable=accentReadable; window.accentLocked=accentLocked; window.warnAccentLocked=warnAccentLocked; window.turnOffSeasonal=turnOffSeasonal;
+window.switchTab=switchTab; window.selectTheme=selectTheme; window.selectSidebarLayout=selectSidebarLayout; window.selectColor=selectColor; window.pickCustomColor=pickCustomColor; window.accentReadable=accentReadable; window.accentLocked=accentLocked; window.warnAccentLocked=warnAccentLocked; window.turnOffSeasonal=turnOffSeasonal;
 window.selectSidebarStyle=selectSidebarStyle; window.selectFontSize=selectFontSize;
 window.selectSeasonalTheme=selectSeasonalTheme;
 window.saveSettings=saveSettings; window.resetSettings=resetSettings;

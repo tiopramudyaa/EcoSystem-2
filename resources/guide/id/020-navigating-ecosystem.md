@@ -5,7 +5,7 @@ order: 20
 title: Menjelajahi EcoSystem
 summary: Kenali Dashboard, sidebar, Notification, menu profil, dan Settings pribadi agar Anda cepat menemukan halaman yang dibutuhkan.
 requires: []
-updated: 2026-11-19
+updated: 2026-11-27
 ---
 Topik ini menunjukkan bagian-bagian utama layar dan cara menyesuaikannya, supaya Anda dapat menuju halaman mana pun dengan cepat.
 
@@ -41,7 +41,7 @@ Di ponsel atau jendela yang sempit, sidebar disembunyikan. Pilih tombol menu di 
 
 1. Pilih judul bagian, misalnya `My Workspace`, untuk melipat atau membukanya. EcoSystem mengingat pilihan Anda di peramban ini.
 2. Pilih tombol panah ganda di samping kotak pencarian untuk melipat atau membuka semua bagian sekaligus.
-3. Pilih `Collapse to icons` di bagian bawah sidebar untuk mengecilkannya menjadi deretan ikon. Arahkan kursor atau pilih ikon bagian untuk melihat menunya. Pilih `Expand sidebar` untuk mengembalikannya.
+3. Pilih `Collapse to icons` di bagian bawah sidebar untuk mengecilkannya menjadi deretan ikon. Arahkan kursor atau pilih ikon bagian untuk melihat menunya. Pilih `Expand sidebar` untuk mengembalikannya. Anda juga dapat memilih `Otomatis` (bawaan), `Selalu terbuka`, atau `Hanya ikon` pada `Sidebar layout` di `Settings` › `Appearance`. `Otomatis` melipat sidebar ke ikon setelah Anda membuka halaman, `Selalu terbuka` tidak pernah melipat, dan `Hanya ikon` tetap berupa deretan ikon. Pilihan berlaku langsung, hanya diingat di perangkat dan browser ini, dan tidak perlu `Save changes`.
 
 ### Menyematkan menu favorit
 
@@ -69,7 +69,7 @@ Pilih nama Anda di pojok kanan atas untuk membuka `My Profile`, `Settings`, `Use
 
 1. Buka `Settings` dari sidebar atau dari menu di bawah nama Anda.
 2. Pilih tab di sebelah kiri:
-   - `Appearance`: `Theme` (Light, Dark, atau Auto), `Accent color`, `Sidebar style` (Gradient atau Solid), `Font size`, `Compact mode`, `Show animations`, dan `Seasonal theme`. `Theme` di sini hanya berarti Light, Dark, atau Auto; tampilan perayaan adalah `Seasonal theme` yang terpisah (`Default` mengikuti administrator, atau pilih `Off` atau satu tema untuk diri sendiri).
+   - `Appearance`: `Theme` (Light, Dark, atau Auto), `Accent color`, `Sidebar style` (Gradient atau Solid), `Sidebar layout` (Selalu terbuka atau Hanya ikon), `Font size`, `Compact mode`, `Show animations`, dan `Seasonal theme`. `Theme` di sini hanya berarti Light, Dark, atau Auto; tampilan perayaan adalah `Seasonal theme` yang terpisah (`Default` mengikuti administrator, atau pilih `Off` atau satu tema untuk diri sendiri).
    - `Preferences`: `Auto-save`, `Auto-refresh`, dan `Keyboard shortcuts`.
    - `Notifications`: menyalakan atau mematikan Notification, peringatan email dan push, serta memilih suara Notification.
    - `Security`: mengganti kata sandi. Masukkan kata sandi baru minimal 8 karakter, konfirmasikan, lalu pilih `Update password`.
