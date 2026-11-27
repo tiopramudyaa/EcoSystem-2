@@ -463,7 +463,7 @@
 
     {{-- Dekorasi polos bawaan: disembunyikan CSS saat tema musiman aktif. --}}
     <div class="dp-ambient">
-    {{-- Orbs --}}
+        {{-- Orbs --}}
     <div style="position:absolute;top:-80px;right:-60px;width:360px;height:360px;border-radius:50%;
                 background:radial-gradient(circle,rgba(204,34,0,.18) 0%,transparent 68%);
                 pointer-events:none;animation:orbFloat1 9s ease-in-out infinite;"></div>

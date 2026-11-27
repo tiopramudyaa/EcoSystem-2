@@ -176,5 +176,8 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('qualificationLevelOptions', $levelOptions);
             }
         );
+
+        // Tema musiman efektif ($seasonalTheme) untuk dashboard dan semua halaman auth.
+        View::composer(['dashboard', 'auth.*'], \App\View\Composers\SeasonalThemeComposer::class);
     }
 }

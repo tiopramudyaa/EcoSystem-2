@@ -429,6 +429,8 @@ class TicketDeliverableController extends Controller
         $bodyText = trim(html_entity_decode(strip_tags(preg_replace('#<(br|/p|/li|/h[1-6])\s*/?>#i', "\n", $bodyHtml))));
 
         TicketDeliverable::whereIn('id', $deliverables->pluck('id'))->update(['status' => 'Sent']);
+        // sent_at is written once: a resend keeps the first send time (SLA First Resolution).
+        TicketDeliverable::whereIn('id', $deliverables->pluck('id'))->whereNull('sent_at')->update(['sent_at' => now()]);
 
         // To/Cc diambil dari kolom composer reply (mirror reply biasa). Jika frontend
         // mengirim daftar (walau kosong) → HORMATI apa adanya & persist ke ticket; jika

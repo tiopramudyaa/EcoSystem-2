@@ -618,6 +618,15 @@ class SlaController extends Controller
             ->keyBy('ticket_id')
             ->map(fn ($d) => $d->updated_at);
 
+        // Batch-fetch "First Resolution": first IR/RCA sent from the chat room, per ticket.
+        $firstResolutionByTicket = \App\Models\TicketDeliverable::whereIn('ticket_id', $slas->pluck('ticket_id')->filter())
+            ->whereIn('doc_type', \App\Models\TicketDeliverable::FIRST_RESOLUTION_DOC_TYPES)
+            ->whereNotNull('sent_at')
+            ->groupBy('ticket_id')
+            ->selectRaw('ticket_id, MIN(sent_at) as first_sent_at')
+            ->pluck('first_sent_at', 'ticket_id')
+            ->map(fn ($at) => Carbon::parse($at));
+
         // Batch-fetch SLA notes (agent-tagged "sla_message" annotations on chat messages,
         // same source as the Log Shifting report) for the Notes column, grouped by ticket.
         $notesByTicket = TicketMessage::whereIn('ticket_id', $slas->pluck('ticket_id')->filter())
@@ -653,7 +662,8 @@ class SlaController extends Controller
             $docSentByTicket->get($s->ticket_id),
             $notesByTicket->get($s->ticket_id),
             $pausesByTicket->get($s->ticket_id, collect()),
-            true
+            true,
+            $firstResolutionByTicket->get($s->ticket_id)
         ));
 
         // Live-filtered met/breached (see $filterLive above) - filter on the recomputed
@@ -1052,7 +1062,8 @@ class SlaController extends Controller
         ?Carbon $docSentAt = null,
         ?\Illuminate\Support\Collection $notes = null,
         ?\Illuminate\Support\Collection $pauses = null,
-        bool $batched = false
+        bool $batched = false,
+        ?Carbon $firstResolutionAt = null
     ): array {
         // $batched = nilai-nilai di atas berasal dari batch-fetch untuk seluruh report, jadi
         // null berarti "memang tidak ada" (bukan "belum diambil") dan tidak perlu query ulang.
@@ -1113,14 +1124,17 @@ class SlaController extends Controller
                        : null;
 
         // "SLA Resolution Status" (Achieved/Not Achieved) - Type of Service = CR is exempt
-        // (change requests aren't held to the resolution SLA), and it's only meaningful once
-        // the ticket is actually Closed (Resolution Duration (STOP-GO) is a final figure).
+        // (change requests aren't held to the resolution SLA). Closed tickets are judged on
+        // the final Resolution Duration (STOP-GO); still-open tickets on the running SLA
+        // Resolution Time so far (provisional, highlighted on the report).
         $resolutionTimeStatus = $this->slaResolutionAchievement(
             $deliverySupportType,
             $t?->status,
             $resolutionActualHours,
+            $resolutionLiveHours,
             $resolutionTargetHours
         );
+        $resolutionIsOpen = $t && !in_array($t->status, $endStatuses, true);
 
         return [
             'ticket_id'              => $t?->ticket_id,
@@ -1166,6 +1180,14 @@ class SlaController extends Controller
                 'resolved_at'   => ($batched ? $firstResolvedAt : ($firstResolvedAt ?? $this->sla->firstResolvedAt($s)))?->toDateTimeString(),
                 'doc_sent_at'   => ($batched ? $docSentAt : ($docSentAt ?? $this->sla->resolutionDocSentAt($s)))?->toDateTimeString(),
                 'time_status'   => $resolutionTimeStatus,
+                // Ticket not closed/cancelled yet: time_status is provisional (running time).
+                'is_open'       => $resolutionIsOpen,
+                // First IR/RCA sent to the customer from the chat room - Incident tickets only;
+                // other types show "Not Incident" in the report.
+                'first_resolution_applicable' => $t?->ticket_type === 'Incident',
+                'first_resolution_at' => $t?->ticket_type === 'Incident'
+                    ? ($batched ? $firstResolutionAt : ($firstResolutionAt ?? $this->sla->firstResolutionDocAt($s)))?->toDateTimeString()
+                    : null,
                 'met'           => in_array($resolutionStatus, ['met', 'pending_validation']),
             ],
             'waiting_hours'          => $this->sla->liveTotalWaitingHours($s, $pauses),
@@ -1180,32 +1202,32 @@ class SlaController extends Controller
 
     /**
      * "SLA Resolution Status" column (Achieved / Not Achieved / N/A) - mirrors the report's
-     * Excel template: compare Resolution Duration (STOP-GO) against the SLA Resolution
-     * (HOUR) target, except:
+     * Excel template: compare the resolution duration against the SLA Resolution (HOUR)
+     * target, except:
      *   - Type of Service = 'CR' tickets are exempt (change requests aren't held to the
      *     resolution SLA) → N/A.
-     *   - Only meaningful once the ticket is actually Closed - Resolution Duration
-     *     (STOP-GO) is a final, stop-go figure that isn't settled before then → N/A.
+     *   - Cancelled tickets → N/A (no resolution to judge).
+     * Closed tickets use the final Resolution Duration (STOP-GO). Still-open tickets use
+     * the running SLA Resolution Time so far, so the verdict is provisional until close.
      */
     private function slaResolutionAchievement(
         ?string $deliverySupportType,
         ?string $ticketStatus,
         ?float $actualHours,
+        ?float $liveHours,
         ?float $targetHours
     ): string {
-        if ($deliverySupportType === 'CR') {
+        if ($deliverySupportType === 'CR' || $ticketStatus === 'cancelled') {
             return 'N/A';
         }
 
-        if ($ticketStatus !== 'closed') {
+        $hours = $ticketStatus === 'closed' ? $actualHours : $liveHours;
+
+        if ($hours === null || $targetHours === null) {
             return 'N/A';
         }
 
-        if ($actualHours === null || $targetHours === null) {
-            return 'N/A';
-        }
-
-        return $actualHours <= $targetHours ? 'Achieved' : 'Not Achieved';
+        return $hours <= $targetHours ? 'Achieved' : 'Not Achieved';
     }
 
     /**

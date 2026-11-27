@@ -85,7 +85,7 @@ class SeasonalThemeSettingsController extends Controller
             'sound' => $request->input('sound'),
             'volume' => $request->input('volume'),
             'mode' => $request->input('mode'),
-            'schedule' => array_values($request->input('schedule', [])),
+            'schedule' => array_values((array) $request->input('schedule', [])),
             'login' => [
                 'theme' => $request->input('login.theme', GlobalSeasonalTheme::LOGIN_INHERIT),
                 'scope' => $request->input('login.scope', GlobalSeasonalTheme::SCOPE_BOTH),

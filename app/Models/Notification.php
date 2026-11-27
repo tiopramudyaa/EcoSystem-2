@@ -138,6 +138,8 @@ class Notification extends Model
             'late_exception_rejected'      => 'Late Access Request rejected',
             'customer_mandays_canceled'    => 'Mandays Proposal canceled',
             'customer_mandays_proposed'    => 'Mandays Proposal: needs review',
+            'customer_mandays_pending_approval' => 'Mandays Proposal waiting for your approval',
+            'customer_mandays_rejected'    => 'Mandays Proposal rejected',
             'resolution_days_proposed'     => 'Resolution Days: needs review',
             'contract_end_reminder'        => 'Contract deadline reminder',
             'top_invoice_reminder'         => 'Invoice submission due',

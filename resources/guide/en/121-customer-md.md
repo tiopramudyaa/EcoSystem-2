@@ -5,7 +5,7 @@ order: 121
 title: Customer MD report
 summary: See every Change Request and every ticket with a Customer Mandays proposal in one list, and export it.
 requires: [reporting.customer-md]
-updated: 2026-10-28
+updated: 2026-11-13
 ---
 Customer MD lists the tickets that carry customer mandays: all tickets of type Change Request and all tickets with an active Customer Mandays proposal.
 
@@ -41,5 +41,7 @@ The export contains the filtered view you see at that moment. Nothing in the tic
 **`Customer MD Status` shows `None`.** The ticket is a Change Request that has no Customer Mandays proposal yet.
 
 **A ticket I expect is missing.** It must be a Change Request or have an active Customer Mandays proposal. Check the filters too.
+
+**What do `Waiting Internal Approval` and `Rejected` mean?** `Waiting Internal Approval` means the proposal is waiting for one of the two internal approval levels. `Rejected` means a level rejected it and the PIC has to submit a new version.
 
 <!-- sources: routes/web.php, app/Http/Controllers/ReportingController.php, resources/views/reporting/customer-md.blade.php -->

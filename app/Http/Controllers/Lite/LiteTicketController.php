@@ -8,6 +8,7 @@ use App\Http\Controllers\TicketMessageController;
 use App\Models\EmployeeBasicData;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
+use App\Services\LiteCustomerMandaysPresenter;
 use App\Services\SlaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -122,9 +123,13 @@ class LiteTicketController extends Controller
                 return response()->json(['success' => false, 'message' => 'Ticket not found.'], 404);
             }
 
+            $data = $this->formatTicketDetail($ticket);
+            // Null bila user tidak berhak melihat Customer Mandays ticket ini (aturan sama dengan web).
+            $data['customer_mandays'] = app(LiteCustomerMandaysPresenter::class)->summary($ticket, (int) $user['id']);
+
             return response()->json([
                 'success' => true,
-                'data'    => $this->formatTicketDetail($ticket),
+                'data'    => $data,
             ]);
 
         } catch (\Exception $e) {
@@ -157,6 +162,11 @@ class LiteTicketController extends Controller
 
             $ticket = Ticket::find($ticketId);
             if (!$ticket) {
+                return response()->json(['success' => false, 'message' => 'Ticket not found.'], 404);
+            }
+
+            // Sama dengan show(): ticket tersembunyi hanya untuk EC Administrator.
+            if ($ticket->is_hidden && (int) ($user['role']['id'] ?? 0) !== RoleId::EC_ADMINISTRATOR->value) {
                 return response()->json(['success' => false, 'message' => 'Ticket not found.'], 404);
             }
 
@@ -245,8 +255,12 @@ class LiteTicketController extends Controller
             $emailFailed = false;
 
             if ($isInternalNote) {
-                $mentionedEmployeeIds = $request->input('mentioned_employee_ids', []);
-                $mentionedRoleIds     = $request->input('mentioned_role_ids', []);
+                // Hanya mention yang "@Nama"-nya benar-benar ada di teks note.
+                [$mentionedEmployeeIds, $mentionedRoleIds] = \App\Services\MentionTextGuard::filter(
+                    (string) $request->message,
+                    (array) $request->input('mentioned_employee_ids', []),
+                    (array) $request->input('mentioned_role_ids', [])
+                );
 
                 $message = TicketMessage::create([
                     'ticket_id'              => $ticketId,

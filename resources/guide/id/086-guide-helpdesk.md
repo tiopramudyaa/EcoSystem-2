@@ -5,7 +5,7 @@ order: 86
 title: Panduan Delivery Support Service Helpdesk
 summary: Rutinitas helpdesk: validasi tiket masuk, arahkan tiket, tinjau mandays customer, rapikan daftar tiket, dan siapkan laporan shift serta mingguan.
 requires: ["@role:Delivery Support Service Helpdesk"]
-updated: 2026-10-28
+updated: 2026-11-13
 ---
 Panduan ini untuk role Delivery Support Service Helpdesk. Anda adalah pintu depan permintaan customer: Anda memeriksa yang masuk, mengarahkannya ke orang yang tepat, dan menjaga daftar tiket tetap rapi.
 
@@ -38,7 +38,7 @@ Permintaan baru dari customer menunggu di `Ticket Validation` sampai Anda memutu
 
 1. Buka `Ticket`, pilih tiketnya, lalu tetapkan lead atau anggota tim. Lihat [[ticket-assignment]].
 2. Buka `Consultant Workload` lebih dulu untuk melihat siapa yang masih punya ruang.
-3. Saat konsultan mengusulkan Customer Mandays, tinjau lalu kirim ke customer. Lihat [[ticket-mandays]].
+3. Saat proposal Customer Mandays sampai di level persetujuan Anda, setujui atau tolak. Setelah kedua level menyetujui, tinjau lalu kirim ke customer. Lihat [[ticket-mandays]].
 
 ### Jaga daftar tiket tetap rapi
 

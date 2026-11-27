@@ -32,6 +32,8 @@
             'poster' => is_file(public_path($spPoster)) ? asset($spPoster) . '?v=' . filemtime(public_path($spPoster)) : null,
             'alt' => __('ui.seasonal.preview.poster_alt', ['theme' => $spLabel]),
             'dialog' => __('ui.seasonal.preview.dialog_label', ['theme' => $spLabel]),
+            'greeting' => isset($spMeta['loading']['title_key']) ? __($spMeta['loading']['title_key']) : '',
+            'blessing' => isset($spMeta['loading']['subtitle_key']) ? __($spMeta['loading']['subtitle_key']) : '',
         ];
     }
 
@@ -61,11 +63,12 @@
     <p id="seasonalPreviewHint" class="mt-1.5 text-xs leading-relaxed text-gray-400" aria-live="polite">{{ __('ui.seasonal.preview.hint') }}</p>
 </div>
 
-<div id="seasonalPreviewOverlay" class="sp-overlay" role="dialog" aria-modal="true" aria-labelledby="seasonalPreviewTitle" hidden>
+<div id="seasonalPreviewOverlay" class="sp-overlay" role="dialog" aria-modal="true" hidden>
     <canvas class="sp-canvas" aria-hidden="true"></canvas>
     <img class="sp-poster" alt="" width="640" height="360">
     <div class="sp-bar">
         <div class="sp-text">
+            <span class="sp-logo"><img src="{{ asset('images/eclectic_logo_nobg.png') }}" alt="" width="160" height="55" decoding="async"></span>
             <p id="seasonalPreviewTitle" class="sp-title"></p>
             <p class="sp-note"></p>
         </div>
@@ -84,12 +87,22 @@
     .sp-canvas { display: none; }
     .sp-overlay.is-3d .sp-canvas { display: block; }
     .sp-overlay.is-3d .sp-poster { display: none; }
-    .sp-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 3rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,0)); color: #fff; }
-    .sp-text { min-width: 0; }
-    .sp-title { margin: 0; font-size: .9375rem; font-weight: 700; }
-    .sp-note { margin: .25rem 0 0; font-size: .75rem; color: rgba(255,255,255,.85); }
+    /* Ucapan di tengah bawah (bukan pojok), muncul bertahap, lalu seluruh dialog memudar saat selesai. */
+    .sp-bar { display: contents; }
+    .sp-text { position: absolute; left: 0; right: 0; bottom: 0; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 5rem 1.5rem calc(2.25rem + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(0,0,0,.78) 0%, rgba(0,0,0,.5) 55%, rgba(0,0,0,0) 100%); color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+    .sp-title { margin: 0; font-size: clamp(1.375rem, 3.4vw, 2.25rem); font-weight: 800; line-height: 1.2; }
+    .sp-logo { display: block; margin: 0 0 .9rem; line-height: 0; }
+    .sp-logo img { display: block; height: 3rem; width: auto; filter: drop-shadow(0 2px 8px rgba(0,0,0,.5)); }
+    .sp-overlay:not([hidden]) .sp-logo { animation: sp-text-in .7s cubic-bezier(.2,.8,.2,1) .1s both; }
+    .sp-overlay:not([hidden]) .sp-title { animation: sp-text-in .65s cubic-bezier(.2,.8,.2,1) .5s both; }
+    .sp-overlay:not([hidden]) .sp-note { animation: sp-text-in .65s cubic-bezier(.2,.8,.2,1) .8s both; }
+    @keyframes sp-text-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .sp-overlay { transition: opacity .3s ease; }
+    .sp-overlay.is-ending { opacity: 0; }
+    @media (prefers-reduced-motion: reduce) { .sp-overlay:not([hidden]) .sp-logo, .sp-overlay:not([hidden]) .sp-title, .sp-overlay:not([hidden]) .sp-note { animation: none; } .sp-overlay { transition: none; } }
+    .sp-note { margin: .4rem 0 0; font-size: clamp(.9rem, 1.7vw, 1.125rem); color: rgba(255,255,255,.92); }
     .sp-note:empty { display: none; }
-    .sp-close { flex: none; display: inline-flex; align-items: center; gap: .4rem; border: 1px solid rgba(255,255,255,.6); background: rgba(0,0,0,.55); color: #fff; border-radius: .5rem; padding: .5rem .9rem; font-size: .8125rem; font-weight: 600; cursor: pointer; }
+    .sp-close { position: absolute; top: 1rem; right: 1rem; z-index: 2; display: inline-flex; align-items: center; gap: .4rem; border: 1px solid rgba(255,255,255,.6); background: rgba(0,0,0,.55); color: #fff; border-radius: .5rem; padding: .5rem .9rem; font-size: .8125rem; font-weight: 600; cursor: pointer; }
     .sp-close:hover { background: rgba(255,255,255,.18); }
     .sp-close:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
     .seasonal-preview-box button { color: var(--text-color, #374151); border-color: rgba(107,114,128,.45); background: transparent; }
@@ -118,7 +131,7 @@
     var titleEl = document.getElementById('seasonalPreviewTitle'), noteEl = ov.querySelector('.sp-note');
     var closeBtn = ov.querySelector('.sp-close');
 
-    var token = 0, handle = null, timer = null, returnFocus = null, prevOverflow = '';
+    var token = 0, handle = null, timer = null, returnFocus = null, prevOverflow = '', stageMod = null;
 
     function selectedKey() {
         var card = document.querySelector(PICKER + ' .st-card.is-selected[data-season-choice]');
@@ -151,12 +164,18 @@
         canvas = fresh;
     }
 
+    // Renderer dipertahankan antar putaran (tanpa kompilasi shader ulang); dilepas di sini.
+    function releaseGL() {
+        if (stageMod && stageMod.release) { try { stageMod.release(canvas); } catch (e) {} }
+    }
+
     function close() {
         if (ov.hidden) return;
         token++;
         clearTimeout(timer); timer = null;
         if (handle) { try { handle.stop(); } catch (e) {} handle = null; }
-        ov.classList.remove('is-3d');
+        releaseGL();
+        ov.classList.remove('is-3d', 'is-ending');
         ov.hidden = true;
         document.body.style.overflow = prevOverflow;
         document.removeEventListener('keydown', onKey, true);
@@ -179,9 +198,9 @@
         prevOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         ov.setAttribute('aria-label', d.dialog);
-        titleEl.textContent = d.dialog;
-        noteEl.textContent = '';
-        ov.classList.remove('is-3d');
+        titleEl.textContent = d.greeting || d.dialog;
+        noteEl.textContent = d.blessing || '';
+        ov.classList.remove('is-3d', 'is-ending');
         if (d.poster) { poster.src = d.poster; poster.alt = d.alt; poster.style.display = ''; }
         else { poster.removeAttribute('src'); poster.style.display = 'none'; }
         ov.hidden = false;
@@ -192,26 +211,31 @@
 
         if (!STAGE || lowPower()) { noteEl.textContent = STILL; return; }
         import(STAGE).then(function (m) {
+            stageMod = m;
             if (my !== token) return null;
             if (!m.supportsWebGL()) { noteEl.textContent = STILL; return null; }
             return playLoop(m, d, my, t0);
         }).catch(function () { if (my === token) noteEl.textContent = STILL; });
     }
 
-    // Memainkan adegan; bila sisa waktu cukup, sekali lagi sampai batas MAX_MS.
+    // Memainkan adegan; bila sisa waktu cukup, sekali lagi sampai batas MAX_MS. Canvas dan renderer
+    // dipakai ulang (reuseRenderer): pemutaran kedua tidak membuat konteks GL baru dan tidak mengompilasi
+    // ulang shader. Selama jeda antar putaran frame terakhir tetap tampil (tanpa poster, tanpa layar kosong).
     function playLoop(m, d, my, t0) {
-        return m.play(canvas, { scene: d.scene, palette: d.palette, duration: SCENE_MS }).then(function (h) {
-            if (my !== token) { h.stop(); return; }
+        return m.play(canvas, { scene: d.scene, palette: d.palette, duration: SCENE_MS, reuseRenderer: true }).then(function (h) {
+            if (my !== token) { h.stop(); releaseGL(); return; }
             handle = h;
             ov.classList.add('is-3d');
             return h.done.then(function () {
                 if (my !== token) return;
                 handle = null;
                 if (Date.now() - t0 + SCENE_MS + 300 <= MAX_MS) {
-                    freshCanvas();
-                    return playLoop(m, d, my, t0);
+                    return playLoop(m, d, my, t0); // canvas tetap tampil (frame terakhir) sampai frame pertama putaran berikut
                 }
-                ov.classList.remove('is-3d'); // poster sampai penutupan otomatis
+                // Selesai: memudar lalu menutup sendiri (tidak menggantung di frame terakhir atau poster).
+                ov.classList.add('is-ending');
+                clearTimeout(timer);
+                timer = setTimeout(close, 340);
             });
         });
     }

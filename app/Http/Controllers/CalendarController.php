@@ -74,37 +74,10 @@ class CalendarController extends Controller
             $allowedTypes = $approvable;
             $lockedType   = count($allowedTypes) === 1 ? $allowedTypes[0] : null;
         } else {
-            // Everyone else logs their own timesheets: allowed types come from ALL assigned roles.
-            $typeMap = [
-                RoleId::DELIVERY_SUPPORT_USER->value         => 'support',
-                RoleId::EC_USER->value       => 'office',
-                RoleId::DELIVERY_PROJECT_USER->value => 'project',
-                // Heads without the approval permission still log in their own domain
-                RoleId::DELIVERY_PROJECT_HEAD->value => 'project',
-                RoleId::DELIVERY_SUPPORT_HEAD->value => 'support',
-                RoleId::DELIVERY_RPMO_HEAD->value    => 'office',
-                // Admin and Helpdesk get all types
-                RoleId::EC_ADMINISTRATOR->value            => '*',
-                RoleId::DELIVERY_HELPDESK->value         => '*',
-            ];
-
-            $computed    = [];
-            $grantedAll  = false;
-            foreach ($allRoleIds as $rid) {
-                $mapped = $typeMap[$rid] ?? null;
-                if ($mapped === '*') { $grantedAll = true; break; }
-                if ($mapped)          $computed[] = $mapped;
-            }
-
-            $allowedTypes = $grantedAll
-                ? ['project', 'support', 'office']
-                : (count(array_unique($computed)) > 0 ? array_values(array_unique($computed)) : ['project', 'support', 'office']);
-
-            // Non Project timesheets are available wherever Project ones are (same roles), so it
-            // joins the allowed types right after 'project'.
-            if (in_array('project', $allowedTypes, true)) {
-                array_splice($allowedTypes, array_search('project', $allowedTypes, true) + 1, 0, ['non_project']);
-            }
+            // Everyone else logs their own timesheets. The allowed types come only from the
+            // Menu Access functions timesheet.log.* (all assigned roles combined). There is no
+            // fallback: a role without any of them gets no type and cannot log time.
+            $allowedTypes = TimesheetApproval::loggableTypes($employee);
 
             // Lock only when exactly one type is allowed
             $lockedType = count($allowedTypes) === 1 ? $allowedTypes[0] : null;

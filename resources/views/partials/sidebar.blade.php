@@ -1341,6 +1341,31 @@
                                 </div>
                             </div>
                         @endif
+
+                        @if($can('management.flow'))
+                            <div class="mt-1">
+                                <button onclick="toggleMasterFlowDropdown()"
+                                    class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg w-full text-left {{ Request::is('management/flow*') ? 'bg-white bg-opacity-15 text-white font-medium' : 'text-white text-opacity-70 hover:bg-white hover:bg-opacity-10 hover:text-white' }} transition-all">
+                                    <span class="nav-icon w-4 h-4 flex items-center justify-center">
+                                        <i class="fas fa-sitemap text-xs"></i>
+                                    </span>
+                                    <span class="nav-text text-sm flex-1">Flow</span>
+                                    <i class="fas fa-chevron-down text-xs nav-text transition-transform {{ Request::is('management/flow*') ? 'rotate-180' : '' }}"
+                                        id="masterFlowChevron"></i>
+                                </button>
+                                <div id="masterFlowDropdown"
+                                    class="nav-text {{ Request::is('management/flow*') ? '' : 'hidden' }} mt-1 ml-4 space-y-1">
+                                    @if($can('management.flow.customer-mandays'))
+                                        <a href="{{ route('management.flow.customer-mandays.index') }}"
+                                            class="nav-link flex items-center gap-3 px-4 py-2 rounded-lg {{ Request::is('management/flow/customer-mandays*') ? 'bg-white bg-opacity-15 text-white font-medium' : 'text-white text-opacity-70 hover:bg-white hover:bg-opacity-10 hover:text-white' }} transition-all">
+                                            <span class="nav-icon w-4 h-4 flex items-center justify-center"><i
+                                                    class="fas fa-user-check text-xs"></i></span>
+                                            <span class="nav-text text-xs">Customer Mandays Approval</span>
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -2014,6 +2039,7 @@
     function toggleManajemenDropdown() { toggleSidebarDropdown('manajemenDropdown'); }
     function toggleEssGroupDropdown(groupId) { toggleSidebarDropdown('essGroup' + groupId + 'Dropdown'); }
     function toggleMasterMgmtDropdown() { toggleSidebarDropdown('masterMgmtDropdown'); }
+    function toggleMasterFlowDropdown() { toggleSidebarDropdown('masterFlowDropdown'); }
 
     (function () {
         var scroll = document.getElementById('sidebarScroll');

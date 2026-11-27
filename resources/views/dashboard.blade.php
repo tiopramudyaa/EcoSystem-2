@@ -172,6 +172,15 @@
             background-color: rgb(var(--primary-rgb)) !important;
         }
 
+        /* Utilitas yang dipakai halaman admin Seasonal Theme tetapi belum ada di build Tailwind
+           (public/build). Aman bila nanti ikut terbentuk saat build ulang: nilainya sama. */
+        .basis-44 { flex-basis: 11rem; }
+        .accent-gray-700 { accent-color: #374151; }
+        @media (min-width: 40rem) {
+            .sm\:items-end { align-items: flex-end; }
+            .sm\:grid-cols-\[1fr_9\.5rem_9\.5rem_auto\] { grid-template-columns: 1fr 9.5rem 9.5rem auto; }
+        }
+
         /* Smooth scrollbar */
         ::-webkit-scrollbar {
             width: 4px;
@@ -2113,6 +2122,10 @@
     <script src="{{ asset('js/import-errors.js') }}?v={{ @filemtime(public_path('js/import-errors.js')) }}" defer></script>
     <script src="{{ asset('js/unsaved-guard.js') }}?v={{ @filemtime(public_path('js/unsaved-guard.js')) }}" defer></script>
     <script src="{{ asset('js/filter-icons.js') }}?v={{ @filemtime(public_path('js/filter-icons.js')) }}" defer></script>
+    {{-- Global export field picker (pilih kolom + template) - dipakai tombol Export di list.
+         Usage: ExportPicker.open({type, title, onConfirm: (cols|null) => ...}) --}}
+    @include('partials.export-picker')
+
     @stack('scripts')
 
     {{-- ==================== GLOBAL SELECT ENHANCER ====================
@@ -2402,6 +2415,8 @@
                         late_exception_rejected: { bg: '#fee2e2', color: '#dc2626', fa: 'fa-ban' },
                         customer_mandays_canceled: { bg: '#ffedd5', color: '#ea580c', fa: 'fa-times-circle' },
                         customer_mandays_proposed: { bg: '#dbeafe', color: '#2563eb', fa: 'fa-file-invoice' },
+                        customer_mandays_pending_approval: { bg: '#fef3c7', color: '#d97706', fa: 'fa-user-check' },
+                        customer_mandays_rejected: { bg: '#fee2e2', color: '#dc2626', fa: 'fa-times-circle' },
                         resolution_days_proposed: { bg: '#e0e7ff', color: '#4f46e5', fa: 'fa-users' },
                         contract_end_reminder: { bg: '#fef9c3', color: '#ca8a04', fa: 'fa-file-contract' },
                         join_date_reminder: { bg: '#fef9c3', color: '#ca8a04', fa: 'fa-calendar-check' },
@@ -2443,6 +2458,8 @@
                             case 'late_exception_rejected': return 'Late Access Request rejected by RPMO';
                             case 'customer_mandays_canceled': return 'Customer Mandays Proposal canceled';
                             case 'customer_mandays_proposed': return 'Customer Mandays - needs review';
+                            case 'customer_mandays_pending_approval': return 'Customer Mandays waiting for your approval';
+                            case 'customer_mandays_rejected': return 'Customer Mandays Proposal rejected';
                             case 'resolution_days_proposed': return 'Resolution Days - needs review';
                             case 'contract_end_reminder': return 'Contract deadline reminder';
                             case 'join_date_reminder': return 'HR needs your join date';

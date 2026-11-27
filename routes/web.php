@@ -110,8 +110,15 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         return view('coming-soon', compact('feature'));
     })->name('coming-soon');
 
+    // ==================== EXPORT TEMPLATES ====================
+    // Template pilihan kolom untuk tombol Export (pribadi per karyawan). Tanpa
+    // middleware menu: izin export dicek di endpoint export tiap list.
+    Route::get('/export-templates/{type}', [\App\Http\Controllers\ExportTemplateController::class, 'index'])->name('export-templates.index')->where('type', '[a-z_]+');
+    Route::post('/export-templates/{type}', [\App\Http\Controllers\ExportTemplateController::class, 'store'])->name('export-templates.store')->where('type', '[a-z_]+');
+    Route::post('/export-templates/{id}/delete', [\App\Http\Controllers\ExportTemplateController::class, 'destroy'])->name('export-templates.destroy')->whereNumber('id');
+
     // ==================== AI ASSISTANT ====================
-    Route::get('/ai-assistant', [\App\Http\Controllers\AiAssistantController::class, 'index'])->name('ai-assistant')->middleware('menu:ai-assistant');
+    Route::get('/ai-assistant',[\App\Http\Controllers\AiAssistantController::class, 'index'])->name('ai-assistant')->middleware('menu:ai-assistant');
     Route::post('/ai-assistant/chat', [\App\Http\Controllers\AiAssistantController::class, 'chat'])->name('ai-assistant.chat')->middleware('menu:ai-assistant');
     // Riwayat percakapan (arsip DB, per-employee - lihat AiAssistantController::
     // conversations()) - inilah yang membuat history tetap muncul lintas
@@ -344,6 +351,9 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // "create" tidak tertangkap sebagai parameter {project}.
     Route::get('/projects/create', [DeliveryProjectController::class, 'create'])->name('projects.create')->middleware('menu:delivery-project.add-new');
     Route::post('/projects', [DeliveryProjectController::class, 'store'])->name('projects.store')->middleware('menu:delivery-project.add-new');
+    // Import Excel: izin sama dengan Add New. Didaftarkan sebelum projects/{project}.
+    Route::get('/projects/import-template', [\App\Http\Controllers\DeliveryProjectImportController::class, 'template'])->name('projects.import.template')->middleware('menu:delivery-project.add-new');
+    Route::post('/projects/import', [\App\Http\Controllers\DeliveryProjectImportController::class, 'import'])->name('projects.import')->middleware('menu:delivery-project.add-new');
     Route::delete('/projects/{project}', [DeliveryProjectController::class, 'destroy'])->name('projects.destroy')->middleware('menu:delivery-project.delete-project');
     Route::post('/projects/{project}/delete', [DeliveryProjectController::class, 'destroy'])->name('projects.destroy.post')->middleware('menu:delivery-project.delete-project');
 
@@ -473,6 +483,8 @@ Route::middleware(CheckAuthToken::class)->group(function () {
     // Document management routes
     Route::middleware(['menu:delivery-project.documents.edit', 'project.editable'])->group(function () {
         Route::patch('/project/documents/{document}', [DeliveryProjectController::class, 'updateDocument'])->name('project.documents.update');
+        // Rename folder dokumen tambahan (folder standar tidak bisa di-rename).
+        Route::patch('/projects/{project}/document-folders/{folder}', [DeliveryProjectController::class, 'updateDocumentFolder'])->name('project.documentFolders.update');
     });
     Route::middleware(['menu:delivery-project.documents.manage', 'project.editable'])->group(function () {
         Route::post('/projects/{project}/documents', [DeliveryProjectController::class, 'storeDocument'])->name('project.documents.store');
@@ -481,6 +493,10 @@ Route::middleware(CheckAuthToken::class)->group(function () {
         Route::post('/projects/{project}/documents/finalize-upload', [DeliveryProjectController::class, 'finalizeDocumentUpload'])->name('project.documents.finalize-upload');
         Route::delete('/project/documents/{document}', [DeliveryProjectController::class, 'destroyDocument'])->name('project.documents.destroy');
         Route::post('/project/documents/{document}/delete', [DeliveryProjectController::class, 'destroyDocument'])->name('project.documents.destroy.post');
+        // Folder dokumen tambahan: tambah (nomor otomatis 11, 12, ...) & hapus (harus kosong).
+        Route::post('/projects/{project}/document-folders', [DeliveryProjectController::class, 'storeDocumentFolder'])->name('project.documentFolders.store');
+        Route::delete('/projects/{project}/document-folders/{folder}', [DeliveryProjectController::class, 'destroyDocumentFolder'])->name('project.documentFolders.destroy');
+        Route::post('/projects/{project}/document-folders/{folder}/delete', [DeliveryProjectController::class, 'destroyDocumentFolder'])->name('project.documentFolders.destroy.post');
     });
 
     // Team member management routes
@@ -801,6 +817,16 @@ Route::middleware(CheckAuthToken::class)->group(function () {
             Route::get('/document-type', [\App\Http\Controllers\DeliverableDocumentTypeController::class, 'page'])
                 ->middleware('menu:management.ticket.document-type')
                 ->name('document-type.index');
+        });
+
+        // Flow: pengaturan alur approval. Customer Mandays = flow pertama.
+        Route::prefix('flow')->name('flow.')->group(function () {
+            Route::get('/customer-mandays', [\App\Http\Controllers\CustomerMandaysFlowController::class, 'page'])
+                ->middleware('menu:management.flow.customer-mandays')
+                ->name('customer-mandays.index');
+            Route::post('/customer-mandays', [\App\Http\Controllers\CustomerMandaysFlowController::class, 'sync'])
+                ->middleware('menu:management.flow.customer-mandays')
+                ->name('customer-mandays.sync');
         });
 
         Route::prefix('delivery')->name('delivery.')->group(function () {

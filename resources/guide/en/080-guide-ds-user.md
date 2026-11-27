@@ -5,7 +5,7 @@ order: 80
 title: Guide for Delivery Support User
 summary: The daily routine of a support consultant: take tickets, work them, propose mandays and log time.
 requires: ["@role:Delivery Support User"]
-updated: 2026-10-28
+updated: 2026-11-13
 ---
 This guide is for the Delivery Support User role, the consultants who work on customer tickets. It shows a simple daily routine and points to the detailed topics.
 
@@ -49,7 +49,7 @@ Consultants with the Delivery Support User role. What you can do depends on your
 
 1. Open the `Mandays` section and choose `Propose Mandays` or `Propose Resolution Days`.
 2. Save the `Draft`, check it, then submit it.
-3. Helpdesk reviews Customer Mandays and the head approves Resolution Days. See [[ticket-mandays]].
+3. Customer Mandays go through two approval levels, then Helpdesk sends them to the customer. The head approves Resolution Days. See [[ticket-mandays]].
 
 ## What happens next
 

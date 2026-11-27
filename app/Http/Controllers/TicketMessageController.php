@@ -13,6 +13,7 @@ use App\Models\TicketMessage;
 use App\Models\SecurityEvent;
 use App\Services\AttachmentSecurityScanner;
 use App\Services\LoginSecurityService;
+use App\Services\MentionTextGuard;
 use App\Services\MessageHtmlSanitizerService;
 use App\Services\SlaService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -389,8 +390,13 @@ class TicketMessageController extends Controller
 
             } else {
                 // Internal note - tidak pernah dikirim ke email
-                $mentionedEmployeeIds = $request->input('mentioned_employee_ids', []);
-                $mentionedRoleIds     = $request->input('mentioned_role_ids', []);
+                // Hanya mention yang "@Nama"-nya benar-benar ada di teks note
+                // (id basi dari chip yang sudah dihapus di editor dibuang).
+                [$mentionedEmployeeIds, $mentionedRoleIds] = MentionTextGuard::filter(
+                    $messageBody,
+                    (array) $request->input('mentioned_employee_ids', []),
+                    (array) $request->input('mentioned_role_ids', [])
+                );
                 $replyToId            = $request->input('reply_to_id');
 
                 $message = TicketMessage::create([
@@ -1618,8 +1624,12 @@ class TicketMessageController extends Controller
         // dinotifikasi ulang tiap kali note ini diedit).
         $originalEmployeeIds = $message->mentioned_employee_ids ?? [];
         $originalRoleIds     = $message->mentioned_role_ids ?? [];
-        $incomingEmployeeIds = array_map('intval', $request->input('mentioned_employee_ids', []));
-        $incomingRoleIds     = array_map('intval', $request->input('mentioned_role_ids', []));
+        // Mention baru hanya diterima bila "@Nama"-nya ada di teks hasil edit.
+        [$incomingEmployeeIds, $incomingRoleIds] = MentionTextGuard::filter(
+            MessageHtmlSanitizerService::sanitize($request->input('message_html', '')),
+            (array) $request->input('mentioned_employee_ids', []),
+            (array) $request->input('mentioned_role_ids', [])
+        );
         $newEmployeeIds      = array_values(array_diff($incomingEmployeeIds, $originalEmployeeIds));
         $newRoleIds          = array_values(array_diff($incomingRoleIds, $originalRoleIds));
 

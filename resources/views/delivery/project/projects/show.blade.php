@@ -1205,88 +1205,7 @@
 {{-- Documents Section WITH CHECKBOX SELECTION --}}
 @if($can('delivery-project.documents.view'))
 <section id="documents" class="mb-6 card-hover section-animate" data-perm-edit="{{ $can('delivery-project.documents.edit') ? '1' : '0' }}" data-perm-manage="{{ $can('delivery-project.documents.manage') ? '1' : '0' }}">
-    <div class="bg-white shadow-md rounded-lg">
-        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-            <div>
-                <h2 class="text-lg font-semibold text-gray-700">Project Documents</h2>
-                @if(!$project->onedrive_folder_id)
-                    <p class="text-xs text-amber-600 mt-0.5">Please create an OneDrive folder before uploading documents.</p>
-                @endif
-            </div>
-            @if($can('delivery-project.documents.manage'))
-            <button onclick="openUploadDocumentModal()"
-                    class="inline-flex items-center gap-2 px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all duration-200">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                </svg>
-                Upload Document
-            </button>
-            @endif
-        </div>
-        <div class="p-6">
-            {{-- Empty state: shown when no documents --}}
-            <div class="text-center py-12 {{ $project->documents->isNotEmpty() ? 'hidden' : '' }}" id="documentsEmptyState">
-                <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                <p class="text-sm text-gray-500">No documents have been uploaded yet.</p>
-            </div>
-            {{-- Table: always rendered, hidden when no documents --}}
-            <div class="overflow-x-auto {{ $project->documents->isEmpty() ? 'hidden' : '' }}" id="documentsTableWrap">
-                <table class="min-w-full divide-y divide-gray-200" id="documentsTable">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left">
-                                <input type="checkbox" id="selectAllDocuments" class="row-checkbox" onchange="toggleSelectAll('document')">
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Document Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200" id="documentsTableBody">
-                        @foreach($project->documents as $document)
-                            <tr class="hover:bg-gray-50 document-row" data-document-id="{{ $document->id }}">
-                                <td class="px-6 py-4">
-                                    <input type="checkbox" class="row-checkbox document-checkbox"
-                                           data-id="{{ $document->id }}"
-                                           data-name="{{ $document->document_name }}"
-                                           data-type="{{ $document->document_type }}"
-                                           onchange="handleRowSelection('document')">
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                        </svg>
-                                        <span class="text-sm font-medium text-gray-900">{{ $document->document_name }}</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        {{ $document->document_type }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    @if($document->link_document)
-                                        <a href="{{ $document->link_document }}" target="_blank" rel="noopener"
-                                           class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-all">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                            </svg>
-                                            Open File
-                                        </a>
-                                    @else
-                                        <span class="text-xs text-gray-400">-</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    @include('delivery.project.projects.partials.documents-section')
 </section>
 @endif
 
@@ -5306,7 +5225,23 @@
                         <span>{{ strtoupper($project->client->basicData->name_1 ?? 'CUSTOMER') }}</span>
                         <svg class="w-3.5 h-3.5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         <span>{{ $project->name }}</span>
+                        <svg class="w-3.5 h-3.5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        <span id="docUploadDestFolder" class="font-normal italic text-amber-600">Select a folder below</span>
                     </div>
+                </div>
+                {{-- Folder: satu tombol per folder (renderDocFolderPicker). Select
+                     tersembunyi tetap jadi penampung nilai & daftar folder - ikut
+                     diperbarui saat folder ditambah/di-rename/dihapus. --}}
+                <div>
+                    <p class="block text-sm font-medium text-gray-700 mb-1.5">Folder <span class="text-red-500">*</span></p>
+                    <div id="docFolderPicker" class="grid grid-cols-2 sm:grid-cols-3 gap-2" role="radiogroup" aria-label="Folder"></div>
+                    <select id="doc_folder" required onchange="syncDocUploadDest()" aria-hidden="true" tabindex="-1"
+                            class="doc-folder-select hidden">
+                        <option value="">-- Select Folder --</option>
+                        @foreach($project->documentFolders as $f)
+                            <option value="{{ $f->id }}">{{ $f->display_name }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 {{-- File drop zone --}}
                 <div>
@@ -6246,6 +6181,10 @@
 </div>
 @endif
 
+@if($can('delivery-project.documents.view'))
+    @include('delivery.project.projects.partials.document-folder-modal')
+@endif
+
 {{-- Edit Document Modal --}}
 <div id="editDocumentModal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop fixed inset-0 bg-black/50" onclick="closeModal('editDocumentModal')"></div>
@@ -6268,6 +6207,17 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Document Name <span class="text-red-500">*</span></label>
                         <input type="text" id="edit_document_name" required
                                class="block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm primary-focus text-sm">
+                    </div>
+                    {{-- Folder --}}
+                    <div>
+                        <label for="edit_document_folder" class="block text-sm font-medium text-gray-700 mb-1">Folder <span class="text-red-500">*</span></label>
+                        <select id="edit_document_folder" required
+                                class="doc-folder-select block w-full py-2.5 px-3 border border-gray-300 rounded-md shadow-sm primary-focus text-sm">
+                            @foreach($project->documentFolders as $f)
+                                <option value="{{ $f->id }}">{{ $f->display_name }}</option>
+                            @endforeach
+                        </select>
+                        <p class="text-xs text-gray-400 mt-1">Changing the folder also moves the file in OneDrive.</p>
                     </div>
                     {{-- Type --}}
                     <div>
@@ -7300,6 +7250,7 @@ async function executeBulkDelete() {
 function openEditDocumentModal(checkbox) {
     document.getElementById('edit_document_id').value   = checkbox.dataset.id;
     document.getElementById('edit_document_name').value = checkbox.dataset.name;
+    document.getElementById('edit_document_folder').value = checkbox.dataset.folderId || '';
 
     // Populate type - handle "Others: xxx" values stored in DB
     const rawType    = checkbox.dataset.type || '';
@@ -7544,6 +7495,7 @@ document.getElementById('editDocumentForm')?.addEventListener('submit', async fu
 
     fd.append('document_name', document.getElementById('edit_document_name').value);
     fd.append('document_type', _editDocType);
+    fd.append('folder_id', document.getElementById('edit_document_folder').value);
     if (fileInput && fileInput.files[0]) {
         const maxSize = 100 * 1024 * 1024;
         if (fileInput.files[0].size > maxSize) {
@@ -7569,27 +7521,13 @@ document.getElementById('editDocumentForm')?.addEventListener('submit', async fu
             closeModal('editDocumentModal');
             clearAllSelections();
 
-            // Update row in-place
-            const row = document.querySelector(`[data-document-id="${documentId}"]`);
-            if (row) {
-                const cb = row.querySelector('.document-checkbox');
-                if (cb) {
-                    cb.dataset.name = data.document.document_name;
-                    cb.dataset.type = data.document.document_type;
-                }
-                const nameEl = row.querySelector('td:nth-child(2) span');
-                if (nameEl) nameEl.textContent = data.document.document_name;
-                const typeEl = row.querySelector('td:nth-child(3) span');
-                if (typeEl) typeEl.textContent = data.document.document_type;
-                const actionTd = row.querySelector('td:nth-child(4)');
-                if (actionTd && data.document.link_document) {
-                    actionTd.innerHTML = `<a href="${data.document.link_document}" target="_blank" rel="noopener"
-                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-all">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                        </svg>Open File</a>`;
-                }
-            }
+            // Ganti baris dengan versi baru; bila foldernya berubah, baris
+            // pindah ke folder tujuan dan hitungan kedua folder diperbarui.
+            const oldRow = document.querySelector(`tr[data-document-id="${documentId}"]`);
+            const oldFolder = oldRow ? oldRow.closest('.doc-folder') : null;
+            if (oldRow) oldRow.remove();
+            if (oldFolder) refreshDocFolder(oldFolder);
+            placeDocumentRow(renderDocumentRow(data.document), data.document.folder_id);
         } else {
             showNotification(data.message || 'Failed to update document.', 'error');
         }
@@ -7779,7 +7717,7 @@ async function executeProjectDelete(projectId) {
 // Close modal on ESC key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        const modals = ['teamModal', 'editTeamModal', 'roleModal', 'documentModal', 'issueModal', 'issueDeleteModal', 'deleteModal', 'editDocumentModal', 'deleteFolderConfirmModal', 'noFolderWarningModal',
+        const modals = ['teamModal', 'editTeamModal', 'roleModal', 'documentModal', 'docFolderModal', 'issueModal', 'issueDeleteModal', 'deleteModal', 'editDocumentModal', 'deleteFolderConfirmModal', 'noFolderWarningModal',
                         'generalInfoModal', 'deliveryInfoModal', 'deliveryDataModal', 'locationInfoModal',
                         'wricefModal', 'wricefDeleteModal'];
         modals.forEach(modalId => closeModal(modalId));
@@ -8126,11 +8064,14 @@ function closeNoFolderWarning() {
     document.getElementById('noFolderWarningModal').classList.add('hidden');
 }
 
-function openUploadDocumentModal() {
+function openUploadDocumentModal(folderId) {
     if (!_odrHasFolder) {
         document.getElementById('noFolderWarningModal').classList.remove('hidden');
         return;
     }
+    // Folder tujuan: dari tombol upload di baris folder, atau dipilih user.
+    document.getElementById('doc_folder').value = folderId ? String(folderId) : '';
+    renderDocFolderPicker();
     // Reset modal state
     const _dl = document.getElementById('docDropLabel');
     document.getElementById('docFileInput').value = '';
@@ -8217,8 +8158,15 @@ async function submitDocumentUpload() {
         ? (othersText.value.trim() || '')
         : typeSelect.value;
 
+    const folderId = document.getElementById('doc_folder').value;
+
     if (!fileInput.files || !fileInput.files[0]) {
         showNotification('Please select a file first.', 'error');
+        return;
+    }
+    if (!folderId) {
+        showNotification('Please choose a folder.', 'error');
+        document.querySelector('#docFolderPicker .doc-folder-pick')?.focus();
         return;
     }
     if (!typeSelect.value) {
@@ -8255,6 +8203,7 @@ async function submitDocumentUpload() {
                 filename:      file.name,
                 document_name: document.getElementById('doc_name').value.trim(),
                 document_type: docType,
+                folder_id:     folderId,
             }),
         });
 
@@ -8281,6 +8230,7 @@ async function submitDocumentUpload() {
                 filename:         file.name,
                 document_name:    document.getElementById('doc_name').value.trim(),
                 document_type:    docType,
+                folder_id:        folderId,
             }),
         });
 
@@ -8289,50 +8239,7 @@ async function submitDocumentUpload() {
         if (data.success) {
             showNotification('Document uploaded successfully!', 'success');
             closeModal('documentModal');
-
-            const emptyState = document.getElementById('documentsEmptyState');
-            if (emptyState) emptyState.classList.add('hidden');
-            const tableWrap = document.getElementById('documentsTableWrap');
-            if (tableWrap) tableWrap.classList.remove('hidden');
-
-            const tbody = document.getElementById('documentsTableBody');
-            const doc   = data.document;
-            const tr    = document.createElement('tr');
-            tr.className = 'hover:bg-gray-50 document-row';
-            tr.setAttribute('data-document-id', doc.id);
-            tr.innerHTML = `
-                <td class="px-6 py-4">
-                    <input type="checkbox" class="row-checkbox document-checkbox"
-                           data-id="${doc.id}"
-                           data-name="${doc.document_name}"
-                           data-type="${doc.document_type}"
-                           onchange="handleRowSelection('document')">
-                </td>
-                <td class="px-6 py-4">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <span class="text-sm font-medium text-gray-900">${doc.document_name}</span>
-                    </div>
-                </td>
-                <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        ${doc.document_type}
-                    </span>
-                </td>
-                <td class="px-6 py-4">
-                    ${doc.link_document
-                        ? `<a href="${doc.link_document}" target="_blank" rel="noopener"
-                               class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-all">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                </svg>
-                                Open File</a>`
-                        : `<span class="text-xs text-gray-400">-</span>`
-                    }
-                </td>`;
-            tbody.appendChild(tr);
+            placeDocumentRow(renderDocumentRow(data.document), data.document.folder_id);
         } else {
             throw new Error(data.message || 'Failed to finalize upload.');
         }
@@ -8345,8 +8252,249 @@ async function submitDocumentUpload() {
     }
 }
 
+// ── Document Folders ──────────────────────────────────────────────────────
+// Dokumen dikelompokkan per folder (partials/document-folder.blade.php).
+// Folder standar: 01..06 + 00. Other (tidak bisa di-rename/hapus); folder
+// tambahan bernomor 11, 12, ... Semua aturan ditegakkan di server.
+function docEsc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Versi JS dari partials/document-row.blade.php - jaga keduanya sama.
+function renderDocumentRow(doc) {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-gray-50 document-row';
+    tr.setAttribute('data-document-id', doc.id);
+    const link = doc.link_document
+        ? `<a href="${docEsc(doc.link_document)}" target="_blank" rel="noopener"
+               class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-all">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+                Open File</a>`
+        : `<span class="text-xs text-gray-400">-</span>`;
+    tr.innerHTML = `
+        <td class="px-4 py-3 w-10">
+            <input type="checkbox" class="row-checkbox document-checkbox"
+                   data-id="${docEsc(doc.id)}"
+                   data-name="${docEsc(doc.document_name)}"
+                   data-type="${docEsc(doc.document_type)}"
+                   data-folder-id="${docEsc(doc.folder_id)}"
+                   onchange="handleRowSelection('document')">
+        </td>
+        <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span class="doc-name text-sm font-medium text-gray-900">${docEsc(doc.document_name)}</span>
+            </div>
+        </td>
+        <td class="px-4 py-3">
+            <span class="doc-type inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${docEsc(doc.document_type)}</span>
+        </td>
+        <td class="px-4 py-3 doc-action">${link}</td>`;
+    return tr;
+}
+
+function docFolderEl(folderId) {
+    return document.querySelector(`#docFolderList .doc-folder[data-folder-id="${folderId}"]`);
+}
+
+// Sisipkan baris dokumen ke folder-nya lalu buka folder itu.
+function placeDocumentRow(tr, folderId) {
+    const folder = docFolderEl(folderId);
+    if (!folder) { location.reload(); return; }
+    folder.querySelector('.doc-folder-tbody').appendChild(tr);
+    refreshDocFolder(folder);
+    toggleDocFolder(folder, true);
+}
+
+// Samakan hitungan, pesan kosong, dan tabel sebuah folder dengan isinya.
+function refreshDocFolder(folder) {
+    const count = folder.querySelectorAll('tr.document-row').length;
+    const badge = folder.querySelector('.doc-folder-count');
+    badge.textContent = count;
+    badge.className = 'doc-folder-count inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded-full text-xs font-medium '
+        + (count ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-500');
+    folder.querySelector('.doc-folder-empty').classList.toggle('hidden', count > 0);
+    folder.querySelector('.doc-folder-table').classList.toggle('hidden', count === 0);
+
+    const any = document.querySelectorAll('#docFolderList tr.document-row').length > 0;
+    document.getElementById('docSelectAllWrap')?.classList.toggle('invisible', !any);
+}
+
+function toggleDocFolder(folder, forceOpen) {
+    if (!folder) return;
+    const body = folder.querySelector('.doc-folder-body');
+    const open = forceOpen === undefined ? body.classList.contains('hidden') : forceOpen;
+    body.classList.toggle('hidden', !open);
+    folder.querySelector('.doc-folder-chevron').classList.toggle('rotate-90', open);
+}
+
+function setAllDocFolders(open) {
+    document.querySelectorAll('#docFolderList .doc-folder').forEach(f => toggleDocFolder(f, open));
+}
+
+// Breadcrumb "Tujuan Upload" + tombol folder yang aktif mengikuti pilihan.
+function syncDocUploadDest() {
+    const sel  = document.getElementById('doc_folder');
+    const dest = document.getElementById('docUploadDestFolder');
+    if (!sel || !dest) return;
+    if (sel.value) {
+        dest.textContent = sel.options[sel.selectedIndex].text;
+        dest.className   = 'font-semibold';
+    } else {
+        dest.textContent = 'Select a folder below';
+        dest.className   = 'font-normal italic text-amber-600';
+    }
+    document.querySelectorAll('#docFolderPicker .doc-folder-pick').forEach(b => {
+        const on = b.dataset.value === sel.value;
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        b.className = 'doc-folder-pick flex items-center gap-2 px-3 py-2 rounded-lg border text-sm text-left transition-all '
+            + (on ? 'border-blue-500 bg-blue-50 text-blue-800 font-semibold ring-2 ring-blue-100'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50');
+    });
+}
+
+// Satu tombol per folder, dibangun dari opsi select (jadi folder yang baru
+// ditambah / di-rename / dihapus ikut muncul tanpa reload).
+function renderDocFolderPicker() {
+    const sel = document.getElementById('doc_folder');
+    const box = document.getElementById('docFolderPicker');
+    if (!sel || !box) return;
+    box.innerHTML = '';
+    Array.from(sel.options).filter(o => o.value).forEach(o => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.dataset.value = o.value;
+        b.title = o.text;
+        b.setAttribute('role', 'radio');
+        b.innerHTML = `<svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z"/></svg>
+                       <span class="truncate">${docEsc(o.text)}</span>`;
+        b.addEventListener('click', () => { sel.value = o.value; syncDocUploadDest(); });
+        box.appendChild(b);
+    });
+    syncDocUploadDest();
+}
+
+// Tambah / rename opsi folder di dropdown Upload & Edit Document.
+function upsertDocFolderOption(folder) {
+    document.querySelectorAll('select.doc-folder-select').forEach(sel => {
+        let opt = sel.querySelector(`option[value="${folder.id}"]`);
+        if (!opt) {
+            opt = document.createElement('option');
+            opt.value = folder.id;
+            sel.appendChild(opt);
+        }
+        opt.textContent = folder.display_name;
+    });
+}
+
+function setDocFolderNextNumber(n) {
+    const list = document.getElementById('docFolderList');
+    if (list && n) list.dataset.nextNumber = n;
+}
+
+// folderEl null = Add Folder; elemen .doc-folder = Rename folder tambahan itu.
+function openDocFolderModal(folderEl) {
+    const isEdit = !!folderEl;
+    const number = isEdit
+        ? folderEl.dataset.folderDisplay.split('.')[0]
+        : String(document.getElementById('docFolderList').dataset.nextNumber || 11).padStart(2, '0');
+    document.getElementById('docFolderModalTitle').textContent = isEdit ? 'Rename Folder' : 'Add Folder';
+    document.getElementById('docFolderId').value = isEdit ? folderEl.dataset.folderId : '';
+    document.getElementById('docFolderNumber').textContent = number + '.';
+    document.getElementById('docFolderName').value = isEdit ? folderEl.dataset.folderName : '';
+    document.getElementById('docFolderSaveBtn').disabled = false;
+    openModal('docFolderModal');
+    setTimeout(() => document.getElementById('docFolderName').focus(), 50);
+}
+
+async function submitDocFolder(e) {
+    e.preventDefault();
+    const id   = document.getElementById('docFolderId').value;
+    const name = document.getElementById('docFolderName').value.trim();
+    const btn  = document.getElementById('docFolderSaveBtn');
+    if (!name) { showNotification('Folder name is required.', 'error'); return; }
+
+    btn.disabled = true;
+    try {
+        const res = await fetch(id
+            ? `/projects/{{ $project->id }}/document-folders/${id}`
+            : `/projects/{{ $project->id }}/document-folders`, {
+            method: id ? 'PATCH' : 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: JSON.stringify({ name }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+            const msg = data.errors ? Object.values(data.errors).flat()[0] : (data.message || 'Failed to save the folder.');
+            throw new Error(msg);
+        }
+
+        const f = data.folder;
+        if (id) {
+            const el = docFolderEl(id);
+            if (el) {
+                el.dataset.folderName    = f.name;
+                el.dataset.folderDisplay = f.display_name;
+                el.querySelector('.doc-folder-title').textContent = f.display_name;
+            }
+        } else {
+            const tpl  = document.getElementById('docFolderTemplate').innerHTML
+                .replaceAll('__ID__', docEsc(f.id))
+                .replaceAll('__DISPLAY__', docEsc(f.display_name))
+                .replaceAll('__NAME__', docEsc(f.name));
+            const wrap = document.createElement('div');
+            wrap.innerHTML = tpl.trim();
+            document.getElementById('docFolderList').appendChild(wrap.firstElementChild);
+            setDocFolderNextNumber(data.next_number);
+        }
+        upsertDocFolderOption(f);
+        closeModal('docFolderModal');
+        showNotification(data.message || 'Folder saved.', 'success');
+        if (data.warning) showNotification(data.warning, 'warning');
+    } catch (err) {
+        showNotification(err.message || 'Failed to save the folder.', 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function confirmDeleteDocFolder(folderEl) {
+    if (folderEl.querySelectorAll('tr.document-row').length > 0) {
+        showNotification('This folder still has documents. Move or delete them first.', 'error');
+        return;
+    }
+    document.getElementById('deleteMessage').textContent =
+        `Delete folder "${folderEl.dataset.folderDisplay}"? This action cannot be undone.`;
+    openModal('deleteModal');
+    document.getElementById('confirmDeleteBtn').onclick = async function () {
+        const id = folderEl.dataset.folderId;
+        try {
+            const res = await fetch(`/projects/{{ $project->id }}/document-folders/${id}/delete`, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) throw new Error(data.message || 'Failed to delete the folder.');
+
+            folderEl.remove();
+            document.querySelectorAll(`select.doc-folder-select option[value="${id}"]`).forEach(o => o.remove());
+            setDocFolderNextNumber(data.next_number);
+            showNotification(data.message || 'Folder deleted.', 'success');
+            if (data.warning) showNotification(data.warning, 'warning');
+        } catch (err) {
+            showNotification(err.message || 'Failed to delete the folder.', 'error');
+        } finally {
+            closeModal('deleteModal');
+        }
+    };
+}
+
 // ── OneDrive Modal ────────────────────────────────────────────────────────
-let _odrHasFolder = {{ $project->onedrive_folder_id ? 'true' : 'false' }};
+let _odrHasFolder ={{ $project->onedrive_folder_id ? 'true' : 'false' }};
 
 function openOneDriveModal() {
     document.getElementById('oneDriveModal').classList.remove('hidden');

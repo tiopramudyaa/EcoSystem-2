@@ -603,7 +603,15 @@ Route::middleware(['web'])->group(function () {
         Route::get('/{ticketId}/mandays/hd-draft', [MandaysController::class, 'getHelpdeskDraft']);
         Route::put('/{ticketId}/mandays/hd-draft', [MandaysController::class, 'saveHelpdeskDraft']);
         Route::post('/{ticketId}/mandays/hd-draft/submit-chat', [MandaysController::class, 'submitToChat']);
-        Route::post('/{ticketId}/mandays/hd-draft/approve', [MandaysController::class, 'approveCustomerMandays']);
+        // Approve langsung kini hanya untuk penyetuju Level 2 (lihat approval/final-approve).
+
+        // Customer Mandays — approval bertingkat (Level 1 → Level 2). Kewenangan
+        // diputuskan CustomerMandaysApprovalService::canAct(), bukan slug menu.
+        Route::get('/{ticketId}/mandays/approval', [MandaysController::class, 'getApproval']);
+        Route::post('/{ticketId}/mandays/approval/approve', [MandaysController::class, 'approveLevel']);
+        Route::post('/{ticketId}/mandays/approval/reject', [MandaysController::class, 'rejectLevel']);
+        // Penyetuju Level 2: approve langsung saat Ready to Send / Sent to Chat (canFinalize()).
+        Route::post('/{ticketId}/mandays/approval/final-approve', [MandaysController::class, 'finalApproveCustomerMandays']);
         Route::post('/{ticketId}/mandays/hd-draft/cancel', [MandaysController::class, 'cancelCustomerMandays']);
 
         // Resolution Days - PIC + Head of Support
@@ -928,9 +936,9 @@ Route::middleware(['web'])->group(function () {
     Route::post('/menus/{menuId}/roles/{roleId}/delete',            [\App\Http\Controllers\MenuController::class, 'removeRolePermission'])->middleware('menu:management.roles');
 
     // Role management
-    Route::get('/roles',                                            [\App\Http\Controllers\RoleController::class, 'index'])->middleware('menu:management.roles');
+    Route::get('/roles',                                            [\App\Http\Controllers\RoleController::class, 'index'])->middleware('menu:management.roles,master.employee.action');
     Route::post('/roles',                                           [\App\Http\Controllers\RoleController::class, 'store'])->middleware('menu:management.roles');
-    Route::get('/roles/{id}',                                       [\App\Http\Controllers\RoleController::class, 'show'])->middleware('menu:management.roles');
+    Route::get('/roles/{id}',                                       [\App\Http\Controllers\RoleController::class, 'show'])->middleware('menu:management.roles,master.employee.action');
     Route::put('/roles/{id}',                                       [\App\Http\Controllers\RoleController::class, 'update'])->middleware('menu:management.roles');
     Route::delete('/roles/{id}',                                    [\App\Http\Controllers\RoleController::class, 'destroy'])->middleware('menu:management.roles');
     Route::post('/roles/{id}/delete',                               [\App\Http\Controllers\RoleController::class, 'destroy'])->middleware('menu:management.roles');

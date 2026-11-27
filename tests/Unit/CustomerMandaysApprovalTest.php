@@ -1,0 +1,689 @@
+<?php
+
+namespace Tests\Unit;
+
+use App\Http\Controllers\CustomerMandaysFlowController;
+use App\Models\CustomerMandays;
+use App\Models\CustomerMandaysApproval;
+use App\Models\CustomerMandaysApprovalStep;
+use App\Models\Ticket;
+use App\Services\CustomerMandaysApprovalService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Tests\TestCase;
+
+/**
+ * Approval bertingkat Customer Mandays: PIC submit → Level 1 → Level 2 → pending_helpdesk.
+ * Tabel dibuat minimal di SQLite; tabel approval dibuat oleh migrasi aslinya.
+ */
+class CustomerMandaysApprovalTest extends TestCase
+{
+    private const ADMIN_ROLE    = 1;
+    private const HELPDESK_ROLE = 6;
+    private const USER_ROLE     = 3;
+
+    private const ADMIN    = 10; // EC Administrator  → Level 1
+    private const HELPDESK = 20; // Helpdesk          → Level 2
+    private const PIC      = 30; // pengusul
+    private const OUTSIDER = 40;
+    private const NEW_L1   = 50; // penyetuju pengganti Level 1
+    private const NEW_L2   = 60; // penyetuju pengganti Level 2, pemegang REVIEWER_ROLE
+
+    private const REVIEWER_ROLE = 7;
+
+    private CustomerMandaysApprovalService $service;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (!extension_loaded('pdo_sqlite')) {
+            $this->markTestSkipped('pdo_sqlite is not available.');
+        }
+        // Tes ini drop & create tabel: jangan pernah jalan di database sungguhan.
+        if (DB::getDriverName() !== 'sqlite') {
+            $this->markTestSkipped('Runs only on the SQLite test database.');
+        }
+
+        $this->createBaseTables();
+        (require base_path('database/migrations/2026_11_13_000001_create_customer_mandays_approval_tables.php'))->up();
+
+        $this->service = app(CustomerMandaysApprovalService::class);
+    }
+
+    // ── skenario ───────────────────────────────────────────────────────────
+
+    public function test_migration_seeds_admin_then_helpdesk(): void
+    {
+        $steps = CustomerMandaysApprovalStep::ordered()->get();
+
+        $this->assertCount(2, $steps);
+        $this->assertSame(self::ADMIN_ROLE, $steps[0]->approver_role_id);
+        $this->assertSame(self::HELPDESK_ROLE, $steps[1]->approver_role_id);
+    }
+
+    public function test_submit_snapshots_both_levels_and_waits_for_level_one(): void
+    {
+        [$ticket, $p] = $this->draft();
+
+        $r = $this->service->submit($p, $ticket, self::PIC, 'PIC');
+
+        $this->assertTrue($r['allowed'], $r['reason']);
+        $p->refresh();
+        $this->assertSame('pending_approval', $p->status);
+        $this->assertSame(1, $p->current_step_order);
+        $this->assertSame('pending_approval', $ticket->fresh()->mandays_proposal_status);
+        $this->assertSame(['waiting', 'waiting'], $p->approvals()->pluck('status')->all());
+        $this->assertTrue($this->notified(self::ADMIN, 'customer_mandays_pending_approval'));
+        $this->assertFalse($this->notified(self::HELPDESK, 'customer_mandays_pending_approval'));
+    }
+
+    public function test_submit_is_refused_when_a_level_has_no_approver(): void
+    {
+        CustomerMandaysApprovalStep::where('order_seq', 2)->update(['approver_role_id' => null]);
+        [$ticket, $p] = $this->draft();
+
+        $r = $this->service->submit($p, $ticket, self::PIC, 'PIC');
+
+        $this->assertFalse($r['allowed']);
+        $this->assertStringContainsString('level 2', $r['reason']);
+        $this->assertSame('draft', $p->fresh()->status);
+        $this->assertSame(0, CustomerMandaysApproval::count());
+    }
+
+    public function test_two_levels_in_order_then_ready_to_send(): void
+    {
+        [$ticket, $p] = $this->submitted();
+
+        // Helpdesk belum gilirannya.
+        $this->assertFalse($this->service->canAct($p, self::HELPDESK)['allowed']);
+
+        $r1 = $this->service->approve($p->fresh(), $ticket, self::ADMIN, 'Admin');
+        $this->assertTrue($r1['allowed'], $r1['reason']);
+        $this->assertFalse($r1['completed']);
+        $this->assertSame(2, $p->fresh()->current_step_order);
+        $this->assertTrue($this->notified(self::HELPDESK, 'customer_mandays_pending_approval'));
+
+        $r2 = $this->service->approve($p->fresh(), $ticket, self::HELPDESK, 'Helpdesk', null, 'ok');
+        $this->assertTrue($r2['completed']);
+
+        $p->refresh();
+        $this->assertSame('pending_helpdesk', $p->status);
+        $this->assertNull($p->current_step_order);
+        $this->assertSame('pending_helpdesk', $ticket->fresh()->mandays_proposal_status);
+        $this->assertSame(['approved', 'approved'], $p->approvals()->pluck('status')->all());
+        $this->assertSame(self::HELPDESK, (int) $p->approvals()->where('order_seq', 2)->value('acted_by'));
+        // Pemegang izin review mendapat kabar siap dikirim.
+        $this->assertTrue($this->notified(self::HELPDESK, 'customer_mandays_proposed'));
+    }
+
+    public function test_outsider_cannot_approve(): void
+    {
+        [, $p] = $this->submitted();
+
+        $gate = $this->service->canAct($p, self::OUTSIDER);
+
+        $this->assertFalse($gate['allowed']);
+        $this->assertStringContainsString('not an approver', $gate['reason']);
+    }
+
+    public function test_approver_can_adjust_mandays_while_approving(): void
+    {
+        [$ticket, $p] = $this->submitted();
+
+        $this->service->approve($p, $ticket, self::ADMIN, 'Admin', [
+            ['activity' => 'Build', 'module' => 'FI', 'mandays' => 2],
+            ['activity' => 'Build', 'module' => 'CO', 'mandays' => 1.5],
+        ]);
+
+        $this->assertEquals(3.5, (float) $p->fresh()->total_mandays);
+        $this->assertSame(2, DB::table('customer_mandays_detail')->where('customer_mandays_id', $p->id)->count());
+    }
+
+    public function test_approve_refuses_zero_total(): void
+    {
+        [$ticket, $p] = $this->submitted();
+
+        $r = $this->service->approve($p, $ticket, self::ADMIN, 'Admin', [['activity' => 'X', 'module' => 'FI', 'mandays' => 0]]);
+
+        $this->assertFalse($r['allowed']);
+        $this->assertSame(1, $p->fresh()->current_step_order);
+    }
+
+    public function test_reject_closes_version_skips_rest_and_tells_pic(): void
+    {
+        [$ticket, $p] = $this->submitted();
+
+        $r = $this->service->reject($p, $ticket, self::ADMIN, 'Admin', 'Too many days');
+
+        $this->assertTrue($r['allowed']);
+        $p->refresh();
+        $this->assertSame('rejected', $p->status);
+        $this->assertNull($p->current_step_order);
+        $this->assertSame('rejected', $ticket->fresh()->mandays_proposal_status);
+        $this->assertSame(['rejected', 'skipped'], $p->approvals()->pluck('status')->all());
+        $this->assertSame('Too many days', $p->approvals()->where('order_seq', 1)->value('notes'));
+        $this->assertTrue($this->notified(self::PIC, 'customer_mandays_rejected'));
+
+        // Sudah tertutup: tidak bisa diputuskan lagi.
+        $this->assertFalse($this->service->canAct($p, self::HELPDESK)['allowed']);
+    }
+
+    // ── sinkron Flow ke proposal berjalan ─────────────────────────────────
+
+    public function test_flow_change_moves_undecided_levels_to_new_approvers(): void
+    {
+        [, $p] = $this->submitted();
+
+        $this->syncFlow($this->flowRows(['employee_ids' => [self::NEW_L1]], ['employee_ids' => [self::NEW_L2]]));
+
+        $this->assertStringContainsString('1 proposal(s)', (string) session('success'));
+        $this->assertSame([$p->id], $this->service->pendingFor(self::NEW_L1)->pluck('id')->all());
+        $this->assertTrue($this->service->pendingFor(self::ADMIN)->isEmpty());
+        $this->assertFalse($this->service->canAct($p->fresh(), self::ADMIN)['allowed']);
+        $this->assertTrue($this->service->canAct($p->fresh(), self::NEW_L1)['allowed']);
+
+        $l2 = $p->approvals()->where('order_seq', 2)->first();
+        $this->assertSame('employee', $l2->approver_type);
+        $this->assertSame([self::NEW_L2], $l2->approver_employee_ids);
+        // Status, level aktif, dan angka proposal tidak berubah.
+        $fresh = $p->fresh();
+        $this->assertSame('pending_approval', $fresh->status);
+        $this->assertSame(1, (int) $fresh->current_step_order);
+        $this->assertSame(5.0, (float) $fresh->total_mandays);
+    }
+
+    public function test_flow_change_keeps_decided_level_history(): void
+    {
+        [$ticket, $p] = $this->submitted();
+        $this->assertTrue($this->service->approve($p, $ticket, self::ADMIN, 'Admin')['allowed']);
+
+        $this->syncFlow($this->flowRows(
+            ['name' => 'New First', 'employee_ids' => [self::NEW_L1]],
+            ['name' => 'New Second', 'employee_ids' => [self::NEW_L2]]
+        ));
+
+        $l1 = $p->approvals()->where('order_seq', 1)->first();
+        $this->assertSame('approved', $l1->status);
+        $this->assertSame(self::ADMIN, (int) $l1->acted_by);
+        $this->assertSame('Admin Approval', $l1->step_name);
+        $this->assertSame('role', $l1->approver_type);
+        $this->assertSame(self::ADMIN_ROLE, $l1->approver_role_id);
+
+        $l2 = $p->approvals()->where('order_seq', 2)->first();
+        $this->assertSame('New Second', $l2->step_name);
+        $this->assertSame([self::NEW_L2], $l2->approver_employee_ids);
+        $this->assertTrue($this->service->canAct($p->fresh(), self::NEW_L2)['allowed']);
+        $this->assertFalse($this->service->canAct($p->fresh(), self::HELPDESK)['allowed']);
+    }
+
+    public function test_flow_change_notifies_only_new_approvers_of_the_active_level(): void
+    {
+        $this->submitted();
+        $this->assertTrue($this->notified(self::ADMIN, 'customer_mandays_pending_approval'));
+        $oldNotificationId = DB::table('notifications')->where('employee_id', self::ADMIN)->value('id');
+
+        // Level 1 (aktif): ADMIN tetap, NEW_L1 ditambahkan. Level 2 (belum aktif): diganti NEW_L2.
+        $rows = $this->flowRows(['employee_ids' => [self::ADMIN, self::NEW_L1]], ['employee_ids' => [self::NEW_L2]]);
+        $this->syncFlow($rows);
+
+        $pending = DB::table('notifications')->where('type', 'customer_mandays_pending_approval');
+        $this->assertSame([self::NEW_L1], (clone $pending)->where('id', '!=', $oldNotificationId)->pluck('employee_id')->map(fn ($v) => (int) $v)->all());
+        $this->assertSame(1, (clone $pending)->where('employee_id', self::ADMIN)->count());
+        $this->assertFalse($this->notified(self::NEW_L2, 'customer_mandays_pending_approval'));
+        $this->assertFalse($this->notified(self::HELPDESK, 'customer_mandays_pending_approval'));
+
+        // Penyetuju lama yang diganti tidak dinotifikasi, dan notifikasi lamanya dibiarkan.
+        $this->syncFlow($this->flowRows(['employee_ids' => [self::NEW_L1]], ['employee_ids' => [self::NEW_L2]]));
+        $this->assertSame(1, (clone $pending)->where('employee_id', self::ADMIN)->count());
+        $this->assertFalse((bool) DB::table('notifications')->where('id', $oldNotificationId)->value('is_read'));
+        $this->assertSame(1, (clone $pending)->where('employee_id', self::NEW_L1)->count());
+
+        // Simpan lagi tanpa perubahan: tidak ada notifikasi baru.
+        $count = DB::table('notifications')->count();
+        $this->syncFlow($this->flowRows(['employee_ids' => [self::NEW_L1]], ['employee_ids' => [self::NEW_L2]]));
+        $this->assertSame($count, DB::table('notifications')->count());
+        $this->assertSame('Workflow saved.', session('success'));
+    }
+
+    public function test_flow_change_leaves_closed_and_old_versions_alone(): void
+    {
+        // Ditolak.
+        [$t1, $rejected] = $this->submitted();
+        $this->service->reject($rejected, $t1, self::ADMIN, 'Admin', 'Too many days');
+
+        // Siap dikirim (kedua level approve).
+        [$t2, $ready] = $this->submitted();
+        $this->service->approve($ready, $t2, self::ADMIN, 'Admin');
+        $this->service->approve($ready->fresh(), $t2, self::HELPDESK, 'Helpdesk');
+
+        // Versi lama yang masih pending_approval karena sudah ada versi baru.
+        [$t3, $old] = $this->submitted();
+        CustomerMandays::create(['ticket_id' => $t3->ticket_id, 'version' => 2, 'status' => 'draft', 'total_mandays' => 1]);
+
+        $snapshot = fn () => DB::table('customer_mandays_approvals')->orderBy('id')->get()->map(fn ($r) => (array) $r)->all();
+        $before = $snapshot();
+
+        $this->syncFlow($this->flowRows(['employee_ids' => [self::NEW_L1]], ['employee_ids' => [self::NEW_L2]]));
+
+        $this->assertSame($before, $snapshot());
+        $this->assertSame('Workflow saved.', session('success'));
+        $this->assertSame('pending_helpdesk', $ready->fresh()->status);
+    }
+
+    public function test_flow_change_follows_a_new_role(): void
+    {
+        [, $p] = $this->submitted();
+
+        $this->syncFlow($this->flowRows(['role_id' => self::REVIEWER_ROLE], []));
+
+        $l1 = $p->approvals()->where('order_seq', 1)->first();
+        $this->assertSame('role', $l1->approver_type);
+        $this->assertSame(self::REVIEWER_ROLE, $l1->approver_role_id);
+        $this->assertTrue($this->service->canAct($p->fresh(), self::NEW_L2)['allowed']);
+        $this->assertFalse($this->service->canAct($p->fresh(), self::ADMIN)['allowed']);
+        $this->assertTrue($this->notified(self::NEW_L2, 'customer_mandays_pending_approval'));
+    }
+
+    public function test_flow_change_does_not_overwrite_a_level_decided_meanwhile(): void
+    {
+        [, $p] = $this->submitted();
+        $l1Id = $p->approvals()->where('order_seq', 1)->value('id');
+
+        // Simulasikan approve yang selesai tepat setelah baris dibaca, sebelum di-update.
+        $raced = false;
+        DB::listen(function ($query) use (&$raced, $l1Id) {
+            if (!$raced && str_contains($query->sql, 'customer_mandays_approvals') && str_starts_with(strtolower(ltrim($query->sql)), 'select')) {
+                $raced = true;
+                DB::table('customer_mandays_approvals')->where('id', $l1Id)
+                    ->update(['status' => 'approved', 'acted_by' => self::ADMIN, 'acted_at' => now()]);
+            }
+        });
+
+        $steps  = CustomerMandaysApprovalStep::ordered()->get();
+        $steps[0]->forceFill(['approver_type' => 'employee', 'approver_role_id' => null, 'approver_employee_ids' => [self::NEW_L1]]);
+        $result = DB::transaction(fn () => $this->service->syncOpenProposals($steps, self::ADMIN, 'Admin'));
+
+        $this->assertTrue($raced);
+        $l1 = CustomerMandaysApproval::find($l1Id);
+        $this->assertSame('approved', $l1->status);
+        $this->assertSame('role', $l1->approver_type);
+        $this->assertSame(self::ADMIN_ROLE, $l1->approver_role_id);
+        $this->assertSame(0, $result['levels']);
+        $this->assertFalse($this->notified(self::NEW_L1, 'customer_mandays_pending_approval'));
+    }
+
+    public function test_invalid_flow_change_touches_no_running_proposal(): void
+    {
+        [, $p] = $this->submitted();
+        $before = $p->approvals()->get()->map->only(['approver_type', 'approver_role_id', 'approver_employee_ids'])->all();
+
+        // Level 1 tanpa penyetuju → seluruh simpanan ditolak, termasuk Level 2 yang valid.
+        $this->syncFlow($this->flowRows(['role_id' => ''], ['employee_ids' => [self::NEW_L2]]));
+
+        $this->assertStringContainsString('Level 1', (string) session('error'));
+        $this->assertSame($before, $p->approvals()->get()->map->only(['approver_type', 'approver_role_id', 'approver_employee_ids'])->all());
+        $this->assertFalse($this->notified(self::NEW_L2, 'customer_mandays_pending_approval'));
+    }
+
+    public function test_level_assigned_to_named_people_only_allows_them(): void
+    {
+        CustomerMandaysApprovalStep::where('order_seq', 1)->update([
+            'approver_type'         => 'employee',
+            'approver_employee_ids' => json_encode([self::OUTSIDER]),
+        ]);
+        [, $p] = $this->submitted();
+
+        $this->assertTrue($this->service->canAct($p, self::OUTSIDER)['allowed']);
+        $this->assertFalse($this->service->canAct($p, self::ADMIN)['allowed']);
+    }
+
+    public function test_self_approval_is_allowed(): void
+    {
+        DB::table('employee_role_assignment')->insert(['employee_id' => self::PIC, 'role_id' => self::ADMIN_ROLE]);
+        [, $p] = $this->submitted();
+
+        $this->assertTrue($this->service->canAct($p, self::PIC)['allowed']);
+    }
+
+    public function test_skip_remaining_marks_waiting_levels_skipped(): void
+    {
+        [, $p] = $this->submitted();
+
+        $this->service->skipRemaining($p);
+
+        $this->assertSame(['skipped', 'skipped'], $p->approvals()->pluck('status')->all());
+    }
+
+    public function test_flow_page_saves_swapped_order_and_names(): void
+    {
+        $steps = CustomerMandaysApprovalStep::ordered()->get();
+
+        $response = $this->syncFlow([
+            ['id' => $steps[1]->id, 'name' => 'Helpdesk First', 'role_id' => self::HELPDESK_ROLE],
+            ['id' => $steps[0]->id, 'name' => 'Admin Second', 'role_id' => '', 'employee_ids' => [self::ADMIN]],
+        ]);
+
+        $this->assertSame(302, $response->getStatusCode());
+        $after = CustomerMandaysApprovalStep::ordered()->get();
+        $this->assertSame('Helpdesk First', $after[0]->name);
+        $this->assertSame('role', $after[0]->approver_type);
+        $this->assertSame('Admin Second', $after[1]->name);
+        $this->assertSame('employee', $after[1]->approver_type);
+        $this->assertSame([self::ADMIN], $after[1]->approver_employee_ids);
+    }
+
+    public function test_flow_page_refuses_level_without_approver(): void
+    {
+        $steps = CustomerMandaysApprovalStep::ordered()->get();
+
+        $this->syncFlow([
+            ['id' => $steps[0]->id, 'name' => 'Admin Approval', 'role_id' => ''],
+            ['id' => $steps[1]->id, 'name' => 'Helpdesk Review', 'role_id' => self::HELPDESK_ROLE],
+        ]);
+
+        $this->assertSame(self::ADMIN_ROLE, CustomerMandaysApprovalStep::where('order_seq', 1)->value('approver_role_id'));
+        $this->assertStringContainsString('Level 1', (string) session('error'));
+    }
+
+    public function test_flow_page_refuses_wrong_level_count(): void
+    {
+        $steps = CustomerMandaysApprovalStep::ordered()->get();
+
+        $this->syncFlow([['id' => $steps[0]->id, 'name' => 'Only', 'role_id' => self::ADMIN_ROLE]]);
+
+        $this->assertStringContainsString('exactly 2', (string) session('error'));
+    }
+
+    // ── helper ─────────────────────────────────────────────────────────────
+
+    /**
+     * Baris form Flow: Level 1 dan Level 2 dengan nama bawaan, dan penyetuju bawaan
+     * (role Admin / Helpdesk) bila tidak diganti lewat $l1 / $l2.
+     */
+    // ── Level 2: approve langsung / cancel saat Ready to Send atau Sent to Chat ──
+
+    public function test_level_two_approver_can_approve_ready_to_send_directly(): void
+    {
+        [$ticket, $p] = $this->readyToSend();
+
+        $this->assertFalse($this->service->canFinalize($p, self::ADMIN)['allowed']);
+        $this->assertFalse($this->service->canFinalize($p, self::OUTSIDER)['allowed']);
+        $this->assertTrue($this->service->canFinalize($p, self::HELPDESK)['allowed']);
+
+        $r = $this->service->finalApprove($p, $ticket, self::HELPDESK, 'Helpdesk');
+
+        $this->assertTrue($r['allowed'], $r['reason']);
+        $this->assertSame('approved', $p->fresh()->status);
+        $this->assertSame('approved', $ticket->fresh()->mandays_proposal_status);
+        $this->assertEquals(5, (float) $ticket->fresh()->man_days);
+    }
+
+    public function test_level_two_approver_can_approve_while_waiting_for_customer(): void
+    {
+        [$ticket, $p] = $this->readyToSend();
+        $p->update(['status' => 'sent_to_chat']);
+        $ticket->update(['mandays_proposal_status' => 'sent_to_chat']);
+
+        $r = $this->service->finalApprove($p->fresh(), $ticket, self::HELPDESK, 'Helpdesk');
+
+        $this->assertTrue($r['allowed'], $r['reason']);
+        $this->assertSame('approved', $p->fresh()->status);
+    }
+
+    public function test_proposal_sent_before_multi_level_flow_uses_current_level_two(): void
+    {
+        // Dikirim dengan alur lama: tidak ada snapshot approval.
+        [$ticket, $p] = $this->draft();
+        $p->update(['status' => 'sent_to_chat']);
+
+        $this->assertSame(0, $p->approvals()->count());
+        $this->assertTrue($this->service->canFinalize($p->fresh(), self::HELPDESK)['allowed']);
+        $this->assertFalse($this->service->canFinalize($p->fresh(), self::ADMIN)['allowed']);
+
+        // Konfigurasi Level 2 diganti ke orang tertentu: hanya dia yang boleh.
+        CustomerMandaysApprovalStep::where('order_seq', 2)->update([
+            'approver_type' => 'employee', 'approver_role_id' => null, 'approver_employee_ids' => json_encode([self::NEW_L2]),
+        ]);
+        $this->assertFalse($this->service->canFinalize($p->fresh(), self::HELPDESK)['allowed']);
+        $this->assertTrue($this->service->canFinalize($p->fresh(), self::NEW_L2)['allowed']);
+    }
+
+    public function test_direct_approve_is_refused_during_internal_approval(): void
+    {
+        [$ticket, $p] = $this->submitted();
+
+        $r = $this->service->finalApprove($p, $ticket, self::HELPDESK, 'Helpdesk');
+
+        $this->assertFalse($r['allowed']);
+        $this->assertSame('pending_approval', $p->fresh()->status);
+    }
+
+    public function test_direct_approve_is_refused_after_customer_rejected(): void
+    {
+        [$ticket, $p] = $this->readyToSend();
+        $p->update(['rejection_reason' => 'Too many days']);
+
+        // Cancel tetap boleh (canFinalize), approve tidak.
+        $this->assertTrue($this->service->canFinalize($p->fresh(), self::HELPDESK)['allowed']);
+        $r = $this->service->finalApprove($p->fresh(), $ticket, self::HELPDESK, 'Helpdesk');
+
+        $this->assertFalse($r['allowed']);
+        $this->assertSame('pending_helpdesk', $p->fresh()->status);
+    }
+
+    public function test_direct_approve_only_on_latest_version(): void
+    {
+        [$ticket, $p] = $this->readyToSend();
+        CustomerMandays::create([
+            'ticket_id' => $ticket->ticket_id, 'version' => 2, 'status' => 'draft', 'total_mandays' => 3,
+        ]);
+
+        $this->assertFalse($this->service->canFinalize($p->fresh(), self::HELPDESK)['allowed']);
+    }
+
+    /** @return array{0: Ticket, 1: CustomerMandays} */
+    private function readyToSend(): array
+    {
+        [$ticket, $p] = $this->submitted();
+        $this->assertTrue($this->service->approve($p, $ticket, self::ADMIN, 'Admin')['allowed']);
+        $this->assertTrue($this->service->approve($p->fresh(), $ticket, self::HELPDESK, 'Helpdesk')['allowed']);
+
+        $p = $p->fresh();
+        $this->assertSame('pending_helpdesk', $p->status);
+
+        return [$ticket->fresh(), $p];
+    }
+
+    private function flowRows(array $l1, array $l2): array
+    {
+        $steps = CustomerMandaysApprovalStep::ordered()->get();
+
+        return [
+            array_merge(['id' => $steps[0]->id, 'name' => 'Admin Approval', 'role_id' => '', 'employee_ids' => []], $l1 ?: ['role_id' => self::ADMIN_ROLE]),
+            array_merge(['id' => $steps[1]->id, 'name' => 'Helpdesk Review', 'role_id' => '', 'employee_ids' => []], $l2 ?: ['role_id' => self::HELPDESK_ROLE]),
+        ];
+    }
+
+    private function syncFlow(array $rows)
+    {
+        session()->forget(['success', 'error']);
+        $request = Request::create('/management/flow/customer-mandays', 'POST', ['steps' => $rows]);
+        $request->setLaravelSession($this->app['session.store']);
+        $this->app->instance('request', $request);
+
+        return app(CustomerMandaysFlowController::class)->sync($request);
+    }
+
+    /** @return array{0: Ticket, 1: CustomerMandays} */
+    private function draft(): array
+    {
+        $ticket = Ticket::create([
+            'ticket_number'           => 'T-0001',
+            'ticket_lead_id'          => self::PIC,
+            'ticket_type'             => 'Change Request',
+            'mandays_proposal_status' => 'pic_draft',
+        ]);
+
+        $p = CustomerMandays::create([
+            'ticket_id'            => $ticket->ticket_id,
+            'version'              => 1,
+            'description'          => 'Proposal',
+            'proposed_by_agent_id' => self::PIC,
+            'proposed_at'          => now(),
+            'status'               => 'draft',
+            'total_mandays'        => 5,
+        ]);
+        DB::table('customer_mandays_detail')->insert([
+            'customer_mandays_id' => $p->id, 'activity' => 'Build', 'module' => 'FI', 'mandays' => 5,
+        ]);
+
+        return [$ticket, $p];
+    }
+
+    /** @return array{0: Ticket, 1: CustomerMandays} */
+    private function submitted(): array
+    {
+        [$ticket, $p] = $this->draft();
+        $r = $this->service->submit($p, $ticket, self::PIC, 'PIC');
+        $this->assertTrue($r['allowed'], $r['reason']);
+
+        return [$ticket->fresh(), $p->fresh()];
+    }
+
+    private function notified(int $employeeId, string $type): bool
+    {
+        return DB::table('notifications')->where('employee_id', $employeeId)->where('type', $type)->exists();
+    }
+
+    private function createBaseTables(): void
+    {
+        foreach (['notifications', 'role_menu', 'menu', 'customer_mandays_approvals', 'customer_mandays_approval_steps',
+                  'customer_mandays_detail', 'customer_mandays', 'ticket', 'employee_role_assignment',
+                  'employee_basic_data', 'employee_role', 'employee'] as $t) {
+            Schema::dropIfExists($t);
+        }
+
+        Schema::create('employee', function ($t) {
+            $t->unsignedBigInteger('employee_id')->primary();
+            $t->boolean('is_active')->default(true);
+            $t->timestamps();
+        });
+        Schema::create('employee_basic_data', function ($t) {
+            $t->id('basic_data_id');
+            $t->unsignedBigInteger('employee_id');
+            $t->string('first_name')->nullable();
+            $t->string('last_name')->nullable();
+            $t->timestamps();
+        });
+        Schema::create('employee_role', function ($t) {
+            $t->id();
+            $t->string('name');
+            $t->string('description')->nullable();
+            $t->timestamps();
+        });
+        Schema::create('employee_role_assignment', function ($t) {
+            $t->unsignedBigInteger('employee_id');
+            $t->unsignedBigInteger('role_id');
+            $t->timestamps();
+        });
+        Schema::create('menu', function ($t) {
+            $t->id();
+            $t->unsignedBigInteger('parent_id')->nullable();
+            $t->string('name');
+            $t->string('slug');
+            $t->string('type')->nullable();
+            $t->string('route_name')->nullable();
+            $t->string('icon')->nullable();
+            $t->integer('order_seq')->default(0);
+            $t->boolean('is_active')->default(true);
+            $t->timestamps();
+        });
+        Schema::create('role_menu', function ($t) {
+            $t->id();
+            $t->unsignedBigInteger('role_id');
+            $t->unsignedBigInteger('menu_id');
+            $t->boolean('can_view')->default(false);
+            $t->boolean('can_create')->default(false);
+            $t->boolean('can_edit')->default(false);
+            $t->boolean('can_delete')->default(false);
+            $t->timestamps();
+        });
+        Schema::create('ticket', function ($t) {
+            $t->id('ticket_id');
+            $t->string('ticket_number')->nullable();
+            $t->unsignedBigInteger('ticket_lead_id')->nullable();
+            $t->string('ticket_type')->nullable();
+            $t->string('status')->nullable();
+            $t->string('mandays_proposal_status')->default('none');
+            $t->decimal('man_days', 8, 2)->nullable();
+            $t->timestamp('last_message_at')->nullable();
+            $t->softDeletes();
+            $t->timestamps();
+        });
+        Schema::create('customer_mandays', function ($t) {
+            $t->id();
+            $t->unsignedBigInteger('ticket_id');
+            $t->integer('version')->default(1);
+            $t->string('description')->nullable();
+            $t->text('proposal_notes')->nullable();
+            $t->unsignedBigInteger('proposed_by_agent_id')->nullable();
+            $t->timestamp('proposed_at')->nullable();
+            $t->timestamp('submitted_to_customer_at')->nullable();
+            $t->timestamp('sent_to_chat_at')->nullable();
+            $t->string('status')->default('draft');
+            $t->text('customer_notes')->nullable();
+            $t->text('rejection_reason')->nullable();
+            $t->text('notes')->nullable();
+            $t->unsignedBigInteger('canceled_by_id')->nullable();
+            $t->timestamp('canceled_at')->nullable();
+            $t->decimal('total_mandays', 8, 2)->default(0);
+            $t->timestamp('customer_response_at')->nullable();
+            $t->timestamps();
+        });
+        Schema::create('customer_mandays_detail', function ($t) {
+            $t->id();
+            $t->unsignedBigInteger('customer_mandays_id');
+            $t->string('activity')->nullable();
+            $t->string('module');
+            $t->decimal('mandays', 8, 2);
+            $t->timestamps();
+        });
+        Schema::create('notifications', function ($t) {
+            $t->id();
+            $t->unsignedBigInteger('employee_id')->nullable();
+            $t->unsignedBigInteger('ticket_id')->nullable();
+            $t->string('type');
+            $t->unsignedBigInteger('from_employee_id')->nullable();
+            $t->string('from_name')->nullable();
+            $t->text('preview')->nullable();
+            $t->string('link')->nullable();
+            $t->boolean('is_read')->default(false);
+            $t->softDeletes();
+            $t->timestamps();
+        });
+
+        $now = now();
+        DB::table('employee_role')->insert([
+            ['id' => self::ADMIN_ROLE,    'name' => 'EC Administrator',                  'created_at' => $now, 'updated_at' => $now],
+            ['id' => self::USER_ROLE,     'name' => 'EC User',                           'created_at' => $now, 'updated_at' => $now],
+            ['id' => self::HELPDESK_ROLE, 'name' => 'Delivery Support Service Helpdesk', 'created_at' => $now, 'updated_at' => $now],
+            ['id' => self::REVIEWER_ROLE, 'name' => 'Reviewer',                          'created_at' => $now, 'updated_at' => $now],
+        ]);
+        foreach ([self::ADMIN, self::HELPDESK, self::PIC, self::OUTSIDER, self::NEW_L1, self::NEW_L2] as $id) {
+            DB::table('employee')->insert(['employee_id' => $id, 'is_active' => true]);
+        }
+        DB::table('employee_role_assignment')->insert([
+            ['employee_id' => self::ADMIN,    'role_id' => self::ADMIN_ROLE],
+            ['employee_id' => self::HELPDESK, 'role_id' => self::HELPDESK_ROLE],
+            ['employee_id' => self::PIC,      'role_id' => self::USER_ROLE],
+            ['employee_id' => self::OUTSIDER, 'role_id' => self::USER_ROLE],
+            ['employee_id' => self::NEW_L1,   'role_id' => self::USER_ROLE],
+            ['employee_id' => self::NEW_L2,   'role_id' => self::REVIEWER_ROLE],
+        ]);
+        // Izin review (penerima notifikasi "siap dikirim") hanya untuk Helpdesk.
+        DB::table('menu')->insert(['id' => 1, 'name' => 'Review Mandays Proposal', 'slug' => 'ticket.review-mandays', 'is_active' => true]);
+        DB::table('role_menu')->insert(['role_id' => self::HELPDESK_ROLE, 'menu_id' => 1, 'can_view' => true]);
+    }
+}

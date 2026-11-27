@@ -218,7 +218,7 @@
                         <th colspan="4"  class="sc sc-last px-3 py-2 text-center text-[10px] font-bold text-gray-500 uppercase tracking-wider grp-info" style="left:0;">Informasi Tiket</th>
                         <th colspan="9"  class="px-3 py-2 text-center text-[10px] font-bold text-gray-500 uppercase tracking-wider border-r border-gray-200 grp-info"></th>
                         <th colspan="7"  class="px-3 py-2 text-center text-[10px] font-bold text-blue-700 uppercase tracking-wider border-r border-gray-200 grp-resp">SLA Response</th>
-                        <th colspan="10" class="px-3 py-2 text-center text-[10px] font-bold text-green-700 uppercase tracking-wider border-r border-gray-200 grp-res">SLA Resolution</th>
+                        <th colspan="11" class="px-3 py-2 text-center text-[10px] font-bold text-green-700 uppercase tracking-wider border-r border-gray-200 grp-res">SLA Resolution</th>
                         <th colspan="1"  class="px-3 py-2 text-center text-[10px] font-bold text-gray-500 uppercase tracking-wider grp-info">Aksi</th>
                     </tr>
                     {{-- Column header row (sc = sticky column, left = cumulative px offset) --}}
@@ -258,6 +258,7 @@
                         <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:80px">Resolution<br>Duration<br>(STOP-GO)</th>
                         <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:80px">SLA<br>Resolution<br>Time</th>
                         <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:80px">SLA<br>Resolution<br>Status</th>
+                        <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:130px">First<br>Resolution<br><span class="text-[8px] font-normal normal-case">(IR / RCA sent)</span></th>
                         <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res" style="min-width:130px">Closed Date</th>
                         <th class="text-center px-2 py-2 font-semibold text-green-600 uppercase tracking-wider grp-res border-r border-gray-200" style="min-width:70px">Notes</th>
                         {{-- Actions --}}
@@ -266,7 +267,7 @@
                 </thead>
                 <tbody id="reportTableBody">
                     <tr>
-                        <td colspan="31" class="py-16 text-center">
+                        <td colspan="32" class="py-16 text-center">
                             <div class="flex flex-col items-center gap-2 text-gray-300">
                                 <i class="fas fa-spinner fa-spin text-3xl"></i>
                                 <p class="text-sm">Loading report...</p>
@@ -601,6 +602,7 @@ function exportToExcel() {
                     'Resolution Duration (STOP-GO)': '',
                     'SLA Resolution Time': '',
                     'SLA Resolution Status': '',
+                    'First Resolution (IR / RCA Sent)': '',
                     'Closed Date': '',
                     'Notes': '',
                 };
@@ -648,6 +650,8 @@ function exportToExcel() {
                     ? fmtHHMM(t.resolution.live_hours) + (t.resolution?.is_final === false ? ' (berjalan)' : '')
                     : '',
                 'SLA Resolution Status': t.resolution?.time_status || '',
+                'First Resolution (IR / RCA Sent)': !t.resolution?.first_resolution_applicable ? 'Not Incident'
+                    : (t.resolution?.first_resolution_at ? toMDY(t.resolution.first_resolution_at) : ''),
                 'Closed Date': t.closed_at ? toMDY(t.closed_at) : '',
                 'Notes': buildNotesLog(t).join('\n'),
             };
@@ -701,7 +705,7 @@ async function loadReport() {
         applyReportFilters();
     } catch (e) {
         document.getElementById('reportTableBody').innerHTML = `
-            <tr><td colspan="31" class="py-12 text-center">
+            <tr><td colspan="32" class="py-12 text-center">
                 <div class="flex flex-col items-center gap-2 text-red-400">
                     <i class="fas fa-exclamation-triangle text-3xl"></i>
                     <p class="text-sm">Failed to load report.</p>
@@ -749,7 +753,7 @@ function renderTable(tickets) {
     if (!tickets.length) {
         footer.classList.add('hidden');
         tbody.innerHTML = `
-            <tr><td colspan="31" class="py-16 text-center">
+            <tr><td colspan="32" class="py-16 text-center">
                 <div class="flex flex-col items-center gap-2 text-gray-300">
                     <i class="fas fa-search text-4xl"></i>
                     <p class="text-sm font-medium text-gray-400 mt-1">Tidak ada tiket ditemukan</p>
@@ -781,7 +785,7 @@ function renderTable(tickets) {
                 <td class="px-2 py-2 text-center text-amber-600" colspan="9">
                     <span class="text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Menunggu Validasi</span>
                 </td>
-                <td class="px-2 py-2 text-gray-400" colspan="17">-</td>
+                <td class="px-2 py-2 text-gray-400" colspan="18">-</td>
                 <td class="px-2 py-2 text-center text-gray-400 italic text-[10px]">Validasi dulu</td>
             </tr>`;
         }
@@ -798,6 +802,10 @@ function renderTable(tickets) {
         // (SlaController::slaResolutionAchievement).
         const resAchieveColor = t.resolution?.time_status === 'Achieved' ? 'text-green-600'
             : t.resolution?.time_status === 'Not Achieved' ? 'text-red-600' : 'text-gray-400';
+        // Ticket not finished yet (CR is exempt, so not highlighted): the verdict is based on
+        // the running time so far, so the cell gets a yellow background to mark it provisional.
+        const resNotFinished = t.resolution?.is_open === true && t.delivery_support_type !== 'CR';
+        const resAchieveCellBg = resNotFinished ? 'bg-yellow-100' : 'bg-green-50/20';
 
         // SLA Response Time (achieved) - Achieved if Response Duration <= SLA Response Time (Hour), else Not Achieved.
         // If not yet responded, fall back to the raw status label (e.g. Active).
@@ -895,9 +903,10 @@ function renderTable(tickets) {
                     ${fmtHHMM(t.resolution?.live_hours)}${resTimeIsOngoing ? ' <i class="fas fa-spinner text-[9px]"></i>' : ''}
                 </span>
             </td>
-            <td class="px-2 py-2 text-center bg-green-50/20">
+            <td class="px-2 py-2 text-center ${resAchieveCellBg}" ${resNotFinished ? `title="Tiket belum selesai - status dihitung dari SLA Resolution Time yang sedang berjalan, bisa berubah sampai tiket closed"` : ''}>
                 <span class="text-[10px] font-semibold ${resAchieveColor}">${t.resolution?.time_status || '-'}</span>
             </td>
+            <td class="px-2 py-2 bg-green-50/20 text-[10px] ${t.resolution?.first_resolution_applicable ? 'text-gray-600' : 'text-center text-gray-400 italic'}">${t.resolution?.first_resolution_applicable ? fmtDT(t.resolution?.first_resolution_at) : 'Not Incident'}</td>
             <td class="px-2 py-2 bg-green-50/20 text-[10px] text-gray-600">${fmtDT(t.closed_at)}</td>
             <td class="px-2 py-2 text-center bg-green-50/20 border-r border-gray-200">${notesCell}</td>
             {{-- Actions --}}

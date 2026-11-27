@@ -788,6 +788,8 @@ class ReportingController extends Controller
     private const CUSTOMER_MD_STATUS_LABELS = [
         'none'             => 'None',
         'pic_draft'        => 'Draft',
+        'pending_approval' => 'Waiting Internal Approval',
+        'rejected'         => 'Rejected',
         'pending_helpdesk' => 'Review by Module Lead',
         'sent_to_chat'     => 'Review by Customer',
         'canceled'         => 'Cancel',

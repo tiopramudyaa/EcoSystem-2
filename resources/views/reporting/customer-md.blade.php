@@ -175,7 +175,7 @@
                                 </button>
                                 <div id="cmdStatusFilterPanel" class="hidden absolute mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] py-1.5" style="min-width:230px;">
                                     <div class="max-h-64 overflow-y-auto">
-                                        @foreach (['none' => 'None', 'pic_draft' => 'Draft', 'pending_helpdesk' => 'Review by Module Lead', 'sent_to_chat' => 'Review by Customer', 'canceled' => 'Cancel'] as $value => $label)
+                                        @foreach (['none' => 'None', 'pic_draft' => 'Draft', 'pending_approval' => 'Waiting Internal Approval', 'rejected' => 'Rejected', 'pending_helpdesk' => 'Review by Module Lead', 'sent_to_chat' => 'Review by Customer', 'canceled' => 'Cancel'] as $value => $label)
                                         <label class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">
                                             <input type="checkbox" class="cmd-status-checkbox w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-400 focus:ring-offset-0" value="{{ $value }}" onchange="onCmdStatusCheckboxChange()">
                                             <span>{{ $label }}</span>
@@ -264,6 +264,8 @@ let cmdCurrentPage = 1;
 const CMD_STATUS_MAP = {
     'none':             { label: 'None',                   cls: 'bg-gray-100 text-gray-500' },
     'pic_draft':        { label: 'Draft',                  cls: 'bg-blue-50 text-blue-700' },
+    'pending_approval': { label: 'Waiting Internal Approval', cls: 'bg-orange-50 text-orange-700' },
+    'rejected':         { label: 'Rejected',               cls: 'bg-red-50 text-red-600' },
     'pending_helpdesk': { label: 'Review by Module Lead',  cls: 'bg-amber-50 text-amber-700' },
     'sent_to_chat':     { label: 'Review by Customer',     cls: 'bg-indigo-50 text-indigo-700' },
     'canceled':         { label: 'Cancel',                 cls: 'bg-red-50 text-red-600' },

@@ -1045,7 +1045,7 @@ class TicketController extends Controller
 
         $filename = 'TICKET SUPPORT ' . now()->timezone('Asia/Jakarta')->format('dmY') . '.xlsx';
 
-        return Excel::download(new TicketExport($rows), $filename);
+        return \App\Support\ExportColumns::download($request, 'ticket', new TicketExport($rows), $filename);
     }
 
     public function store(Request $request)

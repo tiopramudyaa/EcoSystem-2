@@ -6,6 +6,8 @@
 @section('content')
 @php
     $isApprovalMode = isset($isHead) && $isHead;
+    // No type at all = no timesheet.log.* function for any of the user's roles (see CalendarController::timesheets()).
+    $noLogTypes     = !$isApprovalMode && empty($allowedTypes ?? []);
     $isAdminMode    = isset($isAdmin) && $isAdmin;
     // $isHoSMode is true when the employee holds the Delivery Support Head role
     // (checked against ALL assigned roles in the controller, not just whichever
@@ -49,7 +51,7 @@
                 <span id="tsBadgeLabel">-</span>
                 <span id="tsBadgeStatus" class="font-semibold"></span>
             </div>
-            @if(!$isApprovalMode && !$isHoSMode && $can('timesheet.create'))
+            @if(!$isApprovalMode && !$isHoSMode && !$noLogTypes && $can('timesheet.create'))
             <button onclick="openTimesheetModal()" class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all duration-200">
                 Create Timesheet
             </button>
@@ -704,6 +706,11 @@
             </table>
         </div>
 
+        @if($noLogTypes)
+        <div class="mx-6 my-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Your role is not allowed to log any timesheet type. Ask your administrator to enable one under Menu Access.
+        </div>
+        @endif
         <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-center">
             <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
                 <i class="fas fa-clock text-gray-300 text-2xl"></i>
@@ -714,7 +721,7 @@
             @else
             <p class="text-gray-700 font-semibold mb-1">No Timesheets Found</p>
             <p class="text-gray-400 text-xs mb-5">Try adjusting your filters or create a new timesheet</p>
-            @if($can('timesheet.create'))
+            @if($can('timesheet.create') && !$noLogTypes)
             <button onclick="openTimesheetModal()"
                 class="inline-flex items-center gap-1.5 px-4 py-2 primary-gradient text-white text-xs font-semibold rounded-xl hover:opacity-90 transition-all shadow-sm">
                 <i class="fas fa-plus text-xs"></i>Create Timesheet
@@ -1164,7 +1171,9 @@
     window.lockedType      = {!! $lockedType ? "'{$lockedType}'" : 'null' !!};
     window.allowedTypes    = {!! json_encode($allowedTypes ?? ['project','support','office']) !!};
     window.isHoSMode       = {{ $isHoSMode ? 'true' : 'false' }};
-    window.canCreateTimesheet = {{ $can('timesheet.create') ? 'true' : 'false' }};
+    window.canCreateTimesheet = {{ ($can('timesheet.create') && !$noLogTypes) ? 'true' : 'false' }};
+    // Menu Access: delete a timesheet in any status (Submitted, Approved, Rejected), not only Draft
+    window.canDeleteAnyTimesheet = {{ $can('timesheet.delete.any-status') ? 'true' : 'false' }};
 </script>
 <script src="/js/custom-dropdown.js?v={{ filemtime(public_path('js/custom-dropdown.js')) }}"></script>
 <script src="/js/calendar-timesheets.js?v={{ filemtime(public_path('js/calendar-timesheets.js')) }}"></script>
@@ -1405,12 +1414,24 @@ async function submitLateAccessRequest() {
 @if($isHead || $isAdminMode)
 @push('scripts')
 <script>
-async function runTsExportNow() {
+function runTsExportNow() {
     if (!filteredTimesheets || filteredTimesheets.length === 0) {
         if (window.showNotification) showNotification('No timesheets to export for the current filters.', 'error');
         return;
     }
 
+    // Pilih field/template dulu (daftar field mengikuti tab tipe yang aktif);
+    // baris yang diekspor tetap yang sedang terlihat di tabel.
+    const typeFilter = currentFilters.type_filter || window.lockedType || '';
+    const typeLabels = { '': 'All', support: 'Support', project: 'Project', non_project: 'Non Project', office: 'Office' };
+    ExportPicker.open({
+        type: 'timesheet_' + (typeFilter || 'all'),
+        title: 'Export Timesheet (' + (typeLabels[typeFilter] || typeFilter) + ')',
+        onConfirm: (cols) => doTsExport(typeFilter, cols),
+    });
+}
+
+async function doTsExport(typeFilter, cols) {
     const btn = document.getElementById('btnTsExportNow');
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
@@ -1418,7 +1439,6 @@ async function runTsExportNow() {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i> Menyiapkan...';
     }
 
-    const typeFilter = currentFilters.type_filter || window.lockedType || '';
     const ids = filteredTimesheets.map(t => t.id);
 
     try {
@@ -1429,7 +1449,7 @@ async function runTsExportNow() {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
             },
             credentials: 'same-origin',
-            body: JSON.stringify({ ids, type_filter: typeFilter }),
+            body: JSON.stringify({ ids, type_filter: typeFilter, cols: cols || [] }),
         });
         if (!res.ok) throw new Error('Export gagal');
         const blob = await res.blob();
