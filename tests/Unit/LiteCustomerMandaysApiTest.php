@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\CustomerMandays;
 use App\Models\Ticket;
+use App\Models\TicketDeliverable;
 use App\Services\CustomerMandaysApprovalService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -141,7 +142,94 @@ class LiteCustomerMandaysApiTest extends TestCase
         ])
             ->assertOk()
             ->assertJsonPath('completed', true)
-            ->assertJsonPath('data.status', 'pending_helpdesk');
+            ->assertJsonPath('data.status', 'approved')
+            ->assertJsonPath('message', 'Customer mandays approved.');
+    }
+
+    public function test_level_two_send_to_customer_from_web_approves_and_sends(): void
+    {
+        [$ticket, $p] = $this->submitted();
+        app(CustomerMandaysApprovalService::class)->approve($p, $ticket, self::ADMIN, 'Admin');
+
+        $this->as(self::HELPDESK)->postJson("/api/tickets/{$ticket->ticket_id}/mandays/hd-draft/submit-chat", [
+            'details' => [['activity' => 'Build', 'module' => 'FI', 'mandays' => 4]],
+            'notes'   => 'Looks good',
+        ])
+            ->assertOk()
+            ->assertJsonPath('ticket_mandays_status', 'sent_to_chat');
+
+        $fresh = $p->fresh();
+        $this->assertSame('sent_to_chat', $fresh->status);
+        $this->assertEquals(4, (float) $fresh->total_mandays);
+        $level2 = DB::table('customer_mandays_approvals')->where('customer_mandays_id', $p->id)->where('order_seq', 2)->first();
+        $this->assertSame('approved', $level2->status);
+        $this->assertSame(self::HELPDESK, (int) $level2->acted_by);
+        $this->assertSame('Looks good', $level2->notes);
+    }
+
+    public function test_send_to_customer_includes_selected_deliverables(): void
+    {
+        [$ticket, $p] = $this->submitted();
+        app(CustomerMandaysApprovalService::class)->approve($p, $ticket, self::ADMIN, 'Admin');
+
+        $sow = TicketDeliverable::create([
+            'ticket_id' => $ticket->ticket_id, 'doc_type' => 'SoW', 'file_name' => 'sow.pdf',
+            'onedrive_file_url' => 'https://example.test/sow', 'status' => 'No Send',
+        ]);
+        $wo = TicketDeliverable::create([
+            'ticket_id' => $ticket->ticket_id, 'doc_type' => 'WO', 'file_name' => 'wo.pdf',
+            'onedrive_file_url' => 'https://example.test/wo', 'status' => 'No Send',
+        ]);
+
+        $this->as(self::HELPDESK)->postJson("/api/tickets/{$ticket->ticket_id}/mandays/hd-draft/submit-chat", [
+            'deliverable_ids' => [$sow->id],
+        ])->assertOk();
+
+        $docs = DB::table('customer_mandays_documents')->where('customer_mandays_id', $p->id)->get();
+        $this->assertCount(1, $docs);
+        $this->assertSame('SoW', $docs[0]->doc_type);
+        $this->assertSame('https://example.test/sow', $docs[0]->file_url);
+
+        // Dokumen terpilih jadi Sent seperti kirim dari Deliverables; yang tidak dipilih tetap.
+        $this->assertSame('Sent', $sow->fresh()->status);
+        $this->assertNotNull($sow->fresh()->sent_at);
+        $this->assertSame('No Send', $wo->fresh()->status);
+
+        // Link dokumen ada di pesan chat proposal.
+        $html = (string) DB::table('ticket_message')->where('ticket_id', $ticket->ticket_id)->latest('id')->value('message_html');
+        $this->assertStringContainsString('https://example.test/sow', $html);
+        $this->assertStringNotContainsString('https://example.test/wo', $html);
+    }
+
+    public function test_send_refuses_deliverable_from_another_ticket_before_approving(): void
+    {
+        [$ticket, $p] = $this->submitted();
+        app(CustomerMandaysApprovalService::class)->approve($p, $ticket, self::ADMIN, 'Admin');
+
+        $foreign = TicketDeliverable::create([
+            'ticket_id' => $ticket->ticket_id + 999, 'doc_type' => 'WO', 'file_name' => 'x.pdf', 'status' => 'No Send',
+        ]);
+
+        $this->as(self::HELPDESK)->postJson("/api/tickets/{$ticket->ticket_id}/mandays/hd-draft/submit-chat", [
+            'deliverable_ids' => [$foreign->id],
+        ])->assertStatus(422);
+
+        // Level 2 belum disetujui: proposal masih menunggu di Level 2.
+        $this->assertSame('pending_approval', $p->fresh()->status);
+        $this->assertSame(2, $p->fresh()->current_step_order);
+        $this->assertSame(0, DB::table('customer_mandays_documents')->count());
+    }
+
+    public function test_level_one_cannot_send_to_customer_from_web(): void
+    {
+        [$ticket, $p] = $this->submitted();
+
+        $this->as(self::ADMIN)->postJson("/api/tickets/{$ticket->ticket_id}/mandays/hd-draft/submit-chat", [])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Only the Level 2 approver can send this proposal to the customer.');
+
+        $this->assertSame('pending_approval', $p->fresh()->status);
+        $this->assertSame(1, $p->fresh()->current_step_order);
     }
 
     public function test_approve_with_adjusted_mandays(): void
@@ -441,6 +529,11 @@ class LiteCustomerMandaysApiTest extends TestCase
             $t->decimal('man_days', 8, 2)->nullable();
             $t->boolean('is_hidden')->nullable();
             $t->timestamp('last_message_at')->nullable();
+            // Dipakai Send to Customer.
+            $t->timestamp('last_agent_reply_at')->nullable();
+            $t->text('to_emails')->nullable();
+            $t->text('cc_emails')->nullable();
+            $t->string('email_thread_id')->nullable();
             $t->softDeletes();
             $t->timestamps();
         });
@@ -533,6 +626,38 @@ class LiteCustomerMandaysApiTest extends TestCase
             $t->unsignedBigInteger('reply_to_id')->nullable();
             $t->text('mentioned_employee_ids')->nullable();
             $t->text('mentioned_role_ids')->nullable();
+            // Dipakai Send to Customer (proposal tampil di chat).
+            $t->string('channel')->nullable();
+            $t->boolean('is_read_by_customer')->default(false);
+            $t->boolean('is_read_by_agent')->default(false);
+            $t->string('email_message_id')->nullable();
+            $t->text('cc_emails')->nullable();
+            $t->timestamps();
+        });
+        foreach (['customer_mandays_documents', 'ticket_deliverables'] as $t) {
+            Schema::dropIfExists($t);
+        }
+        Schema::create('ticket_deliverables', function ($t) {
+            $t->id();
+            $t->unsignedBigInteger('ticket_id');
+            $t->string('doc_type', 50);
+            $t->text('description')->nullable();
+            $t->string('file_name')->nullable();
+            $t->string('onedrive_file_id')->nullable();
+            $t->text('onedrive_file_url')->nullable();
+            $t->string('status')->default('No Send');
+            $t->timestamp('sent_at')->nullable();
+            $t->unsignedBigInteger('uploaded_by')->nullable();
+            $t->date('upload_date')->nullable();
+            $t->timestamps();
+        });
+        Schema::create('customer_mandays_documents', function ($t) {
+            $t->id();
+            $t->unsignedBigInteger('customer_mandays_id');
+            $t->unsignedBigInteger('ticket_deliverable_id')->nullable();
+            $t->string('doc_type', 50);
+            $t->string('file_name')->nullable();
+            $t->text('file_url')->nullable();
             $t->timestamps();
         });
         Schema::create('ticket_attachment', function ($t) {

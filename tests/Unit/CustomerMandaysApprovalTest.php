@@ -92,7 +92,7 @@ class CustomerMandaysApprovalTest extends TestCase
         $this->assertSame(0, CustomerMandaysApproval::count());
     }
 
-    public function test_two_levels_in_order_then_ready_to_send(): void
+    public function test_two_levels_in_order_then_level_two_approve_is_final(): void
     {
         [$ticket, $p] = $this->submitted();
 
@@ -102,20 +102,53 @@ class CustomerMandaysApprovalTest extends TestCase
         $r1 = $this->service->approve($p->fresh(), $ticket, self::ADMIN, 'Admin');
         $this->assertTrue($r1['allowed'], $r1['reason']);
         $this->assertFalse($r1['completed']);
+        $this->assertFalse($r1['final']);
         $this->assertSame(2, $p->fresh()->current_step_order);
         $this->assertTrue($this->notified(self::HELPDESK, 'customer_mandays_pending_approval'));
 
         $r2 = $this->service->approve($p->fresh(), $ticket, self::HELPDESK, 'Helpdesk', null, 'ok');
         $this->assertTrue($r2['completed']);
+        $this->assertTrue($r2['final']);
 
+        // Approve di Level 2 langsung final, seperti Approve Helpdesk sebelum approval bertingkat.
         $p->refresh();
-        $this->assertSame('pending_helpdesk', $p->status);
+        $this->assertSame('approved', $p->status);
         $this->assertNull($p->current_step_order);
-        $this->assertSame('pending_helpdesk', $ticket->fresh()->mandays_proposal_status);
+        $this->assertSame('approved', $ticket->fresh()->mandays_proposal_status);
+        $this->assertEquals(5, (float) $ticket->fresh()->man_days);
         $this->assertSame(['approved', 'approved'], $p->approvals()->pluck('status')->all());
         $this->assertSame(self::HELPDESK, (int) $p->approvals()->where('order_seq', 2)->value('acted_by'));
-        // Pemegang izin review mendapat kabar siap dikirim.
-        $this->assertTrue($this->notified(self::HELPDESK, 'customer_mandays_proposed'));
+    }
+
+    public function test_level_two_send_approves_level_and_makes_it_ready_to_send(): void
+    {
+        [$ticket, $p] = $this->submitted();
+        $this->service->approve($p, $ticket, self::ADMIN, 'Admin');
+
+        $this->assertTrue($this->service->isAtLastLevel($p->fresh()));
+        $this->assertTrue($this->service->canSendAtLevel($p->fresh(), self::HELPDESK)['allowed']);
+        $this->assertFalse($this->service->canSendAtLevel($p->fresh(), self::ADMIN)['allowed']);
+
+        $r = $this->service->approve($p->fresh(), $ticket, self::HELPDESK, 'Helpdesk', null, 'send', true);
+
+        $this->assertTrue($r['allowed'], $r['reason']);
+        $this->assertTrue($r['completed']);
+        $this->assertFalse($r['final']);
+        $this->assertSame('pending_helpdesk', $p->fresh()->status);
+        $this->assertSame('approved', $p->approvals()->where('order_seq', 2)->value('status'));
+    }
+
+    public function test_level_one_cannot_use_send(): void
+    {
+        [$ticket, $p] = $this->submitted();
+
+        $this->assertFalse($this->service->isAtLastLevel($p));
+        $r = $this->service->approve($p, $ticket, self::ADMIN, 'Admin', null, null, true);
+
+        $this->assertFalse($r['allowed']);
+        $this->assertStringContainsString('Level 2', $r['reason']);
+        $this->assertSame(1, $p->fresh()->current_step_order);
+        $this->assertSame('waiting', $p->approvals()->where('order_seq', 1)->value('status'));
     }
 
     public function test_outsider_cannot_approve(): void
@@ -256,7 +289,7 @@ class CustomerMandaysApprovalTest extends TestCase
         // Siap dikirim (kedua level approve).
         [$t2, $ready] = $this->submitted();
         $this->service->approve($ready, $t2, self::ADMIN, 'Admin');
-        $this->service->approve($ready->fresh(), $t2, self::HELPDESK, 'Helpdesk');
+        $this->service->approve($ready->fresh(), $t2, self::HELPDESK, 'Helpdesk', null, null, true);
 
         // Versi lama yang masih pending_approval karena sudah ada versi baru.
         [$t3, $old] = $this->submitted();
@@ -488,7 +521,7 @@ class CustomerMandaysApprovalTest extends TestCase
     {
         [$ticket, $p] = $this->submitted();
         $this->assertTrue($this->service->approve($p, $ticket, self::ADMIN, 'Admin')['allowed']);
-        $this->assertTrue($this->service->approve($p->fresh(), $ticket, self::HELPDESK, 'Helpdesk')['allowed']);
+        $this->assertTrue($this->service->approve($p->fresh(), $ticket, self::HELPDESK, 'Helpdesk', null, null, true)['allowed']);
 
         $p = $p->fresh();
         $this->assertSame('pending_helpdesk', $p->status);

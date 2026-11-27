@@ -1115,6 +1115,22 @@ class TimesheetController extends Controller
                 return $denied;
             }
 
+            // Period gate: a draft saved while its period was open must not be submitted
+            // after that period closes (same rule as create/edit). Checked against the
+            // owner of the timesheet; Admin and RPMO bypass as on create.
+            if (!$this->bypassesPeriodGate()) {
+                $check = app(PeriodService::class)->canSubmitTimesheet(
+                    (int) $timesheet->employee_id,
+                    Carbon::parse($timesheet->date)
+                );
+                if (!$check['allowed']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Cannot submit: ' . $check['reason'],
+                    ], 422);
+                }
+            }
+
             // For support timesheets, enforce mandays quota hard-stop
             if ($timesheet->ticket_id) {
                 $empId    = $timesheet->employee_id;

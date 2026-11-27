@@ -5,7 +5,7 @@ order: 115
 title: Timesheets
 summary: Catat jam kerja pada project, ticket, atau pekerjaan kantor, kirim untuk persetujuan, dan minta akses terlambat.
 requires: [calendar.timesheets]
-updated: 2026-11-25
+updated: 2026-11-27
 ---
 `Calendar` › `Timesheets` adalah tempat Anda mencatat jam kerja dan mengirimnya untuk persetujuan.
 
@@ -50,7 +50,7 @@ Langkah 5 sampai 7 untuk `Support`. Untuk `Project`, pilih `Project` dan `Activi
 2. Pilih `Submit Timesheets` lalu konfirmasi.
 3. Status berubah menjadi `Submitted`. Setelah itu Anda tidak dapat mengubahnya sendiri.
 
-Kartu di atas daftar menghitung entri Anda sebagai `Draft`, `Submitted`, `Approved`, dan `Rejected`, serta menampilkan `Total Quota MD` dan `Total MD Consumed`. Klik kanan baris mana pun lalu pilih `Detail` untuk membuka entri lengkap (baris Project juga menampilkan peta GPS), di panel samping. Tab `Project` memakai urutan kolom yang sama dengan form entri Project.
+Kartu di atas daftar menghitung entri Anda sebagai `Draft`, `Submitted`, `Approved`, dan `Rejected`, serta menampilkan `Total Quota MD` dan `Total MD Consumed`. Klik kanan baris mana pun lalu pilih `Detail` untuk membuka entri lengkap (baris Project juga menampilkan peta GPS), di panel samping.
 
 ### Meminta akses terlambat
 
@@ -84,7 +84,7 @@ Aturan ini diperiksa saat Anda menyimpan atau mengirim. Bila ada yang dilanggar,
 - Anda hanya bisa membuat entri untuk diri sendiri, kecuali EC Administrator, RPMO Head, serta Head of Project dan Head of Support.
 - Memindahkan entri yang sudah ada ke tanggal lain memeriksa lagi batas periode untuk tanggal baru.
 - Jam selesai harus lebih lambat dari jam mulai, dan deskripsi aktivitas wajib diisi.
-- Bila role Anda termasuk domain Project atau Support, Anda hanya dapat mencatat waktu di periode berjalan atau periode sebelumnya, dan hanya selama periode itu terbuka. Periode terbuka bila RPMO sudah membukanya dan Head domain Anda sudah membuka domain Anda. Bila tertutup, minta akses terlambat. Role yang tidak termasuk domain mana pun tidak dibatasi oleh aturan periode ini.
+- Bila role Anda termasuk domain Project atau Support, Anda hanya dapat mencatat waktu di periode berjalan atau periode sebelumnya, dan hanya selama periode itu terbuka. Periode terbuka bila RPMO sudah membukanya dan Head domain Anda sudah membuka domain Anda. Saat draft dikirim, aturan ini diperiksa lagi, jadi draft yang periodenya sudah ditutup tidak dapat dikirim. Bila tertutup, minta akses terlambat. Role yang tidak termasuk domain mana pun tidak dibatasi oleh aturan periode ini.
 - Anda dapat mengubah entri sendiri selama berstatus `Draft` atau `Rejected`. Hanya EC Administrator, RPMO Head, serta Head of Project dan Head of Support yang juga dapat mengubah entri orang lain. Entri `Submitted` dan `Approved` tidak bisa diubah.
 
 ### Entri support (dengan ticket)

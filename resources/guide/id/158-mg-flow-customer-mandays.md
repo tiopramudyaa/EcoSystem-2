@@ -3,11 +3,11 @@ key: mg-flow-customer-mandays
 chapter: management
 order: 18
 title: Customer Mandays Approval
-summary: Tentukan siapa yang menyetujui Level 1 dan Level 2 proposal Customer Mandays sebelum Helpdesk mengirimnya ke customer.
+summary: Tentukan siapa yang menyetujui Level 1 dan Level 2 proposal Customer Mandays sebelum dikirim ke customer.
 requires: [management.flow.customer-mandays]
-updated: 2026-11-18
+updated: 2026-11-27
 ---
-`Management` › `Flow` › `Customer Mandays Approval` mengatur dua level persetujuan internal yang dilalui setiap proposal Customer Mandays setelah PIC mengirimnya. Helpdesk baru dapat mengirim proposal ke customer setelah kedua level menyetujuinya.
+`Management` › `Flow` › `Customer Mandays Approval` mengatur dua level persetujuan internal yang dilalui setiap proposal Customer Mandays setelah PIC mengirimnya. Penyetuju Level 2 yang mengirim proposal ke customer, atau menyetujuinya secara langsung.
 
 ## Siapa yang menggunakan
 
@@ -41,12 +41,12 @@ Administrator, dan role mana pun yang diberi `Management` › `Flow` › `Custom
 - Penyetuju boleh mengubah angka mandays sebelum menyetujui. Angka baru disimpan bersama persetujuannya.
 - Menolak wajib disertai alasan minimal 5 karakter. Proposal lalu ditutup sebagai `Rejected`, level sesudahnya ditandai dilewati, dan PIC merevisinya sebagai versi baru.
 - PIC boleh menyetujui proposalnya sendiri bila ia termasuk penyetuju level itu.
-- Setelah Level 2 menyetujui, proposal siap dikirim. Helpdesk mengirimnya ke customer, dan proposal baru menjadi `Approved` saat customer menyetujuinya. Helpdesk tidak lagi dapat menyetujui proposal secara langsung.
+- Di Level 2, penyetuju bertindak seperti Helpdesk sebelum ada dua level: `Send to Customer` menyetujui Level 2 dan mengirim proposal ke customer, dan `Approve` langsung membuat proposal `Approved` tanpa menunggu customer. Level 1 hanya punya `Approve` dan `Reject`, dan `Approve` di Level 1 memindahkan proposal ke Level 2.
 - Setiap penyetuju mendapat notifikasi bell saat proposal sampai di levelnya. PIC mendapat notifikasi saat proposal ditolak.
 
 ## Apa yang terjadi selanjutnya
 
-Proposal baru, dan level yang belum diputuskan pada proposal yang sudah menunggu, mengikuti level yang disimpan. Saat gilirannya tiba, penyetuju membuka `Review Mandays Proposal` di ticket dan menemukan tombol `Approve` dan `Reject` di sana, walaupun rolenya tidak punya akses review. Alur proposal selengkapnya di ticket dijelaskan pada topik Customer Mandays dan Resolution Days.
+Proposal baru, dan level yang belum diputuskan pada proposal yang sudah menunggu, mengikuti level yang disimpan. Saat gilirannya tiba, penyetuju membuka `Review Mandays Proposal` di ticket dan menemukan tombol `Approve` dan `Reject` di sana, ditambah `Send to Customer` di Level 2, walaupun rolenya tidak punya akses review. Alur proposal selengkapnya di ticket dijelaskan pada topik Customer Mandays dan Resolution Days.
 
 ## Pertanyaan umum
 

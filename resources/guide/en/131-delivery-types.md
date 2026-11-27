@@ -5,7 +5,7 @@ order: 131
 title: Project Type, Support Type and Document Type
 summary: Maintain the lists used in the Delivery Project form, the Delivery Support form and the ticket document form.
 requires: [management.delivery.project, management.delivery.support, management.ticket.document-type]
-updated: 2026-10-28
+updated: 2026-11-27
 ---
 These three settings pages hold the choices people see in forms: the project types of a delivery project, the support types of a delivery support item, and the deliverable document types of a ticket.
 
@@ -45,7 +45,7 @@ Administrators, and roles given `Management` › `Project Type`, `Support Type` 
 
 ## What happens next
 
-The new or changed values appear in the related form the next time someone opens it. Active document types show up on the ticket's `New Document` form and in the document list of the `Deliverable Documents` window. Every ticket starts with the default `Mandatory` and `Optional` choices of its ticket type, and a change to the default applies to all tickets of that type that were not changed by hand.
+The new or changed values appear in the related form the next time someone opens it. Active document types show up on the ticket's `New Document` form and in the document list of the `Deliverable Documents` window. `SoW` (Statement of Work) and `WO` (Work Order) are available by default next to `CR Form`, so they can be uploaded and then sent together with a Customer Mandays proposal. Every ticket starts with the default `Mandatory` and `Optional` choices of its ticket type, and a change to the default applies to all tickets of that type that were not changed by hand.
 
 On a ticket, open `Deliverable Documents` and select `Edit Requirement` to change which documents are mandatory for that one ticket, then `Save`. Ticket members cannot do this. A ticket you changed shows `Customized for this ticket`; select `Reset to Default` to follow its ticket type again. Changing the ticket type also returns the ticket to the default of the new type.
 
