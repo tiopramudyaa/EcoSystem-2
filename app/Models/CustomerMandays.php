@@ -93,6 +93,12 @@ class CustomerMandays extends Model
         return $this->hasMany(CustomerMandaysDetail::class, 'customer_mandays_id');
     }
 
+    /** Dokumen deliverable yang dikirim ke customer bersama versi ini. */
+    public function documents()
+    {
+        return $this->hasMany(CustomerMandaysDocument::class, 'customer_mandays_id')->orderBy('id');
+    }
+
     public function calculateTotalMandays()
     {
         return $this->details()->sum('mandays');

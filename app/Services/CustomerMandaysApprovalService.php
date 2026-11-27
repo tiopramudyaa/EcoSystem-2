@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Approval bertingkat Customer Mandays (Level 1 → Level 2 → siap dikirim ke customer).
+ * Approval bertingkat Customer Mandays (Level 1 → Level 2). Di Level 2 penyetuju
+ * bertindak seperti Helpdesk sebelum approval bertingkat: Approve (final) atau
+ * Send to Customer.
  *
  * Satu-satunya tempat yang memutuskan siapa boleh approve/reject (canAct()).
  * Controller dan view hanya menampilkan tombol / meneruskan permintaan.
@@ -404,24 +406,67 @@ class CustomerMandaysApprovalService
     // APPROVE / REJECT
     // =========================================================================
 
+    /** Apakah proposal sedang menunggu level terakhir (Level 2). */
+    public function isAtLastLevel(CustomerMandays $proposal): bool
+    {
+        if (!$proposal->isInApproval()) {
+            return false;
+        }
+
+        $proposal->loadMissing('approvals');
+        $last = $proposal->approvals->max('order_seq');
+
+        return $last !== null && (int) $proposal->current_step_order === (int) $last;
+    }
+
+    /**
+     * Penyetuju level terakhir boleh langsung Send to Customer (seperti Helpdesk
+     * sebelum approval bertingkat).
+     *
+     * @return array{allowed: bool, reason: string}
+     */
+    public function canSendAtLevel(CustomerMandays $proposal, int $actorId): array
+    {
+        $gate = $this->canAct($proposal, $actorId);
+        if (!$gate['allowed']) {
+            return ['allowed' => false, 'reason' => $gate['reason']];
+        }
+
+        if (!$this->isAtLastLevel($proposal)) {
+            return ['allowed' => false, 'reason' => 'Only the Level 2 approver can send this proposal to the customer.'];
+        }
+
+        return ['allowed' => true, 'reason' => ''];
+    }
+
     /**
      * Approve level yang sedang menunggu. Penyetuju boleh mengubah angka MD
      * ($details) sebelum menyetujui; perubahan disimpan dalam transaksi yang sama.
      *
+     * Di level terakhir (Level 2) penyetuju bertindak seperti Helpdesk sebelum
+     * approval bertingkat:
+     *  - Approve biasa ($forSending = false) langsung final: proposal Approved dan
+     *    man_days ticket diisi total proposal, tanpa menunggu customer.
+     *  - Send to Customer ($forSending = true) menyetujui level ini lalu proposal
+     *    siap dikirim (pending_helpdesk); pemanggil langsung mengirimnya ke customer.
+     *
      * @param  array<int, array{activity: ?string, module: string, mandays: float|int|string}>|null  $details
-     * @return array{allowed: bool, reason: string, completed: bool}
+     * @return array{allowed: bool, reason: string, completed: bool, final: bool}
      */
-    public function approve(CustomerMandays $proposal, Ticket $ticket, int $actorId, string $actorName, ?array $details = null, ?string $notes = null): array
+    public function approve(CustomerMandays $proposal, Ticket $ticket, int $actorId, string $actorName, ?array $details = null, ?string $notes = null, bool $forSending = false): array
     {
-        $gate = $this->canAct($proposal, $actorId);
+        $gate = $forSending ? $this->canSendAtLevel($proposal, $actorId) : $this->canAct($proposal, $actorId);
         if (!$gate['allowed']) {
-            return ['allowed' => false, 'reason' => $gate['reason'], 'completed' => false];
+            return ['allowed' => false, 'reason' => $gate['reason'], 'completed' => false, 'final' => false];
+        }
+        if ($forSending) {
+            $gate = $this->canAct($proposal, $actorId);
         }
 
         if ($details !== null) {
             $total = collect($details)->sum(fn ($d) => (float) ($d['mandays'] ?? 0));
             if ($total <= 0) {
-                return ['allowed' => false, 'reason' => 'Total mandays must be greater than 0.', 'completed' => false];
+                return ['allowed' => false, 'reason' => 'Total mandays must be greater than 0.', 'completed' => false, 'final' => false];
             }
         }
 
@@ -429,7 +474,7 @@ class CustomerMandaysApprovalService
         $approval  = $gate['approval'];
         $oldTotal  = (float) $proposal->total_mandays;
 
-        $completed = DB::transaction(function () use ($proposal, $ticket, $approval, $actorId, $details, $notes) {
+        $completed = DB::transaction(function () use ($proposal, $ticket, $approval, $actorId, $details, $notes, $forSending) {
             if ($details !== null) {
                 $this->replaceDetails($proposal, $details);
             }
@@ -452,14 +497,29 @@ class CustomerMandaysApprovalService
                 return false;
             }
 
-            // Lolos semua level → siap dikirim ke customer oleh Helpdesk.
+            if ($forSending) {
+                // Send to Customer oleh Level 2: siap dikirim, pemanggil langsung mengirimnya.
+                $proposal->update([
+                    'status'             => CustomerMandays::STATUS_PENDING_HELPDESK,
+                    'current_step_order' => null,
+                ]);
+                $ticket->update(['mandays_proposal_status' => CustomerMandays::STATUS_PENDING_HELPDESK]);
+                return true;
+            }
+
+            // Approve oleh Level 2: final, sama seperti Approve Helpdesk sebelum approval bertingkat.
             $proposal->update([
-                'status'             => CustomerMandays::STATUS_PENDING_HELPDESK,
+                'status'             => CustomerMandays::STATUS_APPROVED,
                 'current_step_order' => null,
             ]);
-            $ticket->update(['mandays_proposal_status' => CustomerMandays::STATUS_PENDING_HELPDESK]);
+            $ticket->refresh()->update([
+                'mandays_proposal_status' => CustomerMandays::STATUS_APPROVED,
+                'man_days'                => $proposal->fresh()->total_mandays,
+            ]);
             return true;
         });
+
+        $final = $completed && !$forSending;
 
         Log::info('Customer mandays approval: approved', [
             'customer_mandays_id' => $proposal->id,
@@ -469,18 +529,18 @@ class CustomerMandaysApprovalService
             'total_before'        => $oldTotal,
             'total_after'         => (float) $proposal->fresh()->total_mandays,
             'completed'           => $completed,
+            'final'               => $final,
+            'for_sending'         => $forSending,
         ]);
 
         $proposal->unsetRelation('approvals');
         $proposal->refresh();
 
-        if ($completed) {
-            $this->notifyReadyToSend($ticket, $actorId, $actorName);
-        } elseif ($next = $proposal->currentApproval()) {
+        if (!$completed && ($next = $proposal->currentApproval())) {
             $this->notifyApprovers($ticket, $next, $actorId, $actorName);
         }
 
-        return ['allowed' => true, 'reason' => '', 'completed' => $completed];
+        return ['allowed' => true, 'reason' => '', 'completed' => $completed, 'final' => $final];
     }
 
     /**
@@ -653,36 +713,6 @@ class CustomerMandaysApprovalService
             $fromId,
             $fromName,
             "Ticket #{$ticketNum}: Customer mandays proposal waiting for your approval ({$approval->step_name})"
-        );
-    }
-
-    /** Sama seperti notifikasi submit lama: semua pemegang izin review mendapat kabar siap dikirim. */
-    private function notifyReadyToSend(Ticket $ticket, int $fromId, string $fromName): void
-    {
-        try {
-            $ids = Employee::query()
-                ->whereHas('roles.menus', function ($m) {
-                    $m->where('menu.slug', 'ticket.review-mandays')
-                      ->where('menu.is_active', true)
-                      ->where('role_menu.can_view', true);
-                })
-                ->where('is_active', true)
-                ->pluck('employee_id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
-        } catch (\Throwable $e) {
-            Log::warning('CustomerMandaysApprovalService::notifyReadyToSend failed', ['error' => $e->getMessage()]);
-            return;
-        }
-
-        $ticketNum = $ticket->ticket_number ?? $ticket->ticket_id;
-        $this->send(
-            $ticket,
-            $ids,
-            'customer_mandays_proposed',
-            $fromId,
-            $fromName,
-            "Ticket #{$ticketNum}: Customer mandays proposal approved internally, ready to send to the customer"
         );
     }
 

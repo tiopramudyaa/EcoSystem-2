@@ -2568,6 +2568,17 @@
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-800 resize-none"
                         placeholder="Write a note for the PIC..."></textarea>
                 </div>
+                {{-- Dokumen pendukung (CR Form, SoW, WO, ...) dari Deliverables ticket, opsional, ikut terkirim --}}
+                <div id="hdDocsWrap" class="hidden mb-2">
+                    <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Documents for the Customer <span class="normal-case font-normal text-gray-400">(optional, from Deliverables)</span>
+                    </p>
+                    <div id="hdDocsList" class="space-y-1 text-xs"></div>
+                </div>
+                <div id="hdSentDocsWrap" class="hidden mb-4">
+                    <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Documents Sent</p>
+                    <ul id="hdSentDocs" class="space-y-1 text-xs"></ul>
+                </div>
                 {{-- Cancel confirm section (shown when clicking "Cancel Proposal") --}}
                 <div id="hdCancelConfirmWrap" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p class="text-xs font-semibold text-red-700 mb-2">Cancel Proposal - Confirmation</p>
@@ -8202,6 +8213,9 @@
             // Approval bertingkat: hanya approver level aktif (dicek server) yang boleh bertindak.
             const isInApproval       = status === 'pending_approval';
             const canActLevel        = isInApproval && !!draftData.can_act;
+            // Level 2 saat gilirannya: Approve = final, plus Send to Customer (seperti Helpdesk dulu).
+            const isLastLevelTurn    = canActLevel && !!draftData.is_last_level;
+            hdLastLevelTurn          = isLastLevelTurn;
             const canFinalize        = !!draftData.can_finalize;
             if (isInApproval && proposal.current_step_name) {
                 document.getElementById('hdMandaysStatusLabel').textContent = 'Waiting ' + proposal.current_step_name;
@@ -8316,9 +8330,13 @@
                 if (canActLevel) {
                     document.getElementById('hdBtnLevelApprove').classList.remove('hidden');
                     document.getElementById('hdBtnLevelReject').classList.remove('hidden');
+                    if (isLastLevelTurn) document.getElementById('hdBtnSendToChat')?.classList.remove('hidden');
+                    const hint = isLastLevelTurn
+                        ? 'You can adjust the mandays, then send it to the customer, or approve it directly without waiting for the customer. To reject, write the reason in Approval Notes.'
+                        : 'You can adjust the mandays, then approve. To reject, write the reason in Approval Notes.';
                     banner.innerHTML = `<i class="fas fa-user-check text-amber-600 text-sm mt-0.5 flex-shrink-0"></i>
                         <div><p class="font-semibold text-amber-800">Waiting ${escHtml(step)}: your decision</p>
-                        <p class="text-xs font-normal text-amber-700 mt-0.5">You can adjust the mandays, then approve. To reject, write the reason in Approval Notes.</p></div>`;
+                        <p class="text-xs font-normal text-amber-700 mt-0.5">${hint}</p></div>`;
                 } else {
                     banner.innerHTML = `<i class="fas fa-hourglass-half text-amber-600 text-sm mt-0.5 flex-shrink-0"></i>
                         <div><p class="font-semibold text-amber-800">Waiting ${escHtml(step)}</p>
@@ -8349,6 +8367,15 @@
                 document.getElementById('hdBtnNewProposal')?.classList.remove('hidden');
             }
             // approved: no buttons
+
+            // Dokumen pendukung: pilih dari Deliverables saat bisa kirim; selain itu tampilkan yang sudah terkirim.
+            const canSendNow = ['hdBtnSendToChat', 'hdBtnReviseResend'].some(id => !document.getElementById(id)?.classList.contains('hidden'));
+            hdRenderSentDocs(canSendNow ? [] : (proposal.documents || []));
+            if (canSendNow) {
+                hdLoadDocs(proposal.documents || []);
+            } else {
+                document.getElementById('hdDocsWrap')?.classList.add('hidden');
+            }
 
             document.getElementById('hdMandaysContent').classList.remove('hidden');
             hdUpdateTotal();
@@ -8469,11 +8496,69 @@
         const to = data.email_to ? ` → ${data.email_to}` : '';
         return (data.message || defaultMsg) + to;
     }
+    // true saat penyetuju Level 2 membuka proposal di gilirannya (diisi saat modal dimuat).
+    let hdLastLevelTurn = false;
+
+    /** Daftar Deliverables ticket (yang punya file) sebagai pilihan dokumen untuk customer. */
+    async function hdLoadDocs(previous) {
+        const wrap = document.getElementById('hdDocsWrap');
+        const list = document.getElementById('hdDocsList');
+        if (!wrap || !list) return;
+        wrap.classList.remove('hidden');
+        list.innerHTML = '<p class="text-gray-400">Loading documents...</p>';
+        const preselected = new Set((previous || []).map(d => d.ticket_deliverable_id).filter(Boolean));
+        try {
+            const res  = await fetch(`/api/tickets/${ticketId}/deliverables`, { headers: getHeaders(), credentials: 'same-origin' });
+            const data = await res.json();
+            const docs = (data.data || []).filter(d => d.file_name);
+            if (!docs.length) {
+                list.innerHTML = '<p class="text-gray-400">No documents with a file in Deliverables yet. Upload them in the Deliverables section first if you want to include them.</p>';
+                return;
+            }
+            list.innerHTML = docs.map(d => `
+                <label class="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" class="hd-doc-cb mt-0.5" value="${d.id}" ${preselected.has(d.id) ? 'checked' : ''}>
+                    <span><strong>${escHtml(d.doc_type)}</strong>: ${escHtml(d.file_name)}
+                        <span class="text-gray-400">(${escHtml(d.status || '')})</span></span>
+                </label>`).join('');
+        } catch (e) {
+            list.innerHTML = '<p class="text-red-600">Failed to load documents.</p>';
+        }
+    }
+
+    function hdSelectedDocIds() {
+        return [...document.querySelectorAll('.hd-doc-cb:checked')].map(cb => parseInt(cb.value, 10));
+    }
+
+    function hdRenderSentDocs(docs) {
+        const wrap = document.getElementById('hdSentDocsWrap');
+        const list = document.getElementById('hdSentDocs');
+        if (!wrap || !list) return;
+        wrap.classList.toggle('hidden', !docs.length);
+        list.innerHTML = docs.map(d => {
+            const name = escHtml(d.file_name || '-');
+            const file = d.file_url ? `<a href="${escHtml(d.file_url)}" target="_blank" rel="noopener" class="text-blue-600 hover:underline">${name}</a>` : name;
+            return `<li><strong>${escHtml(d.doc_type)}</strong>: ${file}</li>`;
+        }).join('');
+    }
+
     async function hdSubmitToChat() {
+        let details = null;
+        if (hdLastLevelTurn) {
+            details = hdCollectDetails();
+            if (details.length === 0) { showNotification('Total mandays must be greater than 0.', 'warning'); return; }
+            if (!await showConfirm('Approve Level 2 and send this proposal to the customer?', 'Send to Customer', 'primary')) return;
+        }
         const btn = document.getElementById('hdBtnSendToChat');
         if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
         try {
-            const data = await hdSaveAndAction('hd-draft/submit-chat');
+            // Level 2: angka dan catatan ikut dikirim dan disimpan bersama persetujuan level ini.
+            const data = hdLastLevelTurn
+                ? await (await fetch(MANDAYS_API('hd-draft/submit-chat'), {
+                    method: 'POST', headers: getHeaders(), credentials: 'same-origin',
+                    body: JSON.stringify({ details, notes: document.getElementById('hdApprovalNotes').value.trim() || null, deliverable_ids: hdSelectedDocIds() }),
+                })).json()
+                : await hdSaveAndAction('hd-draft/submit-chat', 'POST', { deliverable_ids: hdSelectedDocIds() });
             if (data.success) {
                 if (data.email_warning) {
                     showNotification('Status updated. Warning: ' + data.email_warning, 'warning');
@@ -8481,6 +8566,7 @@
                     showNotification(hdEmailSentMsg(data, 'Sent to customer via email!'), 'success');
                 }
                 closeHdMandaysModal();
+                if (hdLastLevelTurn) setTimeout(() => location.reload(), 800);
             } else {
                 showNotification(data.message || 'Failed to send.', 'error');
             }
@@ -8494,7 +8580,7 @@
         const btn = document.getElementById('hdBtnReviseResend');
         if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
         try {
-            const data = await hdSaveAndAction('hd-draft/submit-chat');
+            const data = await hdSaveAndAction('hd-draft/submit-chat', 'POST', { deliverable_ids: hdSelectedDocIds() });
             if (data.success) {
                 if (data.email_warning) {
                     showNotification('Status updated. Warning: ' + data.email_warning, 'warning');
@@ -8512,7 +8598,8 @@
         }
     }
     // ==================== CUSTOMER MANDAYS: APPROVAL BERTINGKAT ====================
-    // Tidak ada lagi "Helpdesk Approve" langsung: status Approved hanya lewat customer.
+    // Penyetuju Level 2 bertindak seperti Helpdesk sebelum approval bertingkat:
+    // Approve (final) atau Send to Customer saat gilirannya.
 
     /** HTML jejak approval (Level 1 → Level 2) untuk modal detail versi & modal approval. */
     function cmTrailHtml(approvals) {
@@ -8536,6 +8623,8 @@
     async function hdLevelApprove() {
         const details = hdCollectDetails();
         if (details.length === 0) { showNotification('Total mandays must be greater than 0.', 'warning'); return; }
+        // Level 2: Approve langsung final, tanpa menunggu customer.
+        if (hdLastLevelTurn && !await showConfirm('Approve this proposal now? It becomes Approved without waiting for the customer, and the ticket mandays are set to this total.', 'Approve', 'primary')) return;
         const btn = document.getElementById('hdBtnLevelApprove');
         btn.disabled = true; btn.textContent = 'Approving...';
         try {

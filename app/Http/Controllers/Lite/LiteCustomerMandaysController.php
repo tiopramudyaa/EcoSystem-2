@@ -180,8 +180,8 @@ class LiteCustomerMandaysController extends Controller
 
         return response()->json([
             'success'   => true,
-            'message'   => $result['completed']
-                ? 'Approved. The proposal is ready for Helpdesk to send to the customer.'
+            'message'   => $result['final']
+                ? 'Customer mandays approved.'
                 : 'Approved. The proposal moves to the next approval level.',
             'completed' => $result['completed'],
             'data'      => $this->presenter->detail($this->presenter->latestProposal($ticket)),

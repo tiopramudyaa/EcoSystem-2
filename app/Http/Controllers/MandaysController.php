@@ -13,6 +13,8 @@ use App\Models\Ticket;
 use App\Models\Customer;
 use App\Models\CustomerMandays;
 use App\Models\CustomerMandaysDetail;
+use App\Models\CustomerMandaysDocument;
+use App\Models\TicketDeliverable;
 use App\Models\ConsultantMandays;
 use App\Models\ConsultantMandaysDetail;
 use App\Models\Employee;
@@ -408,8 +410,8 @@ class MandaysController extends Controller
 
         return response()->json([
             'success'               => true,
-            'message'               => $result['completed']
-                ? 'Approved. The proposal is ready for Helpdesk to send to the customer.'
+            'message'               => $result['final']
+                ? 'Customer mandays approved.'
                 : 'Approved. The proposal moves to the next approval level.',
             'completed'             => $result['completed'],
             'ticket_mandays_status' => $status,
@@ -531,11 +533,15 @@ class MandaysController extends Controller
         $canFinalize = $proposal
             && $approvalService->canFinalize($proposal, (int) (session('user')['id'] ?? 0))['allowed'];
 
+        // Penyetuju Level 2 saat gilirannya: Approve = final, plus Send to Customer.
+        $isLastLevel = $gate['allowed'] && $approvalService->isAtLastLevel($proposal);
+
         return response()->json([
             'success'               => true,
             'data'                  => $proposal ? $this->formatCustomerProposal($proposal) : null,
             'can_act'               => $gate['allowed'],
             'can_act_reason'        => $gate['allowed'] ? null : $gate['reason'],
+            'is_last_level'         => $isLastLevel,
             'can_finalize'          => $canFinalize,
             'ticket_mandays_status' => $ticket->mandays_proposal_status ?? 'none',
         ]);
@@ -656,13 +662,11 @@ class MandaysController extends Controller
      * POST /api/tickets/{ticketId}/mandays/hd-draft/submit-chat
      * Helpdesk kirim ke chat customer via email.
      */
-    public function submitToChat($ticketId)
+    public function submitToChat(Request $request, $ticketId, CustomerMandaysApprovalService $approvalService)
     {
-        $sessionUserId = session('user')['id'] ?? null;
+        $sessionUser   = session('user');
+        $sessionUserId = $sessionUser['id'] ?? null;
         $employee = $sessionUserId ? Employee::find($sessionUserId) : null;
-        if (!$employee?->canAccessMenu('ticket.review-mandays.send-to-customer')) {
-            return response()->json(['success' => false, 'message' => 'You do not have permission to send the proposal to the customer.'], 403);
-        }
 
         $ticket   = Ticket::where('ticket_id', $ticketId)->firstOrFail();
         $proposal = CustomerMandays::where('ticket_id', $ticketId)
@@ -670,25 +674,99 @@ class MandaysController extends Controller
             ->with('details')
             ->first();
 
-        if (!$proposal || $proposal->status !== 'pending_helpdesk') {
-            return response()->json(['success' => false, 'message' => 'Proposal is not in pending_helpdesk status.'], 422);
+        if (!$proposal) {
+            return response()->json(['success' => false, 'message' => 'No proposal found.'], 422);
         }
 
-        $sessionUser = session('user');
+        // Dokumen opsional (CR Form, SoW, WO, ...) dipilih dari Deliverables ticket ini.
+        // Diperiksa SEBELUM approve Level 2 supaya pilihan yang salah tidak meninggalkan
+        // level yang sudah tersetujui tanpa terkirim.
+        $request->validate([
+            'deliverable_ids'   => 'nullable|array|max:20',
+            'deliverable_ids.*' => 'integer|distinct',
+        ]);
+        $deliverableIds = array_map('intval', $request->input('deliverable_ids', []) ?? []);
+        $documents = $deliverableIds
+            ? TicketDeliverable::where('ticket_id', $ticketId)
+                ->whereIn('id', $deliverableIds)
+                ->whereNotNull('file_name')
+                ->orderBy('created_at')
+                ->get()
+            : collect();
+        if ($documents->count() !== count($deliverableIds)) {
+            return response()->json(['success' => false, 'message' => 'Some selected documents do not belong to this ticket or have no file.'], 422);
+        }
+
+        if ($proposal->status === CustomerMandays::STATUS_PENDING_APPROVAL) {
+            // Penyetuju Level 2: setujui level ini (angka boleh diubah) lalu langsung kirim,
+            // seperti Helpdesk sebelum approval bertingkat. Kewenangan dari alur, bukan menu.
+            $validated = $request->validate([
+                'details'            => 'nullable|array|min:1',
+                'details.*.activity' => 'nullable|string|max:255',
+                'details.*.module'   => 'required_with:details|string|max:100',
+                'details.*.mandays'  => 'required_with:details|numeric|min:0',
+                'notes'              => 'nullable|string|max:1000',
+            ]);
+
+            $result = $approvalService->approve(
+                $proposal,
+                $ticket,
+                (int) ($sessionUserId ?? 0),
+                $sessionUser['name'] ?? 'Approver',
+                $validated['details'] ?? null,
+                $validated['notes'] ?? null,
+                true
+            );
+            if (!$result['allowed']) {
+                return response()->json(['success' => false, 'message' => $result['reason']], 422);
+            }
+
+            $ticket->refresh();
+            $proposal = $proposal->fresh(['details']);
+        } else {
+            if (!$employee?->canAccessMenu('ticket.review-mandays.send-to-customer')) {
+                return response()->json(['success' => false, 'message' => 'You do not have permission to send the proposal to the customer.'], 403);
+            }
+
+            if ($proposal->status !== CustomerMandays::STATUS_PENDING_HELPDESK) {
+                return response()->json(['success' => false, 'message' => 'Proposal is not in pending_helpdesk status.'], 422);
+            }
+        }
+
         $senderName  = $sessionUser['name'] ?? 'Helpdesk Support';
         $senderId    = $sessionUser['id'] ?? null;
 
         // Update status terlebih dahulu (bersihkan rejection_reason jika re-send setelah ditolak customer)
-        $proposal->update([
-            'status'           => 'sent_to_chat',
-            'sent_to_chat_at'  => now(),
-            'rejection_reason' => null,
-            'customer_notes'   => null,
-        ]);
-        $ticket->update(['mandays_proposal_status' => 'sent_to_chat']);
+        DB::transaction(function () use ($proposal, $ticket, $documents) {
+            $proposal->update([
+                'status'           => 'sent_to_chat',
+                'sent_to_chat_at'  => now(),
+                'rejection_reason' => null,
+                'customer_notes'   => null,
+            ]);
+            $ticket->update(['mandays_proposal_status' => 'sent_to_chat']);
+
+            // Dokumen versi ini = pilihan pada pengiriman terakhir (Revise & Resend mengganti).
+            $proposal->documents()->delete();
+            foreach ($documents as $d) {
+                CustomerMandaysDocument::create([
+                    'customer_mandays_id'   => $proposal->id,
+                    'ticket_deliverable_id' => $d->id,
+                    'doc_type'              => $d->doc_type,
+                    'file_name'             => $d->file_name,
+                    'file_url'              => $d->onedrive_file_url,
+                ]);
+            }
+
+            // Sama seperti kirim dari Deliverables: dokumen jadi "Sent"; sent_at hanya diisi sekali.
+            if ($documents->isNotEmpty()) {
+                TicketDeliverable::whereIn('id', $documents->pluck('id'))->update(['status' => 'Sent']);
+                TicketDeliverable::whereIn('id', $documents->pluck('id'))->whereNull('sent_at')->update(['sent_at' => now()]);
+            }
+        });
 
         // Selalu buat TicketMessage terlebih dahulu agar proposal tampil di chat
-        $htmlBody  = $this->buildMandaysEmailHtml($proposal, $ticket, $senderName);
+        $htmlBody  = $this->buildMandaysEmailHtml($proposal, $ticket, $senderName, $documents);
         $plainText = 'Mandays proposal sent to customer. Total: ' . $this->fmtMd((float) $proposal->total_mandays) . ' mandays.';
 
         $ticketMsg = TicketMessage::create([
@@ -1473,6 +1551,12 @@ class MandaysController extends Controller
                 'customer_notes'       => $proposal->customer_notes,
                 'proposed_at'          => $proposal->proposed_at?->toISOString(),
                 'customer_response_at' => $proposal->customer_response_at?->toISOString(),
+                // Dokumen pendukung yang dikirim bersama proposal (link OneDrive).
+                'documents'            => $proposal->documents->map(fn($d) => [
+                    'doc_type'  => $d->doc_type,
+                    'file_name' => $d->file_name,
+                    'file_url'  => $d->file_url,
+                ])->values()->all(),
             ],
             'activities'             => $activities,
             'modules'                => $modules,
@@ -1673,6 +1757,12 @@ class MandaysController extends Controller
             'current_step_order'   => $p->current_step_order,
             'current_step_name'    => app(CustomerMandaysApprovalService::class)->currentStepName($p),
             'approvals'            => app(CustomerMandaysApprovalService::class)->trail($p),
+            'documents'            => $p->documents->map(fn($d) => [
+                'ticket_deliverable_id' => $d->ticket_deliverable_id ? (int) $d->ticket_deliverable_id : null,
+                'doc_type'  => $d->doc_type,
+                'file_name' => $d->file_name,
+                'file_url'  => $d->file_url,
+            ])->values()->all(),
             'details'              => $p->details->map(fn($d) => [
                 'id'       => $d->id,
                 'activity' => $d->activity,
@@ -1847,7 +1937,7 @@ class MandaysController extends Controller
     /**
      * Build HTML email body untuk mandays proposal yang dikirim ke customer.
      */
-    private function buildMandaysEmailHtml(CustomerMandays $proposal, Ticket $ticket, string $agentName): string
+    private function buildMandaysEmailHtml(CustomerMandays $proposal, Ticket $ticket, string $agentName, ?\Illuminate\Support\Collection $documents = null): string
     {
         $ticketNum = htmlspecialchars($ticket->ticket_number ?? '', ENT_QUOTES, 'UTF-8');
         $agent     = htmlspecialchars($agentName, ENT_QUOTES, 'UTF-8');
@@ -1883,6 +1973,22 @@ class MandaysController extends Controller
                 $rows .= '<td style="padding:7px 12px;border:1px solid #ddd;text-align:center;">' . ($val > 0 ? $this->fmtMd($val) : '-') . '</td>';
             }
             $rows .= '</tr>';
+        }
+
+        // Dokumen pendukung (CR Form, SoW, WO, ...) sebagai link.
+        $docsHtml = '';
+        if ($documents && $documents->isNotEmpty()) {
+            $items = '';
+            foreach ($documents as $d) {
+                $type = htmlspecialchars($d->doc_type, ENT_QUOTES, 'UTF-8');
+                $name = htmlspecialchars($d->file_name ?: '-', ENT_QUOTES, 'UTF-8');
+                $file = $d->onedrive_file_url
+                    ? '<a href="' . htmlspecialchars($d->onedrive_file_url, ENT_QUOTES, 'UTF-8') . '" target="_blank" style="color:#2563eb;word-break:break-word;">' . $name . '</a>'
+                    : $name;
+                $items .= '<li style="margin:2px 0;"><strong>' . $type . '</strong>: ' . $file . '</li>';
+            }
+            $docsHtml = '<p style="margin:16px 0 4px;font-size:13px;color:#444;"><strong>Dokumen pendukung:</strong></p>'
+                . '<ul style="margin:0;padding-left:18px;font-size:13px;color:#444;">' . $items . '</ul>';
         }
 
         // Baris total
@@ -1931,6 +2037,7 @@ class MandaysController extends Controller
                     <p style="margin:16px 0 4px;font-size:13px;color:#444;">
                         <strong>Total Man Days: {$total}</strong>
                     </p>
+                    {$docsHtml}
                     <p style="margin:16px 0 0;font-size:12px;color:#666;">
                         Please contact us if you have any questions regarding this proposal.
                     </p>

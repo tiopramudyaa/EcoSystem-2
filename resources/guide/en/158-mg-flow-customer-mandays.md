@@ -3,11 +3,11 @@ key: mg-flow-customer-mandays
 chapter: management
 order: 18
 title: Customer Mandays Approval
-summary: Choose who approves Level 1 and Level 2 of a Customer Mandays proposal before Helpdesk sends it to the customer.
+summary: Choose who approves Level 1 and Level 2 of a Customer Mandays proposal before it goes to the customer.
 requires: [management.flow.customer-mandays]
-updated: 2026-11-18
+updated: 2026-11-27
 ---
-`Management` › `Flow` › `Customer Mandays Approval` sets the two internal approval levels every Customer Mandays proposal goes through after the PIC submits it. Only after both levels approve can Helpdesk send the proposal to the customer.
+`Management` › `Flow` › `Customer Mandays Approval` sets the two internal approval levels every Customer Mandays proposal goes through after the PIC submits it. The Level 2 approver is the one who sends the proposal to the customer, or approves it directly.
 
 ## Who uses this
 
@@ -41,12 +41,12 @@ Administrators, and any role given `Management` › `Flow` › `Customer Mandays
 - An approver may change the mandays numbers before approving. The new numbers are saved with the approval.
 - Rejecting needs a reason of at least 5 characters. The proposal is then closed as `Rejected`, any level after it is marked as skipped, and the PIC revises it as a new version.
 - The PIC may approve their own proposal if they are an approver of that level.
-- After Level 2 approves, the proposal is ready to send. Helpdesk sends it to the customer, and it becomes `Approved` only when the customer approves it. Helpdesk can no longer approve a proposal directly.
+- At Level 2 the approver acts like Helpdesk did before the two levels existed: `Send to Customer` approves Level 2 and sends the proposal to the customer, and `Approve` makes it `Approved` at once without waiting for the customer. Level 1 only has `Approve` and `Reject`, and its `Approve` moves the proposal to Level 2.
 - Each approver gets a bell notification when a proposal reaches their level. The PIC gets one when a proposal is rejected.
 
 ## What happens next
 
-New proposals, and the undecided levels of proposals already waiting, follow the saved levels. When it is their turn, approvers open `Review Mandays Proposal` on the ticket and find the `Approve` and `Reject` buttons there, even if their role has no review access. The full proposal flow on the ticket is described in the topic Customer Mandays and Resolution Days.
+New proposals, and the undecided levels of proposals already waiting, follow the saved levels. When it is their turn, approvers open `Review Mandays Proposal` on the ticket and find the `Approve` and `Reject` buttons there, plus `Send to Customer` at Level 2, even if their role has no review access. The full proposal flow on the ticket is described in the topic Customer Mandays and Resolution Days.
 
 ## Common questions
 

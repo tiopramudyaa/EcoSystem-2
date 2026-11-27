@@ -5,7 +5,7 @@ order: 131
 title: Project Type, Support Type dan Document Type
 summary: Pelihara daftar yang dipakai di formulir Delivery Project, formulir Delivery Support, dan formulir dokumen tiket.
 requires: [management.delivery.project, management.delivery.support, management.ticket.document-type]
-updated: 2026-10-28
+updated: 2026-11-27
 ---
 Tiga halaman pengaturan ini menyimpan pilihan yang dilihat orang di formulir: tipe proyek pada delivery project, tipe support pada item delivery support, dan tipe dokumen deliverable pada tiket.
 
@@ -45,7 +45,7 @@ Administrator, dan role yang diberi `Management` › `Project Type`, `Support Ty
 
 ## Apa yang terjadi selanjutnya
 
-Nilai baru atau yang diubah muncul di formulir terkait saat seseorang membukanya berikutnya. Tipe dokumen yang aktif muncul di formulir `New Document` dan di daftar jendela `Deliverable Documents` pada tiket. Setiap tiket dimulai dengan pilihan `Mandatory` dan `Optional` default dari tipe tiketnya, dan perubahan pada default berlaku ke semua tiket bertipe itu yang belum diubah manual.
+Nilai baru atau yang diubah muncul di formulir terkait saat seseorang membukanya berikutnya. Tipe dokumen yang aktif muncul di formulir `New Document` dan di daftar jendela `Deliverable Documents` pada tiket. `SoW` (Statement of Work) dan `WO` (Work Order) tersedia secara bawaan di samping `CR Form`, sehingga dapat diunggah lalu dikirim bersama proposal Customer Mandays. Setiap tiket dimulai dengan pilihan `Mandatory` dan `Optional` default dari tipe tiketnya, dan perubahan pada default berlaku ke semua tiket bertipe itu yang belum diubah manual.
 
 Pada tiket, buka `Deliverable Documents` lalu pilih `Edit Requirement` untuk mengubah dokumen mana yang mandatory khusus untuk tiket itu, kemudian `Save`. Member tiket tidak dapat melakukannya. Tiket yang sudah diubah menampilkan `Customized for this ticket`; pilih `Reset to Default` untuk kembali mengikuti tipe tiketnya. Mengganti tipe tiket juga mengembalikan tiket ke default tipe yang baru.
 

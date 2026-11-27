@@ -5,7 +5,7 @@ order: 115
 title: Timesheets
 summary: Log your working hours on a project, a ticket or office work, send them for approval and ask for late access.
 requires: [calendar.timesheets]
-updated: 2026-11-21
+updated: 2026-11-27
 ---
 `Calendar` › `Timesheets` is where you log working hours and send them for approval.
 
@@ -49,7 +49,7 @@ Steps 5 to 7 are for `Support`. For `Project`, choose the `Project` and `Activit
 2. Select `Submit Timesheets` and confirm.
 3. The status becomes `Submitted`, and you can no longer edit it.
 
-The cards above the list count your entries per status and show `Total Quota MD` and `Total MD Consumed`. Right-click a row and choose `Detail` for the full entry. The `Project` tab follows the entry form's column order.
+The cards above the list count your entries per status and show `Total Quota MD` and `Total MD Consumed`. Right-click a row and choose `Detail` for the full entry.
 
 ### Ask for late access
 
@@ -71,7 +71,7 @@ These rules are checked when you save or submit. If one is broken, nothing is sa
 - You can only create entries for yourself (Heads, RPMO Head and EC Administrator excepted).
 - Moving an existing entry to another date checks the period limits again for the new date.
 - The end time must be later than the start time, and the activity description is required.
-- If your role belongs to the Project or Support domain, you can only log time in the current period or the previous period, and only while that period is open. A period is open when RPMO has opened it and the Head of your domain has opened your domain. If it is closed, ask for late access. Roles that belong to no domain are not held to these period limits.
+- If your role belongs to the Project or Support domain, you can only log time in the current period or the previous period, and only while that period is open, that is, opened by RPMO and by the Head of your domain. This is checked again on submit, so a draft in a since-closed period cannot be submitted. If it is closed, ask for late access. Roles that belong to no domain are not held to these period limits.
 - You can edit your own entries while they are `Draft` or `Rejected`. Only the EC Administrator, the RPMO Head and the Heads can also change other people's entries. A `Submitted` or `Approved` entry cannot be edited.
 
 ### Support entries (with a ticket)
