@@ -34,17 +34,17 @@ Ticket leads and consultants who propose, the two approval levels and Helpdesk f
 
 1. Select `Propose Mandays` and fill in the details. Save it as a `Draft` first.
 2. Check the numbers and select `Submit for Approval`. The badge shows `Level 1`, and the proposal shows `Waiting` followed by the name of Level 1, for example `Waiting Admin Approval`.
-3. The Level 1 approver opens `Review Mandays Proposal` on the ticket, selects the version, then `Review This Version`. The badge next to it shows `Your turn` when it is their turn. They can adjust the mandays and select `Approve`, or write a reason in `Approval Notes` and select `Reject`.
+3. The Level 1 approver opens `Review Mandays Proposal` on the ticket, selects the version, then `Review This Version`. The badge next to it shows `Your turn` when it is their turn. They can adjust the mandays and select `Approve`, or select `Reject`, write the reason and select `Confirm Reject`.
 4. After Level 1 approves, the proposal waits for Level 2 (by default Helpdesk). The Level 2 approver opens `Review Mandays Proposal`, can adjust the mandays, and chooses one of:
-   - `Send to Customer`: approves Level 2 and sends the proposal to the customer by chat and email right away. The status becomes `Sent to Chat`. Before sending, you can tick supporting documents under `Documents for the Customer`, for example a CR Form, SoW or WO. The list comes from the ticket's `Deliverable Documents`, and the links of the ticked documents go with the proposal.
+   - `Send to Customer`: approves Level 2 and sends the proposal to the customer by chat and email right away. Before selecting it, use the `For the Customer` section in the same window. Under `Attach Documents` you can tick supporting documents, for example a CR Form, SoW or WO. The list comes from the ticket's `Deliverable Documents`, and the links of the ticked documents go with the proposal. In `Message to Customer` you can write a note, for example what the attached documents are for. Then select `Send to Customer`. The status becomes `Sent to Chat`.
    - `Approve`: approves the proposal directly without waiting for the customer, for example when the customer already agreed by email. The status becomes `Approved`.
-   - `Reject`, with a reason in `Approval Notes`.
+   - `Reject`: write the reason, then select `Confirm Reject`.
 5. After it is sent, the customer approves through the link they receive, and the proposal becomes `Approved`. While it is `Sent to Chat`, a Level 2 approver can still select `Approve` if the customer agreed another way.
-6. If the customer rejects, the status becomes `Ready to Send` with the customer's reason. Helpdesk revises the proposal, ticks the documents to include under `Documents for the Customer`, and selects `Revise & Resend`.
+6. If the customer rejects, the status becomes `Ready to Send` with the customer's reason. Helpdesk revises the proposal and selects `Revise & Resend`. Before that, adjust the documents and the message in the `For the Customer` section. The documents of the last send are already ticked.
 7. If a level rejects, the status becomes `Rejected` and the reason is shown to the PIC. The PIC selects `New Version`, revises the proposal and submits it again.
 8. Helpdesk, or a Level 2 approver while the proposal is `Ready to Send` or `Sent to Chat`, can select `Cancel Proposal`. A revision creates a new version.
 
-Each version shows an `Approval Trail` with every level, who acted, when, and their note.
+Each version shows an `Approval Trail` with every level, who acted, when, and the reason when a level rejected.
 
 ### Resolution Days
 
@@ -71,6 +71,7 @@ Each version shows an `Approval Trail` with every level, who acted, when, and th
 - Supporting documents are optional. Only documents of this ticket in `Deliverable Documents` that have a file can be chosen, at most 20 per send. Upload a document there first if it is not in the list.
 - The ticked documents are listed with their links in the proposal email and chat message, and the customer portal receives the same list. In `Deliverable Documents` they become `Sent`, the same as sending them from there.
 - A resend replaces the document list of that version with the new selection. After sending, `Review Mandays Proposal` shows them under `Documents Sent`.
+- `Message to Customer` is optional and can have up to 2,000 characters. It appears in the chat message and in the email to the customer, right after the opening sentence of the proposal.
 - The customer can reject the proposal from the link they receive and may write a reason. It then returns to Helpdesk as `Ready to Send`, who revises it and sends it again. A resend does not go through Level 1 and Level 2 again.
 - On a `Change Request` ticket only the ticket lead can propose Customer Mandays. Heads are not held to this.
 - Cancelling a proposal needs the cancel permission. Level 2 approvers can also cancel the latest version while it is `Ready to Send` or `Sent to Chat`, without that permission. Cancelling one that is already approved needs a separate permission, and the customer is not told automatically, so Helpdesk follows up by email.
@@ -103,7 +104,7 @@ Approved days are used for the workload shown in `My Tasks` and in `Consultant W
 
 **I am an approver but see no `Approve` button.** The button only appears while the proposal waits at your level. If it waits at another level, it is not your turn. Reload the ticket after the proposal is submitted.
 
-**The document I want to send is not under `Documents for the Customer`.** Only documents with a file in this ticket's `Deliverable Documents` appear. Upload it there, then open `Review Mandays Proposal` again.
+**The document I want to send is not under `Attach Documents`.** Only documents with a file in this ticket's `Deliverable Documents` appear. Upload it there, then open `Review Mandays Proposal` again.
 
 **The customer agreed by email but the proposal still shows `Sent to Chat`.** Ask a Level 2 approver to open `Review Mandays Proposal` and select `Approve`. Who counts as Level 2 is set in the flow.
 

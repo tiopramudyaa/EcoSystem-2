@@ -2560,20 +2560,30 @@
                     <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Approval Trail</p>
                     <div id="hdApprovalTrail"></div>
                 </div>
-                <div id="hdApprovalNotesWrap" class="hidden mb-2">
-                    <label class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                        Approval Notes <span class="normal-case font-normal text-gray-400">(optional to approve, required to reject)</span>
-                    </label>
-                    <textarea id="hdApprovalNotes" rows="2" maxlength="1000"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-800 resize-none"
-                        placeholder="Write a note for the PIC..."></textarea>
-                </div>
-                {{-- Dokumen pendukung (CR Form, SoW, WO, ...) dari Deliverables ticket, opsional, ikut terkirim --}}
-                <div id="hdDocsWrap" class="hidden mb-2">
+                {{-- Kirim ke customer (tampil langsung selama tombol Send to Customer / Revise & Resend ada):
+                     dokumen dari Deliverables (opsional) + pesan untuk customer yang tampil di chat & email --}}
+                <div id="hdSendPanel" class="hidden mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p class="text-xs font-semibold text-gray-800 mb-2">For the Customer <span class="font-normal text-gray-500">(sent with Send to Customer)</span></p>
                     <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                        Documents for the Customer <span class="normal-case font-normal text-gray-400">(optional, from Deliverables)</span>
+                        Attach Documents <span class="normal-case font-normal text-gray-400">(optional, from Deliverables)</span>
                     </p>
-                    <div id="hdDocsList" class="space-y-1 text-xs"></div>
+                    <div id="hdDocsList" class="space-y-1 text-xs mb-3"></div>
+                    <label class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Message to Customer <span class="normal-case font-normal text-gray-400">(optional, shown in the chat and email)</span>
+                    </label>
+                    <textarea id="hdSendMessage" rows="3" maxlength="2000"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-800 resize-y"
+                        placeholder="For example: Attached is the CR Form for this proposal. Please review it."></textarea>
+                </div>
+                {{-- Reject level aktif: alasan wajib, kembali ke PIC --}}
+                <div id="hdRejectConfirmWrap" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p class="text-xs font-semibold text-red-700 mb-2">Reject Proposal - Confirmation</p>
+                    <label class="text-xs font-medium text-red-700">Reason for PIC <span class="text-gray-500 font-normal">(required, at least 5 characters)</span></label>
+                    <textarea id="hdRejectNotes" rows="2" maxlength="1000" class="mt-1 w-full px-3 py-2 border border-red-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Explain why you are rejecting this proposal..."></textarea>
+                    <div class="flex gap-2 mt-2 justify-end">
+                        <button type="button" onclick="hdRejectAbort()" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-all duration-200">Back</button>
+                        <button type="button" id="hdBtnRejectConfirm" onclick="hdLevelRejectConfirm()" class="inline-flex items-center px-4 py-2 primary-gradient text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all duration-200">Confirm Reject</button>
+                    </div>
                 </div>
                 <div id="hdSentDocsWrap" class="hidden mb-4">
                     <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Documents Sent</p>
@@ -8280,8 +8290,8 @@
             const trailHtml = cmTrailHtml(proposal.approvals);
             document.getElementById('hdApprovalTrail').innerHTML = trailHtml;
             document.getElementById('hdApprovalTrailWrap').classList.toggle('hidden', !trailHtml);
-            document.getElementById('hdApprovalNotesWrap').classList.toggle('hidden', !canActLevel);
-            document.getElementById('hdApprovalNotes').value = '';
+            hdSendAbort();
+            hdRejectAbort();
 
             // Populate description/notes edit fields if editable & permitted
             // (saat approval internal hanya angka MD yang boleh diubah)
@@ -8332,8 +8342,8 @@
                     document.getElementById('hdBtnLevelReject').classList.remove('hidden');
                     if (isLastLevelTurn) document.getElementById('hdBtnSendToChat')?.classList.remove('hidden');
                     const hint = isLastLevelTurn
-                        ? 'You can adjust the mandays, then send it to the customer, or approve it directly without waiting for the customer. To reject, write the reason in Approval Notes.'
-                        : 'You can adjust the mandays, then approve. To reject, write the reason in Approval Notes.';
+                        ? 'You can adjust the mandays, then send it to the customer with documents from Deliverables, or approve it directly without waiting for the customer. Reject asks for the reason.'
+                        : 'You can adjust the mandays, then approve. Reject asks for the reason.';
                     banner.innerHTML = `<i class="fas fa-user-check text-amber-600 text-sm mt-0.5 flex-shrink-0"></i>
                         <div><p class="font-semibold text-amber-800">Waiting ${escHtml(step)}: your decision</p>
                         <p class="text-xs font-normal text-amber-700 mt-0.5">${hint}</p></div>`;
@@ -8368,14 +8378,12 @@
             }
             // approved: no buttons
 
-            // Dokumen pendukung: pilih dari Deliverables saat bisa kirim; selain itu tampilkan yang sudah terkirim.
+            // Panel untuk customer (dokumen + pesan) tampil langsung saat bisa kirim;
+            // selain itu tampilkan dokumen yang sudah terkirim pada versi ini.
+            hdPrevDocs = proposal.documents || [];
             const canSendNow = ['hdBtnSendToChat', 'hdBtnReviseResend'].some(id => !document.getElementById(id)?.classList.contains('hidden'));
-            hdRenderSentDocs(canSendNow ? [] : (proposal.documents || []));
-            if (canSendNow) {
-                hdLoadDocs(proposal.documents || []);
-            } else {
-                document.getElementById('hdDocsWrap')?.classList.add('hidden');
-            }
+            hdRenderSentDocs(canSendNow ? [] : hdPrevDocs);
+            if (canSendNow) hdOpenSendPanel();
 
             document.getElementById('hdMandaysContent').classList.remove('hidden');
             hdUpdateTotal();
@@ -8395,6 +8403,8 @@
         document.getElementById('hdCancelConfirmWrap')?.classList.add('hidden');
         const hdCancelNotes = document.getElementById('hdCancelNotes');
         if (hdCancelNotes) hdCancelNotes.value = '';
+        hdSendAbort();
+        hdRejectAbort();
     }
 
     function hdUpdateTotal() {
@@ -8501,14 +8511,16 @@
 
     /** Daftar Deliverables ticket (yang punya file) sebagai pilihan dokumen untuk customer. */
     async function hdLoadDocs(previous) {
-        const wrap = document.getElementById('hdDocsWrap');
         const list = document.getElementById('hdDocsList');
-        if (!wrap || !list) return;
-        wrap.classList.remove('hidden');
+        if (!list) return;
         list.innerHTML = '<p class="text-gray-400">Loading documents...</p>';
         const preselected = new Set((previous || []).map(d => d.ticket_deliverable_id).filter(Boolean));
+        // Batas waktu supaya tidak "Loading..." selamanya bila server sedang sibuk.
+        const ctrl  = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 20000);
         try {
-            const res  = await fetch(`/api/tickets/${ticketId}/deliverables`, { headers: getHeaders(), credentials: 'same-origin' });
+            const res  = await fetch(`/api/tickets/${ticketId}/deliverables`, { headers: getHeaders(), credentials: 'same-origin', signal: ctrl.signal });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
             const docs = (data.data || []).filter(d => d.file_name);
             if (!docs.length) {
@@ -8522,7 +8534,11 @@
                         <span class="text-gray-400">(${escHtml(d.status || '')})</span></span>
                 </label>`).join('');
         } catch (e) {
-            list.innerHTML = '<p class="text-red-600">Failed to load documents.</p>';
+            console.error('[hdMandays] load deliverables failed:', e);
+            list.innerHTML = `<p class="text-red-600">${e.name === 'AbortError' ? 'Loading documents took too long.' : 'Failed to load documents.'}
+                <button type="button" onclick="hdLoadDocs(hdPrevDocs)" class="ml-1 underline font-semibold">Retry</button></p>`;
+        } finally {
+            clearTimeout(timer);
         }
     }
 
@@ -8542,59 +8558,61 @@
         }).join('');
     }
 
-    async function hdSubmitToChat() {
+    // Dokumen yang terkirim pada versi ini (dipilih ulang otomatis saat Revise & Resend).
+    let hdPrevDocs = [];
+    /** Tampilkan panel untuk customer: pilih dokumen Deliverables + tulis pesan. */
+    function hdOpenSendPanel() {
+        document.getElementById('hdSendMessage').value = '';
+        document.getElementById('hdSendPanel').classList.remove('hidden');
+        hdLoadDocs(hdPrevDocs);
+    }
+    function hdSendAbort() {
+        document.getElementById('hdSendPanel')?.classList.add('hidden');
+        const msg = document.getElementById('hdSendMessage');
+        if (msg) msg.value = '';
+    }
+    function hdSubmitToChat() { return hdSendConfirm('send'); }
+    function hdReviseResend() { return hdSendConfirm('resend'); }
+
+    /** Kirim proposal + dokumen tercentang + pesan ke customer (chat & email). */
+    async function hdSendConfirm(mode) {
         let details = null;
         if (hdLastLevelTurn) {
             details = hdCollectDetails();
             if (details.length === 0) { showNotification('Total mandays must be greater than 0.', 'warning'); return; }
             if (!await showConfirm('Approve Level 2 and send this proposal to the customer?', 'Send to Customer', 'primary')) return;
         }
-        const btn = document.getElementById('hdBtnSendToChat');
-        if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+        const payload = {
+            deliverable_ids: hdSelectedDocIds(),
+            message: document.getElementById('hdSendMessage').value.trim() || null,
+        };
+        const btn = document.getElementById(mode === 'resend' ? 'hdBtnReviseResend' : 'hdBtnSendToChat');
+        const label = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Sending...';
         try {
-            // Level 2: angka dan catatan ikut dikirim dan disimpan bersama persetujuan level ini.
+            // Level 2: angka ikut dikirim dan disimpan bersama persetujuan level ini.
             const data = hdLastLevelTurn
                 ? await (await fetch(MANDAYS_API('hd-draft/submit-chat'), {
                     method: 'POST', headers: getHeaders(), credentials: 'same-origin',
-                    body: JSON.stringify({ details, notes: document.getElementById('hdApprovalNotes').value.trim() || null, deliverable_ids: hdSelectedDocIds() }),
+                    body: JSON.stringify({ details, ...payload }),
                 })).json()
-                : await hdSaveAndAction('hd-draft/submit-chat', 'POST', { deliverable_ids: hdSelectedDocIds() });
+                : await hdSaveAndAction('hd-draft/submit-chat', 'POST', payload);
             if (data.success) {
                 if (data.email_warning) {
                     showNotification('Status updated. Warning: ' + data.email_warning, 'warning');
                 } else {
-                    showNotification(hdEmailSentMsg(data, 'Sent to customer via email!'), 'success');
+                    showNotification(hdEmailSentMsg(data, mode === 'resend' ? 'Revised proposal sent to customer!' : 'Sent to customer via email!'), 'success');
                 }
+                const reload = hdLastLevelTurn;
                 closeHdMandaysModal();
-                if (hdLastLevelTurn) setTimeout(() => location.reload(), 800);
+                if (reload) setTimeout(() => location.reload(), 800);
             } else {
-                showNotification(data.message || 'Failed to send.', 'error');
+                showNotification(data.message || (data.errors ? Object.values(data.errors)[0][0] : 'Failed to send.'), 'error');
             }
         } catch(e) {
             showNotification('Error: ' + e.message, 'error');
         } finally {
-            if (btn) { btn.disabled = false; btn.textContent = 'Send to Customer'; }
-        }
-    }
-    async function hdReviseResend() {
-        const btn = document.getElementById('hdBtnReviseResend');
-        if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
-        try {
-            const data = await hdSaveAndAction('hd-draft/submit-chat', 'POST', { deliverable_ids: hdSelectedDocIds() });
-            if (data.success) {
-                if (data.email_warning) {
-                    showNotification('Status updated. Warning: ' + data.email_warning, 'warning');
-                } else {
-                    showNotification(hdEmailSentMsg(data, 'Revised proposal sent to customer!'), 'success');
-                }
-                closeHdMandaysModal();
-            } else {
-                showNotification(data.message || 'Failed to send.', 'error');
-            }
-        } catch(e) {
-            showNotification('Error: ' + e.message, 'error');
-        } finally {
-            if (btn) { btn.disabled = false; btn.textContent = 'Revise & Resend'; }
+            btn.disabled = false; btn.textContent = label;
         }
     }
     // ==================== CUSTOMER MANDAYS: APPROVAL BERTINGKAT ====================
@@ -8630,7 +8648,7 @@
         try {
             const res = await fetch(MANDAYS_API('approval/approve'), {
                 method: 'POST', headers: getHeaders(), credentials: 'same-origin',
-                body: JSON.stringify({ details, notes: document.getElementById('hdApprovalNotes').value.trim() || null }),
+                body: JSON.stringify({ details }),
             });
             const data = await res.json();
             if (data.success) {
@@ -8647,9 +8665,20 @@
         }
     }
 
-    /** Reject level aktif: alasan wajib, proposal kembali ke PIC. */
-    async function hdLevelReject() {
-        const notesEl = document.getElementById('hdApprovalNotes');
+    /** Reject level aktif: buka panel alasan (wajib), proposal kembali ke PIC. */
+    function hdLevelReject() {
+        const wrap = document.getElementById('hdRejectConfirmWrap');
+        wrap.classList.remove('hidden');
+        document.getElementById('hdRejectNotes').focus();
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function hdRejectAbort() {
+        document.getElementById('hdRejectConfirmWrap')?.classList.add('hidden');
+        const el = document.getElementById('hdRejectNotes');
+        if (el) el.value = '';
+    }
+    async function hdLevelRejectConfirm() {
+        const notesEl = document.getElementById('hdRejectNotes');
         const notes = notesEl.value.trim();
         if (notes.length < 5) {
             showNotification('Please write the reason for rejecting (at least 5 characters).', 'warning');
@@ -8657,7 +8686,7 @@
             return;
         }
         if (!await showConfirm('Reject this proposal? It goes back to the PIC, who must submit a new version.', 'Reject', 'danger')) return;
-        const btn = document.getElementById('hdBtnLevelReject');
+        const btn = document.getElementById('hdBtnRejectConfirm');
         btn.disabled = true; btn.textContent = 'Rejecting...';
         try {
             const res = await fetch(MANDAYS_API('approval/reject'), {
@@ -8675,7 +8704,7 @@
         } catch (e) {
             showNotification('Error: ' + e.message, 'error');
         } finally {
-            btn.disabled = false; btn.textContent = 'Reject';
+            btn.disabled = false; btn.textContent = 'Confirm Reject';
         }
     }
 

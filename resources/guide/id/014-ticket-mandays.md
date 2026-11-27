@@ -34,17 +34,17 @@ Ticket lead dan konsultan yang mengusulkan, dua level persetujuan dan Helpdesk u
 
 1. Pilih `Propose Mandays` lalu isi rinciannya. Simpan dulu sebagai `Draft`.
 2. Periksa angkanya lalu pilih `Submit for Approval`. Badge menampilkan `Level 1`, dan proposal menampilkan `Waiting` diikuti nama Level 1, misalnya `Waiting Admin Approval`.
-3. Penyetuju Level 1 membuka `Review Mandays Proposal` di ticket, memilih versinya, lalu `Review This Version`. Badge di sebelahnya menampilkan `Your turn` saat gilirannya tiba. Ia dapat menyesuaikan mandays lalu memilih `Approve`, atau menulis alasan di `Approval Notes` lalu memilih `Reject`.
+3. Penyetuju Level 1 membuka `Review Mandays Proposal` di ticket, memilih versinya, lalu `Review This Version`. Badge di sebelahnya menampilkan `Your turn` saat gilirannya tiba. Ia dapat menyesuaikan mandays lalu memilih `Approve`, atau memilih `Reject`, menulis alasannya, lalu memilih `Confirm Reject`.
 4. Setelah Level 1 menyetujui, proposal menunggu Level 2 (bawaannya Helpdesk). Penyetuju Level 2 membuka `Review Mandays Proposal`, boleh menyesuaikan mandays, lalu memilih salah satu:
-   - `Send to Customer`: menyetujui Level 2 sekaligus langsung mengirim proposal ke customer lewat chat dan email. Statusnya menjadi `Sent to Chat`. Sebelum mengirim, Anda dapat mencentang dokumen pendukung di `Documents for the Customer`, misalnya CR Form, SoW, atau WO. Daftarnya diambil dari `Deliverable Documents` ticket, dan tautan dokumen yang dicentang ikut terkirim bersama proposal.
+   - `Send to Customer`: menyetujui Level 2 sekaligus langsung mengirim proposal ke customer lewat chat dan email. Sebelum memilihnya, gunakan bagian `For the Customer` di jendela yang sama. Di `Attach Documents` Anda dapat mencentang dokumen pendukung, misalnya CR Form, SoW, atau WO. Daftarnya diambil dari `Deliverable Documents` ticket, dan tautan dokumen yang dicentang ikut terkirim bersama proposal. Di `Message to Customer` Anda dapat menulis catatan, misalnya keterangan dokumen yang dilampirkan. Lalu pilih `Send to Customer`. Statusnya menjadi `Sent to Chat`.
    - `Approve`: menyetujui proposal secara langsung tanpa menunggu customer, misalnya bila customer sudah setuju lewat email. Statusnya menjadi `Approved`.
-   - `Reject`, dengan alasan di `Approval Notes`.
+   - `Reject`: tulis alasannya, lalu pilih `Confirm Reject`.
 5. Setelah dikirim, customer menyetujui lewat tautan yang diterima, dan proposal menjadi `Approved`. Selama berstatus `Sent to Chat`, penyetuju Level 2 masih dapat memilih `Approve` bila customer setuju dengan cara lain.
-6. Bila customer menolak, statusnya menjadi `Ready to Send` beserta alasan customer. Helpdesk merevisi proposal, mencentang dokumen yang ingin disertakan di `Documents for the Customer`, lalu memilih `Revise & Resend`.
+6. Bila customer menolak, statusnya menjadi `Ready to Send` beserta alasan customer. Helpdesk merevisi proposal lalu memilih `Revise & Resend`. Sebelumnya, sesuaikan dokumen dan pesannya di bagian `For the Customer`. Dokumen pengiriman terakhir sudah tercentang.
 7. Bila sebuah level menolak, statusnya menjadi `Rejected` dan alasannya ditampilkan ke PIC. PIC memilih `New Version`, merevisi proposal, lalu mengirimnya lagi.
 8. Helpdesk, atau penyetuju Level 2 selama proposal berstatus `Ready to Send` atau `Sent to Chat`, dapat memilih `Cancel Proposal`. Revisi menghasilkan versi baru.
 
-Setiap versi menampilkan `Approval Trail` berisi tiap level, siapa yang bertindak, kapan, dan catatannya.
+Setiap versi menampilkan `Approval Trail` berisi tiap level, siapa yang bertindak, kapan, dan alasannya bila sebuah level menolak.
 
 ### Resolution Days
 
@@ -71,6 +71,7 @@ Setiap versi menampilkan `Approval Trail` berisi tiap level, siapa yang bertinda
 - Dokumen pendukung bersifat opsional. Hanya dokumen ticket ini di `Deliverable Documents` yang sudah punya file yang dapat dipilih, paling banyak 20 per pengiriman. Unggah dokumennya di sana lebih dulu bila belum ada di daftar.
 - Dokumen yang dicentang dicantumkan beserta tautannya di email dan pesan chat proposal, dan portal customer menerima daftar yang sama. Di `Deliverable Documents` statusnya menjadi `Sent`, sama seperti dikirim dari sana.
 - Pengiriman ulang mengganti daftar dokumen versi itu dengan pilihan yang baru. Setelah terkirim, `Review Mandays Proposal` menampilkannya di `Documents Sent`.
+- `Message to Customer` bersifat opsional, paling banyak 2.000 karakter. Pesan ini tampil di pesan chat dan email ke customer, tepat setelah kalimat pembuka proposal.
 - Customer dapat menolak proposal dari tautan yang diterimanya dan boleh menulis alasan. Proposal lalu kembali ke Helpdesk sebagai `Ready to Send`, yang merevisi dan mengirimnya lagi. Pengiriman ulang tidak melewati Level 1 dan Level 2 lagi.
 - Pada ticket `Change Request`, hanya ticket lead yang dapat mengusulkan Customer Mandays. Head tidak dibatasi aturan ini.
 - Membatalkan proposal memerlukan izin cancel. Penyetuju Level 2 juga dapat membatalkan versi terbaru selama berstatus `Ready to Send` atau `Sent to Chat`, tanpa izin tersebut. Membatalkan yang sudah disetujui memerlukan izin tersendiri, dan customer tidak diberi tahu otomatis, jadi Helpdesk menindaklanjuti lewat email.
@@ -103,7 +104,7 @@ Hari yang disetujui dipakai untuk beban kerja di `My Tasks` dan `Consultant Work
 
 **Saya penyetuju tetapi tidak melihat tombol `Approve`.** Tombol itu hanya muncul selama proposal menunggu di level Anda. Bila proposal menunggu di level lain, berarti bukan giliran Anda. Muat ulang ticket setelah proposal dikirim.
 
-**Dokumen yang ingin saya kirim tidak ada di `Documents for the Customer`.** Hanya dokumen yang sudah punya file di `Deliverable Documents` ticket ini yang muncul. Unggah dokumennya di sana, lalu buka `Review Mandays Proposal` lagi.
+**Dokumen yang ingin saya kirim tidak ada di `Attach Documents`.** Hanya dokumen yang sudah punya file di `Deliverable Documents` ticket ini yang muncul. Unggah dokumennya di sana, lalu buka `Review Mandays Proposal` lagi.
 
 **Customer sudah setuju lewat email, tetapi proposal masih `Sent to Chat`.** Minta penyetuju Level 2 membuka `Review Mandays Proposal` lalu memilih `Approve`. Siapa penyetuju Level 2 diatur di flow.
 

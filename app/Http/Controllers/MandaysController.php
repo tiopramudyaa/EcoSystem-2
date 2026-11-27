@@ -681,10 +681,13 @@ class MandaysController extends Controller
         // Dokumen opsional (CR Form, SoW, WO, ...) dipilih dari Deliverables ticket ini.
         // Diperiksa SEBELUM approve Level 2 supaya pilihan yang salah tidak meninggalkan
         // level yang sudah tersetujui tanpa terkirim.
+        // message: catatan untuk customer (mis. keterangan dokumen terlampir), tampil di chat dan email.
         $request->validate([
             'deliverable_ids'   => 'nullable|array|max:20',
             'deliverable_ids.*' => 'integer|distinct',
+            'message'           => 'nullable|string|max:2000',
         ]);
+        $customerMessage = trim((string) $request->input('message', '')) ?: null;
         $deliverableIds = array_map('intval', $request->input('deliverable_ids', []) ?? []);
         $documents = $deliverableIds
             ? TicketDeliverable::where('ticket_id', $ticketId)
@@ -766,8 +769,9 @@ class MandaysController extends Controller
         });
 
         // Selalu buat TicketMessage terlebih dahulu agar proposal tampil di chat
-        $htmlBody  = $this->buildMandaysEmailHtml($proposal, $ticket, $senderName, $documents);
-        $plainText = 'Mandays proposal sent to customer. Total: ' . $this->fmtMd((float) $proposal->total_mandays) . ' mandays.';
+        $htmlBody  = $this->buildMandaysEmailHtml($proposal, $ticket, $senderName, $documents, $customerMessage);
+        $plainText = 'Mandays proposal sent to customer. Total: ' . $this->fmtMd((float) $proposal->total_mandays) . ' mandays.'
+            . ($customerMessage ? "\n" . $customerMessage : '');
 
         $ticketMsg = TicketMessage::create([
             'ticket_id'           => $ticketId,
@@ -1937,8 +1941,12 @@ class MandaysController extends Controller
     /**
      * Build HTML email body untuk mandays proposal yang dikirim ke customer.
      */
-    private function buildMandaysEmailHtml(CustomerMandays $proposal, Ticket $ticket, string $agentName, ?\Illuminate\Support\Collection $documents = null): string
+    private function buildMandaysEmailHtml(CustomerMandays $proposal, Ticket $ticket, string $agentName, ?\Illuminate\Support\Collection $documents = null, ?string $customerMessage = null): string
     {
+        // Catatan pengirim untuk customer (opsional), tampil tepat setelah kalimat pembuka.
+        $messageHtml = $customerMessage
+            ? '<p style="margin:0 0 16px;font-size:13px;color:#444;line-height:1.6;">' . nl2br(htmlspecialchars($customerMessage, ENT_QUOTES, 'UTF-8')) . '</p>'
+            : '';
         $ticketNum = htmlspecialchars($ticket->ticket_number ?? '', ENT_QUOTES, 'UTF-8');
         $agent     = htmlspecialchars($agentName, ENT_QUOTES, 'UTF-8');
         $version   = $proposal->version ?? 1;
@@ -2013,6 +2021,7 @@ class MandaysController extends Controller
                         Berikut kami sampaikan proposal <strong>Man Days</strong> untuk Ticket <strong>#{$ticketNum}</strong>
                         (Versi {$version}). Mohon konfirmasi persetujuan Anda.
                     </p>
+                    {$messageHtml}
                     {$notes}
                     <div style="overflow-x:auto;margin:16px 0;">
                         <table cellpadding="0" cellspacing="0" border="0"
