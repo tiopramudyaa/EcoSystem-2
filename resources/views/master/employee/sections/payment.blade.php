@@ -557,8 +557,8 @@
         
         deletePaymentId = selectedPaymentId;
         
-        const payment = paymentsData.find(p => p.payment_id === selectedPaymentId);
-        let paymentInfo = 'this payment record';
+        const payment = paymentsData.find(p => String(p.payment_id) === String(selectedPaymentId));
+        let paymentInfo = '';
         
         if (payment) {
             paymentInfo = `${formatCurrency(payment.amount)} - ${formatDate(payment.paid_at)}`;

@@ -151,8 +151,10 @@ class AttendanceService
         $record = DB::transaction(function () use ($record, $now, $geo, $shift, $payload) {
             $record->fill($this->sideColumns('check_out', $now, $geo, $payload));
 
-            $worked = $this->workMinutes($record->check_in_at, $now, $shift);
+            $workedSeconds = $this->workSeconds($record->check_in_at, $now, $shift);
+            $worked        = intdiv($workedSeconds, 60);
 
+            $record->work_seconds        = $workedSeconds;
             $record->work_minutes        = $worked;
             $record->overtime_minutes    = $this->overtimeMinutes($worked, $shift);
             $record->early_leave_minutes = $this->earlyLeaveMinutes($now, $shift);
@@ -219,6 +221,7 @@ class AttendanceService
             ->selectRaw('COUNT(*) AS present')
             ->selectRaw('SUM(CASE WHEN late_minutes > 0 THEN 1 ELSE 0 END) AS late')
             ->selectRaw('COALESCE(SUM(work_minutes), 0) AS work_minutes')
+            ->selectRaw('COALESCE(SUM(work_seconds), 0) AS work_seconds')
             ->selectRaw('COALESCE(SUM(overtime_minutes), 0) AS overtime_minutes')
             ->first();
 
@@ -226,6 +229,7 @@ class AttendanceService
             'present'          => (int) ($row->present ?? 0),
             'late'             => (int) ($row->late ?? 0),
             'work_minutes'     => (int) ($row->work_minutes ?? 0),
+            'work_seconds'     => (int) ($row->work_seconds ?? 0),
             'overtime_minutes' => (int) ($row->overtime_minutes ?? 0),
         ];
     }
@@ -593,6 +597,14 @@ class AttendanceService
         // bawah secara eksplisit supaya tidak ada konversi implisit yang
         // memicu deprecation dan supaya pembulatannya tidak merugikan karyawan.
         return $at->greaterThan($scheduled) ? (int) floor($scheduled->diffInMinutes($at)) : 0;
+    }
+
+    /** Jam kerja tepat sampai detik: selisih check-in dan check-out dikurangi istirahat shift. */
+    private function workSeconds(Carbon $checkIn, Carbon $checkOut, ?Shift $shift): int
+    {
+        $gross = max(0, $checkOut->getTimestamp() - $checkIn->getTimestamp());
+
+        return max(0, $gross - (($shift?->break_minutes ?? 0) * 60));
     }
 
     private function workMinutes(Carbon $checkIn, Carbon $checkOut, ?Shift $shift): int

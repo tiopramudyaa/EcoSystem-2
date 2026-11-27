@@ -120,6 +120,7 @@ class DashboardAttendanceController extends Controller
             'check_out_at'     => $record->check_out_at?->format('H:i'),
             'late_minutes'     => (int) $record->late_minutes,
             'work_minutes'     => (int) $record->work_minutes,
+            'work_seconds'     => (int) $record->work_seconds,
             'overtime_minutes' => (int) $record->overtime_minutes,
             'day_status'       => $record->day_status,
         ];

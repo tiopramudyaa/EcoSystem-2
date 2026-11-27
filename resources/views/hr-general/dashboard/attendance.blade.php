@@ -394,6 +394,13 @@
         return ((h > 0 ? h + ' h ' : '') + (m > 0 ? m + ' m' : '')).trim();
     }
 
+    /** Detik -> "7 h 30 m 12 s". */
+    function durationSec(seconds) {
+        if (!seconds || seconds <= 0) return '0 s';
+        const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), x = seconds % 60;
+        return ((h > 0 ? h + ' h ' : '') + (m > 0 ? m + ' m ' : '') + (x > 0 ? x + ' s' : '')).trim();
+    }
+
     /** Badge status hari ini. Kuning = perlu ditinjau, BUKAN kesalahan. [label, kelas pil, kelas titik] */
     function todayBadge(record) {
         if (!record || !record.check_in_at) return ['Not checked in', 'bg-gray-100 text-gray-600', 'bg-gray-400'];
@@ -434,7 +441,7 @@
         const s = self.summary || {};
         text('dashAttPresent',  s.present ?? 0);
         text('dashAttLate',     s.late ?? 0);
-        text('dashAttWork',     duration(s.work_minutes));
+        text('dashAttWork',     durationSec(s.work_seconds ?? (s.work_minutes || 0) * 60));
         text('dashAttOvertime', duration(s.overtime_minutes));
     }
 

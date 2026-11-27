@@ -10,6 +10,13 @@
 
 @section('content')
 @php
+    $durationSec = function (int $seconds): string {
+        if ($seconds <= 0) return '0 s';
+        $h = intdiv($seconds, 3600);
+        $m = intdiv($seconds % 3600, 60);
+        $s = $seconds % 60;
+        return trim(($h > 0 ? "{$h} h " : '') . ($m > 0 ? "{$m} m " : '') . ($s > 0 ? "{$s} s" : ''));
+    };
     $duration = function (int $minutes): string {
         if ($minutes <= 0) return '0 m';
         $h = intdiv($minutes, 60);
@@ -195,7 +202,7 @@
                         </td>
                         <td class="px-3 py-3 text-right text-xs whitespace-nowrap {{ $record->late_minutes > 0 ? 'text-amber-700 font-semibold' : 'text-gray-500' }}">{{ $record->late_minutes }} m</td>
                         <td class="px-3 py-3 text-right text-xs text-gray-500 whitespace-nowrap">{{ $record->early_leave_minutes }} m</td>
-                        <td class="px-3 py-3 text-right text-xs text-gray-700 whitespace-nowrap">{{ $duration($record->work_minutes) }}</td>
+                        <td class="px-3 py-3 text-right text-xs text-gray-700 whitespace-nowrap">{{ $durationSec((int) $record->work_seconds) }}</td>
                         <td class="px-3 py-3 text-right text-xs text-gray-700 whitespace-nowrap">{{ $duration($record->overtime_minutes) }}</td>
                     </tr>
                     @empty

@@ -171,7 +171,7 @@ class KpiTemplateSeeder extends Seeder
                     'template_id'      => $tmpl->id,
                     'name'             => $name,
                     'answer_type'      => $isText ? 'paragraph' : 'rating',
-                    'rating_max'       => $scale === 'rating3' ? 3 : null,
+                    'rating_max'       => null,
                     'description'      => $category,
                     'measurement_unit' => null,
                     'target_value'     => null,

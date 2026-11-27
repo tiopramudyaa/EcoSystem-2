@@ -672,8 +672,8 @@
         
         deleteQualificationId = selectedQualificationId;
         
-        const qual = qualificationsData.find(q => q.qualification_id === selectedQualificationId);
-        let qualInfo = 'this qualification';
+        const qual = qualificationsData.find(q => String(q.qualification_id) === String(selectedQualificationId));
+        let qualInfo = '';
         
         if (qual) {
             const display = qual.module || qual.language || qual.qualification_type;

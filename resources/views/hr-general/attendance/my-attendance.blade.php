@@ -18,6 +18,14 @@
         return trim(($h > 0 ? "{$h} h " : '') . ($m > 0 ? "{$m} m" : ''));
     };
 
+    $durationSec = function (int $seconds): string {
+        if ($seconds <= 0) return '0 s';
+        $h = intdiv($seconds, 3600);
+        $m = intdiv($seconds % 3600, 60);
+        $s = $seconds % 60;
+        return trim(($h > 0 ? "{$h} h " : '') . ($m > 0 ? "{$m} m " : '') . ($s > 0 ? "{$s} s" : ''));
+    };
+
     $basic      = $employee?->basicData;
     $hasCheckIn = (bool) $record?->check_in_at;
     $hasCheckOut= (bool) $record?->check_out_at;
@@ -68,7 +76,7 @@
             @foreach([
                 ['label' => 'Present This Month', 'value' => $summary['present'], 'id' => 'statPresent', 'hint' => 'days recorded'],
                 ['label' => 'Late',               'value' => $summary['late'],    'id' => 'statLate',    'hint' => 'days late'],
-                ['label' => 'Work Hours',         'value' => $duration($summary['work_minutes']),     'id' => 'statWork',     'hint' => 'this month'],
+                ['label' => 'Work Hours',         'value' => $durationSec($summary['work_seconds'] ?? $summary['work_minutes'] * 60),     'id' => 'statWork',     'hint' => 'this month'],
                 ['label' => 'Overtime Hours',     'value' => $duration($summary['overtime_minutes']), 'id' => 'statOvertime', 'hint' => 'this month'],
             ] as $card)
             <div class="px-5 py-4">
@@ -141,7 +149,7 @@
                         Late {{ $record?->late_minutes ?? 0 }} m
                     </span>
                     <span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
-                        Worked {{ $duration($record?->work_minutes ?? 0) }}
+                        Worked {{ $durationSec($record?->work_seconds ?? 0) }}
                     </span>
                 </div>
             </div>
@@ -209,11 +217,11 @@
             </div>
 
             {{-- Koreksi: aksi sekunder yang SELALU terlihat (dulu bagian lipat "Need to fix a time?" di bawah halaman, hampir tak terlihat). --}}
-            <div class="mt-3 flex flex-col gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="mt-3 flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-xs text-gray-600"><span class="font-semibold text-gray-800">Forgot to punch or a time is wrong?</span> Send a correction and HR will review it.</p>
                 @if($settings->allow_self_correction)
                     <button type="button" data-open-correction id="btnRequestCorrection"
-                            class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:border-gray-400 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-800">
+                            class="primary-gradient inline-flex shrink-0 items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-red-800 focus:ring-offset-2">
                         <i class="fas fa-pen-to-square text-xs"></i> Request correction
                     </button>
                 @else
@@ -372,7 +380,7 @@
                                 <td class="px-3 py-2.5 text-gray-700 whitespace-nowrap">{{ $row->attendance_date->format('d M Y') }}</td>
                                 <td class="px-3 py-2.5 font-mono text-xs text-gray-700">{{ $row->check_in_at?->format('H:i') ?? '-' }}</td>
                                 <td class="px-3 py-2.5 font-mono text-xs text-gray-700">{{ $row->check_out_at?->format('H:i') ?? '-' }}</td>
-                                <td class="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap">{{ $duration($row->work_minutes) }}</td>
+                                <td class="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap">{{ $durationSec((int) $row->work_seconds) }}</td>
                                 <td class="px-3 py-2.5">
                                     @php
                                         // Ditampilkan per sisi supaya baris yang hanya

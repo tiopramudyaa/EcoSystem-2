@@ -367,10 +367,12 @@ class AttendanceCorrectionController extends Controller
         }
 
         if ($in && $out && $out->greaterThan($in)) {
-            $gross = (int) floor($in->diffInMinutes($out));
-            $record->work_minutes = max(0, $gross - ($shift?->break_minutes ?? 0));
+            $seconds = max(0, $out->getTimestamp() - $in->getTimestamp() - (($shift?->break_minutes ?? 0) * 60));
+            $record->work_seconds = $seconds;
+            $record->work_minutes = intdiv($seconds, 60);
         } else {
             $record->work_minutes = 0;
+            $record->work_seconds = 0;
         }
 
         $record->day_status = $record->late_minutes > 0

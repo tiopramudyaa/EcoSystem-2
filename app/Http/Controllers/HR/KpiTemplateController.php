@@ -672,7 +672,7 @@ class KpiTemplateController extends Controller
                 'template_id'      => $template->id,
                 'name'             => $ind['name'],
                 'answer_type'      => $isPara ? 'paragraph' : 'rating',
-                'rating_max'       => (!$isPara && !empty($ind['rating_max'])) ? (int) $ind['rating_max'] : null,
+                'rating_max'       => null, // the template scale applies to every indicator
                 'description'      => $ind['description'] ?? null,
                 'measurement_unit' => $ind['measurement_unit'] ?? null,
                 'target_value'     => ($ind['target_value'] ?? '') === '' ? null : $ind['target_value'],

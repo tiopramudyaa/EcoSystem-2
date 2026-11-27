@@ -172,7 +172,7 @@
     {{-- ── Form ────────────────────────────────────────────────────────────── --}}
     <form id="selfAssessmentForm" onsubmit="submitSelfAssessment(event)">
         @csrf
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden space-y-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 kpi-sticky-card space-y-6">
 
             <div class="p-6 border-b border-gray-100 flex items-center justify-between">
                 <h3 class="text-sm font-bold text-gray-800 flex items-center gap-2">
@@ -185,7 +185,7 @@
             </div>
 
             <div class="px-6">
-                <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                <div class="kpi-sticky-wrap border border-gray-100 rounded-xl">
                     {{-- Fixed 50 / 50 split: NO + INDIKATOR KPI = 50%, BOBOT + REALISASI + RATING = 50% --}}
                     <table class="w-full text-xs table-fixed min-w-200">
                         <colgroup>
@@ -195,7 +195,7 @@
                             <col style="width:26%">
                             <col style="width:16%">
                         </colgroup>
-                        <thead class="bg-gray-50 border-b border-gray-200">
+                        <thead class="kpi-sticky-head bg-gray-50 border-b border-gray-200">
                             <tr>
                                 <th class="text-left px-4 py-3 font-semibold text-gray-500 uppercase">NO</th>
                                 <th class="text-left px-4 py-3 font-semibold text-gray-500 uppercase">KPI INDICATOR</th>
@@ -209,7 +209,7 @@
                             @php
                                 $ind = $detail->indicator;
                                 $isPara = $ind && $ind->isParagraph();
-                                $max = $ind?->rating_max ?: $scaleMax;
+                                $max = $scaleMax; // one scale per template
                                 $weight = $ind?->weight ?? 0;
                                 $currentRating = $detail->star_rating ?? ($detail->self_achievement ? min($max, max(1, (int) round($detail->self_achievement / 100 * $max))) : null);
                                 // A text-answer indicator counts as filled once its text is written.
@@ -350,6 +350,17 @@
     </div>
 </div>
 
+
+<style>
+/* Judul kolom tabel pengisian tetap terlihat saat halaman digulir. Pembungkus tidak boleh membuat
+   scroll container (overflow auto/hidden) di desktop, kalau tidak sticky tidak berlaku. */
+.kpi-sticky-wrap { overflow-x: auto; }
+.kpi-sticky-card { overflow: visible; }
+@media (min-width: 1024px) {
+    .kpi-sticky-wrap { overflow: visible; }
+    .kpi-sticky-head th { position: sticky; top: 4.5rem; z-index: 30; background: #f9fafb; box-shadow: 0 1px 0 #e5e7eb; }
+}
+</style>
 <script>
 function setStarRating(detailId, star, weight, max) {
     max = max || 5;
